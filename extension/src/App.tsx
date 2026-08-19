@@ -45,7 +45,7 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div className="logo-group">
-          <span className="logo-icon">🔥</span>
+          <img src="/icon48.png" alt="LeetStreak" className="header-logo-img" />
           <span className="logo-text">LeetStreak</span>
         </div>
         {view === "dashboard" && (
