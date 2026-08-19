@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.INFO)
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="CodeStreak API")
+app = FastAPI(title="LeetStreak API")
 
 origins = ["*"] if CORS_ORIGINS.strip() == "*" else [o.strip() for o in CORS_ORIGINS.split(",")]
 app.add_middleware(

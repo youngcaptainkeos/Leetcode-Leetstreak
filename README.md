@@ -1,16 +1,11 @@
-# CodeStreak
+# LeetStreak
 
 A Chrome extension + backend that tracks a friend group's LeetCode
 consistency: daily streaks, a weekly leaderboard, and a "who's showing up"
 score instead of just raw problem counts.
 
-This is the MVP slice: connect your LeetCode username, see your streak and
-last 7 days, and see everyone on a shared leaderboard. No invite codes, no
-auth, no notifications — everyone who registers is on the same board. See
-"Limitations & next steps" at the bottom for what's deliberately left out.
-
 ```
-codestreak/
+leetstreak/
   backend/     FastAPI + PostgreSQL API, polls LeetCode on a schedule
   extension/   React + TypeScript Chrome extension (Manifest V3)
 ```

@@ -45,7 +45,7 @@ export default function App() {
       <header className="header">
         <div className="logo-group">
           <span className="logo-icon">🔥</span>
-          <span className="logo-text">CodeStreak</span>
+          <span className="logo-text">LeetStreak</span>
         </div>
         {view === "dashboard" && (
           <button className="link-btn" onClick={handleLogout}>
@@ -95,7 +95,7 @@ function Onboarding({
   return (
     <form className="onboarding" onSubmit={submit}>
       <div className="onboarding-welcome">
-        <h2>Welcome to CodeStreak</h2>
+        <h2>Welcome to LeetStreak</h2>
         <p className="muted small">
           Track LeetCode consistency with friends, form private groups, and build your daily streak.
         </p>
