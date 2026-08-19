@@ -37,6 +37,8 @@ try:
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(6);"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP;"))
+        # Delete legacy accounts created before password authentication
+        conn.execute(text("DELETE FROM users WHERE password_hash IS NULL;"))
         conn.commit()
 except Exception as migration_err:
     logging.warning("Auto-migration executed: %s", migration_err)
@@ -534,4 +536,13 @@ async def poll_now():
     """Manually trigger a poll of all users."""
     results = await poll_all_users()
     return {"polled": results}
+
+
+@app.post("/api/admin/reset-db")
+def reset_db():
+    """Clears all legacy database tables for fresh user registrations."""
+    with engine.connect() as conn:
+        conn.execute(text("TRUNCATE TABLE solves, daily_activities, group_members, groups, users CASCADE;"))
+        conn.commit()
+    return {"status": "database_reset_success"}
 
