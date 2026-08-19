@@ -1,6 +1,9 @@
 import hashlib
 import os
 import secrets
+import logging
+
+logger = logging.getLogger("codestreak.auth")
 
 def hash_password(password: str) -> str:
     """Hash password using PBKDF2-HMAC-SHA256 with a unique salt."""
@@ -11,10 +14,10 @@ def hash_password(password: str) -> str:
         salt,
         100000
     )
-    return f"{salt.hex()}:${key.hex()}"
+    return f"{salt.hex()}${key.hex()}"
 
 def verify_password(password: str, stored_hash: str) -> bool:
-    """Verify password against stored salt:key hash."""
+    """Verify password against stored salt$key hash."""
     if not stored_hash or '$' not in stored_hash:
         return False
     try:
@@ -28,5 +31,6 @@ def verify_password(password: str, stored_hash: str) -> bool:
             100000
         )
         return secrets.compare_digest(expected_key, actual_key)
-    except Exception:
+    except Exception as e:
+        logger.error("Verify password error: %s", e)
         return False
