@@ -37,12 +37,6 @@ try:
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(6);"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP;"))
-        
-        # Cleanly delete legacy unauthenticated accounts and child records
-        conn.execute(text("DELETE FROM solves WHERE user_id IN (SELECT id FROM users WHERE password_hash IS NULL OR password_hash = '');"))
-        conn.execute(text("DELETE FROM daily_activities WHERE user_id IN (SELECT id FROM users WHERE password_hash IS NULL OR password_hash = '');"))
-        conn.execute(text("DELETE FROM group_members WHERE user_id IN (SELECT id FROM users WHERE password_hash IS NULL OR password_hash = '');"))
-        conn.execute(text("DELETE FROM users WHERE password_hash IS NULL OR password_hash = '';"))
         conn.commit()
 except Exception as migration_err:
     logging.warning("Auto-migration executed: %s", migration_err)
