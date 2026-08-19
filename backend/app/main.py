@@ -24,7 +24,7 @@ from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
 from .leetcode_client import fetch_leetcode_user_data, LeetCodeError
 
-from sqlalchemy import text
+from sqlalchemy import text, func
 
 logging.basicConfig(level=logging.INFO)
 
@@ -129,10 +129,10 @@ async def register_user(payload: RegisterRequest, db: Session = Depends(get_db))
 
 @app.post("/api/users/login", response_model=RegisterResponse)
 def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
-    query_str = payload.leetcode_username.strip()
+    query_str = payload.leetcode_username.strip().lower()
     user = (
         db.query(User)
-        .filter((User.leetcode_username == query_str) | (User.email == query_str.lower()))
+        .filter((func.lower(User.leetcode_username) == query_str) | (func.lower(User.email) == query_str))
         .first()
     )
     if not user or not verify_password(payload.password, user.password_hash or ""):
@@ -148,10 +148,10 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
 
 @app.post("/api/users/forgot-password/initiate")
 async def initiate_forgot_password(payload: ForgotPasswordInitiateRequest, db: Session = Depends(get_db)):
-    query_str = payload.email_or_username.strip()
+    query_str = payload.email_or_username.strip().lower()
     user = (
         db.query(User)
-        .filter((User.leetcode_username == query_str) | (User.email == query_str.lower()))
+        .filter((func.lower(User.leetcode_username) == query_str) | (func.lower(User.email) == query_str))
         .first()
     )
     if not user:
@@ -171,10 +171,10 @@ async def initiate_forgot_password(payload: ForgotPasswordInitiateRequest, db: S
 
 @app.post("/api/users/forgot-password/verify")
 def verify_forgot_password(payload: ForgotPasswordVerifyRequest, db: Session = Depends(get_db)):
-    query_str = payload.email_or_username.strip()
+    query_str = payload.email_or_username.strip().lower()
     user = (
         db.query(User)
-        .filter((User.leetcode_username == query_str) | (User.email == query_str.lower()))
+        .filter((func.lower(User.leetcode_username) == query_str) | (func.lower(User.email) == query_str))
         .first()
     )
     if not user or user.reset_otp != payload.otp.strip():

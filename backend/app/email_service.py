@@ -26,10 +26,8 @@ async def send_otp_email(to_email: str, username: str, otp_code: str):
     </div>
     """
 
-    # Always log in server terminal for transparency
-    logger.info("==================================================")
-    logger.info("[OTP VERIFICATION CODE] User: %s | Email: %s | OTP: %s", username, to_email, otp_code)
-    logger.info("==================================================")
+    # Log email sending status without exposing OTP code
+    logger.info("Sending OTP verification email to user: %s (Email: %s)", username, to_email)
 
     if not RESEND_API_KEY:
         logger.info("No RESEND_API_KEY set. Logged OTP code to server terminal above.")
