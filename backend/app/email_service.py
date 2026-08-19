@@ -42,14 +42,16 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
     logger.info("Initiating OTP verification email to user: %s (Email: %s)", username, to_email)
 
     # 1. Try Brevo HTTPS API (Zero domain required, 300 free emails/day to ANY address worldwide!)
-    if BREVO_API_KEY:
+    clean_brevo_key = BREVO_API_KEY.strip().strip("'").strip('"')
+    if clean_brevo_key:
         try:
             async with httpx.AsyncClient(timeout=10) as client:
                 resp = await client.post(
                     "https://api.brevo.com/v3/smtp/email",
                     headers={
-                        "api-key": BREVO_API_KEY,
-                        "Content-Type": "application/json",
+                        "api-key": clean_brevo_key,
+                        "accept": "application/json",
+                        "content-type": "application/json",
                     },
                     json={
                         "sender": {"name": "LeetStreak", "email": SENDER_EMAIL.strip()},
