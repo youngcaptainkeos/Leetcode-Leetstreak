@@ -26,8 +26,11 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
     """
     subject = "LeetStreak - Password Reset Verification Code"
     html_content = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 20px; background: #151821; color: #e6e7eb; border-radius: 10px;">
-      <h2 style="color: #6366f1; text-align: center;">🔥 LeetStreak Password Reset</h2>
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background: #151821; color: #e6e7eb; border-radius: 12px; border: 1px solid #2d3245;">
+      <div style="text-align: center; margin-bottom: 18px;">
+        <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/icon128.png" alt="LeetStreak" style="width: 44px; height: 44px; border-radius: 9px; vertical-align: middle; display: inline-block; margin-right: 10px;" />
+        <span style="font-size: 20px; font-weight: 700; color: #6366f1; vertical-align: middle; display: inline-block;">LeetStreak Password Reset</span>
+      </div>
       <p>Hello <strong>{username}</strong>,</p>
       <p>We received a request to reset your password. Use the 6-digit verification code below:</p>
       <div style="text-align: center; margin: 24px 0;">
