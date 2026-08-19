@@ -36,7 +36,6 @@ Follow these simple steps to install **LeetStreak** on Google Chrome, Microsoft 
 - 📝 **Live Solves & Difficulty Breakdown**: View total accepted submissions and detailed solve counts (`Easy`, `Medium`, `Hard`) on hover.
 - 📊 **Global Leaderboard**: Compare your streak, submissions, and weighted points against all coders on the platform.
 - 👥 **Private Friend Groups**: Create custom private groups or join your friends' groups using a unique 6-character invite code!
-- 🔐 **Secure Accounts & Password Reset**: Password-protected user accounts with instant 6-digit email OTP password verification.
 
 ---
 
