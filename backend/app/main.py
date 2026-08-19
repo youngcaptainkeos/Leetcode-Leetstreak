@@ -12,10 +12,13 @@ from sqlalchemy.exc import IntegrityError
 from .config import CORS_ORIGINS
 from .database import Base, engine, get_db
 from .models import User, DailyActivity, Group, GroupMember, Solve
+from .auth import hash_password, verify_password
+from .email_service import send_otp_email
 from .schemas import (
     RegisterRequest, RegisterResponse, DashboardResponse, DayCount,
     LeaderboardResponse, LeaderboardEntry, GroupCreateRequest, GroupJoinRequest,
     GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema,
+    LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
 )
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
@@ -68,17 +71,13 @@ async def register_user(payload: RegisterRequest, db: Session = Depends(get_db))
     canonical_username = data.get("username", payload.leetcode_username)
     existing = db.query(User).filter(User.leetcode_username == canonical_username).first()
     if existing:
-        await poll_user(db, existing)
-        return RegisterResponse(
-            id=existing.id,
-            name=existing.name,
-            leetcode_username=existing.leetcode_username,
-            avatar_url=existing.avatar_url,
-        )
+        raise HTTPException(status_code=400, detail="That LeetCode username is already registered. Please log in instead.")
 
     user = User(
         name=payload.name,
         leetcode_username=canonical_username,
+        email=payload.email.strip().lower(),
+        password_hash=hash_password(payload.password),
         avatar_url=data.get("avatar_url"),
     )
     db.add(user)
@@ -86,7 +85,7 @@ async def register_user(payload: RegisterRequest, db: Session = Depends(get_db))
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=400, detail="That LeetCode username is already registered.")
+        raise HTTPException(status_code=400, detail="That LeetCode username or email is already registered.")
     db.refresh(user)
 
     # Ingest full history
@@ -98,6 +97,70 @@ async def register_user(payload: RegisterRequest, db: Session = Depends(get_db))
         leetcode_username=user.leetcode_username,
         avatar_url=user.avatar_url,
     )
+
+
+@app.post("/api/users/login", response_model=RegisterResponse)
+def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
+    query_str = payload.leetcode_username.strip()
+    user = (
+        db.query(User)
+        .filter((User.leetcode_username == query_str) | (User.email == query_str.lower()))
+        .first()
+    )
+    if not user or not verify_password(payload.password, user.password_hash or ""):
+        raise HTTPException(status_code=400, detail="Invalid username/email or password.")
+
+    return RegisterResponse(
+        id=user.id,
+        name=user.name,
+        leetcode_username=user.leetcode_username,
+        avatar_url=user.avatar_url,
+    )
+
+
+@app.post("/api/users/forgot-password/initiate")
+async def initiate_forgot_password(payload: ForgotPasswordInitiateRequest, db: Session = Depends(get_db)):
+    query_str = payload.email_or_username.strip()
+    user = (
+        db.query(User)
+        .filter((User.leetcode_username == query_str) | (User.email == query_str.lower()))
+        .first()
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with that email or username.")
+
+    if not user.email:
+        raise HTTPException(status_code=400, detail="This account does not have an email address associated with it.")
+
+    otp_code = "".join(secrets.choice(string.digits) for _ in range(6))
+    user.reset_otp = otp_code
+    user.otp_expires_at = datetime.now() + timedelta(minutes=15)
+    db.commit()
+
+    await send_otp_email(user.email, user.leetcode_username, otp_code)
+    return {"status": "otp_sent", "email": user.email}
+
+
+@app.post("/api/users/forgot-password/verify")
+def verify_forgot_password(payload: ForgotPasswordVerifyRequest, db: Session = Depends(get_db)):
+    query_str = payload.email_or_username.strip()
+    user = (
+        db.query(User)
+        .filter((User.leetcode_username == query_str) | (User.email == query_str.lower()))
+        .first()
+    )
+    if not user or user.reset_otp != payload.otp.strip():
+        raise HTTPException(status_code=400, detail="Invalid or incorrect 6-digit OTP code.")
+
+    if not user.otp_expires_at or user.otp_expires_at < datetime.now():
+        raise HTTPException(status_code=400, detail="OTP code has expired. Please request a new code.")
+
+    user.password_hash = hash_password(payload.new_password)
+    user.reset_otp = None
+    user.otp_expires_at = None
+    db.commit()
+
+    return {"status": "password_reset_success"}
 
 
 @app.post("/api/users/{user_id}/sync")

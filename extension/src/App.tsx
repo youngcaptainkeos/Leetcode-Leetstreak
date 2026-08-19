@@ -74,27 +74,84 @@ function Onboarding({
   onRegistered: (id: number) => void;
   onError: (e: string | null) => void;
 }) {
+  const [authMode, setAuthMode] = useState<"login" | "register" | "forgot">("login");
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [forgotStep, setForgotStep] = useState<1 | 2>(1);
+  const [sentEmail, setSentEmail] = useState("");
   const [busy, setBusy] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  async function submit(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !username.trim()) return;
+    if (!username.trim() || !password) return;
     setBusy(true);
     onError(null);
     try {
-      const res = await api.register(name.trim(), username.trim());
+      const res = await api.login(username.trim(), password);
       onRegistered(res.id);
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Something went wrong.");
+      onError(err instanceof Error ? err.message : "Login failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !username.trim() || !email.trim() || !password) return;
+    setBusy(true);
+    onError(null);
+    try {
+      const res = await api.register(name.trim(), username.trim(), email.trim(), password);
+      onRegistered(res.id);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Registration failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleForgotInitiate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!username.trim()) return;
+    setBusy(true);
+    onError(null);
+    try {
+      const res = await api.initiateForgotPassword(username.trim());
+      setSentEmail(res.email);
+      setForgotStep(2);
+      setSuccessMsg(`Sent 6-digit code to ${res.email}`);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Could not send reset code.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleForgotVerify(e: React.FormEvent) {
+    e.preventDefault();
+    if (!username.trim() || !otp.trim() || !newPassword) return;
+    setBusy(true);
+    onError(null);
+    try {
+      await api.verifyForgotPassword(username.trim(), otp.trim(), newPassword);
+      setAuthMode("login");
+      setForgotStep(1);
+      setSuccessMsg("Password reset successfully! Please log in.");
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Verification failed.");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <form className="onboarding" onSubmit={submit}>
+    <div className="onboarding">
       <div className="onboarding-welcome">
         <h2>Welcome to LeetStreak</h2>
         <p className="muted small">
@@ -102,33 +159,192 @@ function Onboarding({
         </p>
       </div>
 
-      <label>
-        <span>Your Name</span>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Alex"
-          required
-        />
-      </label>
+      {successMsg && <div className="sync-banner">{successMsg}</div>}
 
-      <label>
-        <span>LeetCode Username</span>
-        <input
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="e.g. neal_wu"
-          required
-        />
-      </label>
+      {/* Auth View Switcher Tabs */}
+      <div className="auth-tab-bar">
+        <button
+          type="button"
+          className={`auth-tab-btn ${authMode === "login" ? "active" : ""}`}
+          onClick={() => { setAuthMode("login"); onError(null); setSuccessMsg(null); }}
+        >
+          Log In
+        </button>
+        <button
+          type="button"
+          className={`auth-tab-btn ${authMode === "register" ? "active" : ""}`}
+          onClick={() => { setAuthMode("register"); onError(null); setSuccessMsg(null); }}
+        >
+          Sign Up
+        </button>
+      </div>
 
-      <button type="submit" className="primary-btn" disabled={busy}>
-        {busy ? "Connecting LeetCode…" : "Connect Profile"}
-      </button>
-      <p className="muted tiny text-center">
-        Ensure your LeetCode profile is set to Public.
-      </p>
-    </form>
+      {authMode === "login" && (
+        <form onSubmit={handleLogin} className="auth-form">
+          <label>
+            <span>LeetCode Username or Email</span>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="e.g. neal_wu"
+              required
+            />
+          </label>
+
+          <label>
+            <span>Password</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+          </label>
+
+          <button type="submit" className="primary-btn" disabled={busy}>
+            {busy ? "Verifying…" : "Log In"}
+          </button>
+
+          <div className="auth-footer-links">
+            <button
+              type="button"
+              className="link-btn tiny"
+              onClick={() => { setAuthMode("forgot"); setForgotStep(1); onError(null); setSuccessMsg(null); }}
+            >
+              Forgot Password?
+            </button>
+          </div>
+        </form>
+      )}
+
+      {authMode === "register" && (
+        <form onSubmit={handleRegister} className="auth-form">
+          <label>
+            <span>Your Name</span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Alex"
+              required
+            />
+          </label>
+
+          <label>
+            <span>LeetCode Username</span>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="e.g. neal_wu"
+              required
+            />
+          </label>
+
+          <label>
+            <span>Email Address (for password recovery)</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="alex@example.com"
+              required
+            />
+          </label>
+
+          <label>
+            <span>Password</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 4 characters"
+              required
+            />
+          </label>
+
+          <button type="submit" className="primary-btn" disabled={busy}>
+            {busy ? "Creating Account…" : "Create Account"}
+          </button>
+        </form>
+      )}
+
+      {authMode === "forgot" && (
+        <div className="auth-form">
+          {forgotStep === 1 ? (
+            <form onSubmit={handleForgotInitiate}>
+              <p className="tiny muted mb-1">
+                Enter your LeetCode Username or Email address to receive a 6-digit reset code.
+              </p>
+              <label>
+                <span>Username or Email</span>
+                <input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="e.g. neal_wu"
+                  required
+                />
+              </label>
+
+              <button type="submit" className="primary-btn" disabled={busy}>
+                {busy ? "Sending Code…" : "Send Reset Code"}
+              </button>
+
+              <div className="auth-footer-links">
+                <button
+                  type="button"
+                  className="link-btn tiny"
+                  onClick={() => setAuthMode("login")}
+                >
+                  ← Back to Log In
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleForgotVerify}>
+              <p className="tiny muted mb-1">
+                Enter the 6-digit code sent to <strong>{sentEmail}</strong> and your new password.
+              </p>
+
+              <label>
+                <span>6-Digit Verification Code</span>
+                <input
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="e.g. 839102"
+                  maxLength={6}
+                  required
+                />
+              </label>
+
+              <label>
+                <span>New Password</span>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="New password"
+                  required
+                />
+              </label>
+
+              <button type="submit" className="primary-btn" disabled={busy}>
+                {busy ? "Resetting…" : "Reset & Log In"}
+              </button>
+
+              <div className="auth-footer-links">
+                <button
+                  type="button"
+                  className="link-btn tiny"
+                  onClick={() => setForgotStep(1)}
+                >
+                  Resend Code
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

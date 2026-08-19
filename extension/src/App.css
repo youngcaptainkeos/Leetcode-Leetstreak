@@ -722,4 +722,43 @@ body {
   white-space: nowrap;
 }
 
+/* Auth Tabs & Forms */
+.auth-tab-bar {
+  display: flex;
+  background: #0f1117;
+  padding: 3px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border: 1px solid #232734;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  background: transparent;
+  color: #8b8fa3;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.auth-tab-btn.active {
+  background: #232734;
+  color: #a5b4fc;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-footer-links {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
 

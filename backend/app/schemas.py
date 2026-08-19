@@ -14,6 +14,23 @@ class RecentSolveSchema(BaseModel):
 class RegisterRequest(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     leetcode_username: str = Field(min_length=1, max_length=80)
+    email: str = Field(min_length=3, max_length=120)
+    password: str = Field(min_length=4, max_length=100)
+
+
+class LoginRequest(BaseModel):
+    leetcode_username: str = Field(min_length=1, max_length=120)
+    password: str = Field(min_length=1, max_length=100)
+
+
+class ForgotPasswordInitiateRequest(BaseModel):
+    email_or_username: str = Field(min_length=1, max_length=120)
+
+
+class ForgotPasswordVerifyRequest(BaseModel):
+    email_or_username: str = Field(min_length=1, max_length=120)
+    otp: str = Field(min_length=6, max_length=6)
+    new_password: str = Field(min_length=4, max_length=100)
 
 
 class RegisterResponse(BaseModel):

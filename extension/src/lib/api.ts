@@ -91,10 +91,25 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  register: (name: string, leetcode_username: string) =>
+  register: (name: string, leetcode_username: string, email: string, password: string) =>
     request<RegisterResponse>("/users/register", {
       method: "POST",
-      body: JSON.stringify({ name, leetcode_username }),
+      body: JSON.stringify({ name, leetcode_username, email, password }),
+    }),
+  login: (leetcode_username: string, password: string) =>
+    request<RegisterResponse>("/users/login", {
+      method: "POST",
+      body: JSON.stringify({ leetcode_username, password }),
+    }),
+  initiateForgotPassword: (email_or_username: string) =>
+    request<{ status: string; email: string }>("/users/forgot-password/initiate", {
+      method: "POST",
+      body: JSON.stringify({ email_or_username }),
+    }),
+  verifyForgotPassword: (email_or_username: string, otp: string, new_password: string) =>
+    request<{ status: string }>("/users/forgot-password/verify", {
+      method: "POST",
+      body: JSON.stringify({ email_or_username, otp, new_password }),
     }),
   dashboard: (userId: number) =>
     request<DashboardResponse>(`/users/${userId}/dashboard`),
