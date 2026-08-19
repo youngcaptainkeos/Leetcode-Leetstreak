@@ -1,5 +1,6 @@
 import os
 import logging
+import socket
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -48,7 +49,14 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
             msg["To"] = to_email
             msg.attach(MIMEText(html_content, "html"))
 
-            with smtplib.SMTP("smtp.gmail.com", 587, timeout=10) as server:
+            # Resolve IPv4 address for smtp.gmail.com to avoid IPv6 "Network is unreachable" on Render
+            try:
+                smtp_host = socket.gethostbyname("smtp.gmail.com")
+            except Exception:
+                smtp_host = "smtp.gmail.com"
+
+            with smtplib.SMTP(smtp_host, 587, timeout=10) as server:
+                server.ehlo("gmail.com")
                 server.starttls()
                 server.login(clean_email, clean_pw)
                 server.sendmail(clean_email, to_email, msg.as_string())
