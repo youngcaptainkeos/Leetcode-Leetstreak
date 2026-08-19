@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timezone, timedelta
 
 
 def current_streak(active_dates: set[date], today: date | None = None) -> int:
@@ -7,13 +7,17 @@ def current_streak(active_dates: set[date], today: date | None = None) -> int:
     Grace period: if the user hasn't solved anything YET today, the streak
     isn't broken until tomorrow (they still have time today).
     """
-    today = today or date.today()
+    today = today or datetime.now(timezone.utc).date()
 
-    cursor = today
-    if cursor not in active_dates:
+    if not active_dates:
+        return 0
+
+    if today in active_dates:
+        cursor = today
+    elif (today - timedelta(days=1)) in active_dates:
         cursor = today - timedelta(days=1)
-        if cursor not in active_dates:
-            return 0
+    else:
+        return 0
 
     streak = 0
     while cursor in active_dates:

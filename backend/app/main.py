@@ -126,7 +126,7 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
 
     today = date.today()
     active_dates = _active_dates(db, user_id)
-    streak = max(user.official_streak or 0, current_streak(active_dates, today))
+    streak = current_streak(active_dates, today)
 
     def total_since(days: int) -> int:
         start = today - timedelta(days=days - 1)
@@ -172,7 +172,7 @@ def _compute_leaderboard(db: Session, users: List[User]) -> LeaderboardResponse:
     raw = []
     for user in users:
         active_dates = _active_dates(db, user.id)
-        streak = max(user.official_streak or 0, current_streak(active_dates, today))
+        streak = current_streak(active_dates, today)
         week_rows = (
             db.query(DailyActivity)
             .filter(DailyActivity.user_id == user.id, DailyActivity.date >= week_start)
