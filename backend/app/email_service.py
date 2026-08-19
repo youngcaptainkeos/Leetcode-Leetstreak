@@ -41,13 +41,17 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
         try:
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
-            msg["From"] = f"LeetStreak <{SMTP_EMAIL}>"
+            # Clean password by stripping spaces if present in Google App Password
+            clean_pw = SMTP_PASSWORD.strip().replace(" ", "")
+            clean_email = SMTP_EMAIL.strip()
+            msg["From"] = f"LeetStreak <{clean_email}>"
             msg["To"] = to_email
             msg.attach(MIMEText(html_content, "html"))
 
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-                server.login(SMTP_EMAIL, SMTP_PASSWORD)
-                server.sendmail(SMTP_EMAIL, to_email, msg.as_string())
+            with smtplib.SMTP("smtp.gmail.com", 587, timeout=10) as server:
+                server.starttls()
+                server.login(clean_email, clean_pw)
+                server.sendmail(clean_email, to_email, msg.as_string())
             logger.info("OTP Email successfully sent via Gmail SMTP to %s", to_email)
             return True
         except Exception as e:
