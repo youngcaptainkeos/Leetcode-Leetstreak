@@ -37,8 +37,12 @@ try:
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(6);"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP;"))
-        # Delete legacy accounts created before password authentication
-        conn.execute(text("DELETE FROM users WHERE password_hash IS NULL;"))
+        
+        # Cleanly delete legacy unauthenticated accounts and child records
+        conn.execute(text("DELETE FROM solves WHERE user_id IN (SELECT id FROM users WHERE password_hash IS NULL OR password_hash = '');"))
+        conn.execute(text("DELETE FROM daily_activities WHERE user_id IN (SELECT id FROM users WHERE password_hash IS NULL OR password_hash = '');"))
+        conn.execute(text("DELETE FROM group_members WHERE user_id IN (SELECT id FROM users WHERE password_hash IS NULL OR password_hash = '');"))
+        conn.execute(text("DELETE FROM users WHERE password_hash IS NULL OR password_hash = '';"))
         conn.commit()
 except Exception as migration_err:
     logging.warning("Auto-migration executed: %s", migration_err)
@@ -561,4 +565,20 @@ def reset_db(db: Session = Depends(get_db)):
     db.query(User).delete()
     db.commit()
     return {"status": "database_reset_success"}
+
+
+@app.get("/api/admin/debug-users")
+def debug_users(db: Session = Depends(get_db)):
+    """Inspect all registered users in the database and their password auth status."""
+    users = db.query(User).all()
+    return [
+        {
+            "id": u.id,
+            "name": u.name,
+            "leetcode_username": u.leetcode_username,
+            "email": u.email,
+            "has_password": bool(u.password_hash),
+        }
+        for u in users
+    ]
 
