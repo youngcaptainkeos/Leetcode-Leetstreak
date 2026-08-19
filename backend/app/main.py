@@ -313,24 +313,8 @@ def _compute_leaderboard(db: Session, users: List[User]) -> LeaderboardResponse:
 
 @app.get("/api/leaderboard", response_model=LeaderboardResponse)
 def get_global_leaderboard(user_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
-    if user_id:
-        # Find all group IDs the user belongs to
-        user_group_ids = [
-            m[0] for m in db.query(GroupMember.group_id).filter(GroupMember.user_id == user_id).all()
-        ]
-        if user_group_ids:
-            # Find all member user IDs across all those groups
-            co_member_ids = {
-                m[0] for m in db.query(GroupMember.user_id).filter(GroupMember.group_id.in_(user_group_ids)).all()
-            }
-            co_member_ids.add(user_id)
-            users = db.query(User).filter(User.id.in_(co_member_ids)).all()
-        else:
-            # User has no groups yet, show only themselves
-            users = db.query(User).filter(User.id == user_id).all()
-    else:
-        users = db.query(User).all()
-
+    # Global Leaderboard includes all registered users on the platform
+    users = db.query(User).all()
     return _compute_leaderboard(db, users)
 
 
