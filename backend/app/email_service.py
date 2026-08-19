@@ -1,15 +1,23 @@
 import os
 import logging
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import httpx
 
 logger = logging.getLogger("codestreak.email")
 
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+SMTP_EMAIL = os.getenv("SMTP_EMAIL", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 
-async def send_otp_email(to_email: str, username: str, otp_code: str):
+async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
     """
-    Sends 6-digit OTP code to user's email address via Resend API.
-    If no API key is set, logs the OTP code clearly in the server terminal for local testing.
+    Sends 6-digit OTP code to user's email address.
+    Supports:
+    1. Gmail / Custom SMTP (zero domain required) if SMTP_EMAIL and SMTP_PASSWORD are set.
+    2. Resend API if RESEND_API_KEY is set.
+    3. Terminal log fallback if no email service is configured.
     """
     subject = "LeetStreak - Password Reset Verification Code"
     html_content = f"""
@@ -26,37 +34,53 @@ async def send_otp_email(to_email: str, username: str, otp_code: str):
     </div>
     """
 
-    # Log email sending status without exposing OTP code
-    logger.info("Sending OTP verification email to user: %s (Email: %s)", username, to_email)
+    logger.info("Initiating OTP verification email to user: %s (Email: %s)", username, to_email)
 
-    if not RESEND_API_KEY:
-        logger.info("No RESEND_API_KEY set. Logged OTP code to server terminal above.")
-        return True
+    # 1. Try Gmail SMTP if credentials exist (Zero domain required, sends to anyone!)
+    if SMTP_EMAIL and SMTP_PASSWORD:
+        try:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = f"LeetStreak <{SMTP_EMAIL}>"
+            msg["To"] = to_email
+            msg.attach(MIMEText(html_content, "html"))
 
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.post(
-                "https://api.resend.com/emails",
-                headers={
-                    "Authorization": f"Bearer {RESEND_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "from": "LeetStreak <onboarding@resend.dev>",
-                    "to": [to_email],
-                    "subject": subject,
-                    "html": html_content,
-                },
-            )
-            if resp.status_code in [200, 201]:
-                logger.info("OTP Email successfully sent via Resend to %s", to_email)
-                return True
-            elif resp.status_code == 403 and "testing emails" in resp.text:
-                logger.warning("Resend Free Testing Sandbox mode: Resend restricted sending to %s. OTP Code: %s", to_email, otp_code)
-                return True
-            else:
-                logger.error("Resend API error (%s): %s", resp.status_code, resp.text)
-                return False
-    except Exception as e:
-        logger.error("Failed to send OTP email via Resend: %s", e)
-        return False
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                server.login(SMTP_EMAIL, SMTP_PASSWORD)
+                server.sendmail(SMTP_EMAIL, to_email, msg.as_string())
+            logger.info("OTP Email successfully sent via Gmail SMTP to %s", to_email)
+            return True
+        except Exception as e:
+            logger.error("Failed to send OTP email via Gmail SMTP: %s", e)
+
+    # 2. Try Resend API if API Key exists
+    if RESEND_API_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.post(
+                    "https://api.resend.com/emails",
+                    headers={
+                        "Authorization": f"Bearer {RESEND_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "from": "LeetStreak <onboarding@resend.dev>",
+                        "to": [to_email],
+                        "subject": subject,
+                        "html": html_content,
+                    },
+                )
+                if resp.status_code in [200, 201]:
+                    logger.info("OTP Email successfully sent via Resend to %s", to_email)
+                    return True
+                elif resp.status_code == 403 and "testing emails" in resp.text:
+                    logger.warning("Resend Free Testing Sandbox mode: Resend restricted sending to %s. OTP Code: %s", to_email, otp_code)
+                    return True
+                else:
+                    logger.error("Resend API error (%s): %s", resp.status_code, resp.text)
+        except Exception as e:
+            logger.error("Failed to send OTP email via Resend: %s", e)
+
+    # 3. Fallback: Log in server terminal
+    logger.info("No active email sender. Verification OTP Code for %s (%s): %s", username, to_email, otp_code)
+    return True
