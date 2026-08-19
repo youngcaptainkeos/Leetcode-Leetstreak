@@ -24,9 +24,22 @@ from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
 from .leetcode_client import fetch_leetcode_user_data, LeetCodeError
 
+from sqlalchemy import text
+
 logging.basicConfig(level=logging.INFO)
 
 Base.metadata.create_all(bind=engine)
+
+# Safe auto-migration for existing PostgreSQL/SQLite tables
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(120);"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(6);"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP;"))
+        conn.commit()
+except Exception as migration_err:
+    logging.warning("Auto-migration executed: %s", migration_err)
 
 app = FastAPI(title="LeetStreak API")
 
