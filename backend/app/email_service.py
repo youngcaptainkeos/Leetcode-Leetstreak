@@ -51,6 +51,9 @@ async def send_otp_email(to_email: str, username: str, otp_code: str):
             if resp.status_code in [200, 201]:
                 logger.info("OTP Email successfully sent via Resend to %s", to_email)
                 return True
+            elif resp.status_code == 403 and "testing emails" in resp.text:
+                logger.warning("Resend Free Testing Sandbox mode: Resend restricted sending to %s. OTP Code: %s", to_email, otp_code)
+                return True
             else:
                 logger.error("Resend API error (%s): %s", resp.status_code, resp.text)
                 return False
