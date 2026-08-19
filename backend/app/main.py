@@ -1,0 +1,402 @@
+import logging
+import secrets
+import string
+from datetime import date, timedelta
+from typing import List, Optional
+
+from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+
+from .config import CORS_ORIGINS
+from .database import Base, engine, get_db
+from .models import User, DailyActivity, Group, GroupMember
+from .schemas import (
+    RegisterRequest, RegisterResponse, DashboardResponse, DayCount,
+    LeaderboardResponse, LeaderboardEntry, GroupCreateRequest, GroupJoinRequest,
+    GroupResponse, GroupListResponse, GroupMemberSchema,
+)
+from .streak import current_streak
+from .scheduler import start_scheduler, poll_all_users, poll_user
+from .leetcode_client import fetch_leetcode_user_data, LeetCodeError
+
+logging.basicConfig(level=logging.INFO)
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="CodeStreak API")
+
+origins = ["*"] if CORS_ORIGINS.strip() == "*" else [o.strip() for o in CORS_ORIGINS.split(",")]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+_scheduler = None
+
+
+@app.on_event("startup")
+async def on_startup():
+    global _scheduler
+    _scheduler = start_scheduler()
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok"}
+
+
+def _generate_group_code(length: int = 6) -> str:
+    chars = string.ascii_uppercase + string.digits
+    return "STREAK-" + "".join(secrets.choice(chars) for _ in range(length))
+
+
+@app.post("/api/users/register", response_model=RegisterResponse)
+async def register_user(payload: RegisterRequest, db: Session = Depends(get_db)):
+    try:
+        data = await fetch_leetcode_user_data(payload.leetcode_username)
+    except LeetCodeError as err:
+        raise HTTPException(
+            status_code=400,
+            detail=str(err),
+        )
+
+    canonical_username = data.get("username", payload.leetcode_username)
+    existing = db.query(User).filter(User.leetcode_username == canonical_username).first()
+    if existing:
+        await poll_user(db, existing)
+        return RegisterResponse(
+            id=existing.id,
+            name=existing.name,
+            leetcode_username=existing.leetcode_username,
+            avatar_url=existing.avatar_url,
+        )
+
+    user = User(
+        name=payload.name,
+        leetcode_username=canonical_username,
+        avatar_url=data.get("avatar_url"),
+    )
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="That LeetCode username is already registered.")
+    db.refresh(user)
+
+    # Ingest full history
+    await poll_user(db, user)
+
+    return RegisterResponse(
+        id=user.id,
+        name=user.name,
+        leetcode_username=user.leetcode_username,
+        avatar_url=user.avatar_url,
+    )
+
+
+@app.post("/api/users/{user_id}/sync")
+async def sync_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    solves_added = await poll_user(db, user)
+    return {"status": "synced", "user_id": user_id, "new_solves": solves_added}
+
+
+def _active_dates(db: Session, user_id: int) -> set[date]:
+    rows = (
+        db.query(DailyActivity.date)
+        .filter(DailyActivity.user_id == user_id, DailyActivity.problems_solved > 0)
+        .all()
+    )
+    return {r[0] for r in rows}
+
+
+@app.get("/api/users/{user_id}/dashboard", response_model=DashboardResponse)
+def get_dashboard(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    today = date.today()
+    active_dates = _active_dates(db, user_id)
+    streak = max(current_streak(active_dates, today), user.official_streak or 0)
+
+    def total_since(days: int) -> int:
+        start = today - timedelta(days=days - 1)
+        rows = (
+            db.query(DailyActivity)
+            .filter(DailyActivity.user_id == user_id, DailyActivity.date >= start)
+            .all()
+        )
+        return sum(r.problems_solved for r in rows)
+
+    last_7 = []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        row = (
+            db.query(DailyActivity)
+            .filter(DailyActivity.user_id == user_id, DailyActivity.date == d)
+            .first()
+        )
+        last_7.append(DayCount(date=d, problems_solved=row.problems_solved if row else 0))
+
+    today_row = next((d for d in last_7 if d.date == today), None)
+
+    return DashboardResponse(
+        id=user.id,
+        name=user.name,
+        leetcode_username=user.leetcode_username,
+        avatar_url=user.avatar_url,
+        easy_count=user.easy_count or 0,
+        medium_count=user.medium_count or 0,
+        hard_count=user.hard_count or 0,
+        current_streak=streak,
+        today_count=today_row.problems_solved if today_row else 0,
+        weekly_total=total_since(7),
+        monthly_total=total_since(30),
+        last_7_days=last_7,
+    )
+
+
+def _compute_leaderboard(db: Session, users: List[User]) -> LeaderboardResponse:
+    today = date.today()
+    week_start = today - timedelta(days=6)
+
+    raw = []
+    for user in users:
+        active_dates = _active_dates(db, user.id)
+        streak = max(current_streak(active_dates, today), user.official_streak or 0)
+        week_rows = (
+            db.query(DailyActivity)
+            .filter(DailyActivity.user_id == user.id, DailyActivity.date >= week_start)
+            .all()
+        )
+        weekly_total = sum(r.problems_solved for r in week_rows)
+        active_days_this_week = sum(1 for r in week_rows if r.problems_solved > 0)
+        consistency = (active_days_this_week / 7) * 100
+        is_active_today = today in active_dates
+        raw.append({
+            "user": user,
+            "weekly_total": weekly_total,
+            "streak": streak,
+            "consistency": consistency,
+            "is_active_today": is_active_today,
+        })
+
+    max_weekly = max((r["weekly_total"] for r in raw), default=0) or 1
+    for r in raw:
+        normalized_volume = (r["weekly_total"] / max_weekly) * 100
+        r["combined"] = round(0.6 * r["consistency"] + 0.4 * normalized_volume, 1)
+
+    raw.sort(key=lambda r: r["combined"], reverse=True)
+
+    entries = [
+        LeaderboardEntry(
+            rank=i + 1,
+            id=r["user"].id,
+            name=r["user"].name,
+            leetcode_username=r["user"].leetcode_username,
+            avatar_url=r["user"].avatar_url,
+            easy_count=r["user"].easy_count or 0,
+            medium_count=r["user"].medium_count or 0,
+            hard_count=r["user"].hard_count or 0,
+            weekly_total=r["weekly_total"],
+            current_streak=r["streak"],
+            consistency_score=round(r["consistency"], 1),
+            combined_score=r["combined"],
+            is_active_today=r["is_active_today"],
+        )
+        for i, r in enumerate(raw)
+    ]
+
+    return LeaderboardResponse(week_start=week_start, week_end=today, entries=entries)
+
+
+@app.get("/api/leaderboard", response_model=LeaderboardResponse)
+def get_global_leaderboard(user_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
+    if user_id:
+        # Find all group IDs the user belongs to
+        user_group_ids = [
+            m[0] for m in db.query(GroupMember.group_id).filter(GroupMember.user_id == user_id).all()
+        ]
+        if user_group_ids:
+            # Find all member user IDs across all those groups
+            co_member_ids = {
+                m[0] for m in db.query(GroupMember.user_id).filter(GroupMember.group_id.in_(user_group_ids)).all()
+            }
+            co_member_ids.add(user_id)
+            users = db.query(User).filter(User.id.in_(co_member_ids)).all()
+        else:
+            # User has no groups yet, show only themselves
+            users = db.query(User).filter(User.id == user_id).all()
+    else:
+        users = db.query(User).all()
+
+    return _compute_leaderboard(db, users)
+
+
+# Group Endpoints
+@app.post("/api/groups", response_model=GroupResponse)
+def create_group(payload: GroupCreateRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == payload.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    code = _generate_group_code()
+    group = Group(name=payload.name, code=code, creator_id=user.id)
+    db.add(group)
+    db.commit()
+    db.refresh(group)
+
+    membership = GroupMember(group_id=group.id, user_id=user.id)
+    db.add(membership)
+    db.commit()
+
+    return GroupResponse(
+        id=group.id,
+        name=group.name,
+        code=group.code,
+        creator_id=group.creator_id,
+        member_count=1,
+        members=[
+            GroupMemberSchema(
+                id=user.id,
+                name=user.name,
+                leetcode_username=user.leetcode_username,
+                avatar_url=user.avatar_url,
+            )
+        ],
+    )
+
+
+@app.post("/api/groups/join", response_model=GroupResponse)
+def join_group(payload: GroupJoinRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == payload.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    code_clean = payload.code.strip().upper()
+    group = db.query(Group).filter(Group.code == code_clean).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Invalid group code. Please check the code and try again.")
+
+    existing_mem = (
+        db.query(GroupMember)
+        .filter(GroupMember.group_id == group.id, GroupMember.user_id == user.id)
+        .first()
+    )
+    if not existing_mem:
+        db.add(GroupMember(group_id=group.id, user_id=user.id))
+        db.commit()
+
+    members = (
+        db.query(User)
+        .join(GroupMember, GroupMember.user_id == User.id)
+        .filter(GroupMember.group_id == group.id)
+        .all()
+    )
+
+    return GroupResponse(
+        id=group.id,
+        name=group.name,
+        code=group.code,
+        creator_id=group.creator_id,
+        member_count=len(members),
+        members=[
+            GroupMemberSchema(
+                id=m.id,
+                name=m.name,
+                leetcode_username=m.leetcode_username,
+                avatar_url=m.avatar_url,
+            )
+            for m in members
+        ],
+    )
+
+
+@app.get("/api/groups/my-groups/{user_id}", response_model=GroupListResponse)
+def get_my_groups(user_id: int, db: Session = Depends(get_db)):
+    memberships = db.query(GroupMember).filter(GroupMember.user_id == user_id).all()
+    group_responses = []
+
+    for mem in memberships:
+        group = db.query(Group).filter(Group.id == mem.group_id).first()
+        if not group:
+            continue
+        m_users = (
+            db.query(User)
+            .join(GroupMember, GroupMember.user_id == User.id)
+            .filter(GroupMember.group_id == group.id)
+            .all()
+        )
+        group_responses.append(
+            GroupResponse(
+                id=group.id,
+                name=group.name,
+                code=group.code,
+                creator_id=group.creator_id,
+                member_count=len(m_users),
+                members=[
+                    GroupMemberSchema(
+                        id=u.id,
+                        name=u.name,
+                        leetcode_username=u.leetcode_username,
+                        avatar_url=u.avatar_url,
+                    )
+                    for u in m_users
+                ],
+            )
+        )
+
+    return GroupListResponse(groups=group_responses)
+
+
+@app.delete("/api/groups/{group_id}/members/{user_id}")
+def remove_group_member(group_id: int, user_id: int, requester_id: int, db: Session = Depends(get_db)):
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    if group.creator_id != requester_id and user_id != requester_id:
+        raise HTTPException(status_code=403, detail="Only the group owner or member themselves can remove from group.")
+
+    mem = (
+        db.query(GroupMember)
+        .filter(GroupMember.group_id == group_id, GroupMember.user_id == user_id)
+        .first()
+    )
+    if mem:
+        db.delete(mem)
+        db.commit()
+
+    return {"status": "removed", "group_id": group_id, "user_id": user_id}
+
+
+@app.get("/api/groups/{group_id}/leaderboard", response_model=LeaderboardResponse)
+def get_group_leaderboard(group_id: int, db: Session = Depends(get_db)):
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    users = (
+        db.query(User)
+        .join(GroupMember, GroupMember.user_id == User.id)
+        .filter(GroupMember.group_id == group_id)
+        .all()
+    )
+    return _compute_leaderboard(db, users)
+
+
+@app.post("/api/admin/poll-now")
+async def poll_now():
+    """Manually trigger a poll of all users."""
+    results = await poll_all_users()
+    return {"polled": results}
+

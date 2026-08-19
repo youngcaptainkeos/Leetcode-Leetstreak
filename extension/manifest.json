@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "CodeStreak",
+  "version": "1.0.0",
+  "description": "Track your LeetCode consistency with friends.",
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "CodeStreak"
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["http://localhost:8000/*", "https://*/*", "http://*/*"]
+}
