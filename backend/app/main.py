@@ -86,6 +86,19 @@ async def register_user(payload: RegisterRequest, db: Session = Depends(get_db))
     canonical_username = data.get("username", payload.leetcode_username)
     existing = db.query(User).filter(User.leetcode_username == canonical_username).first()
     if existing:
+        if not existing.password_hash:
+            # Upgrade legacy account with password and email
+            existing.name = payload.name
+            existing.email = payload.email.strip().lower()
+            existing.password_hash = hash_password(payload.password)
+            db.commit()
+            await poll_user(db, existing)
+            return RegisterResponse(
+                id=existing.id,
+                name=existing.name,
+                leetcode_username=existing.leetcode_username,
+                avatar_url=existing.avatar_url,
+            )
         raise HTTPException(status_code=400, detail="That LeetCode username is already registered. Please log in instead.")
 
     user = User(
@@ -539,10 +552,13 @@ async def poll_now():
 
 
 @app.post("/api/admin/reset-db")
-def reset_db():
-    """Clears all legacy database tables for fresh user registrations."""
-    with engine.connect() as conn:
-        conn.execute(text("TRUNCATE TABLE solves, daily_activities, group_members, groups, users CASCADE;"))
-        conn.commit()
+def reset_db(db: Session = Depends(get_db)):
+    """Clears all database records for fresh user registrations."""
+    db.query(Solve).delete()
+    db.query(DailyActivity).delete()
+    db.query(GroupMember).delete()
+    db.query(Group).delete()
+    db.query(User).delete()
+    db.commit()
     return {"status": "database_reset_success"}
 
