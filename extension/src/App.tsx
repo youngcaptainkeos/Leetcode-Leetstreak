@@ -140,9 +140,9 @@ function Onboarding({
     onError(null);
     try {
       await api.verifyForgotPassword(username.trim(), otp.trim(), newPassword);
-      setAuthMode("login");
-      setForgotStep(1);
-      setSuccessMsg("Password reset successfully! Please log in.");
+      setPassword(newPassword);
+      const res = await api.login(username.trim(), newPassword);
+      onRegistered(res.id);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Verification failed.");
     } finally {
