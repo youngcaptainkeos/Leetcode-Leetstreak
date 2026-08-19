@@ -3,9 +3,19 @@
   "name": "LeetStreak",
   "version": "1.0.0",
   "description": "Track your LeetCode consistency with friends.",
+  "icons": {
+    "16": "public/icon16.png",
+    "48": "public/icon48.png",
+    "128": "public/icon128.png"
+  },
   "action": {
     "default_popup": "index.html",
-    "default_title": "LeetStreak"
+    "default_title": "LeetStreak",
+    "default_icon": {
+      "16": "public/icon16.png",
+      "48": "public/icon48.png",
+      "128": "public/icon128.png"
+    }
   },
   "permissions": ["storage"],
   "host_permissions": ["http://localhost:8000/*", "https://*/*", "http://*/*"]
