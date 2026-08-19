@@ -511,9 +511,15 @@ function Dashboard({
                     </div>
                     <span className="handle-mini">@{e.leetcode_username}</span>
                   </div>
-                  <span className="streak-mini">🔥{e.current_streak}</span>
-                  <span className="points-badge" title="Total Points: Easy=1pt, Med=3pt, Hard=6pt">
-                    ⭐ {e.points ?? (e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6)} pts
+                  <span className="streak-mini">🔥{e.current_streak}d</span>
+                  <span className="solves-badge" title="Questions solved this week">
+                    📝{e.weekly_total}
+                  </span>
+                  <span
+                    className="points-badge"
+                    title={`Easy: ${e.easy_count} | Medium: ${e.medium_count} | Hard: ${e.hard_count}`}
+                  >
+                    ⭐{e.points ?? (e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6)} pts
                   </span>
                 </div>
 
@@ -576,7 +582,10 @@ function Dashboard({
               <span className="modal-streak-count">
                 {inspectedFriend.current_streak} Day Streak
               </span>
-              <span className="modal-points-tag" title="Points = Easy*1 + Med*3 + Hard*6">
+              <span
+                className="modal-points-tag"
+                title={`Easy: ${inspectedFriend.easy_count} | Medium: ${inspectedFriend.medium_count} | Hard: ${inspectedFriend.hard_count}`}
+              >
                 ⭐ {inspectedFriend.points ?? (inspectedFriend.easy_count * 1 + inspectedFriend.medium_count * 3 + inspectedFriend.hard_count * 6)} pts
               </span>
             </div>
