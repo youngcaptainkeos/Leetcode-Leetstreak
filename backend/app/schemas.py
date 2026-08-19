@@ -1,6 +1,14 @@
-from datetime import date
+from datetime import date, datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field
+
+
+class RecentSolveSchema(BaseModel):
+    title_slug: str
+    title: str
+    solved_at: datetime
+    relative_time: str
+    leetcode_url: str
 
 
 class RegisterRequest(BaseModel):
@@ -44,6 +52,7 @@ class LeaderboardEntry(BaseModel):
     easy_count: int = 0
     medium_count: int = 0
     hard_count: int = 0
+    points: int = 0
     weekly_total: int
     current_streak: int
     consistency_score: float  # 0-100, active days / 7

@@ -603,4 +603,113 @@ body {
   color: #ff9d42;
 }
 
+.points-badge {
+  font-weight: 700;
+  font-size: 11px;
+  background: #2e2615;
+  color: #fbbf24;
+  border: 1px solid #78350f;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.modal-points-tag {
+  background: #312e81;
+  color: #c7d2fe;
+  border: 1px solid #4338ca;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-left: 6px;
+}
+
+.text-center { text-align: center; }
+.mb-1 { margin-bottom: 6px; }
+
+/* Modal Tab Bar */
+.modal-tab-bar {
+  display: flex;
+  gap: 4px;
+  background: #0f1117;
+  padding: 3px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border: 1px solid #232734;
+}
+
+.modal-tab-btn {
+  flex: 1;
+  background: transparent;
+  color: #8b8fa3;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.modal-tab-btn.active {
+  background: #232734;
+  color: #a5b4fc;
+}
+
+/* Recent Solves List */
+.modal-solves-container {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.recent-solves-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.solve-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #191c28;
+  border: 1px solid #282c3c;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.solve-bullet {
+  color: #10b981;
+  font-size: 10px;
+}
+
+.solve-info {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.solve-title {
+  color: #e2e8f0;
+  font-weight: 600;
+  text-decoration: none;
+}
+.solve-title:hover {
+  color: #818cf8;
+  text-decoration: underline;
+}
+
+.solve-time {
+  font-size: 10px;
+  color: #8b8fa3;
+  background: #11131c;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
 

@@ -5,6 +5,7 @@ import {
   LeaderboardResponse,
   LeaderboardEntry,
   GroupResponse,
+  RecentSolve,
 } from "./lib/api";
 import { getStored, setStored, clearStored } from "./storage";
 
@@ -149,6 +150,9 @@ function Dashboard({
   );
   const [friendDash, setFriendDash] = useState<DashboardResponse | null>(null);
   const [loadingFriendDash, setLoadingFriendDash] = useState(false);
+  const [modalTab, setModalTab] = useState<"overview" | "solves">("overview");
+  const [recentSolvesList, setRecentSolvesList] = useState<RecentSolve[]>([]);
+  const [loadingRecentSolves, setLoadingRecentSolves] = useState(false);
 
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
@@ -268,14 +272,21 @@ function Dashboard({
 
   async function handleInspectFriend(entry: LeaderboardEntry) {
     setInspectedFriend(entry);
+    setModalTab("overview");
     setLoadingFriendDash(true);
+    setLoadingRecentSolves(true);
     try {
-      const friendData = await api.dashboard(entry.id);
+      const [friendData, solvesData] = await Promise.all([
+        api.dashboard(entry.id).catch(() => null),
+        api.recentSolves(entry.id, 10).catch(() => []),
+      ]);
       setFriendDash(friendData);
+      setRecentSolvesList(solvesData);
     } catch (err) {
-      console.warn("Could not load friend detailed dashboard", err);
+      console.warn("Could not load friend detailed data", err);
     } finally {
       setLoadingFriendDash(false);
+      setLoadingRecentSolves(false);
     }
   }
 
@@ -314,7 +325,7 @@ function Dashboard({
           <div>
             <div className="profile-name">{dash.name}</div>
             <a
-              href={`https://leetcode.com/${dash.leetcode_username}`}
+              href={`https://leetcode.com/u/${dash.leetcode_username}/`}
               target="_blank"
               rel="noreferrer"
               className="profile-handle"
@@ -501,7 +512,9 @@ function Dashboard({
                     <span className="handle-mini">@{e.leetcode_username}</span>
                   </div>
                   <span className="streak-mini">🔥{e.current_streak}</span>
-                  <span className="score-badge">{e.weekly_total}</span>
+                  <span className="points-badge" title="Total Points: Easy=1pt, Med=3pt, Hard=6pt">
+                    ⭐ {e.points ?? (e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6)} pts
+                  </span>
                 </div>
 
                 {/* Owner Remove Button */}
@@ -548,7 +561,7 @@ function Dashboard({
               <div>
                 <h3>{inspectedFriend.name}</h3>
                 <a
-                  href={`https://leetcode.com/${inspectedFriend.leetcode_username}`}
+                  href={`https://leetcode.com/u/${inspectedFriend.leetcode_username}/`}
                   target="_blank"
                   rel="noreferrer"
                   className="profile-handle"
@@ -563,64 +576,116 @@ function Dashboard({
               <span className="modal-streak-count">
                 {inspectedFriend.current_streak} Day Streak
               </span>
-            </div>
-
-            <div className="stat-row">
-              <Stat
-                label="Today"
-                value={
-                  friendDash ? friendDash.today_count : (inspectedFriend.is_active_today ? 1 : 0)
-                }
-              />
-              <Stat label="This Week" value={inspectedFriend.weekly_total} />
-              <Stat
-                label="This Month"
-                value={friendDash ? friendDash.monthly_total : 0}
-              />
-            </div>
-
-            <div className="diff-pills">
-              <span className="diff-pill easy">
-                Easy {inspectedFriend.easy_count}
-              </span>
-              <span className="diff-pill medium">
-                Med {inspectedFriend.medium_count}
-              </span>
-              <span className="diff-pill hard">
-                Hard {inspectedFriend.hard_count}
+              <span className="modal-points-tag" title="Points = Easy*1 + Med*3 + Hard*6">
+                ⭐ {inspectedFriend.points ?? (inspectedFriend.easy_count * 1 + inspectedFriend.medium_count * 3 + inspectedFriend.hard_count * 6)} pts
               </span>
             </div>
 
-            {loadingFriendDash ? (
-              <div className="centered muted tiny">Loading recent activity…</div>
-            ) : friendDash ? (
-              <div className="section">
-                <div className="section-title">7-Day Activity</div>
-                <div className="heatmap">
-                  {friendDash.last_7_days.map((d, i) => (
-                    <div className="heat-col" key={d.date}>
-                      <div
-                        className="heat-bar"
-                        style={{
-                          height: `${
-                            (d.problems_solved /
-                              Math.max(
-                                1,
-                                ...friendDash.last_7_days.map((x) => x.problems_solved)
-                              )) *
-                              32 +
-                            4
-                          }px`,
-                          opacity: d.problems_solved > 0 ? 1 : 0.25,
-                        }}
-                        title={`${d.date}: ${d.problems_solved} solved`}
-                      />
-                      <span className="tiny muted">{dayLabels[i]}</span>
-                    </div>
-                  ))}
+            {/* Modal Tab Bar */}
+            <div className="modal-tab-bar">
+              <button
+                className={`modal-tab-btn ${modalTab === "overview" ? "active" : ""}`}
+                onClick={() => setModalTab("overview")}
+              >
+                📊 Overview
+              </button>
+              <button
+                className={`modal-tab-btn ${modalTab === "solves" ? "active" : ""}`}
+                onClick={() => setModalTab("solves")}
+              >
+                📝 Recent Solves ({recentSolvesList.length})
+              </button>
+            </div>
+
+            {modalTab === "overview" ? (
+              <>
+                <div className="section-title text-center mb-1">Questions Solved</div>
+                <div className="stat-row">
+                  <Stat
+                    label="Today"
+                    value={
+                      friendDash ? friendDash.today_count : (inspectedFriend.is_active_today ? 1 : 0)
+                    }
+                  />
+                  <Stat label="This Week" value={inspectedFriend.weekly_total} />
+                  <Stat
+                    label="This Month"
+                    value={friendDash ? friendDash.monthly_total : 0}
+                  />
                 </div>
+
+                <div className="diff-pills">
+                  <span className="diff-pill easy">
+                    Easy {inspectedFriend.easy_count}
+                  </span>
+                  <span className="diff-pill medium">
+                    Med {inspectedFriend.medium_count}
+                  </span>
+                  <span className="diff-pill hard">
+                    Hard {inspectedFriend.hard_count}
+                  </span>
+                </div>
+
+                {loadingFriendDash ? (
+                  <div className="centered muted tiny py-2">Loading recent activity…</div>
+                ) : friendDash ? (
+                  <div className="section">
+                    <div className="section-title">7-Day Activity</div>
+                    <div className="heatmap">
+                      {friendDash.last_7_days.map((d, i) => (
+                        <div className="heat-col" key={d.date}>
+                          <div
+                            className="heat-bar"
+                            style={{
+                              height: `${
+                                (d.problems_solved /
+                                  Math.max(
+                                    1,
+                                    ...friendDash.last_7_days.map((x) => x.problems_solved)
+                                  )) *
+                                  32 +
+                                4
+                              }px`,
+                              opacity: d.problems_solved > 0 ? 1 : 0.25,
+                            }}
+                            title={`${d.date}: ${d.problems_solved} solved`}
+                          />
+                          <span className="tiny muted">{dayLabels[i]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <div className="modal-solves-container">
+                <div className="section-title mb-1">Last 10 Solved Questions</div>
+                {loadingRecentSolves ? (
+                  <div className="centered muted tiny py-3">Loading solves…</div>
+                ) : recentSolvesList.length === 0 ? (
+                  <div className="centered muted tiny py-3">No recent solves recorded yet.</div>
+                ) : (
+                  <ul className="recent-solves-list">
+                    {recentSolvesList.map((s, idx) => (
+                      <li key={idx} className="solve-item">
+                        <span className="solve-bullet">✔</span>
+                        <div className="solve-info">
+                          <a
+                            href={s.leetcode_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="solve-title"
+                          >
+                            {s.title} ↗
+                          </a>
+                        </div>
+                        <span className="solve-time">{s.relative_time}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       )}

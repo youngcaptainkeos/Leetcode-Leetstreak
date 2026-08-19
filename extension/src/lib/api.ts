@@ -12,6 +12,14 @@ export interface DayCount {
   problems_solved: number;
 }
 
+export interface RecentSolve {
+  title_slug: string;
+  title: string;
+  solved_at: string;
+  relative_time: string;
+  leetcode_url: string;
+}
+
 export interface DashboardResponse {
   id: number;
   name: string;
@@ -36,6 +44,7 @@ export interface LeaderboardEntry {
   easy_count: number;
   medium_count: number;
   hard_count: number;
+  points: number;
   weekly_total: number;
   current_streak: number;
   consistency_score: number;
@@ -112,6 +121,8 @@ export const api = {
     request<GroupListResponse>(`/groups/my-groups/${userId}`),
   groupLeaderboard: (groupId: number) =>
     request<LeaderboardResponse>(`/groups/${groupId}/leaderboard`),
+  recentSolves: (userId: number, limit = 10) =>
+    request<RecentSolve[]>(`/users/${userId}/recent-solves?limit=${limit}`),
   pollNow: () => request<{ polled: Record<string, number> }>("/admin/poll-now", { method: "POST" }),
 };
 

@@ -1,7 +1,7 @@
 import logging
 import secrets
 import string
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Depends, Query
@@ -11,11 +11,11 @@ from sqlalchemy.exc import IntegrityError
 
 from .config import CORS_ORIGINS
 from .database import Base, engine, get_db
-from .models import User, DailyActivity, Group, GroupMember
+from .models import User, DailyActivity, Group, GroupMember, Solve
 from .schemas import (
     RegisterRequest, RegisterResponse, DashboardResponse, DayCount,
     LeaderboardResponse, LeaderboardEntry, GroupCreateRequest, GroupJoinRequest,
-    GroupResponse, GroupListResponse, GroupMemberSchema,
+    GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema,
 )
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
@@ -126,7 +126,7 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
 
     today = date.today()
     active_dates = _active_dates(db, user_id)
-    streak = max(current_streak(active_dates, today), user.official_streak or 0)
+    streak = max(user.official_streak or 0, current_streak(active_dates, today))
 
     def total_since(days: int) -> int:
         start = today - timedelta(days=days - 1)
@@ -172,7 +172,7 @@ def _compute_leaderboard(db: Session, users: List[User]) -> LeaderboardResponse:
     raw = []
     for user in users:
         active_dates = _active_dates(db, user.id)
-        streak = max(current_streak(active_dates, today), user.official_streak or 0)
+        streak = max(user.official_streak or 0, current_streak(active_dates, today))
         week_rows = (
             db.query(DailyActivity)
             .filter(DailyActivity.user_id == user.id, DailyActivity.date >= week_start)
@@ -182,11 +182,13 @@ def _compute_leaderboard(db: Session, users: List[User]) -> LeaderboardResponse:
         active_days_this_week = sum(1 for r in week_rows if r.problems_solved > 0)
         consistency = (active_days_this_week / 7) * 100
         is_active_today = today in active_dates
+        points = ((user.easy_count or 0) * 1) + ((user.medium_count or 0) * 3) + ((user.hard_count or 0) * 6)
         raw.append({
             "user": user,
             "weekly_total": weekly_total,
             "streak": streak,
             "consistency": consistency,
+            "points": points,
             "is_active_today": is_active_today,
         })
 
@@ -195,7 +197,7 @@ def _compute_leaderboard(db: Session, users: List[User]) -> LeaderboardResponse:
         normalized_volume = (r["weekly_total"] / max_weekly) * 100
         r["combined"] = round(0.6 * r["consistency"] + 0.4 * normalized_volume, 1)
 
-    raw.sort(key=lambda r: r["combined"], reverse=True)
+    raw.sort(key=lambda r: (r["points"], r["combined"]), reverse=True)
 
     entries = [
         LeaderboardEntry(
@@ -207,6 +209,7 @@ def _compute_leaderboard(db: Session, users: List[User]) -> LeaderboardResponse:
             easy_count=r["user"].easy_count or 0,
             medium_count=r["user"].medium_count or 0,
             hard_count=r["user"].hard_count or 0,
+            points=r["points"],
             weekly_total=r["weekly_total"],
             current_streak=r["streak"],
             consistency_score=round(r["consistency"], 1),
@@ -392,6 +395,62 @@ def get_group_leaderboard(group_id: int, db: Session = Depends(get_db)):
         .all()
     )
     return _compute_leaderboard(db, users)
+
+
+def _time_ago(dt: datetime) -> str:
+    now = datetime.now()
+    diff = now - dt
+    seconds = int(diff.total_seconds())
+    if seconds < 60:
+        return "just now"
+    minutes = seconds // 60
+    if minutes < 60:
+        return f"{minutes}m ago"
+    hours = minutes // 60
+    if hours < 24:
+        return f"{hours}h ago"
+    days = hours // 24
+    if days < 30:
+        return f"{days}d ago"
+    months = days // 30
+    return f"{months}mo ago"
+
+
+@app.get("/api/users/{user_id}/recent-solves", response_model=List[RecentSolveSchema])
+async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    solves = (
+        db.query(Solve)
+        .filter(Solve.user_id == user_id)
+        .order_by(Solve.solved_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    if not solves:
+        # Fallback: poll LeetCode on demand if solves ledger is empty
+        await poll_user(db, user)
+        solves = (
+            db.query(Solve)
+            .filter(Solve.user_id == user_id)
+            .order_by(Solve.solved_at.desc())
+            .limit(limit)
+            .all()
+        )
+
+    return [
+        RecentSolveSchema(
+            title_slug=s.title_slug,
+            title=s.title or s.title_slug.replace("-", " ").title(),
+            solved_at=s.solved_at,
+            relative_time=_time_ago(s.solved_at),
+            leetcode_url=f"https://leetcode.com/problems/{s.title_slug}",
+        )
+        for s in solves
+    ]
 
 
 @app.post("/api/admin/poll-now")
