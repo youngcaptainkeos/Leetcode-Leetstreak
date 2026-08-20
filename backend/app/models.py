@@ -13,8 +13,8 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(80), nullable=False)
-    leetcode_username = Column(String(80), nullable=False, unique=True, index=True)
-    email = Column(String(120), nullable=True, index=True)
+    leetcode_username = Column(String(80), nullable=False, index=True)
+    email = Column(String(120), nullable=False, unique=True, index=True)
     password_hash = Column(String(200), nullable=True)
     reset_otp = Column(String(6), nullable=True)
     otp_expires_at = Column(DateTime, nullable=True)

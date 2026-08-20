@@ -37,6 +37,10 @@ try:
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(6);"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP;"))
+        # Drop unique constraint on leetcode_username if present
+        conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_leetcode_username_key;"))
+        conn.execute(text("DROP INDEX IF EXISTS ix_users_leetcode_username;"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_leetcode_username ON users (leetcode_username);"))
         conn.commit()
 except Exception as migration_err:
     logging.warning("Auto-migration executed: %s", migration_err)
@@ -81,28 +85,20 @@ async def register_user(payload: RegisterRequest, db: Session = Depends(get_db))
             detail=str(err),
         )
 
+    clean_email = payload.email.strip().lower()
+    existing_email_user = db.query(User).filter(func.lower(User.email) == clean_email).first()
+    if existing_email_user:
+        raise HTTPException(
+            status_code=400,
+            detail="An account with this email is already registered. Please log in instead.",
+        )
+
     canonical_username = data.get("username", payload.leetcode_username)
-    existing = db.query(User).filter(User.leetcode_username == canonical_username).first()
-    if existing:
-        if not existing.password_hash:
-            # Upgrade legacy account with password and email
-            existing.name = payload.name
-            existing.email = payload.email.strip().lower()
-            existing.password_hash = hash_password(payload.password)
-            db.commit()
-            await poll_user(db, existing)
-            return RegisterResponse(
-                id=existing.id,
-                name=existing.name,
-                leetcode_username=existing.leetcode_username,
-                avatar_url=existing.avatar_url,
-            )
-        raise HTTPException(status_code=400, detail="That LeetCode username is already registered. Please log in instead.")
 
     user = User(
         name=payload.name,
         leetcode_username=canonical_username,
-        email=payload.email.strip().lower(),
+        email=clean_email,
         password_hash=hash_password(payload.password),
         avatar_url=data.get("avatar_url"),
     )
@@ -111,7 +107,7 @@ async def register_user(payload: RegisterRequest, db: Session = Depends(get_db))
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=400, detail="That LeetCode username or email is already registered.")
+        raise HTTPException(status_code=400, detail="An account with this email is already registered.")
     db.refresh(user)
 
     # Ingest full history
@@ -128,19 +124,26 @@ async def register_user(payload: RegisterRequest, db: Session = Depends(get_db))
 @app.post("/api/users/login", response_model=RegisterResponse)
 def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
     query_str = payload.leetcode_username.strip().lower()
-    user = (
+    matching_users = (
         db.query(User)
-        .filter((func.lower(User.leetcode_username) == query_str) | (func.lower(User.email) == query_str))
-        .first()
+        .filter((func.lower(User.email) == query_str) | (func.lower(User.leetcode_username) == query_str))
+        .all()
     )
-    if not user or not verify_password(payload.password, user.password_hash or ""):
+
+    matched_user = None
+    for u in matching_users:
+        if u.password_hash and verify_password(payload.password, u.password_hash):
+            matched_user = u
+            break
+
+    if not matched_user:
         raise HTTPException(status_code=400, detail="Invalid username/email or password.")
 
     return RegisterResponse(
-        id=user.id,
-        name=user.name,
-        leetcode_username=user.leetcode_username,
-        avatar_url=user.avatar_url,
+        id=matched_user.id,
+        name=matched_user.name,
+        leetcode_username=matched_user.leetcode_username,
+        avatar_url=matched_user.avatar_url,
     )
 
 
