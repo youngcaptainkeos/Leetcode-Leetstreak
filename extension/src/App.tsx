@@ -766,8 +766,8 @@ function Dashboard({
                       e.id === userId
                         ? "Your active streak"
                         : e.has_kudosed
-                        ? "Click to remove kudos (expires in 24h)"
-                        : "Click to give kudos (expires in 24h)"
+                        ? "Click to remove kudos (resets daily IST)"
+                        : "Click to give kudos (resets daily IST)"
                     }
                     onClick={(evt) => {
                       evt.stopPropagation();

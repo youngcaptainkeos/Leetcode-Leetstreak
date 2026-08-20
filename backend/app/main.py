@@ -1,7 +1,7 @@
 import logging
 import secrets
 import string
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Depends, Query
@@ -258,13 +258,22 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
     )
 
 
+def get_ist_today_start() -> datetime:
+    """Returns midnight (00:00:00) of current calendar day in Indian Standard Time (IST, UTC+5:30) converted to naive UTC for DB comparison."""
+    utc_now = datetime.now(timezone.utc)
+    ist_now = utc_now + timedelta(hours=5, minutes=30)
+    ist_midnight = datetime(ist_now.year, ist_now.month, ist_now.day)
+    utc_midnight = ist_midnight - timedelta(hours=5, minutes=30)
+    return utc_midnight.replace(tzinfo=None)
+
+
 def _compute_leaderboard(db: Session, users: List[User], requester_id: Optional[int] = None) -> LeaderboardResponse:
     today = date.today()
     week_start = today - timedelta(days=6)
-    cutoff_24h = datetime.now() - timedelta(hours=24)
+    cutoff_today = get_ist_today_start()
 
-    # Pre-fetch 24h active kudos
-    active_kudos = db.query(Kudos).filter(Kudos.created_at >= cutoff_24h).all()
+    # Pre-fetch today's active kudos (IST calendar day)
+    active_kudos = db.query(Kudos).filter(Kudos.created_at >= cutoff_today).all()
     kudos_counts = {}
     requester_kudosed_to = set()
 
@@ -504,10 +513,10 @@ def toggle_kudos(to_user_id: int, payload: KudosToggleRequest, db: Session = Dep
         .filter(Kudos.from_user_id == from_id, Kudos.to_user_id == to_user_id)
         .first()
     )
-    cutoff = datetime.now() - timedelta(hours=24)
+    cutoff_today = get_ist_today_start()
 
     if existing:
-        if existing.created_at >= cutoff:
+        if existing.created_at >= cutoff_today:
             db.delete(existing)
             db.commit()
             status = "removed"
@@ -523,7 +532,7 @@ def toggle_kudos(to_user_id: int, payload: KudosToggleRequest, db: Session = Dep
 
     active_count = (
         db.query(Kudos)
-        .filter(Kudos.to_user_id == to_user_id, Kudos.created_at >= cutoff)
+        .filter(Kudos.to_user_id == to_user_id, Kudos.created_at >= cutoff_today)
         .count()
     )
     has_active = status in ["added", "renewed"]
