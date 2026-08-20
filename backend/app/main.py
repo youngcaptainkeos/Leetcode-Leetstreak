@@ -560,3 +560,19 @@ def debug_users(db: Session = Depends(get_db)):
         for u in users
     ]
 
+
+@app.delete("/api/admin/users/{user_id}")
+def delete_user_by_id(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db.query(Solve).filter(Solve.user_id == user_id).delete()
+    db.query(DailyActivity).filter(DailyActivity.user_id == user_id).delete()
+    db.query(GroupMember).filter(GroupMember.user_id == user_id).delete()
+
+    deleted_username = user.leetcode_username
+    db.delete(user)
+    db.commit()
+    return {"status": "deleted", "user_id": user_id, "username": deleted_username}
+
