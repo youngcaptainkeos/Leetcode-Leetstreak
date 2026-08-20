@@ -416,6 +416,30 @@ function Dashboard({
 
   async function handleToggleKudos(toUserId: number) {
     if (!userId || toUserId === userId) return;
+
+    let previousCount = 0;
+    let previousHasKudosed = false;
+
+    // 1. Update UI state INSTANTLY in 0ms (Optimistic Update)
+    setBoard((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        entries: prev.entries.map((e) => {
+          if (e.id === toUserId) {
+            previousCount = e.kudos_count || 0;
+            previousHasKudosed = !!e.has_kudosed;
+            const nextHasKudosed = !e.has_kudosed;
+            const delta = nextHasKudosed ? 1 : -1;
+            const nextCount = Math.max(0, previousCount + delta);
+            return { ...e, kudos_count: nextCount, has_kudosed: nextHasKudosed };
+          }
+          return e;
+        }),
+      };
+    });
+
+    // 2. Sync with server in background
     try {
       const res = await api.toggleKudos(toUserId, userId);
       setBoard((prev) => {
@@ -430,7 +454,19 @@ function Dashboard({
         };
       });
     } catch (err) {
-      console.error("Kudos error:", err);
+      console.error("Kudos background sync error, rolling back:", err);
+      // Rollback on error
+      setBoard((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          entries: prev.entries.map((e) =>
+            e.id === toUserId
+              ? { ...e, kudos_count: previousCount, has_kudosed: previousHasKudosed }
+              : e
+          ),
+        };
+      });
     }
   }
 
