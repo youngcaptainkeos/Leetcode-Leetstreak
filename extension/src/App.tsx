@@ -405,12 +405,32 @@ function Dashboard({
       if (tab === "global" || typeof tab !== "number") {
         boardRes = await api.leaderboard(userId);
       } else {
-        boardRes = await api.groupLeaderboard(tab);
+        boardRes = await api.groupLeaderboard(tab, userId);
       }
       setBoard(boardRes);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't load dashboard.");
+    }
+  }
+
+  async function handleToggleKudos(toUserId: number) {
+    if (!userId || toUserId === userId) return;
+    try {
+      const res = await api.toggleKudos(toUserId, userId);
+      setBoard((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          entries: prev.entries.map((e) =>
+            e.id === toUserId
+              ? { ...e, kudos_count: res.kudos_count, has_kudosed: res.has_kudosed }
+              : e
+          ),
+        };
+      });
+    } catch (err) {
+      console.error("Kudos error:", err);
     }
   }
 
@@ -739,6 +759,23 @@ function Dashboard({
                   >
                     ⭐{e.points ?? (e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6)} pts
                   </span>
+                  <button
+                    type="button"
+                    className={`kudos-badge ${e.has_kudosed ? "active" : ""} ${e.id === userId ? "disabled" : ""}`}
+                    title={
+                      e.id === userId
+                        ? "Your active streak"
+                        : e.has_kudosed
+                        ? "Click to remove kudos (expires in 24h)"
+                        : "Click to give kudos (expires in 24h)"
+                    }
+                    onClick={(evt) => {
+                      evt.stopPropagation();
+                      handleToggleKudos(e.id);
+                    }}
+                  >
+                    👍 {e.kudos_count || 0}
+                  </button>
                 </div>
 
                 {/* Owner Remove Button */}

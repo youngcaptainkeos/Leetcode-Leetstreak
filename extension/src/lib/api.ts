@@ -50,6 +50,8 @@ export interface LeaderboardEntry {
   consistency_score: number;
   combined_score: number;
   is_active_today: boolean;
+  kudos_count?: number;
+  has_kudosed?: boolean;
 }
 
 export interface LeaderboardResponse {
@@ -134,8 +136,16 @@ export const api = {
     ),
   myGroups: (userId: number) =>
     request<GroupListResponse>(`/groups/my-groups/${userId}`),
-  groupLeaderboard: (groupId: number) =>
-    request<LeaderboardResponse>(`/groups/${groupId}/leaderboard`),
+  groupLeaderboard: (groupId: number, userId?: number) =>
+    request<LeaderboardResponse>(userId ? `/groups/${groupId}/leaderboard?user_id=${userId}` : `/groups/${groupId}/leaderboard`),
+  toggleKudos: (toUserId: number, fromUserId: number) =>
+    request<{ status: string; to_user_id: number; kudos_count: number; has_kudosed: boolean }>(
+      `/kudos/${toUserId}`,
+      {
+        method: "POST",
+        body: JSON.stringify({ from_user_id: fromUserId }),
+      }
+    ),
   recentSolves: (userId: number, limit = 10) =>
     request<RecentSolve[]>(`/users/${userId}/recent-solves?limit=${limit}`),
   pollNow: () => request<{ polled: Record<string, number> }>("/admin/poll-now", { method: "POST" }),

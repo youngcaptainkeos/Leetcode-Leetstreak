@@ -75,6 +75,12 @@ class LeaderboardEntry(BaseModel):
     consistency_score: float  # 0-100, active days / 7
     combined_score: float     # 0-100, 0.6*consistency + 0.4*normalized volume
     is_active_today: bool
+    kudos_count: int = 0
+    has_kudosed: bool = False
+
+
+class KudosToggleRequest(BaseModel):
+    from_user_id: int
 
 
 class LeaderboardResponse(BaseModel):

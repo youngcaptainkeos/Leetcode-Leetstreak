@@ -634,6 +634,38 @@ html, body, #root {
   border-radius: 6px;
 }
 
+.kudos-badge {
+  font-weight: 700;
+  font-size: 11px;
+  background: #1e1b2e;
+  color: #a5b4fc;
+  border: 1px solid #3730a3;
+  padding: 2px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.kudos-badge:hover:not(.disabled) {
+  background: #312e81;
+  color: #fff;
+  border-color: #6366f1;
+  transform: scale(1.05);
+}
+
+.kudos-badge.active {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: #ffffff;
+  border-color: #818cf8;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
+.kudos-badge.disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .modal-points-tag {
   background: #312e81;
   color: #c7d2fe;

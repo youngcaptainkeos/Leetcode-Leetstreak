@@ -11,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .config import CORS_ORIGINS
 from .database import Base, engine, get_db
-from .models import User, DailyActivity, Group, GroupMember, Solve
+from .models import User, DailyActivity, Group, GroupMember, Solve, Kudos
 from .auth import hash_password, verify_password
 from .email_service import send_otp_email
 from .schemas import (
@@ -19,6 +19,7 @@ from .schemas import (
     LeaderboardResponse, LeaderboardEntry, GroupCreateRequest, GroupJoinRequest,
     GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema,
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
+    KudosToggleRequest,
 )
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
@@ -257,9 +258,20 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
     )
 
 
-def _compute_leaderboard(db: Session, users: List[User]) -> LeaderboardResponse:
+def _compute_leaderboard(db: Session, users: List[User], requester_id: Optional[int] = None) -> LeaderboardResponse:
     today = date.today()
     week_start = today - timedelta(days=6)
+    cutoff_24h = datetime.now() - timedelta(hours=24)
+
+    # Pre-fetch 24h active kudos
+    active_kudos = db.query(Kudos).filter(Kudos.created_at >= cutoff_24h).all()
+    kudos_counts = {}
+    requester_kudosed_to = set()
+
+    for k in active_kudos:
+        kudos_counts[k.to_user_id] = kudos_counts.get(k.to_user_id, 0) + 1
+        if requester_id and k.from_user_id == requester_id:
+            requester_kudosed_to.add(k.to_user_id)
 
     raw = []
     for user in users:
@@ -282,6 +294,8 @@ def _compute_leaderboard(db: Session, users: List[User]) -> LeaderboardResponse:
             "consistency": consistency,
             "points": points,
             "is_active_today": is_active_today,
+            "kudos_count": kudos_counts.get(user.id, 0),
+            "has_kudosed": user.id in requester_kudosed_to,
         })
 
     max_weekly = max((r["weekly_total"] for r in raw), default=0) or 1
@@ -307,6 +321,8 @@ def _compute_leaderboard(db: Session, users: List[User]) -> LeaderboardResponse:
             consistency_score=round(r["consistency"], 1),
             combined_score=r["combined"],
             is_active_today=r["is_active_today"],
+            kudos_count=r["kudos_count"],
+            has_kudosed=r["has_kudosed"],
         )
         for i, r in enumerate(raw)
     ]
@@ -318,7 +334,7 @@ def _compute_leaderboard(db: Session, users: List[User]) -> LeaderboardResponse:
 def get_global_leaderboard(user_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
     # Global Leaderboard includes all registered users on the platform
     users = db.query(User).all()
-    return _compute_leaderboard(db, users)
+    return _compute_leaderboard(db, users, requester_id=user_id)
 
 
 # Group Endpoints
@@ -459,7 +475,7 @@ def remove_group_member(group_id: int, user_id: int, requester_id: int, db: Sess
 
 
 @app.get("/api/groups/{group_id}/leaderboard", response_model=LeaderboardResponse)
-def get_group_leaderboard(group_id: int, db: Session = Depends(get_db)):
+def get_group_leaderboard(group_id: int, user_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
     group = db.query(Group).filter(Group.id == group_id).first()
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
@@ -470,7 +486,53 @@ def get_group_leaderboard(group_id: int, db: Session = Depends(get_db)):
         .filter(GroupMember.group_id == group_id)
         .all()
     )
-    return _compute_leaderboard(db, users)
+    return _compute_leaderboard(db, users, requester_id=user_id)
+
+
+@app.post("/api/kudos/{to_user_id}")
+def toggle_kudos(to_user_id: int, payload: KudosToggleRequest, db: Session = Depends(get_db)):
+    from_id = payload.from_user_id
+    if from_id == to_user_id:
+        raise HTTPException(status_code=400, detail="You cannot give kudos to yourself.")
+
+    to_user = db.query(User).filter(User.id == to_user_id).first()
+    if not to_user:
+        raise HTTPException(status_code=404, detail="Target user not found.")
+
+    existing = (
+        db.query(Kudos)
+        .filter(Kudos.from_user_id == from_id, Kudos.to_user_id == to_user_id)
+        .first()
+    )
+    cutoff = datetime.now() - timedelta(hours=24)
+
+    if existing:
+        if existing.created_at >= cutoff:
+            db.delete(existing)
+            db.commit()
+            status = "removed"
+        else:
+            existing.created_at = datetime.now()
+            db.commit()
+            status = "renewed"
+    else:
+        k = Kudos(from_user_id=from_id, to_user_id=to_user_id)
+        db.add(k)
+        db.commit()
+        status = "added"
+
+    active_count = (
+        db.query(Kudos)
+        .filter(Kudos.to_user_id == to_user_id, Kudos.created_at >= cutoff)
+        .count()
+    )
+    has_active = status in ["added", "renewed"]
+    return {
+        "status": status,
+        "to_user_id": to_user_id,
+        "kudos_count": active_count,
+        "has_kudosed": has_active,
+    }
 
 
 def _time_ago(dt: datetime) -> str:

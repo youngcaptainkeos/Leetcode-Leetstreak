@@ -89,3 +89,15 @@ class GroupMember(Base):
 
     __table_args__ = (UniqueConstraint("group_id", "user_id", name="uq_group_user"),)
 
+
+class Kudos(Base):
+    """Thumbs up kudos sent between users with 24-hour expiration."""
+    __tablename__ = "kudos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    from_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    to_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (UniqueConstraint("from_user_id", "to_user_id", name="uq_kudos_pair"),)
+
