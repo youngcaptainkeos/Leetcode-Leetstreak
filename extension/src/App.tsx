@@ -182,11 +182,12 @@ function Onboarding({
       {authMode === "login" && (
         <form onSubmit={handleLogin} className="auth-form">
           <label>
-            <span>LeetCode Username or Email</span>
+            <span>Email</span>
             <input
+              type="email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g. neal_wu"
+              placeholder="e.g. alex@example.com"
               required
             />
           </label>
@@ -241,7 +242,7 @@ function Onboarding({
           </label>
 
           <label>
-            <span>Email Address (for password recovery)</span>
+            <span>Email Address</span>
             <input
               type="email"
               value={email}
@@ -273,14 +274,15 @@ function Onboarding({
           {forgotStep === 1 ? (
             <form onSubmit={handleForgotInitiate}>
               <p className="tiny muted mb-1">
-                Enter your LeetCode Username or Email address to receive a 6-digit reset code.
+                Enter your Email address to receive a 6-digit reset code.
               </p>
               <label>
-                <span>Username or Email</span>
+                <span>Email Address</span>
                 <input
+                  type="email"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g. neal_wu"
+                  placeholder="e.g. alex@example.com"
                   required
                 />
               </label>
