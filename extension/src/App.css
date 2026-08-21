@@ -106,7 +106,7 @@ html, body, #root {
   font-weight: 700;
 }
 
-.onboarding label {
+label {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -114,18 +114,25 @@ html, body, #root {
   color: #8b8fa3;
 }
 
-.onboarding input {
+input {
   background: #151821;
   border: 1px solid #282c38;
   border-radius: 8px;
-  padding: 10px;
+  padding: 10px 12px;
   color: #e6e7eb;
   font-size: 14px;
+  transition: all 0.2s ease;
 }
 
-.onboarding input:focus {
+input:focus {
   outline: none;
   border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  background: #1a1e2b;
+}
+
+input::placeholder {
+  color: #555b70;
 }
 
 .primary-btn {
