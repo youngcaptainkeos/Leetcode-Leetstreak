@@ -199,7 +199,13 @@ html, body, #root {
 }
 .profile-handle:hover { text-decoration: underline; color: #6366f1; }
 
-.sync-btn {
+.profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sync-btn, .settings-btn {
   background: #1f2330;
   color: #e6e7eb;
   border: 1px solid #313647;
@@ -210,7 +216,7 @@ html, body, #root {
   cursor: pointer;
   transition: all 0.2s;
 }
-.sync-btn:hover {
+.sync-btn:hover, .settings-btn:hover {
   background: #282d3e;
   border-color: #6366f1;
 }

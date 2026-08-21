@@ -33,6 +33,10 @@ class ForgotPasswordVerifyRequest(BaseModel):
     new_password: str = Field(min_length=4, max_length=100)
 
 
+class UpdateUsernameRequest(BaseModel):
+    leetcode_username: str = Field(min_length=1, max_length=80)
+
+
 class RegisterResponse(BaseModel):
     id: int
     name: str

@@ -376,6 +376,12 @@ function Dashboard({
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Settings Modal State
+  const [showSettings, setShowSettings] = useState(false);
+  const [newLeetcodeUsername, setNewLeetcodeUsername] = useState("");
+  const [updatingUsername, setUpdatingUsername] = useState(false);
+  const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
+
   // Group Modal States
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showJoinGroup, setShowJoinGroup] = useState(false);
@@ -383,6 +389,27 @@ function Dashboard({
   const [joinCode, setJoinCode] = useState("");
   const [groupActionBusy, setGroupActionBusy] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+
+  async function handleUpdateUsername(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newLeetcodeUsername.trim()) return;
+    setUpdatingUsername(true);
+    setSettingsMsg(null);
+    setError(null);
+    try {
+      const res = await api.updateLeetcodeUsername(userId, newLeetcodeUsername.trim());
+      setSettingsMsg(`Updated username to @${res.leetcode_username}!`);
+      await loadData(selectedTab);
+      setTimeout(() => {
+        setShowSettings(false);
+        setSettingsMsg(null);
+      }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update username.");
+    } finally {
+      setUpdatingUsername(false);
+    }
+  }
 
   async function loadData(tab: BoardTab = selectedTab) {
     try {
@@ -609,14 +636,27 @@ function Dashboard({
           </div>
         </div>
 
-        <button
-          className="sync-btn"
-          onClick={handleSync}
-          disabled={syncing}
-          title="Force sync latest LeetCode activity"
-        >
-          {syncing ? "Syncing…" : "🔄 Sync"}
-        </button>
+        <div className="profile-actions">
+          <button
+            className="settings-btn"
+            onClick={() => {
+              setNewLeetcodeUsername(dash.leetcode_username);
+              setSettingsMsg(null);
+              setShowSettings(true);
+            }}
+            title="Account Settings (Change LeetCode Username)"
+          >
+            ⚙️
+          </button>
+          <button
+            className="sync-btn"
+            onClick={handleSync}
+            disabled={syncing}
+            title="Force sync latest LeetCode activity"
+          >
+            {syncing ? "Syncing…" : "🔄 Sync"}
+          </button>
+        </div>
       </div>
 
       {syncMsg && <div className="sync-banner">{syncMsg}</div>}
@@ -986,6 +1026,41 @@ function Dashboard({
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Account Settings Modal */}
+      {showSettings && (
+        <div className="modal-overlay" onClick={() => setShowSettings(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="modal-close"
+              onClick={() => setShowSettings(false)}
+            >
+              ✕
+            </button>
+            <div className="modal-header">
+              <h3>⚙️ Account Settings</h3>
+            </div>
+
+            {settingsMsg && <div className="sync-banner mb-2">{settingsMsg}</div>}
+
+            <form onSubmit={handleUpdateUsername} className="auth-form mt-1">
+              <label>
+                <span>LeetCode Username</span>
+                <input
+                  value={newLeetcodeUsername}
+                  onChange={(e) => setNewLeetcodeUsername(e.target.value)}
+                  placeholder="e.g. neal_wu"
+                  required
+                />
+              </label>
+
+              <button type="submit" className="primary-btn" disabled={updatingUsername}>
+                {updatingUsername ? "Verifying & Updating…" : "Save New Username"}
+              </button>
+            </form>
           </div>
         </div>
       )}

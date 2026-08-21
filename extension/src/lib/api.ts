@@ -117,6 +117,14 @@ export const api = {
     request<DashboardResponse>(`/users/${userId}/dashboard`),
   syncUser: (userId: number) =>
     request<{ status: string; new_solves: number }>(`/users/${userId}/sync`, { method: "POST" }),
+  updateLeetcodeUsername: (userId: number, leetcode_username: string) =>
+    request<{ status: string; user_id: number; leetcode_username: string; avatar_url?: string }>(
+      `/users/${userId}/leetcode-username`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ leetcode_username }),
+      }
+    ),
   leaderboard: (userId?: number) =>
     request<LeaderboardResponse>(userId ? `/leaderboard?user_id=${userId}` : "/leaderboard"),
   createGroup: (userId: number, name: string) =>

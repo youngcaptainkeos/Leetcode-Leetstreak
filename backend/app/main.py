@@ -20,7 +20,7 @@ from .schemas import (
     LeaderboardResponse, LeaderboardEntry, GroupCreateRequest, GroupJoinRequest,
     GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema,
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
-    KudosToggleRequest,
+    KudosToggleRequest, UpdateUsernameRequest,
 )
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
@@ -224,6 +224,35 @@ async def sync_user(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     solves_added = await poll_user(db, user)
     return {"status": "synced", "user_id": user_id, "new_solves": solves_added}
+
+
+@app.put("/api/users/{user_id}/leetcode-username")
+async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    new_username = payload.leetcode_username.strip()
+    if not new_username:
+        raise HTTPException(status_code=400, detail="LeetCode username cannot be empty.")
+
+    try:
+        data = await fetch_leetcode_user_data(new_username)
+    except LeetCodeError as err:
+        raise HTTPException(status_code=400, detail=str(err))
+
+    user.leetcode_username = new_username
+    user.avatar_url = data.get("avatar_url")
+    db.commit()
+
+    await poll_user(db, user)
+
+    return {
+        "status": "username_updated",
+        "user_id": user_id,
+        "leetcode_username": user.leetcode_username,
+        "avatar_url": user.avatar_url,
+    }
 
 
 def _active_dates(db: Session, user_id: int) -> set[date]:
