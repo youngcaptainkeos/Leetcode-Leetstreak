@@ -79,6 +79,11 @@ async def on_startup():
 
     db = SessionLocal()
     try:
+        # Initialize created_at for any existing users if null
+        existing_users_without_date = db.query(User).filter(User.created_at == None).all()
+        for u in existing_users_without_date:
+            u.created_at = datetime.now()
+
         bloated_rows = db.query(DailyActivity).filter(DailyActivity.problems_solved > 1).all()
         for r in bloated_rows:
             solves_count = db.query(Solve).filter(
@@ -132,6 +137,7 @@ async def register_user(payload: RegisterRequest, db: Session = Depends(get_db))
         email=clean_email,
         password_hash=hash_password(payload.password),
         avatar_url=data.get("avatar_url"),
+        created_at=datetime.now(),
     )
     db.add(user)
     try:
@@ -152,6 +158,7 @@ async def register_user(payload: RegisterRequest, db: Session = Depends(get_db))
         avatar_url=user.avatar_url,
         access_token=token,
         token_type="bearer",
+        created_at=user.created_at,
     )
 
 
@@ -181,6 +188,7 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
         avatar_url=matched_user.avatar_url,
         access_token=token,
         token_type="bearer",
+        created_at=matched_user.created_at,
     )
 
 
@@ -319,6 +327,7 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
         today_count=today_row.problems_solved if today_row else 0,
         weekly_total=total_since(7),
         monthly_total=total_since(30),
+        created_at=user.created_at,
         last_7_days=last_7,
     )
 
@@ -712,6 +721,7 @@ def debug_users(db: Session = Depends(get_db)):
             "leetcode_username": u.leetcode_username,
             "email": u.email,
             "has_password": bool(u.password_hash),
+            "created_at": u.created_at.isoformat() if u.created_at else None,
         }
         for u in users
     ]

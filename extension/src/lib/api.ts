@@ -7,6 +7,7 @@ export interface RegisterResponse {
   avatar_url?: string;
   access_token?: string;
   token_type?: string;
+  created_at?: string;
 }
 
 export interface DayCount {
@@ -34,6 +35,7 @@ export interface DashboardResponse {
   today_count: number;
   weekly_total: number;
   monthly_total: number;
+  created_at?: string;
   last_7_days: DayCount[];
 }
 

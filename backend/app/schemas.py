@@ -44,6 +44,7 @@ class RegisterResponse(BaseModel):
     avatar_url: Optional[str] = None
     access_token: Optional[str] = None
     token_type: str = "bearer"
+    created_at: Optional[datetime] = None
 
 
 class DayCount(BaseModel):
@@ -63,6 +64,7 @@ class DashboardResponse(BaseModel):
     today_count: int
     weekly_total: int
     monthly_total: int
+    created_at: Optional[datetime] = None
     last_7_days: List[DayCount]
 
 
