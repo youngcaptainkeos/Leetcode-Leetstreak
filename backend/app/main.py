@@ -6,11 +6,12 @@ from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text, func
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from .config import CORS_ORIGINS
-from .database import Base, engine, get_db
+from .database import Base, engine, get_db, SessionLocal
 from .models import User, DailyActivity, Group, GroupMember, Solve, Kudos
 from .auth import hash_password, verify_password
 from .email_service import send_otp_email
@@ -63,6 +64,29 @@ _scheduler = None
 @app.on_event("startup")
 async def on_startup():
     global _scheduler
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_leetcode_username_key;"))
+            conn.execute(text("CREATE TABLE IF NOT EXISTS kudos (id SERIAL PRIMARY KEY, from_user_id INTEGER NOT NULL, to_user_id INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"))
+    except Exception as e:
+        logger.warning("Startup table migration warning: %s", e)
+
+    db = SessionLocal()
+    try:
+        bloated_rows = db.query(DailyActivity).filter(DailyActivity.problems_solved > 1).all()
+        for r in bloated_rows:
+            solves_count = db.query(Solve).filter(
+                Solve.user_id == r.user_id,
+                func.date(Solve.solved_at) == r.date
+            ).count()
+            r.problems_solved = max(1, solves_count)
+        db.commit()
+    except Exception as e:
+        logger.warning("Startup activity cleanup failed: %s", e)
+        db.rollback()
+    finally:
+        db.close()
+
     _scheduler = start_scheduler()
 
 

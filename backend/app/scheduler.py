@@ -29,50 +29,55 @@ async def poll_user(db: Session, user: User) -> int:
     user.hard_count = diffs.get("Hard", 0)
     user.official_streak = data.get("official_streak", 0)
 
-    # 2. Sync full submission calendar into DailyActivity
+    # 2. Sync full submission calendar into DailyActivity (active days default to 1 solve)
     cal_map = data.get("submission_calendar") or {}
     existing_daily = {
         r.date: r for r in db.query(DailyActivity).filter(DailyActivity.user_id == user.id).all()
     }
 
     for day, solve_count in cal_map.items():
-        if day in existing_daily:
-            existing_daily[day].problems_solved = max(existing_daily[day].problems_solved, solve_count)
-        else:
-            new_row = DailyActivity(user_id=user.id, date=day, problems_solved=solve_count)
-            db.add(new_row)
-            existing_daily[day] = new_row
+        if solve_count > 0:
+            if day in existing_daily:
+                # If currently 0 or bloated submission count (>1 without solves ledger match), normalize
+                if existing_daily[day].problems_solved == 0:
+                    existing_daily[day].problems_solved = 1
+            else:
+                new_row = DailyActivity(user_id=user.id, date=day, problems_solved=1)
+                db.add(new_row)
+                existing_daily[day] = new_row
 
-    # 3. Dedup recent AC submissions into Solves ledger
+    # 3. Dedup recent AC submissions into Solves ledger & update daily count from actual AC solves
     new_count = 0
     submissions = data.get("recent_submissions") or []
     existing_solves = {
         r[0] for r in db.query(Solve.title_slug).filter(Solve.user_id == user.id).all()
     }
+    solves_by_date = {}
 
     for sub in submissions:
         title_slug = sub["titleSlug"]
-        if title_slug in existing_solves:
-            continue
-
-        existing_solves.add(title_slug)
         solved_at = datetime.fromtimestamp(int(sub["timestamp"]), tz=timezone.utc)
-        db.add(Solve(
-            user_id=user.id,
-            title_slug=title_slug,
-            title=sub.get("title"),
-            solved_at=solved_at,
-        ))
-
         day = solved_at.date()
+
+        if title_slug not in existing_solves:
+            existing_solves.add(title_slug)
+            db.add(Solve(
+                user_id=user.id,
+                title_slug=title_slug,
+                title=sub.get("title"),
+                solved_at=solved_at,
+            ))
+            new_count += 1
+
+        solves_by_date[day] = solves_by_date.get(day, 0) + 1
+
+    for day, ac_count in solves_by_date.items():
         if day in existing_daily:
-            existing_daily[day].problems_solved = max(existing_daily[day].problems_solved, 1)
+            existing_daily[day].problems_solved = max(existing_daily[day].problems_solved, ac_count)
         else:
-            new_row = DailyActivity(user_id=user.id, date=day, problems_solved=1)
+            new_row = DailyActivity(user_id=user.id, date=day, problems_solved=ac_count)
             db.add(new_row)
             existing_daily[day] = new_row
-
-        new_count += 1
 
     db.commit()
     return new_count
