@@ -727,6 +727,20 @@ def debug_users(db: Session = Depends(get_db)):
     ]
 
 
+@app.get("/api/admin/init-user-dates", dependencies=[Depends(verify_admin_secret)])
+def init_user_dates(db: Session = Depends(get_db)):
+    """Backfills created_at timestamp for existing users."""
+    users = db.query(User).all()
+    count = 0
+    now = datetime.now()
+    for u in users:
+        if not u.created_at:
+            u.created_at = now
+            count += 1
+    db.commit()
+    return {"status": "initialized", "updated_count": count}
+
+
 @app.delete("/api/admin/users/{user_id}", dependencies=[Depends(verify_admin_secret)])
 def delete_user_by_id(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
