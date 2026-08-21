@@ -80,7 +80,7 @@ async def on_startup():
     db = SessionLocal()
     try:
         # Initialize created_at for any existing users if null
-        existing_users_without_date = db.query(User).filter(User.created_at == None).all()
+        existing_users_without_date = db.query(User).filter(User.created_at.is_(None)).all()
         for u in existing_users_without_date:
             u.created_at = datetime.now()
 
