@@ -42,6 +42,8 @@ class RegisterResponse(BaseModel):
     name: str
     leetcode_username: str
     avatar_url: Optional[str] = None
+    access_token: Optional[str] = None
+    token_type: str = "bearer"
 
 
 class DayCount(BaseModel):

@@ -693,6 +693,34 @@ input::placeholder {
 .text-center { text-align: center; }
 .mb-1 { margin-bottom: 6px; }
 
+.offline-banner {
+  background: #7f1d1d;
+  color: #fecaca;
+  border: 1px solid #991b1b;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.share-group-btn {
+  background: #1e293b;
+  color: #38bdf8;
+  border: 1px solid #0284c7;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.share-group-btn:hover {
+  background: #0284c7;
+  color: #ffffff;
+}
+
 /* Modal Tab Bar */
 .modal-tab-bar {
   display: flex;

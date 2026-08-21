@@ -4,16 +4,16 @@ import string
 from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, Depends, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, func
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from .config import CORS_ORIGINS
+from .config import CORS_ORIGINS, ADMIN_SECRET
 from .database import Base, engine, get_db, SessionLocal
 from .models import User, DailyActivity, Group, GroupMember, Solve, Kudos
-from .auth import hash_password, verify_password
+from .auth import hash_password, verify_password, create_access_token, decode_access_token
 from .email_service import send_otp_email
 from .schemas import (
     RegisterRequest, RegisterResponse, DashboardResponse, DayCount,
@@ -25,6 +25,12 @@ from .schemas import (
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
 from .leetcode_client import fetch_leetcode_user_data, LeetCodeError
+
+
+def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Secret")):
+    if ADMIN_SECRET and x_admin_secret != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="Forbidden: Invalid Admin Secret Header")
+    return True
 
 from sqlalchemy import text, func
 
@@ -138,11 +144,14 @@ async def register_user(payload: RegisterRequest, db: Session = Depends(get_db))
     # Ingest full history
     await poll_user(db, user)
 
+    token = create_access_token(user.id)
     return RegisterResponse(
         id=user.id,
         name=user.name,
         leetcode_username=user.leetcode_username,
         avatar_url=user.avatar_url,
+        access_token=token,
+        token_type="bearer",
     )
 
 
@@ -164,11 +173,14 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
     if not matched_user:
         raise HTTPException(status_code=400, detail="Invalid username/email or password.")
 
+    token = create_access_token(matched_user.id)
     return RegisterResponse(
         id=matched_user.id,
         name=matched_user.name,
         leetcode_username=matched_user.leetcode_username,
         avatar_url=matched_user.avatar_url,
+        access_token=token,
+        token_type="bearer",
     )
 
 
@@ -397,6 +409,23 @@ def get_global_leaderboard(user_id: Optional[int] = Query(None), db: Session = D
     # Global Leaderboard includes all registered users on the platform
     users = db.query(User).all()
     return _compute_leaderboard(db, users, requester_id=user_id)
+
+
+@app.get("/api/friends/leaderboard", response_model=LeaderboardResponse)
+def get_friends_leaderboard(user_id: int = Query(...), db: Session = Depends(get_db)):
+    # Aggregated leaderboard of all unique friends who share at least one group with user_id
+    my_group_ids = [
+        m.group_id for m in db.query(GroupMember.group_id).filter(GroupMember.user_id == user_id).all()
+    ]
+    if not my_group_ids:
+        friends = db.query(User).filter(User.id == user_id).all()
+    else:
+        friend_user_ids = [
+            m.user_id for m in db.query(GroupMember.user_id).filter(GroupMember.group_id.in_(my_group_ids)).all()
+        ]
+        friends = db.query(User).filter(User.id.in_(set(friend_user_ids))).all()
+
+    return _compute_leaderboard(db, friends, requester_id=user_id)
 
 
 # Group Endpoints
@@ -660,7 +689,7 @@ async def poll_now():
     return {"polled": results}
 
 
-@app.post("/api/admin/reset-db")
+@app.post("/api/admin/reset-db", dependencies=[Depends(verify_admin_secret)])
 def reset_db(db: Session = Depends(get_db)):
     """Clears all database records for fresh user registrations."""
     db.query(Solve).delete()
@@ -672,7 +701,7 @@ def reset_db(db: Session = Depends(get_db)):
     return {"status": "database_reset_success"}
 
 
-@app.get("/api/admin/debug-users")
+@app.get("/api/admin/debug-users", dependencies=[Depends(verify_admin_secret)])
 def debug_users(db: Session = Depends(get_db)):
     """Inspect all registered users in the database and their password auth status."""
     users = db.query(User).all()
@@ -688,7 +717,7 @@ def debug_users(db: Session = Depends(get_db)):
     ]
 
 
-@app.delete("/api/admin/users/{user_id}")
+@app.delete("/api/admin/users/{user_id}", dependencies=[Depends(verify_admin_secret)])
 def delete_user_by_id(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

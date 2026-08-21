@@ -5,6 +5,8 @@ export interface RegisterResponse {
   name: string;
   leetcode_username: string;
   avatar_url?: string;
+  access_token?: string;
+  token_type?: string;
 }
 
 export interface DayCount {
@@ -127,6 +129,8 @@ export const api = {
     ),
   leaderboard: (userId?: number) =>
     request<LeaderboardResponse>(userId ? `/leaderboard?user_id=${userId}` : "/leaderboard"),
+  friendsLeaderboard: (userId: number) =>
+    request<LeaderboardResponse>(`/friends/leaderboard?user_id=${userId}`),
   createGroup: (userId: number, name: string) =>
     request<GroupResponse>("/groups", {
       method: "POST",

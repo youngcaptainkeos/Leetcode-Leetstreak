@@ -10,7 +10,7 @@ import {
 import { getStored, setStored, clearStored } from "./storage";
 
 type View = "loading" | "onboarding" | "dashboard";
-type BoardTab = "global" | number; // "global" or groupId
+type BoardTab = "global" | "friends" | number; // "global", "friends", or groupId
 
 export default function App() {
   const [view, setView] = useState<View>("loading");
@@ -389,6 +389,28 @@ function Dashboard({
   const [joinCode, setJoinCode] = useState("");
   const [groupActionBusy, setGroupActionBusy] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
+
+  // Network Offline Listener State
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  function handleShareGroup(groupName: string, code: string) {
+    const inviteText = `Join my LeetStreak group "${groupName}"! Use Invite Code: ${code}`;
+    navigator.clipboard.writeText(inviteText);
+    setShareMsg("Copied Invite!");
+    setTimeout(() => setShareMsg(null), 2500);
+  }
 
   async function handleUpdateUsername(e: React.FormEvent) {
     e.preventDefault();
@@ -427,10 +449,19 @@ function Dashboard({
       setDash(dashRes);
       setGroups(myGroupsRes.groups);
 
+      // Update Chrome Extension Action Badge
+      if (typeof chrome !== "undefined" && chrome.action && chrome.action.setBadgeText) {
+        const badgeText = dashRes.today_count > 0 ? `🔥${dashRes.current_streak}` : `${dashRes.current_streak}`;
+        chrome.action.setBadgeText({ text: badgeText });
+        chrome.action.setBadgeBackgroundColor({ color: dashRes.today_count > 0 ? "#10b981" : "#6366f1" });
+      }
+
       // Load leaderboard based on tab
       let boardRes: LeaderboardResponse;
-      if (tab === "global" || typeof tab !== "number") {
+      if (tab === "global") {
         boardRes = await api.leaderboard(userId);
+      } else if (tab === "friends") {
+        boardRes = await api.friendsLeaderboard(userId);
       } else {
         boardRes = await api.groupLeaderboard(tab, userId);
       }
@@ -659,6 +690,11 @@ function Dashboard({
         </div>
       </div>
 
+      {isOffline && (
+        <div className="offline-banner">
+          ⚠️ Connection lost — checking network…
+        </div>
+      )}
       {syncMsg && <div className="sync-banner">{syncMsg}</div>}
       {error && <div className="error-banner">{error}</div>}
 
@@ -760,8 +796,16 @@ function Dashboard({
           <button
             className={`tab-btn ${selectedTab === "global" ? "active" : ""}`}
             onClick={() => setSelectedTab("global")}
+            title="Global Leaderboard (All platform users)"
           >
-            🌐 All Friends
+            🌐 Global
+          </button>
+          <button
+            className={`tab-btn ${selectedTab === "friends" ? "active" : ""}`}
+            onClick={() => setSelectedTab("friends")}
+            title="My Friends (All group members across your groups)"
+          >
+            👥 My Friends
           </button>
           {groups.map((g) => (
             <button
@@ -782,12 +826,21 @@ function Dashboard({
               <code className="invite-code">{activeGroup.code}</code>
               {isGroupOwner && <span className="owner-badge">👑 Owner</span>}
             </div>
-            <button
-              className="copy-btn"
-              onClick={() => handleCopyCode(activeGroup.code)}
-            >
-              {copiedCode ? "Copied!" : "Copy Code"}
-            </button>
+            <div className="group-btn-group">
+              <button
+                className="share-group-btn"
+                onClick={() => handleShareGroup(activeGroup.name, activeGroup.code)}
+                title="Share group invite message with friends"
+              >
+                {shareMsg ? shareMsg : "🔗 Share Invite"}
+              </button>
+              <button
+                className="copy-btn"
+                onClick={() => handleCopyCode(activeGroup.code)}
+              >
+                {copiedCode ? "Copied!" : "Copy Code"}
+              </button>
+            </div>
           </div>
         )}
 
