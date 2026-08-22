@@ -9,8 +9,9 @@ Fetches:
 """
 import json
 import logging
-from datetime import datetime, date, timezone
-import httpx
+from datetime import datetime, date, timezone, timedelta
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 logger = logging.getLogger("codestreak.leetcode")
 
@@ -129,7 +130,7 @@ async def fetch_leetcode_user_data(username: str) -> dict:
             raw_cal_map = json.loads(raw_calendar_str)
             for ts_str, count in raw_cal_map.items():
                 ts = int(ts_str)
-                d = datetime.fromtimestamp(ts, tz=timezone.utc).date()
+                d = datetime.fromtimestamp(ts, tz=IST).date()
                 parsed_calendar[d] = count
         except Exception as e:
             logger.warning("Error parsing submissionCalendar for %s: %s", username, e)

@@ -1,13 +1,16 @@
 from datetime import date, datetime, timezone, timedelta
 
 
+IST = timezone(timedelta(hours=5, minutes=30))
+
+
 def current_streak(active_dates: set[date], today: date | None = None) -> int:
     """
-    Consecutive-day activity streak ending today or yesterday.
+    Consecutive-day activity streak ending today or yesterday (in IST).
     Grace period: if the user hasn't solved anything YET today, the streak
     isn't broken until tomorrow (they still have time today).
     """
-    today = today or datetime.now(timezone.utc).date()
+    today = today or datetime.now(IST).date()
 
     if not active_dates:
         return 0

@@ -1,5 +1,7 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
+IST = timezone(timedelta(hours=5, minutes=30))
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.orm import Session
@@ -56,7 +58,7 @@ async def poll_user(db: Session, user: User) -> int:
 
     for sub in submissions:
         title_slug = sub["titleSlug"]
-        solved_at = datetime.fromtimestamp(int(sub["timestamp"]), tz=timezone.utc)
+        solved_at = datetime.fromtimestamp(int(sub["timestamp"]), tz=IST)
         day = solved_at.date()
 
         if title_slug not in existing_solves:

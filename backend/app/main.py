@@ -290,7 +290,7 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    today = date.today()
+    today = get_ist_today()
     active_dates = _active_dates(db, user_id)
     streak = current_streak(active_dates, today)
 
@@ -332,17 +332,24 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
     )
 
 
+IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def get_ist_today() -> date:
+    """Returns today's date in Indian Standard Time (IST, UTC+5:30)."""
+    return datetime.now(IST).date()
+
+
 def get_ist_today_start() -> datetime:
     """Returns midnight (00:00:00) of current calendar day in Indian Standard Time (IST, UTC+5:30) converted to naive UTC for DB comparison."""
-    utc_now = datetime.now(timezone.utc)
-    ist_now = utc_now + timedelta(hours=5, minutes=30)
-    ist_midnight = datetime(ist_now.year, ist_now.month, ist_now.day)
-    utc_midnight = ist_midnight - timedelta(hours=5, minutes=30)
+    now_ist = datetime.now(IST)
+    midnight_ist = datetime(now_ist.year, now_ist.month, now_ist.day)
+    utc_midnight = midnight_ist - timedelta(hours=5, minutes=30)
     return utc_midnight.replace(tzinfo=None)
 
 
 def _compute_leaderboard(db: Session, users: List[User], requester_id: Optional[int] = None) -> LeaderboardResponse:
-    today = date.today()
+    today = get_ist_today()
     week_start = today - timedelta(days=6)
     cutoff_today = get_ist_today_start()
 
