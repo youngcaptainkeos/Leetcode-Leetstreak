@@ -10,6 +10,7 @@ Fetches:
 import json
 import logging
 from datetime import datetime, date, timezone, timedelta
+import httpx
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
