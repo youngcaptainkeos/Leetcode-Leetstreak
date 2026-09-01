@@ -641,12 +641,13 @@ function Dashboard({
   );
 
   const activeGroup =
-    selectedTab !== "global"
-      ? groups.find((g) => g.id === selectedTab)
+    selectedTab !== "global" && selectedTab !== "friends"
+      ? groups.find((g) => String(g.id) === String(selectedTab))
       : null;
 
-  const isGroupOwner =
-    activeGroup && activeGroup.creator_id === userId;
+  const isGroupOwner = Boolean(
+    activeGroup && Number(activeGroup.creator_id) === Number(userId)
+  );
 
   return (
     <div className="dashboard">
@@ -943,7 +944,7 @@ function Dashboard({
                     </div>
 
                     {/* Owner Remove Button */}
-                    {isGroupOwner && e.id !== userId && activeGroup && (
+                    {isGroupOwner && Number(e.id) !== Number(userId) && activeGroup && (
                       <button
                         className="remove-btn"
                         onClick={(evt) => {
