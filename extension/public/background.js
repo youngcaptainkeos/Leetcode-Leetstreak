@@ -41,6 +41,11 @@ async function checkNewSolves() {
             title: "🔥 LeetStreak Solve Alert!",
             message: `${latestSolve.user_name} (@${latestSolve.user_handle}) just solved "${latestSolve.title}" on LeetCode!`,
             priority: 2
+          },
+          (id) => {
+            if (chrome.runtime.lastError) {
+              console.error("Chrome Notification Error:", chrome.runtime.lastError);
+            }
           }
         );
       }
@@ -69,6 +74,31 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onStartup.addListener(() => {
   chrome.alarms.create("check_solves_alarm", { periodInMinutes: 1 });
   checkNewSolves();
+});
+
+// Runtime Message Listener (for testing & trigger from popup)
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === "TRIGGER_TEST_NOTIFICATION") {
+    chrome.notifications.create(
+      `solve|https://leetcode.com/problems/3sum|${Date.now()}`,
+      {
+        type: "basic",
+        iconUrl: "icon48.png",
+        title: "🔥 LeetStreak Solve Alert!",
+        message: 'Sumukh Shandilya (@Sumukh_Shandilya) just solved "3Sum" on LeetCode!',
+        priority: 2
+      },
+      (id) => {
+        if (chrome.runtime.lastError) {
+          console.error("Test Notification Error:", chrome.runtime.lastError);
+        } else {
+          console.log("Test Notification created:", id);
+        }
+      }
+    );
+    sendResponse({ status: "triggered" });
+  }
+  return true;
 });
 
 // Handle Notification Click to open problem on LeetCode

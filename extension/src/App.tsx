@@ -390,6 +390,11 @@ function Dashboard({
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [toastSolve, setToastSolve] = useState<{
+    user_name: string;
+    title: string;
+    leetcode_url: string;
+  } | null>(null);
 
   // Settings Modal State
   const [showSettings, setShowSettings] = useState(false);
@@ -724,6 +729,29 @@ function Dashboard({
       )}
       {syncMsg && <div className="sync-banner">{syncMsg}</div>}
       {error && <div className="error-banner">{error}</div>}
+
+      {/* In-App Toast Notification Banner */}
+      {toastSolve && (
+        <div className="solve-toast-popup">
+          <div className="toast-content">
+            <span className="toast-flame">🔥</span>
+            <div className="toast-text">
+              <strong>{toastSolve.user_name}</strong> just solved <strong>"{toastSolve.title}"</strong> on LeetCode!
+            </div>
+            <a
+              href={toastSolve.leetcode_url}
+              target="_blank"
+              rel="noreferrer"
+              className="toast-link"
+            >
+              Open ↗
+            </a>
+            <button className="toast-close" onClick={() => setToastSolve(null)}>
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Unified M3 Hero Container Card */}
       <div className="hero-card">
@@ -1179,18 +1207,16 @@ function Dashboard({
                 className="chip-btn"
                 style={{ marginTop: "8px", width: "100%", padding: "8px", fontSize: "11px", fontWeight: "600" }}
                 onClick={() => {
-                  if (typeof chrome !== "undefined" && chrome.notifications && chrome.notifications.create) {
-                    chrome.notifications.create(`solve|https://leetcode.com/problems/3sum|${Date.now()}`, {
-                      type: "basic",
-                      iconUrl: "icon48.png",
-                      title: "🔥 LeetStreak Solve Alert!",
-                      message: 'Sumukh Shandilya (@Sumukh_Shandilya) just solved "3Sum" on LeetCode!',
-                      priority: 2,
-                    });
-                    setSettingsMsg("Sent test notification! Check your OS desktop popup.");
-                  } else {
-                    setSettingsMsg("Test notification triggered!");
+                  setToastSolve({
+                    user_name: "Sumukh Shandilya",
+                    title: "3Sum",
+                    leetcode_url: "https://leetcode.com/problems/3sum",
+                  });
+                  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+                    chrome.runtime.sendMessage({ type: "TRIGGER_TEST_NOTIFICATION" });
                   }
+                  setSettingsMsg("Triggered test notification!");
+                  setShowSettings(false);
                 }}
               >
                 🔔 Trigger Test Notification
