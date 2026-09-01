@@ -153,16 +153,21 @@ html, body, #root {
   flex-direction: column;
 }
 
-.display-name {
+.display-name, .profile-name {
   font-family: var(--md-ref-typeface-brand);
   font-weight: 700;
   font-size: 14px;
   color: var(--md-sys-color-on-surface);
 }
 
-.handle {
+.handle, .profile-handle, a.profile-handle {
   font-size: 11px;
-  color: var(--md-sys-color-on-surface-variant);
+  color: var(--md-sys-color-on-surface-variant) !important;
+  text-decoration: none;
+}
+.profile-handle:hover, a.profile-handle:hover {
+  color: var(--md-sys-color-primary) !important;
+  text-decoration: underline;
 }
 
 .profile-actions {
@@ -171,7 +176,7 @@ html, body, #root {
   gap: 6px;
 }
 
-.icon-btn {
+.icon-btn, .settings-btn {
   background-color: var(--md-sys-color-surface-container-high);
   border: 1px solid var(--md-sys-color-outline-variant);
   color: var(--md-sys-color-on-surface);
@@ -185,7 +190,7 @@ html, body, #root {
   font-size: 13px;
   transition: background-color 0.2s;
 }
-.icon-btn:hover { background-color: var(--md-sys-color-surface-container-highest); }
+.icon-btn:hover, .settings-btn:hover { background-color: var(--md-sys-color-surface-container-highest); }
 
 .sync-btn {
   background-color: var(--md-sys-color-primary-container);
@@ -771,3 +776,113 @@ html, body, #root {
 .muted { color: var(--md-sys-color-on-surface-variant); }
 .centered { text-align: center; }
 .tiny { font-size: 10px; }
+
+/* Modal Extra Component Rules */
+.modal-header h3 {
+  font-family: var(--md-ref-typeface-brand);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+}
+
+.modal-streak-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--md-sys-color-surface-container-low);
+  padding: 10px 12px;
+  border-radius: var(--md-shape-corner-medium);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.modal-streak-count {
+  font-family: var(--md-ref-typeface-brand);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--md-sys-color-secondary);
+}
+
+.modal-tab-bar {
+  display: flex;
+  background-color: var(--md-sys-color-surface-container-low);
+  padding: 3px;
+  border-radius: var(--md-shape-corner-full);
+  gap: 2px;
+}
+
+.modal-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px;
+  border-radius: var(--md-shape-corner-full);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-tab-btn.active {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.recent-solves-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.solve-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--md-sys-color-surface-container-low);
+  padding: 8px 10px;
+  border-radius: var(--md-shape-corner-small);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.solve-title {
+  color: var(--md-sys-color-on-surface) !important;
+  text-decoration: none;
+  font-weight: 600;
+}
+.solve-title:hover {
+  color: var(--md-sys-color-primary) !important;
+  text-decoration: underline;
+}
+
+.solve-time {
+  font-size: 10px;
+  color: var(--md-sys-color-on-surface-variant);
+  margin-left: auto;
+}
+
+/* Global Dark Inputs & Labels */
+label span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+input, form input {
+  background-color: var(--md-sys-color-surface-container-highest) !important;
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  border-radius: var(--md-shape-corner-medium) !important;
+  padding: 10px 12px !important;
+  color: var(--md-sys-color-on-surface) !important;
+  font-size: 13px !important;
+  outline: none !important;
+  transition: border-color 0.2s !important;
+}
+
+input:focus, form input:focus {
+  border-color: var(--md-sys-color-primary) !important;
+}
