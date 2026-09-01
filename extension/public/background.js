@@ -1,14 +1,13 @@
-// LeetStreak Background Service Worker for Native Chrome Desktop Solve Notifications
+// LeetStreak Background Service Worker for Native Chrome Desktop Solve Notifications (MV3 Linux Compliant)
 
 const DEFAULT_API_URL = "https://leetcode-leetstreak.onrender.com";
 
 function openFloatingSolvePopup(userName, title, leetcodeUrl) {
   try {
     const query = `user=${encodeURIComponent(userName)}&title=${encodeURIComponent(title)}&url=${encodeURIComponent(leetcodeUrl)}`;
-    const popupUrl = chrome.runtime.getURL(`notification.html?${query}`);
     chrome.windows.create(
       {
-        url: popupUrl,
+        url: `notification.html?${query}`,
         type: "popup",
         width: 380,
         height: 180,
@@ -58,22 +57,17 @@ async function checkNewSolves() {
           chrome.action.setBadgeBackgroundColor({ color: "#FB923C" });
         }
 
-        // 2. Native OS Desktop Notification
-        chrome.notifications.create(
-          `solve|${latestSolve.leetcode_url}|${Date.now()}`,
-          {
-            type: "basic",
-            iconUrl: chrome.runtime.getURL("icon48.png"),
-            title: "🔥 LeetStreak Solve Alert!",
-            message: `${latestSolve.user_name} (@${latestSolve.user_handle}) just solved "${latestSolve.title}" on LeetCode!`,
-            priority: 2
-          },
-          (id) => {
-            if (chrome.runtime.lastError) {
-              console.error("Chrome Notification Error:", chrome.runtime.lastError.message);
-            }
-          }
-        );
+        // 2. Native OS Desktop Notification (MV3 Promise API, relative iconUrl, priority: 0 for Linux DBus compatibility)
+        chrome.notifications.create(`solve|${latestSolve.leetcode_url}|${Date.now()}`, {
+          type: "basic",
+          iconUrl: "icon48.png",
+          title: "🔥 LeetStreak Solve Alert!",
+          message: `${latestSolve.user_name} (@${latestSolve.user_handle}) just solved "${latestSolve.title}" on LeetCode!`
+        }).then((id) => {
+          console.log("Notification created successfully! ID:", id);
+        }).catch((err) => {
+          console.error("Chrome Notification Error:", err);
+        });
 
         // 3. Mini Desktop Floating Window Popup (works even when main extension popup is closed!)
         openFloatingSolvePopup(latestSolve.user_name, latestSolve.title, latestSolve.leetcode_url);
@@ -122,28 +116,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         chrome.action.setBadgeBackgroundColor({ color: "#FB923C" });
       }
 
-      // 2. Native Desktop OS Notification
-      try {
-        chrome.notifications.create(
-          `solve|${testUrl}|${Date.now()}`,
-          {
-            type: "basic",
-            iconUrl: chrome.runtime.getURL("icon48.png"),
-            title: "🔥 LeetStreak Solve Alert!",
-            message: `${testUser} (@Sumukh_Shandilya) just solved "${testTitle}" on LeetCode!`,
-            priority: 2
-          },
-          (id) => {
-            if (chrome.runtime.lastError) {
-              console.error("Test Notification Error:", chrome.runtime.lastError.message);
-            } else {
-              console.log("Test Notification created successfully with ID:", id);
-            }
-          }
-        );
-      } catch (e) {
-        console.error("Error creating native notification:", e);
-      }
+      // 2. Native Desktop OS Notification (MV3 Promise API with relative iconUrl and no unsupported priority)
+      chrome.notifications.create(`solve|${testUrl}|${Date.now()}`, {
+        type: "basic",
+        iconUrl: "icon48.png",
+        title: "🔥 LeetStreak Solve Alert!",
+        message: `${testUser} (@Sumukh_Shandilya) just solved "${testTitle}" on LeetCode!`
+      }).then((id) => {
+        console.log("Test Notification created successfully with ID:", id);
+      }).catch((err) => {
+        console.error("Error creating native notification:", err);
+      });
 
       // 3. Mini Desktop Floating Window Popup (works even when main extension popup is closed!)
       openFloatingSolvePopup(testUser, testTitle, testUrl);
