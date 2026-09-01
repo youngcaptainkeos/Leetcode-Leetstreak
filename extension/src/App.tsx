@@ -704,46 +704,50 @@ function Dashboard({
       {syncMsg && <div className="sync-banner">{syncMsg}</div>}
       {error && <div className="error-banner">{error}</div>}
 
-      {/* Streak Hero Card */}
-      <div className="streak-card">
-        <div className="streak-hero">
-          <span className="flame-icon">🔥</span>
-          <span className="streak-count">{dash.current_streak}</span>
+      {/* M3 Hero Streak Container Card */}
+      <div className="hero-card">
+        <div className="streak-hero-content">
+          <span className="streak-flame-icon">🔥</span>
+          <div>
+            <div className="streak-count-hero">{dash.current_streak}</div>
+            <div className="streak-label-hero">DAY STREAK</div>
+          </div>
         </div>
-        <div className="streak-label">DAY STREAK</div>
-      </div>
 
-      {/* Stats Breakdown */}
-      <div className="stat-row">
-        <Stat label="Today" value={dash.today_count} />
-        <Stat label="This Week" value={dash.weekly_total} />
-        <Stat label="This Month" value={dash.monthly_total} />
-      </div>
+        {/* Stat Grid Cards */}
+        <div className="stats-grid">
+          <div className="stat-card">
+            <span className="stat-val">{dash.today_count}</span>
+            <span className="stat-lbl">Today</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-val">{dash.weekly_total}</span>
+            <span className="stat-lbl">This Week</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-val">{dash.monthly_total}</span>
+            <span className="stat-lbl">This Month</span>
+          </div>
+        </div>
 
-      {/* Difficulty Counts */}
-      <div className="diff-pills">
-        <span className="diff-pill easy">Easy {dash.easy_count}</span>
-        <span className="diff-pill medium">Med {dash.medium_count}</span>
-        <span className="diff-pill hard">Hard {dash.hard_count}</span>
-      </div>
+        {/* Difficulty Chips Grid */}
+        <div className="diff-grid">
+          <div className="diff-chip easy">Easy {dash.easy_count}</div>
+          <div className="diff-chip medium">Med {dash.medium_count}</div>
+          <div className="diff-chip hard">Hard {dash.hard_count}</div>
+        </div>
 
-      {/* 7-Day Activity Chart */}
-      <div className="section">
-        <div className="section-title">Last 7 Days Activity</div>
-        <div className="heatmap">
-          {dash.last_7_days.map((d, i) => (
-            <div className="heat-col" key={d.date}>
-              <div
-                className="heat-bar"
-                style={{
-                  height: `${(d.problems_solved / maxDay) * 32 + 4}px`,
-                  opacity: d.problems_solved > 0 ? 1 : 0.25,
-                }}
-                title={`${d.date}: ${d.problems_solved} solved`}
-              />
-              <span className="tiny muted">{dayLabels[i]}</span>
-            </div>
-          ))}
+        {/* 7-Day Activity Heatmap */}
+        <div className="heatmap-container">
+          <div className="heatmap-title">Last 7 Days</div>
+          <div className="heatmap-days">
+            {dash.last_7_days.map((d, i) => (
+              <div className="heat-day" key={d.date} title={`${d.date}: ${d.problems_solved} solved`}>
+                <div className={`heat-dot ${d.problems_solved > 0 ? "active" : ""}`} />
+                <span className="heat-lbl">{dayLabels[i]}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -798,7 +802,7 @@ function Dashboard({
         )}
 
         {/* Board Switcher Tabs */}
-        <div className="board-tabs">
+        <div className="tab-bar-container">
           <button
             className={`tab-btn ${selectedTab === "global" ? "active" : ""}`}
             onClick={() => setSelectedTab("global")}

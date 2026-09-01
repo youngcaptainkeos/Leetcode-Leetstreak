@@ -530,15 +530,91 @@ input::placeholder {
   opacity: 0.85;
 }
 
-.copy-code-tab-btn {
-  background: #1e1b4b !important;
-  color: #c7d2fe !important;
-  border-color: #4338ca !important;
-  font-weight: 600 !important;
+.name-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
 }
-.copy-code-tab-btn:hover {
-  background: #312e81 !important;
-  color: #ffffff !important;
+
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dot {
+  font-size: 8px;
+  color: #10b981;
+}
+
+.name {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.handle-mini {
+  font-size: 10px;
+  color: var(--md-sys-color-on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.streak-mini {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--md-sys-color-secondary);
+  flex-shrink: 0;
+}
+
+.solves-badge {
+  background-color: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: var(--md-shape-corner-extra-small);
+  flex-shrink: 0;
+}
+
+.points-badge {
+  background-color: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--md-shape-corner-full);
+  flex-shrink: 0;
+}
+
+.kudos-badge {
+  background-color: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--md-shape-corner-full);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.kudos-badge.active {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  border-color: var(--md-sys-color-primary);
+}
+
+.kudos-badge.disabled {
+  cursor: default;
+  opacity: 0.9;
 }
 
 .remove-btn {
