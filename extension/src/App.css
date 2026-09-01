@@ -886,3 +886,28 @@ input, form input {
 input:focus, form input:focus {
   border-color: var(--md-sys-color-primary) !important;
 }
+
+/* Primary Buttons */
+.primary-btn, button.primary-btn, button[type="submit"] {
+  background-color: var(--md-sys-color-primary) !important;
+  color: var(--md-sys-color-on-primary) !important;
+  border: 1px solid var(--md-sys-color-primary) !important;
+  border-radius: var(--md-shape-corner-full) !important;
+  padding: 10px 16px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: opacity 0.2s, transform 0.1s !important;
+}
+
+.primary-btn:hover, button.primary-btn:hover, button[type="submit"]:hover {
+  opacity: 0.95 !important;
+}
+
+.primary-btn:disabled, button.primary-btn:disabled, button[type="submit"]:disabled {
+  background-color: var(--md-sys-color-surface-container-highest) !important;
+  color: var(--md-sys-color-on-surface-variant) !important;
+  border-color: var(--md-sys-color-outline-variant) !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+}
