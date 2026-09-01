@@ -520,25 +520,38 @@ input::placeholder {
   opacity: 0.85;
 }
 
+.eye-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 4px;
+  opacity: 0.8;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.eye-toggle-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
 .remove-btn {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
   cursor: pointer;
   font-size: 10px;
   font-weight: 600;
-  padding: 3px 6px;
+  padding: 1px 4px;
   border-radius: 4px;
-  opacity: 0.8;
+  opacity: 0.85;
   transition: all 0.2s;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
   margin-left: 4px;
 }
 .remove-btn:hover {
   opacity: 1;
-  background: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.3);
   border-color: #ef4444;
 }
 
