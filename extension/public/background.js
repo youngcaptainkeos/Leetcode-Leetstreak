@@ -5,15 +5,25 @@ const DEFAULT_API_URL = "https://leetcode-leetstreak.onrender.com";
 function openFloatingSolvePopup(userName, title, leetcodeUrl) {
   try {
     const query = `user=${encodeURIComponent(userName)}&title=${encodeURIComponent(title)}&url=${encodeURIComponent(leetcodeUrl)}`;
-    chrome.windows.create({
-      url: `notification.html?${query}`,
-      type: "popup",
-      width: 380,
-      height: 180,
-      top: 140,
-      left: 140,
-      focused: true
-    });
+    const popupUrl = chrome.runtime.getURL(`notification.html?${query}`);
+    chrome.windows.create(
+      {
+        url: popupUrl,
+        type: "popup",
+        width: 380,
+        height: 180,
+        top: 140,
+        left: 140,
+        focused: true
+      },
+      (win) => {
+        if (chrome.runtime.lastError) {
+          console.error("Chrome Window Create Error:", chrome.runtime.lastError.message);
+        } else {
+          console.log("Floating Popup Window created successfully! ID:", win ? win.id : "unknown");
+        }
+      }
+    );
   } catch (err) {
     console.error("Error creating floating solve popup:", err);
   }
@@ -53,10 +63,15 @@ async function checkNewSolves() {
           `solve|${latestSolve.leetcode_url}|${Date.now()}`,
           {
             type: "basic",
-            iconUrl: "icon48.png",
+            iconUrl: chrome.runtime.getURL("icon48.png"),
             title: "🔥 LeetStreak Solve Alert!",
             message: `${latestSolve.user_name} (@${latestSolve.user_handle}) just solved "${latestSolve.title}" on LeetCode!`,
             priority: 2
+          },
+          (id) => {
+            if (chrome.runtime.lastError) {
+              console.error("Chrome Notification Error:", chrome.runtime.lastError.message);
+            }
           }
         );
 
@@ -113,14 +128,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           `solve|${testUrl}|${Date.now()}`,
           {
             type: "basic",
-            iconUrl: "icon48.png",
+            iconUrl: chrome.runtime.getURL("icon48.png"),
             title: "🔥 LeetStreak Solve Alert!",
             message: `${testUser} (@Sumukh_Shandilya) just solved "${testTitle}" on LeetCode!`,
             priority: 2
           },
           (id) => {
             if (chrome.runtime.lastError) {
-              console.error("Test Notification Error:", chrome.runtime.lastError);
+              console.error("Test Notification Error:", chrome.runtime.lastError.message);
+            } else {
+              console.log("Test Notification created successfully with ID:", id);
             }
           }
         );
