@@ -704,46 +704,24 @@ function Dashboard({
       {syncMsg && <div className="sync-banner">{syncMsg}</div>}
       {error && <div className="error-banner">{error}</div>}
 
-      {/* Streak Hero Card */}
-      <div className="streak-card">
+      {/* Unified M3 Hero Container Card */}
+      <div className="hero-card">
         <div className="streak-hero">
           <span className="flame-icon">🔥</span>
           <span className="streak-count">{dash.current_streak}</span>
         </div>
         <div className="streak-label">DAY STREAK</div>
-      </div>
 
-      {/* Stats Breakdown */}
-      <div className="stat-row">
-        <Stat label="Today" value={dash.today_count} />
-        <Stat label="This Week" value={dash.weekly_total} />
-        <Stat label="This Month" value={dash.monthly_total} />
-      </div>
+        <div className="stat-row">
+          <Stat label="Today" value={dash.today_count} />
+          <Stat label="This Week" value={dash.weekly_total} />
+          <Stat label="This Month" value={dash.monthly_total} />
+        </div>
 
-      {/* Difficulty Counts */}
-      <div className="diff-pills">
-        <span className="diff-pill easy">Easy {dash.easy_count}</span>
-        <span className="diff-pill medium">Med {dash.medium_count}</span>
-        <span className="diff-pill hard">Hard {dash.hard_count}</span>
-      </div>
-
-      {/* 7-Day Activity Chart */}
-      <div className="section">
-        <div className="section-title">Last 7 Days Activity</div>
-        <div className="heatmap">
-          {dash.last_7_days.map((d, i) => (
-            <div className="heat-col" key={d.date}>
-              <div
-                className="heat-bar"
-                style={{
-                  height: `${(d.problems_solved / maxDay) * 32 + 4}px`,
-                  opacity: d.problems_solved > 0 ? 1 : 0.25,
-                }}
-                title={`${d.date}: ${d.problems_solved} solved`}
-              />
-              <span className="tiny muted">{dayLabels[i]}</span>
-            </div>
-          ))}
+        <div className="diff-pills">
+          <span className="diff-pill easy">Easy {dash.easy_count}</span>
+          <span className="diff-pill medium">Med {dash.medium_count}</span>
+          <span className="diff-pill hard">Hard {dash.hard_count}</span>
         </div>
       </div>
 
