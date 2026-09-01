@@ -21,7 +21,7 @@ from .schemas import (
     LeaderboardResponse, LeaderboardEntry, GroupCreateRequest, GroupJoinRequest,
     GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema,
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
-    KudosToggleRequest, UpdateUsernameRequest,
+    KudosToggleRequest, UpdateUsernameRequest, ActivityFeedItemSchema,
 )
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
@@ -748,6 +748,35 @@ async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = De
         )
         for s in solves
     ]
+
+
+@app.get("/api/feed/recent-solves", response_model=List[ActivityFeedItemSchema])
+async def get_global_recent_solves(limit: int = 15, db: Session = Depends(get_db)):
+    """Returns the latest solved questions from all users across the platform in chronological order."""
+    solves = (
+        db.query(Solve, User)
+        .join(User, Solve.user_id == User.id)
+        .order_by(Solve.solved_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    feed = []
+    for solve, user in solves:
+        title = solve.title or solve.title_slug.replace("-", " ").title()
+        feed.append(
+            ActivityFeedItemSchema(
+                user_id=user.id,
+                user_name=user.name,
+                user_handle=user.leetcode_username,
+                title=title,
+                title_slug=solve.title_slug,
+                solved_at=solve.solved_at,
+                relative_time=_time_ago(solve.solved_at),
+                leetcode_url=f"https://leetcode.com/problems/{solve.title_slug}",
+            )
+        )
+    return feed
 
 
 @app.post("/api/admin/poll-now")

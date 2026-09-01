@@ -17,6 +17,9 @@
       "128": "icon128.png"
     }
   },
-  "permissions": ["storage"],
+  "permissions": ["storage", "notifications", "alarms"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "host_permissions": ["http://localhost:8000/*", "https://*/*", "http://*/*"]
 }

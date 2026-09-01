@@ -126,3 +126,15 @@ class GroupResponse(BaseModel):
 class GroupListResponse(BaseModel):
     groups: List[GroupResponse]
 
+
+class ActivityFeedItemSchema(BaseModel):
+    user_id: int
+    user_name: str
+    user_handle: str
+    title: str
+    title_slug: str
+    solved_at: datetime
+    relative_time: str
+    leetcode_url: str
+
+

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   api,
+  API_BASE,
   DashboardResponse,
   LeaderboardResponse,
   LeaderboardEntry,
@@ -350,6 +351,17 @@ function Onboarding({
   );
 }
 
+interface ActivityFeedItem {
+  user_id: number;
+  user_name: string;
+  user_handle: string;
+  title: string;
+  title_slug: string;
+  solved_at: string;
+  relative_time: string;
+  leetcode_url: string;
+}
+
 function Dashboard({
   userId,
   onResetUser,
@@ -363,6 +375,7 @@ function Dashboard({
   const [selectedTab, setSelectedTab] = useState<BoardTab>("global");
   const [sortBy, setSortBy] = useState<"points" | "streak">("points");
   const [revealedCodes, setRevealedCodes] = useState<Record<number, boolean>>({});
+  const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
 
   // Inspect Friend Stats Modal
   const [inspectedFriend, setInspectedFriend] = useState<LeaderboardEntry | null>(
@@ -472,6 +485,14 @@ function Dashboard({
       }
       setBoard(boardRes);
       setError(null);
+
+      // Fetch Recent Solve Activity Feed
+      fetch(`${API_BASE}/api/feed/recent-solves?limit=10`)
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data) => {
+          if (Array.isArray(data)) setActivityFeed(data);
+        })
+        .catch(() => {});
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't load dashboard.");
     }
@@ -724,6 +745,33 @@ function Dashboard({
           <span className="diff-pill hard">Hard {dash.hard_count}</span>
         </div>
       </div>
+
+      {/* Live Activity Feed Ticker */}
+      {activityFeed.length > 0 && (
+        <div className="activity-feed-card">
+          <div className="activity-feed-header">
+            <span className="pulse-dot" />
+            <span className="activity-feed-title">RECENT SOLVES</span>
+          </div>
+          <div className="activity-feed-list">
+            {activityFeed.slice(0, 2).map((item, idx) => (
+              <a
+                key={idx}
+                href={item.leetcode_url}
+                target="_blank"
+                rel="noreferrer"
+                className="activity-feed-item"
+                title={`Open "${item.title}" on LeetCode`}
+              >
+                <span className="act-name">{item.user_name}</span>
+                <span className="act-verb">solved</span>
+                <span className="act-title">"{item.title}"</span>
+                <span className="act-time">{item.relative_time} ↗</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Groups & Leaderboard Navigation */}
       <div className="section">
