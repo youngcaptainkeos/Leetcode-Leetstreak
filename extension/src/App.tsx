@@ -1207,19 +1207,15 @@ function Dashboard({
                 className="chip-btn"
                 style={{ marginTop: "8px", width: "100%", padding: "8px", fontSize: "11px", fontWeight: "600" }}
                 onClick={() => {
-                  setToastSolve({
-                    user_name: "Sumukh Shandilya",
-                    title: "3Sum",
-                    leetcode_url: "https://leetcode.com/problems/3sum",
-                  });
-                  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
-                    chrome.runtime.sendMessage({ type: "TRIGGER_TEST_NOTIFICATION" });
-                  }
-                  setSettingsMsg("Triggered test notification!");
-                  setShowSettings(false);
+                  setSettingsMsg("⏳ Triggering in 3 seconds! Close extension popup now to test.");
+                  setTimeout(() => {
+                    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+                      chrome.runtime.sendMessage({ type: "TRIGGER_TEST_NOTIFICATION" });
+                    }
+                  }, 3000);
                 }}
               >
-                🔔 Trigger Test Notification
+                🔔 Test Closed Extension Alert (Triggers in 3s)
               </button>
             </form>
           </div>
