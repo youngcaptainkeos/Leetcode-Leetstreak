@@ -1092,30 +1092,37 @@ function Dashboard({
       {showSettings && (
         <div className="modal-overlay" onClick={() => setShowSettings(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button
-              className="modal-close"
-              onClick={() => setShowSettings(false)}
-            >
-              ✕
-            </button>
             <div className="modal-header">
               <h3>⚙️ Account Settings</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowSettings(false)}
+                title="Close settings"
+              >
+                ✕
+              </button>
             </div>
 
-            {settingsMsg && <div className="sync-banner mb-2">{settingsMsg}</div>}
+            {settingsMsg && <div className="sync-banner">{settingsMsg}</div>}
 
-            <form onSubmit={handleUpdateUsername} className="auth-form mt-1">
-              <label>
-                <span>LeetCode Username</span>
-                <input
-                  value={newLeetcodeUsername}
-                  onChange={(e) => setNewLeetcodeUsername(e.target.value)}
-                  placeholder="e.g. neal_wu"
-                  required
-                />
-              </label>
+            <form onSubmit={handleUpdateUsername} className="modal-form">
+              <div className="modal-field">
+                <label>
+                  <span>LeetCode Username</span>
+                  <input
+                    value={newLeetcodeUsername}
+                    onChange={(e) => setNewLeetcodeUsername(e.target.value)}
+                    placeholder="e.g. neal_wu"
+                    required
+                  />
+                </label>
+              </div>
 
-              <button type="submit" className="primary-btn" disabled={updatingUsername}>
+              <button
+                type="submit"
+                className="primary-btn modal-action-btn"
+                disabled={updatingUsername}
+              >
                 {updatingUsername ? "Verifying & Updating…" : "Save New Username"}
               </button>
             </form>
