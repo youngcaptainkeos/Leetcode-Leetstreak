@@ -1,40 +1,101 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* MD3 Dark System Tokens */
-  --md-sys-color-primary: #D0BCFF;
-  --md-sys-color-on-primary: #381E72;
-  --md-sys-color-primary-container: #4F378B;
-  --md-sys-color-on-primary-container: #EADDFF;
+  /* =========================
+     🌑 NEUTRAL FOUNDATION
+     ========================= */
 
-  --md-sys-color-secondary: #FFB59D; /* Streak Orange */
-  --md-sys-color-secondary-container: #5C3E35;
-  --md-sys-color-on-secondary-container: #FFDBCF;
+  --background: #111318;
 
-  --md-sys-color-tertiary: #E8C349; /* Points Gold */
-  --md-sys-color-tertiary-container: #514500;
-  --md-sys-color-on-tertiary-container: #FFE28C;
+  --surface-low: #181B22;
+  --surface: #1D2028;
+  --surface-high: #252934;
+  --surface-highest: #2D313D;
 
-  --md-sys-color-error: #F2B8B5;
-  --md-sys-color-error-container: #601410;
-  --md-sys-color-on-error-container: #F9DEDC;
+  --border: #363B47;
 
-  --md-sys-color-background: #141218;
-  --md-sys-color-on-background: #E6E0E9;
 
-  --md-sys-color-surface: #141218;
-  --md-sys-color-surface-dim: #141218;
-  --md-sys-color-surface-bright: #3B383E;
-  --md-sys-color-surface-container-lowest: #0F0D13;
-  --md-sys-color-surface-container-low: #1D1B20;
-  --md-sys-color-surface-container: #211F26;
-  --md-sys-color-surface-container-high: #2B2930;
-  --md-sys-color-surface-container-highest: #36343B;
+  /* =========================
+     ⚪ TYPOGRAPHY
+     ========================= */
 
-  --md-sys-color-on-surface: #E6E0E9;
-  --md-sys-color-on-surface-variant: #CAC4D0;
-  --md-sys-color-outline: #938F99;
-  --md-sys-color-outline-variant: #49454F;
+  --text-primary: #F1F5F9;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
+
+
+  /* =========================
+     🟣 BRAND / INTERACTION
+     ========================= */
+
+  --primary: #A78BFA;
+  --primary-container: #3B2D63;
+  --primary-border: #6D55B8;
+
+
+  /* =========================
+     🔥 STREAK
+     ========================= */
+
+  --streak: #FB923C;
+  --streak-container: #382718;
+
+
+  /* =========================
+     ⭐ POINTS
+     ========================= */
+
+  --points: #FBBF24;
+  --points-container: #3A3014;
+
+
+  /* =========================
+     🟢 DIFFICULTY
+     ========================= */
+
+  --easy: #34D399;
+  --easy-container: rgba(52, 211, 153, 0.10);
+
+  --medium: #FBBF24;
+  --medium-container: rgba(251, 191, 36, 0.10);
+
+  --hard: #F87171;
+  --hard-container: rgba(248, 113, 113, 0.10);
+
+  /* M3 System Tokens Mapping */
+  --md-sys-color-primary: var(--primary);
+  --md-sys-color-on-primary: #1E1B4B;
+  --md-sys-color-primary-container: var(--primary-container);
+  --md-sys-color-on-primary-container: #DDD6FE;
+
+  --md-sys-color-secondary: var(--streak);
+  --md-sys-color-secondary-container: var(--streak-container);
+  --md-sys-color-on-secondary-container: #FFEDD5;
+
+  --md-sys-color-tertiary: var(--points);
+  --md-sys-color-tertiary-container: var(--points-container);
+  --md-sys-color-on-tertiary-container: #FEF3C7;
+
+  --md-sys-color-error: #F87171;
+  --md-sys-color-error-container: rgba(248, 113, 113, 0.15);
+  --md-sys-color-on-error-container: #FECACA;
+
+  --md-sys-color-background: var(--background);
+  --md-sys-color-on-background: var(--text-primary);
+
+  --md-sys-color-surface: var(--background);
+  --md-sys-color-surface-dim: var(--background);
+  --md-sys-color-surface-bright: var(--surface-highest);
+  --md-sys-color-surface-container-lowest: var(--background);
+  --md-sys-color-surface-container-low: var(--surface-low);
+  --md-sys-color-surface-container: var(--surface);
+  --md-sys-color-surface-container-high: var(--surface-high);
+  --md-sys-color-surface-container-highest: var(--surface-highest);
+
+  --md-sys-color-on-surface: var(--text-primary);
+  --md-sys-color-on-surface-variant: var(--text-secondary);
+  --md-sys-color-outline: var(--border);
+  --md-sys-color-outline-variant: var(--border);
 
   /* Typography System */
   --md-ref-typeface-brand: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -292,21 +353,21 @@ html, body, #root {
 }
 
 .diff-pill.easy {
-  background-color: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background-color: var(--easy-container);
+  color: var(--easy);
+  border: 1px solid rgba(52, 211, 153, 0.3);
 }
 
 .diff-pill.medium {
-  background-color: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background-color: var(--medium-container);
+  color: var(--medium);
+  border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
 .diff-pill.hard {
-  background-color: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background-color: var(--hard-container);
+  color: var(--hard);
+  border: 1px solid rgba(248, 113, 113, 0.3);
 }
 
 /* Section Containers & Heatmap */
