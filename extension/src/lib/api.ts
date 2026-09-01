@@ -129,10 +129,18 @@ export const api = {
         body: JSON.stringify({ leetcode_username }),
       }
     ),
-  leaderboard: (userId?: number) =>
-    request<LeaderboardResponse>(userId ? `/leaderboard?user_id=${userId}` : "/leaderboard"),
-  friendsLeaderboard: (userId: number) =>
-    request<LeaderboardResponse>(`/friends/leaderboard?user_id=${userId}`),
+  leaderboard: (userId?: number, sortBy: "points" | "streak" = "points") => {
+    const params = new URLSearchParams();
+    if (userId) params.set("user_id", String(userId));
+    if (sortBy) params.set("sort_by", sortBy);
+    return request<LeaderboardResponse>(`/leaderboard?${params.toString()}`);
+  },
+  friendsLeaderboard: (userId: number, sortBy: "points" | "streak" = "points") => {
+    const params = new URLSearchParams();
+    params.set("user_id", String(userId));
+    if (sortBy) params.set("sort_by", sortBy);
+    return request<LeaderboardResponse>(`/friends/leaderboard?${params.toString()}`);
+  },
   createGroup: (userId: number, name: string) =>
     request<GroupResponse>("/groups", {
       method: "POST",
@@ -150,8 +158,12 @@ export const api = {
     ),
   myGroups: (userId: number) =>
     request<GroupListResponse>(`/groups/my-groups/${userId}`),
-  groupLeaderboard: (groupId: number, userId?: number) =>
-    request<LeaderboardResponse>(userId ? `/groups/${groupId}/leaderboard?user_id=${userId}` : `/groups/${groupId}/leaderboard`),
+  groupLeaderboard: (groupId: number, userId?: number, sortBy: "points" | "streak" = "points") => {
+    const params = new URLSearchParams();
+    if (userId) params.set("user_id", String(userId));
+    if (sortBy) params.set("sort_by", sortBy);
+    return request<LeaderboardResponse>(`/groups/${groupId}/leaderboard?${params.toString()}`);
+  },
   toggleKudos: (toUserId: number, fromUserId: number) =>
     request<{ status: string; to_user_id: number; kudos_count: number; has_kudosed: boolean }>(
       `/kudos/${toUserId}`,

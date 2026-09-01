@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   api,
   DashboardResponse,
@@ -361,6 +361,7 @@ function Dashboard({
   const [board, setBoard] = useState<LeaderboardResponse | null>(null);
   const [groups, setGroups] = useState<GroupResponse[]>([]);
   const [selectedTab, setSelectedTab] = useState<BoardTab>("global");
+  const [sortBy, setSortBy] = useState<"points" | "streak">("points");
 
   // Inspect Friend Stats Modal
   const [inspectedFriend, setInspectedFriend] = useState<LeaderboardEntry | null>(
@@ -433,7 +434,10 @@ function Dashboard({
     }
   }
 
-  async function loadData(tab: BoardTab = selectedTab) {
+  async function loadData(
+    tab: BoardTab = selectedTab,
+    sortMode: "points" | "streak" = sortBy
+  ) {
     try {
       const dashRes = await api.dashboard(userId).catch((err) => {
         if (err.message.includes("404") || err.message.includes("not found")) {
@@ -459,11 +463,11 @@ function Dashboard({
       // Load leaderboard based on tab
       let boardRes: LeaderboardResponse;
       if (tab === "global") {
-        boardRes = await api.leaderboard(userId);
+        boardRes = await api.leaderboard(userId, sortMode);
       } else if (tab === "friends") {
-        boardRes = await api.friendsLeaderboard(userId);
+        boardRes = await api.friendsLeaderboard(userId, sortMode);
       } else {
-        boardRes = await api.groupLeaderboard(tab, userId);
+        boardRes = await api.groupLeaderboard(tab, userId, sortMode);
       }
       setBoard(boardRes);
       setError(null);
@@ -529,8 +533,8 @@ function Dashboard({
   }
 
   useEffect(() => {
-    loadData(selectedTab);
-  }, [userId, selectedTab]);
+    loadData(selectedTab, sortBy);
+  }, [userId, selectedTab, sortBy]);
 
   async function handleSync() {
     setSyncing(true);
@@ -844,84 +848,117 @@ function Dashboard({
           </div>
         )}
 
+        {/* Leaderboard Sort Control */}
+        <div className="sort-toggle-bar">
+          <span className="sort-label">Sort by:</span>
+          <div className="sort-btn-group">
+            <button
+              type="button"
+              className={`sort-btn ${sortBy === "points" ? "active" : ""}`}
+              onClick={() => setSortBy("points")}
+              title="Sort leaderboard by total points"
+            >
+              ⭐ Points
+            </button>
+            <button
+              type="button"
+              className={`sort-btn ${sortBy === "streak" ? "active" : ""}`}
+              onClick={() => setSortBy("streak")}
+              title="Sort leaderboard by active daily streak"
+            >
+              🔥 Streak
+            </button>
+          </div>
+        </div>
+
         {/* Leaderboard List */}
         <ul className="leaderboard">
           {board.entries.length === 0 ? (
             <li className="centered muted py-3">No members in this group yet.</li>
           ) : (
-            board.entries.map((e) => (
-              <li
-                key={e.id}
-                className={`leaderboard-item ${e.id === userId ? "me" : ""}`}
-              >
-                <div
-                  className="clickable-user"
-                  onClick={() => handleInspectFriend(e)}
-                  title="Click to view detailed friend stats"
-                >
-                  <span className="rank">{e.rank}</span>
-                  {e.avatar_url ? (
-                    <img src={e.avatar_url} alt={e.name} className="rank-avatar" />
-                  ) : (
-                    <span className="rank-avatar-placeholder">{e.name[0]}</span>
+            board.entries.map((e, index, arr) => {
+              const prevEntry = index > 0 ? arr[index - 1] : null;
+              const showGap = prevEntry && e.rank > prevEntry.rank + 1;
+              return (
+                <React.Fragment key={e.id}>
+                  {showGap && (
+                    <li className="leaderboard-gap" title="Ranks between Top 10 and your position">
+                      <span>•••</span>
+                    </li>
                   )}
-                  <div className="name-col">
-                    <div className="name-row">
-                      <span
-                        className="dot"
-                        style={{ opacity: e.is_active_today ? 1 : 0.25 }}
-                        title={e.is_active_today ? "Solved today" : "Not solved today"}
-                      >
-                        ●
+                  <li
+                    className={`leaderboard-item ${e.id === userId ? "me" : ""}`}
+                  >
+                    <div
+                      className="clickable-user"
+                      onClick={() => handleInspectFriend(e)}
+                      title="Click to view detailed friend stats"
+                    >
+                      <span className="rank">{e.rank}</span>
+                      {e.avatar_url ? (
+                        <img src={e.avatar_url} alt={e.name} className="rank-avatar" />
+                      ) : (
+                        <span className="rank-avatar-placeholder">{e.name[0]}</span>
+                      )}
+                      <div className="name-col">
+                        <div className="name-row">
+                          <span
+                            className="dot"
+                            style={{ opacity: e.is_active_today ? 1 : 0.25 }}
+                            title={e.is_active_today ? "Solved today" : "Not solved today"}
+                          >
+                            ●
+                          </span>
+                          <span className="name">{e.name}</span>
+                        </div>
+                        <span className="handle-mini">@{e.leetcode_username}</span>
+                      </div>
+                      <span className="streak-mini">🔥{e.current_streak}d</span>
+                      <span className="solves-badge" title="Questions solved this week">
+                        📝{e.weekly_total}
                       </span>
-                      <span className="name">{e.name}</span>
+                      <span
+                        className="points-badge"
+                        title={`Easy: ${e.easy_count} | Medium: ${e.medium_count} | Hard: ${e.hard_count}`}
+                      >
+                        ⭐{e.points ?? (e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6)} pts
+                      </span>
+                      <button
+                        type="button"
+                        className={`kudos-badge ${e.has_kudosed ? "active" : ""} ${e.id === userId ? "disabled" : ""}`}
+                        title={
+                          e.id === userId
+                            ? "Your active streak"
+                            : e.has_kudosed
+                            ? "Click to remove kudos (resets daily IST)"
+                            : "Click to give kudos (resets daily IST)"
+                        }
+                        onClick={(evt) => {
+                          evt.stopPropagation();
+                          handleToggleKudos(e.id);
+                        }}
+                      >
+                        👍 {e.kudos_count || 0}
+                      </button>
                     </div>
-                    <span className="handle-mini">@{e.leetcode_username}</span>
-                  </div>
-                  <span className="streak-mini">🔥{e.current_streak}d</span>
-                  <span className="solves-badge" title="Questions solved this week">
-                    📝{e.weekly_total}
-                  </span>
-                  <span
-                    className="points-badge"
-                    title={`Easy: ${e.easy_count} | Medium: ${e.medium_count} | Hard: ${e.hard_count}`}
-                  >
-                    ⭐{e.points ?? (e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6)} pts
-                  </span>
-                  <button
-                    type="button"
-                    className={`kudos-badge ${e.has_kudosed ? "active" : ""} ${e.id === userId ? "disabled" : ""}`}
-                    title={
-                      e.id === userId
-                        ? "Your active streak"
-                        : e.has_kudosed
-                        ? "Click to remove kudos (resets daily IST)"
-                        : "Click to give kudos (resets daily IST)"
-                    }
-                    onClick={(evt) => {
-                      evt.stopPropagation();
-                      handleToggleKudos(e.id);
-                    }}
-                  >
-                    👍 {e.kudos_count || 0}
-                  </button>
-                </div>
 
-                {/* Owner Remove Button */}
-                {isGroupOwner && e.id !== userId && activeGroup && (
-                  <button
-                    className="remove-btn"
-                    onClick={(evt) => {
-                      evt.stopPropagation();
-                      handleRemoveMember(activeGroup.id, e.id, e.name);
-                    }}
-                    title={`Remove ${e.name} from group`}
-                  >
-                    🗑️
-                  </button>
-                )}
-              </li>
-            ))
+                    {/* Owner Remove Button */}
+                    {isGroupOwner && e.id !== userId && activeGroup && (
+                      <button
+                        className="remove-btn"
+                        onClick={(evt) => {
+                          evt.stopPropagation();
+                          handleRemoveMember(activeGroup.id, e.id, e.name);
+                        }}
+                        title={`Remove ${e.name} from group`}
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </li>
+                </React.Fragment>
+              );
+            })
           )}
         </ul>
       </div>

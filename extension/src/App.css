@@ -845,4 +845,62 @@ input::placeholder {
   margin-top: 4px;
 }
 
+/* Leaderboard Sort Control & Gap Separator */
+.sort-toggle-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px 0 8px 0;
+  padding: 0 4px;
+}
+
+.sort-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8b8fa3;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sort-btn-group {
+  display: flex;
+  background: #0f1117;
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid #232734;
+  gap: 2px;
+}
+
+.sort-btn {
+  background: transparent;
+  border: none;
+  color: #8b8fa3;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sort-btn:hover {
+  color: #e6e7eb;
+}
+
+.sort-btn.active {
+  background: #232734;
+  color: #fbbf24;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.leaderboard-gap {
+  text-align: center;
+  padding: 4px 0;
+  color: #64748b;
+  font-size: 14px;
+  letter-spacing: 4px;
+  user-select: none;
+  line-height: 1;
+}
+
 

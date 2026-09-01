@@ -1,8 +1,9 @@
 import logging
 import secrets
 import string
+from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
-from typing import List, Optional
+from typing import List, Optional, Dict, Set
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -348,7 +349,13 @@ def get_ist_today_start() -> datetime:
     return utc_midnight.replace(tzinfo=None)
 
 
-def _compute_leaderboard(db: Session, users: List[User], requester_id: Optional[int] = None) -> LeaderboardResponse:
+def _compute_leaderboard(
+    db: Session,
+    users: List[User],
+    requester_id: Optional[int] = None,
+    sort_by: str = "points",
+    limit: Optional[int] = None,
+) -> LeaderboardResponse:
     today = get_ist_today()
     week_start = today - timedelta(days=6)
     cutoff_today = get_ist_today_start()
@@ -363,17 +370,32 @@ def _compute_leaderboard(db: Session, users: List[User], requester_id: Optional[
         if requester_id and k.from_user_id == requester_id:
             requester_kudosed_to.add(k.to_user_id)
 
+    user_ids = [u.id for u in users]
+    if not user_ids:
+        return LeaderboardResponse(week_start=week_start, week_end=today, entries=[])
+
+    # Single batch query for daily activity of all target users
+    user_activities = (
+        db.query(DailyActivity)
+        .filter(DailyActivity.user_id.in_(user_ids), DailyActivity.problems_solved > 0)
+        .all()
+    )
+
+    active_dates_map: Dict[int, Set[date]] = defaultdict(set)
+    week_rows_map: Dict[int, List[DailyActivity]] = defaultdict(list)
+
+    for act in user_activities:
+        active_dates_map[act.user_id].add(act.date)
+        if act.date >= week_start:
+            week_rows_map[act.user_id].append(act)
+
     raw = []
     for user in users:
-        active_dates = _active_dates(db, user.id)
+        active_dates = active_dates_map[user.id]
         streak = current_streak(active_dates, today)
-        week_rows = (
-            db.query(DailyActivity)
-            .filter(DailyActivity.user_id == user.id, DailyActivity.date >= week_start)
-            .all()
-        )
+        week_rows = week_rows_map[user.id]
         weekly_total = sum(r.problems_solved for r in week_rows)
-        active_days_this_week = sum(1 for r in week_rows if r.problems_solved > 0)
+        active_days_this_week = len(week_rows)
         consistency = (active_days_this_week / 7) * 100
         is_active_today = today in active_dates
         points = ((user.easy_count or 0) * 1) + ((user.medium_count or 0) * 3) + ((user.hard_count or 0) * 6)
@@ -393,7 +415,10 @@ def _compute_leaderboard(db: Session, users: List[User], requester_id: Optional[
         normalized_volume = (r["weekly_total"] / max_weekly) * 100
         r["combined"] = round(0.6 * r["consistency"] + 0.4 * normalized_volume, 1)
 
-    raw.sort(key=lambda r: (r["points"], r["combined"]), reverse=True)
+    if sort_by == "streak":
+        raw.sort(key=lambda r: (r["streak"], r["points"], r["combined"]), reverse=True)
+    else:
+        raw.sort(key=lambda r: (r["points"], r["combined"], r["streak"]), reverse=True)
 
     entries = [
         LeaderboardEntry(
@@ -417,18 +442,39 @@ def _compute_leaderboard(db: Session, users: List[User], requester_id: Optional[
         for i, r in enumerate(raw)
     ]
 
+    # Top Limit + User Rank Pinning
+    if limit is not None and len(entries) > limit:
+        top_entries = entries[:limit]
+        if requester_id is not None:
+            user_in_top = any(e.id == requester_id for e in top_entries)
+            if not user_in_top:
+                requester_entry = next((e for e in entries if e.id == requester_id), None)
+                if requester_entry:
+                    top_entries.append(requester_entry)
+        entries = top_entries
+
     return LeaderboardResponse(week_start=week_start, week_end=today, entries=entries)
 
 
 @app.get("/api/leaderboard", response_model=LeaderboardResponse)
-def get_global_leaderboard(user_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
+def get_global_leaderboard(
+    user_id: Optional[int] = Query(None),
+    sort_by: str = Query("points", pattern="^(points|streak)$"),
+    limit: Optional[int] = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
     # Global Leaderboard includes all registered users on the platform
     users = db.query(User).all()
-    return _compute_leaderboard(db, users, requester_id=user_id)
+    return _compute_leaderboard(db, users, requester_id=user_id, sort_by=sort_by, limit=limit)
 
 
 @app.get("/api/friends/leaderboard", response_model=LeaderboardResponse)
-def get_friends_leaderboard(user_id: int = Query(...), db: Session = Depends(get_db)):
+def get_friends_leaderboard(
+    user_id: int = Query(...),
+    sort_by: str = Query("points", pattern="^(points|streak)$"),
+    limit: Optional[int] = Query(None, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
     # Aggregated leaderboard of all unique friends who share at least one group with user_id
     my_group_ids = [
         m.group_id for m in db.query(GroupMember.group_id).filter(GroupMember.user_id == user_id).all()
@@ -441,7 +487,7 @@ def get_friends_leaderboard(user_id: int = Query(...), db: Session = Depends(get
         ]
         friends = db.query(User).filter(User.id.in_(set(friend_user_ids))).all()
 
-    return _compute_leaderboard(db, friends, requester_id=user_id)
+    return _compute_leaderboard(db, friends, requester_id=user_id, sort_by=sort_by, limit=limit)
 
 
 # Group Endpoints
@@ -582,7 +628,13 @@ def remove_group_member(group_id: int, user_id: int, requester_id: int, db: Sess
 
 
 @app.get("/api/groups/{group_id}/leaderboard", response_model=LeaderboardResponse)
-def get_group_leaderboard(group_id: int, user_id: Optional[int] = Query(None), db: Session = Depends(get_db)):
+def get_group_leaderboard(
+    group_id: int,
+    user_id: Optional[int] = Query(None),
+    sort_by: str = Query("points", pattern="^(points|streak)$"),
+    limit: Optional[int] = Query(None, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
     group = db.query(Group).filter(Group.id == group_id).first()
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
@@ -593,7 +645,7 @@ def get_group_leaderboard(group_id: int, user_id: Optional[int] = Query(None), d
         .filter(GroupMember.group_id == group_id)
         .all()
     )
-    return _compute_leaderboard(db, users, requester_id=user_id)
+    return _compute_leaderboard(db, users, requester_id=user_id, sort_by=sort_by, limit=limit)
 
 
 @app.post("/api/kudos/{to_user_id}")
