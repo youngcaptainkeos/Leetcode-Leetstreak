@@ -950,9 +950,9 @@ function Dashboard({
                           evt.stopPropagation();
                           handleRemoveMember(activeGroup.id, e.id, e.name);
                         }}
-                        title={`Remove ${e.name} from group`}
+                        title={`Remove ${e.name} from this group`}
                       >
-                        🗑️
+                        🗑️ Remove
                       </button>
                     )}
                   </li>

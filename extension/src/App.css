@@ -521,18 +521,25 @@ input::placeholder {
 }
 
 .remove-btn {
-  background: none;
-  border: none;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #ef4444;
   cursor: pointer;
-  font-size: 13px;
-  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 6px;
   border-radius: 4px;
-  opacity: 0.6;
+  opacity: 0.8;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
 }
 .remove-btn:hover {
   opacity: 1;
-  background: #37171a;
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
 }
 
 /* Modal Overlay & Card */
