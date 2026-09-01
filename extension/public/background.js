@@ -42,7 +42,13 @@ async function checkNewSolves() {
     if (lastNotifiedKey !== currentSolveKey) {
       // Trigger notification if solve is from a friend / another user
       if (latestSolve.user_id !== currentUser.id) {
-        // 1. Native OS Desktop Notification
+        // 1. Update extension badge on toolbar icon
+        if (chrome.action && chrome.action.setBadgeText) {
+          chrome.action.setBadgeText({ text: "NEW" });
+          chrome.action.setBadgeBackgroundColor({ color: "#FB923C" });
+        }
+
+        // 2. Native OS Desktop Notification
         chrome.notifications.create(
           `solve|${latestSolve.leetcode_url}|${Date.now()}`,
           {
@@ -54,7 +60,7 @@ async function checkNewSolves() {
           }
         );
 
-        // 2. Mini Desktop Floating Window Popup (works even when main extension popup is closed!)
+        // 3. Mini Desktop Floating Window Popup (works even when main extension popup is closed!)
         openFloatingSolvePopup(latestSolve.user_name, latestSolve.title, latestSolve.leetcode_url);
       }
 
@@ -95,7 +101,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const testTitle = "3Sum";
       const testUrl = "https://leetcode.com/problems/3sum";
 
-      // 1. Native Desktop OS Notification
+      // 1. Update toolbar badge
+      if (chrome.action && chrome.action.setBadgeText) {
+        chrome.action.setBadgeText({ text: "NEW" });
+        chrome.action.setBadgeBackgroundColor({ color: "#FB923C" });
+      }
+
+      // 2. Native Desktop OS Notification
       try {
         chrome.notifications.create(
           `solve|${testUrl}|${Date.now()}`,
@@ -116,7 +128,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         console.error("Error creating native notification:", e);
       }
 
-      // 2. Mini Desktop Floating Window Popup (works even when main extension popup is closed!)
+      // 3. Mini Desktop Floating Window Popup (works even when main extension popup is closed!)
       openFloatingSolvePopup(testUser, testTitle, testUrl);
     }, delay);
 
