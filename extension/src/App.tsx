@@ -822,56 +822,17 @@ function Dashboard({
               👥 {g.name}
             </button>
           ))}
+          {activeGroup && (
+            <button
+              type="button"
+              className="tab-btn copy-code-tab-btn"
+              onClick={() => handleCopyCode(activeGroup.code)}
+              title={`Click to copy invite code (${activeGroup.code})`}
+            >
+              📋 {copiedCode ? "Copied!" : "Copy Code"}
+            </button>
+          )}
         </div>
-
-        {/* Active Group Code & Owner Info Box */}
-        {activeGroup && (
-          <div className="group-invite-box">
-            <div className="group-invite-info">
-              <span className="muted tiny">Code:</span>
-              <code className="invite-code">
-                {revealedCodes[activeGroup.id]
-                  ? activeGroup.code
-                  : activeGroup.code.replace(/[A-Z0-9]/g, "•")}
-              </code>
-              <button
-                type="button"
-                className="eye-toggle-btn"
-                onClick={() =>
-                  setRevealedCodes((prev) => ({
-                    ...prev,
-                    [activeGroup.id]: !prev[activeGroup.id],
-                  }))
-                }
-                title={revealedCodes[activeGroup.id] ? "Hide group code" : "Reveal group code"}
-              >
-                {revealedCodes[activeGroup.id] ? "🙈" : "👁️"}
-              </button>
-              {isGroupOwner && <span className="owner-badge">👑 Owner</span>}
-            </div>
-            <div className="group-btn-group">
-              <button
-                className="share-group-btn"
-                onClick={() => {
-                  handleShareGroup(activeGroup.name, activeGroup.code);
-                  setRevealedCodes((prev) => ({ ...prev, [activeGroup.id]: true }));
-                }}
-                title="Share group invite message with friends"
-              >
-                {shareMsg ? shareMsg : "🔗 Share Invite"}
-              </button>
-              <button
-                className="copy-btn"
-                onClick={() => {
-                  handleCopyCode(activeGroup.code);
-                  setRevealedCodes((prev) => ({ ...prev, [activeGroup.id]: true }));
-                }}
-              >
-                {copiedCode ? "Copied!" : "Copy Code"}
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Leaderboard Sort Control */}
         <div className="sort-toggle-bar">
@@ -935,18 +896,6 @@ function Dashboard({
                             ●
                           </span>
                           <span className="name">{e.name}</span>
-                          {isGroupOwner && Number(e.id) !== Number(userId) && activeGroup && (
-                            <button
-                              className="remove-btn"
-                              onClick={(evt) => {
-                                evt.stopPropagation();
-                                handleRemoveMember(activeGroup.id, e.id, e.name);
-                              }}
-                              title={`Remove ${e.name} from this group`}
-                            >
-                              🗑️
-                            </button>
-                          )}
                         </div>
                         <span className="handle-mini">@{e.leetcode_username}</span>
                       </div>
@@ -978,6 +927,21 @@ function Dashboard({
                         👍 {e.kudos_count || 0}
                       </button>
                     </div>
+
+                    {/* Owner Remove Button */}
+                    {isGroupOwner && Number(e.id) !== Number(userId) && activeGroup && (
+                      <button
+                        type="button"
+                        className="remove-btn"
+                        onClick={(evt) => {
+                          evt.stopPropagation();
+                          handleRemoveMember(activeGroup.id, e.id, e.name);
+                        }}
+                        title={`Remove ${e.name} from group`}
+                      >
+                        🗑️
+                      </button>
+                    )}
                   </li>
                 </React.Fragment>
               );

@@ -505,13 +505,15 @@ input::placeholder {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 6px;
 }
 
 .clickable-user {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
+  min-width: 0;
   cursor: pointer;
   padding: 2px 0;
   transition: opacity 0.15s;
@@ -520,39 +522,36 @@ input::placeholder {
   opacity: 0.85;
 }
 
-.eye-toggle-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-  padding: 0 4px;
-  opacity: 0.8;
-  transition: transform 0.15s, opacity 0.15s;
+.copy-code-tab-btn {
+  background: #1e1b4b !important;
+  color: #c7d2fe !important;
+  border-color: #4338ca !important;
+  font-weight: 600 !important;
 }
-.eye-toggle-btn:hover {
-  opacity: 1;
-  transform: scale(1.1);
+.copy-code-tab-btn:hover {
+  background: #312e81 !important;
+  color: #ffffff !important;
 }
 
 .remove-btn {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: #2d1517;
+  border: 1px solid #ef4444;
   color: #f87171;
   cursor: pointer;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 1px 4px;
-  border-radius: 4px;
-  opacity: 0.85;
-  transition: all 0.2s;
+  font-size: 13px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  margin-left: 4px;
+  justify-content: center;
+  transition: all 0.15s ease;
+  line-height: 1;
 }
 .remove-btn:hover {
-  opacity: 1;
-  background: rgba(239, 68, 68, 0.3);
-  border-color: #ef4444;
+  background: #7f1d1d;
+  color: #ffffff;
+  border-color: #f87171;
 }
 
 /* Modal Overlay & Card */
