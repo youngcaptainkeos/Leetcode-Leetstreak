@@ -307,14 +307,16 @@ html, body, #root {
 .section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
   width: 100%;
+  margin-top: 6px;
 }
 
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 2px;
 }
 
 .section-title {
