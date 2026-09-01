@@ -1173,6 +1173,28 @@ function Dashboard({
               >
                 {updatingUsername ? "Verifying & Updating…" : "Save New Username"}
               </button>
+
+              <button
+                type="button"
+                className="chip-btn"
+                style={{ marginTop: "8px", width: "100%", padding: "8px", fontSize: "11px", fontWeight: "600" }}
+                onClick={() => {
+                  if (typeof chrome !== "undefined" && chrome.notifications && chrome.notifications.create) {
+                    chrome.notifications.create(`solve|https://leetcode.com/problems/3sum|${Date.now()}`, {
+                      type: "basic",
+                      iconUrl: "icon48.png",
+                      title: "🔥 LeetStreak Solve Alert!",
+                      message: 'Sumukh Shandilya (@Sumukh_Shandilya) just solved "3Sum" on LeetCode!',
+                      priority: 2,
+                    });
+                    setSettingsMsg("Sent test notification! Check your OS desktop popup.");
+                  } else {
+                    setSettingsMsg("Test notification triggered!");
+                  }
+                }}
+              >
+                🔔 Trigger Test Notification
+              </button>
             </form>
           </div>
         </div>
