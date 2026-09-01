@@ -1207,12 +1207,10 @@ function Dashboard({
                 className="chip-btn"
                 style={{ marginTop: "8px", width: "100%", padding: "8px", fontSize: "11px", fontWeight: "600" }}
                 onClick={() => {
-                  setSettingsMsg("⏳ Triggering in 3 seconds! Close extension popup now to test.");
-                  setTimeout(() => {
-                    if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
-                      chrome.runtime.sendMessage({ type: "TRIGGER_TEST_NOTIFICATION" });
-                    }
-                  }, 3000);
+                  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
+                    chrome.runtime.sendMessage({ type: "TRIGGER_TEST_NOTIFICATION_DELAYED" });
+                  }
+                  setSettingsMsg("⏳ Scheduled in 3s! Close popup now to watch floating alert.");
                 }}
               >
                 🔔 Test Closed Extension Alert (Triggers in 3s)

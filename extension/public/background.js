@@ -87,27 +87,40 @@ chrome.runtime.onStartup.addListener(() => {
 
 // Runtime Message Listener (for testing & trigger from popup)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === "TRIGGER_TEST_NOTIFICATION") {
-    const testUser = "Sumukh Shandilya";
-    const testTitle = "3Sum";
-    const testUrl = "https://leetcode.com/problems/3sum";
+  if (request.type === "TRIGGER_TEST_NOTIFICATION" || request.type === "TRIGGER_TEST_NOTIFICATION_DELAYED") {
+    const delay = request.type === "TRIGGER_TEST_NOTIFICATION_DELAYED" ? 3000 : 0;
 
-    // 1. Native Desktop OS Notification
-    chrome.notifications.create(
-      `solve|${testUrl}|${Date.now()}`,
-      {
-        type: "basic",
-        iconUrl: "icon48.png",
-        title: "🔥 LeetStreak Solve Alert!",
-        message: `${testUser} (@Sumukh_Shandilya) just solved "${testTitle}" on LeetCode!`,
-        priority: 2
+    setTimeout(() => {
+      const testUser = "Sumukh Shandilya";
+      const testTitle = "3Sum";
+      const testUrl = "https://leetcode.com/problems/3sum";
+
+      // 1. Native Desktop OS Notification
+      try {
+        chrome.notifications.create(
+          `solve|${testUrl}|${Date.now()}`,
+          {
+            type: "basic",
+            iconUrl: "icon48.png",
+            title: "🔥 LeetStreak Solve Alert!",
+            message: `${testUser} (@Sumukh_Shandilya) just solved "${testTitle}" on LeetCode!`,
+            priority: 2
+          },
+          (id) => {
+            if (chrome.runtime.lastError) {
+              console.error("Test Notification Error:", chrome.runtime.lastError);
+            }
+          }
+        );
+      } catch (e) {
+        console.error("Error creating native notification:", e);
       }
-    );
 
-    // 2. Mini Desktop Floating Window Popup
-    openFloatingSolvePopup(testUser, testTitle, testUrl);
+      // 2. Mini Desktop Floating Window Popup (works even when main extension popup is closed!)
+      openFloatingSolvePopup(testUser, testTitle, testUrl);
+    }, delay);
 
-    sendResponse({ status: "triggered" });
+    sendResponse({ status: "scheduled", delay });
   }
   return true;
 });
