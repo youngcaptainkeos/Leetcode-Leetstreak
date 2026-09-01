@@ -822,39 +822,42 @@ function Dashboard({
               👥 {g.name}
             </button>
           ))}
+        </div>
+
+        {/* Leaderboard Sort & Group Code Control Bar */}
+        <div className="sort-toggle-bar">
+          <div className="sort-left-group">
+            <span className="sort-label">Sort:</span>
+            <div className="sort-btn-group">
+              <button
+                type="button"
+                className={`sort-btn ${sortBy === "points" ? "active" : ""}`}
+                onClick={() => setSortBy("points")}
+                title="Sort leaderboard by total points"
+              >
+                ⭐ Points
+              </button>
+              <button
+                type="button"
+                className={`sort-btn ${sortBy === "streak" ? "active" : ""}`}
+                onClick={() => setSortBy("streak")}
+                title="Sort leaderboard by active daily streak"
+              >
+                🔥 Streak
+              </button>
+            </div>
+          </div>
+
           {activeGroup && (
             <button
               type="button"
-              className="tab-btn copy-code-tab-btn"
+              className="group-code-btn"
               onClick={() => handleCopyCode(activeGroup.code)}
               title={`Click to copy invite code (${activeGroup.code})`}
             >
-              📋 {copiedCode ? "Copied!" : "Copy Code"}
+              📋 {copiedCode ? "Copied!" : "Code"}
             </button>
           )}
-        </div>
-
-        {/* Leaderboard Sort Control */}
-        <div className="sort-toggle-bar">
-          <span className="sort-label">Sort by:</span>
-          <div className="sort-btn-group">
-            <button
-              type="button"
-              className={`sort-btn ${sortBy === "points" ? "active" : ""}`}
-              onClick={() => setSortBy("points")}
-              title="Sort leaderboard by total points"
-            >
-              ⭐ Points
-            </button>
-            <button
-              type="button"
-              className={`sort-btn ${sortBy === "streak" ? "active" : ""}`}
-              onClick={() => setSortBy("streak")}
-              title="Sort leaderboard by active daily streak"
-            >
-              🔥 Streak
-            </button>
-          </div>
         </div>
 
         {/* Leaderboard List */}
@@ -907,7 +910,7 @@ function Dashboard({
                         className="points-badge"
                         title={`Easy: ${e.easy_count} | Medium: ${e.medium_count} | Hard: ${e.hard_count}`}
                       >
-                        ⭐{e.points ?? (e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6)} pts
+                        ⭐{e.points ?? (e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6)}
                       </span>
                       <button
                         type="button"
