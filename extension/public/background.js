@@ -2,12 +2,21 @@
 
 const DEFAULT_API_URL = "https://leetcode-leetstreak.onrender.com";
 
-async function getApiBaseUrl() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(["api_url"], (result) => {
-      resolve(result.api_url || DEFAULT_API_URL);
+function openFloatingSolvePopup(userName, title, leetcodeUrl) {
+  try {
+    const query = `user=${encodeURIComponent(userName)}&title=${encodeURIComponent(title)}&url=${encodeURIComponent(leetcodeUrl)}`;
+    chrome.windows.create({
+      url: `notification.html?${query}`,
+      type: "popup",
+      width: 380,
+      height: 180,
+      top: 140,
+      left: 140,
+      focused: true
     });
-  });
+  } catch (err) {
+    console.error("Error creating floating solve popup:", err);
+  }
 }
 
 async function checkNewSolves() {
@@ -33,6 +42,7 @@ async function checkNewSolves() {
     if (lastNotifiedKey !== currentSolveKey) {
       // Trigger notification if solve is from a friend / another user
       if (latestSolve.user_id !== currentUser.id) {
+        // 1. Native OS Desktop Notification
         chrome.notifications.create(
           `solve|${latestSolve.leetcode_url}|${Date.now()}`,
           {
@@ -41,14 +51,13 @@ async function checkNewSolves() {
             title: "🔥 LeetStreak Solve Alert!",
             message: `${latestSolve.user_name} (@${latestSolve.user_handle}) just solved "${latestSolve.title}" on LeetCode!`,
             priority: 2
-          },
-          (id) => {
-            if (chrome.runtime.lastError) {
-              console.error("Chrome Notification Error:", chrome.runtime.lastError);
-            }
           }
         );
+
+        // 2. Mini Desktop Floating Window Popup (works even when main extension popup is closed!)
+        openFloatingSolvePopup(latestSolve.user_name, latestSolve.title, latestSolve.leetcode_url);
       }
+
       await new Promise((resolve) => {
         chrome.storage.local.set({ last_notified_solve: currentSolveKey }, resolve);
       });
@@ -79,23 +88,25 @@ chrome.runtime.onStartup.addListener(() => {
 // Runtime Message Listener (for testing & trigger from popup)
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "TRIGGER_TEST_NOTIFICATION") {
+    const testUser = "Sumukh Shandilya";
+    const testTitle = "3Sum";
+    const testUrl = "https://leetcode.com/problems/3sum";
+
+    // 1. Native Desktop OS Notification
     chrome.notifications.create(
-      `solve|https://leetcode.com/problems/3sum|${Date.now()}`,
+      `solve|${testUrl}|${Date.now()}`,
       {
         type: "basic",
         iconUrl: "icon48.png",
         title: "🔥 LeetStreak Solve Alert!",
-        message: 'Sumukh Shandilya (@Sumukh_Shandilya) just solved "3Sum" on LeetCode!',
+        message: `${testUser} (@Sumukh_Shandilya) just solved "${testTitle}" on LeetCode!`,
         priority: 2
-      },
-      (id) => {
-        if (chrome.runtime.lastError) {
-          console.error("Test Notification Error:", chrome.runtime.lastError);
-        } else {
-          console.log("Test Notification created:", id);
-        }
       }
     );
+
+    // 2. Mini Desktop Floating Window Popup
+    openFloatingSolvePopup(testUser, testTitle, testUrl);
+
     sendResponse({ status: "triggered" });
   }
   return true;
