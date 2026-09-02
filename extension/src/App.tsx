@@ -1018,6 +1018,7 @@ function Dashboard({
             <button
               className="modal-close"
               onClick={() => setInspectedFriend(null)}
+              title="Close modal"
             >
               ✕
             </button>
@@ -1033,7 +1034,7 @@ function Dashboard({
                   {inspectedFriend.name[0]}
                 </div>
               )}
-              <div>
+              <div className="modal-user-info">
                 <h3>{inspectedFriend.name}</h3>
                 <a
                   href={`https://leetcode.com/u/${inspectedFriend.leetcode_username}/`}
@@ -1077,7 +1078,7 @@ function Dashboard({
 
             {modalTab === "overview" ? (
               <>
-                <div className="section-title text-center mb-1">Questions Solved</div>
+                <div className="section-title text-center mb-1">QUESTIONS SOLVED</div>
                 <div className="stat-row">
                   <Stat
                     label="Today"
@@ -1103,37 +1104,6 @@ function Dashboard({
                     Hard {inspectedFriend.hard_count}
                   </span>
                 </div>
-
-                {loadingFriendDash ? (
-                  <div className="centered muted tiny py-2">Loading recent activity…</div>
-                ) : friendDash ? (
-                  <div className="section">
-                    <div className="section-title">7-Day Activity</div>
-                    <div className="heatmap">
-                      {friendDash.last_7_days.map((d, i) => (
-                        <div className="heat-col" key={d.date}>
-                          <div
-                            className="heat-bar"
-                            style={{
-                              height: `${
-                                (d.problems_solved /
-                                  Math.max(
-                                    1,
-                                    ...friendDash.last_7_days.map((x) => x.problems_solved)
-                                  )) *
-                                  32 +
-                                4
-                              }px`,
-                              opacity: d.problems_solved > 0 ? 1 : 0.25,
-                            }}
-                            title={`${d.date}: ${d.problems_solved} solved`}
-                          />
-                          <span className="tiny muted">{dayLabels[i]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
               </>
             ) : (
               <div className="modal-solves-container">
@@ -1204,20 +1174,6 @@ function Dashboard({
                 disabled={updatingUsername}
               >
                 {updatingUsername ? "Verifying & Updating…" : "Save New Username"}
-              </button>
-
-              <button
-                type="button"
-                className="chip-btn"
-                style={{ marginTop: "8px", width: "100%", padding: "8px", fontSize: "11px", fontWeight: "600" }}
-                onClick={() => {
-                  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.sendMessage) {
-                    chrome.runtime.sendMessage({ type: "TRIGGER_TEST_NOTIFICATION_DELAYED" });
-                  }
-                  setSettingsMsg("⏳ Scheduled in 3s! Close popup now to watch floating alert.");
-                }}
-              >
-                🔔 Test Closed Extension Alert (Triggers in 3s)
               </button>
             </form>
           </div>
