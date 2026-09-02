@@ -390,6 +390,7 @@ function Dashboard({
   const [modalTab, setModalTab] = useState<"overview" | "solves">("overview");
   const [recentSolvesList, setRecentSolvesList] = useState<RecentSolve[]>([]);
   const [loadingRecentSolves, setLoadingRecentSolves] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
 
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
@@ -1023,15 +1024,16 @@ function Dashboard({
               ✕
             </button>
             <div className="modal-header">
-              {inspectedFriend.avatar_url ? (
+              {inspectedFriend.avatar_url && !avatarLoadError ? (
                 <img
                   src={inspectedFriend.avatar_url}
                   alt={inspectedFriend.name}
                   className="modal-avatar"
+                  onError={() => setAvatarLoadError(true)}
                 />
               ) : (
                 <div className="avatar-placeholder lg">
-                  {inspectedFriend.name[0]}
+                  {inspectedFriend.name ? inspectedFriend.name[0].toUpperCase() : "U"}
                 </div>
               )}
               <div className="modal-user-info">
