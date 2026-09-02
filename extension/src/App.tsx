@@ -162,191 +162,195 @@ function Onboarding({
 
       {successMsg && <div className="sync-banner">{successMsg}</div>}
 
-      {/* Auth View Switcher Tabs */}
-      <div className="auth-tab-bar">
-        <button
-          type="button"
-          className={`auth-tab-btn ${authMode === "login" ? "active" : ""}`}
-          onClick={() => { setAuthMode("login"); onError(null); setSuccessMsg(null); }}
-        >
-          Log In
-        </button>
-        <button
-          type="button"
-          className={`auth-tab-btn ${authMode === "register" ? "active" : ""}`}
-          onClick={() => { setAuthMode("register"); onError(null); setSuccessMsg(null); }}
-        >
-          Sign Up
-        </button>
-      </div>
-
-      {authMode === "login" && (
-        <form onSubmit={handleLogin} className="auth-form">
-          <label>
-            <span>Email</span>
-            <input
-              type="email"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g. alex@example.com"
-              required
-            />
-          </label>
-
-          <label>
-            <span>Password</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-            />
-          </label>
-
-          <button type="submit" className="primary-btn" disabled={busy}>
-            {busy ? "Verifying…" : "Log In"}
-          </button>
-
-          <div className="auth-footer-links">
+      {/* Auth Card Container */}
+      <div className="auth-card">
+        {authMode !== "forgot" && (
+          <div className="auth-tab-bar">
             <button
               type="button"
-              className="link-btn tiny"
-              onClick={() => { setAuthMode("forgot"); setForgotStep(1); onError(null); setSuccessMsg(null); }}
+              className={`auth-tab-btn ${authMode === "login" ? "active" : ""}`}
+              onClick={() => { setAuthMode("login"); onError(null); setSuccessMsg(null); }}
             >
-              Forgot Password?
+              Log In
+            </button>
+            <button
+              type="button"
+              className={`auth-tab-btn ${authMode === "register" ? "active" : ""}`}
+              onClick={() => { setAuthMode("register"); onError(null); setSuccessMsg(null); }}
+            >
+              Sign Up
             </button>
           </div>
-        </form>
-      )}
+        )}
 
-      {authMode === "register" && (
-        <form onSubmit={handleRegister} className="auth-form">
-          <label>
-            <span>Your Name</span>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Alex"
-              required
-            />
-          </label>
+        {authMode === "login" && (
+          <form onSubmit={handleLogin} className="auth-form">
+            <label>
+              <span>Email</span>
+              <input
+                type="email"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="e.g. alex@example.com"
+                required
+              />
+            </label>
 
-          <label>
-            <span>LeetCode Username</span>
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="e.g. neal_wu"
-              required
-            />
-          </label>
+            <label>
+              <span>Password</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+            </label>
 
-          <label>
-            <span>Email Address</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="alex@example.com"
-              required
-            />
-          </label>
+            <button type="submit" className="primary-btn" disabled={busy}>
+              {busy ? "Verifying…" : "Log In"}
+            </button>
 
-          <label>
-            <span>Password</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 4 characters"
-              required
-            />
-          </label>
-
-          <button type="submit" className="primary-btn" disabled={busy}>
-            {busy ? "Creating Account…" : "Create Account"}
-          </button>
-        </form>
-      )}
-
-      {authMode === "forgot" && (
-        <div className="auth-form">
-          {forgotStep === 1 ? (
-            <form onSubmit={handleForgotInitiate}>
-              <p className="tiny muted mb-1">
-                Enter your Email address to receive a 6-digit reset code.
-              </p>
-              <label>
-                <span>Email Address</span>
-                <input
-                  type="email"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g. alex@example.com"
-                  required
-                />
-              </label>
-
-              <button type="submit" className="primary-btn" disabled={busy}>
-                {busy ? "Sending Code…" : "Send Reset Code"}
+            <div className="auth-footer-links">
+              <button
+                type="button"
+                className="link-btn tiny"
+                onClick={() => { setAuthMode("forgot"); setForgotStep(1); onError(null); setSuccessMsg(null); }}
+              >
+                Forgot Password?
               </button>
+            </div>
+          </form>
+        )}
 
-              <div className="auth-footer-links">
-                <button
-                  type="button"
-                  className="link-btn tiny"
-                  onClick={() => setAuthMode("login")}
-                >
-                  ← Back to Log In
+        {authMode === "register" && (
+          <form onSubmit={handleRegister} className="auth-form">
+            <label>
+              <span>Your Name</span>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Alex"
+                required
+              />
+            </label>
+
+            <label>
+              <span>LeetCode Username</span>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="e.g. neal_wu"
+                required
+              />
+            </label>
+
+            <label>
+              <span>Email Address</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="alex@example.com"
+                required
+              />
+            </label>
+
+            <label>
+              <span>Password</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 4 characters"
+                required
+              />
+            </label>
+
+            <button type="submit" className="primary-btn" disabled={busy}>
+              {busy ? "Creating Account…" : "Create Account"}
+            </button>
+          </form>
+        )}
+
+        {authMode === "forgot" && (
+          <div className="auth-form">
+            {forgotStep === 1 ? (
+              <form onSubmit={handleForgotInitiate} className="auth-form">
+                <p className="tiny muted mb-1">
+                  Enter your Email address to receive a 6-digit reset code.
+                </p>
+                <label>
+                  <span>Email Address</span>
+                  <input
+                    type="email"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="e.g. alex@example.com"
+                    required
+                  />
+                </label>
+
+                <button type="submit" className="primary-btn" disabled={busy}>
+                  {busy ? "Sending Code…" : "Send Reset Code"}
                 </button>
-              </div>
-            </form>
-          ) : (
-            <form onSubmit={handleForgotVerify}>
-              <p className="tiny muted mb-1">
-                Enter the 6-digit code sent to <strong>{sentEmail}</strong> and your new password.
-              </p>
 
-              <label>
-                <span>6-Digit Verification Code</span>
-                <input
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="e.g. 839102"
-                  maxLength={6}
-                  required
-                />
-              </label>
+                <div className="auth-footer-links">
+                  <button
+                    type="button"
+                    className="link-btn tiny"
+                    onClick={() => setAuthMode("login")}
+                  >
+                    ← Back to Log In
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleForgotVerify} className="auth-form">
+                <p className="tiny muted mb-1">
+                  Enter the 6-digit code sent to <strong>{sentEmail}</strong> and your new password.
+                </p>
 
-              <label>
-                <span>New Password</span>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="New password"
-                  required
-                />
-              </label>
+                <label>
+                  <span>6-Digit Verification Code</span>
+                  <input
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="e.g. 839102"
+                    maxLength={6}
+                    required
+                  />
+                </label>
 
-              <button type="submit" className="primary-btn" disabled={busy}>
-                {busy ? "Resetting…" : "Reset & Log In"}
-              </button>
+                <label>
+                  <span>New Password</span>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="New password"
+                    required
+                  />
+                </label>
 
-              <div className="auth-footer-links">
-                <button
-                  type="button"
-                  className="link-btn tiny"
-                  onClick={() => setForgotStep(1)}
-                >
-                  Resend Code
+                <button type="submit" className="primary-btn" disabled={busy}>
+                  {busy ? "Resetting…" : "Reset & Log In"}
                 </button>
-              </div>
-            </form>
-          )}
-        </div>
-      )}
+
+                <div className="auth-footer-links">
+                  <button
+                    type="button"
+                    className="link-btn tiny"
+                    onClick={() => setForgotStep(1)}
+                  >
+                    Resend Code
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

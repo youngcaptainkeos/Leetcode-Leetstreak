@@ -1191,3 +1191,155 @@ input:focus, form input:focus {
   cursor: pointer;
   padding: 2px 4px;
 }
+
+/* ==========================================================================
+   🔑 ONBOARDING & AUTH FORMS (Material Design 3 Dark Spec)
+   ========================================================================== */
+.onboarding {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 2px;
+  width: 100%;
+}
+
+.onboarding-welcome {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+  padding: 0 8px;
+}
+
+.onboarding-welcome h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  margin-bottom: 2px;
+}
+
+.onboarding-welcome p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Auth Card Wrapper */
+.auth-card {
+  background-color: var(--surface-low);
+  border: 1px solid var(--border);
+  border-radius: var(--md-shape-corner-large);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Auth Tab Bar Segmented Control */
+.auth-tab-bar {
+  display: flex;
+  background-color: var(--surface-high);
+  border: 1px solid var(--border);
+  padding: 3px;
+  border-radius: var(--md-shape-corner-full);
+  gap: 4px;
+  width: 100%;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: var(--md-shape-corner-full);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  text-align: center;
+}
+
+.auth-tab-btn.active {
+  background-color: var(--primary-container);
+  color: var(--text-primary);
+  border: 1px solid var(--primary-border);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Vertical Auth Form Layout */
+.auth-form {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  width: 100% !important;
+}
+
+.auth-form label {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  width: 100% !important;
+  text-align: left !important;
+}
+
+.auth-form label span {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: var(--text-secondary) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.6px !important;
+}
+
+.auth-form input {
+  background-color: var(--surface-highest) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--md-shape-corner-medium) !important;
+  padding: 10px 12px !important;
+  color: var(--text-primary) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  transition: border-color 0.2s !important;
+}
+
+.auth-form input:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2) !important;
+}
+
+.auth-form .primary-btn {
+  width: 100% !important;
+  padding: 12px 16px !important;
+  margin-top: 4px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  border-radius: var(--md-shape-corner-full) !important;
+}
+
+.auth-footer-links {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.auth-footer-links .link-btn {
+  background: transparent !important;
+  border: none !important;
+  color: var(--primary) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  transition: color 0.15s ease !important;
+}
+
+.auth-footer-links .link-btn:hover {
+  color: #c4b5fd !important;
+  text-decoration: underline !important;
+}
+
