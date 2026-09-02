@@ -19,7 +19,8 @@
   },
   "permissions": ["storage", "notifications", "alarms"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
   },
   "web_accessible_resources": [
     {
@@ -27,5 +28,11 @@
       "matches": ["<all_urls>"]
     }
   ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "leetstreak@example.com",
+      "strict_min_version": "109.0"
+    }
+  },
   "host_permissions": ["http://localhost:8000/*", "https://*/*", "http://*/*"]
 }
