@@ -90,6 +90,29 @@ function Onboarding({
   const [busy, setBusy] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  useEffect(() => {
+    (async () => {
+      const storedMode = await getStored("codestreak_auth_mode");
+      const storedStep = await getStored("codestreak_forgot_step");
+      const storedEmail = await getStored("codestreak_sent_email");
+      if (storedMode === "forgot" && storedStep === "2" && storedEmail) {
+        setAuthMode("forgot");
+        setForgotStep(2);
+        setSentEmail(storedEmail);
+        setUsername(storedEmail);
+      } else if (storedMode === "login" || storedMode === "register" || storedMode === "forgot") {
+        setAuthMode(storedMode as any);
+      }
+    })();
+  }, []);
+
+  const switchAuthMode = async (mode: "login" | "register" | "forgot") => {
+    setAuthMode(mode);
+    onError(null);
+    setSuccessMsg(null);
+    await setStored("codestreak_auth_mode", mode);
+  };
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     if (!username.trim() || !password) return;
@@ -97,6 +120,7 @@ function Onboarding({
     onError(null);
     try {
       const res = await api.login(username.trim(), password);
+      await clearStored(["codestreak_auth_mode", "codestreak_forgot_step", "codestreak_sent_email"]);
       onRegistered(res.id);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Login failed.");
@@ -112,6 +136,7 @@ function Onboarding({
     onError(null);
     try {
       const res = await api.register(name.trim(), username.trim(), email.trim(), password);
+      await clearStored(["codestreak_auth_mode", "codestreak_forgot_step", "codestreak_sent_email"]);
       onRegistered(res.id);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Registration failed.");
@@ -130,6 +155,9 @@ function Onboarding({
       setSentEmail(res.email);
       setForgotStep(2);
       setSuccessMsg(`Sent 6-digit code to ${res.email}`);
+      await setStored("codestreak_auth_mode", "forgot");
+      await setStored("codestreak_forgot_step", "2");
+      await setStored("codestreak_sent_email", res.email);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Could not send reset code.");
     } finally {
@@ -146,6 +174,7 @@ function Onboarding({
       await api.verifyForgotPassword(username.trim(), otp.trim(), newPassword);
       setPassword(newPassword);
       const res = await api.login(username.trim(), newPassword);
+      await clearStored(["codestreak_auth_mode", "codestreak_forgot_step", "codestreak_sent_email"]);
       onRegistered(res.id);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Verification failed.");
@@ -172,14 +201,14 @@ function Onboarding({
             <button
               type="button"
               className={`auth-tab-btn ${authMode === "login" ? "active" : ""}`}
-              onClick={() => { setAuthMode("login"); onError(null); setSuccessMsg(null); }}
+              onClick={() => switchAuthMode("login")}
             >
               Log In
             </button>
             <button
               type="button"
               className={`auth-tab-btn ${authMode === "register" ? "active" : ""}`}
-              onClick={() => { setAuthMode("register"); onError(null); setSuccessMsg(null); }}
+              onClick={() => switchAuthMode("register")}
             >
               Sign Up
             </button>
@@ -218,7 +247,7 @@ function Onboarding({
               <button
                 type="button"
                 className="link-btn tiny"
-                onClick={() => { setAuthMode("forgot"); setForgotStep(1); onError(null); setSuccessMsg(null); }}
+                onClick={() => { switchAuthMode("forgot"); setForgotStep(1); }}
               >
                 Forgot Password?
               </button>
@@ -302,7 +331,7 @@ function Onboarding({
                   <button
                     type="button"
                     className="link-btn tiny"
-                    onClick={() => setAuthMode("login")}
+                    onClick={() => switchAuthMode("login")}
                   >
                     ← Back to Log In
                   </button>
@@ -383,6 +412,24 @@ function Dashboard({
   const [sortBy, setSortBy] = useState<"points" | "streak">("points");
   const [revealedCodes, setRevealedCodes] = useState<Record<number, boolean>>({});
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
+
+  const changeTab = (tab: BoardTab) => {
+    setSelectedTab(tab);
+    setStored("codestreak_active_tab", String(tab));
+  };
+
+  useEffect(() => {
+    (async () => {
+      const storedTab = await getStored("codestreak_active_tab");
+      if (storedTab) {
+        if (storedTab === "global" || storedTab === "friends") {
+          setSelectedTab(storedTab);
+        } else if (!isNaN(Number(storedTab))) {
+          setSelectedTab(Number(storedTab));
+        }
+      }
+    })();
+  }, []);
 
   // Inspect Friend Stats Modal
   const [inspectedFriend, setInspectedFriend] = useState<LeaderboardEntry | null>(
@@ -608,7 +655,7 @@ function Dashboard({
       const group = await api.createGroup(userId, newGroupName.trim());
       setNewGroupName("");
       setShowCreateGroup(false);
-      setSelectedTab(group.id);
+      changeTab(group.id);
       await loadData(group.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create group.");
@@ -625,7 +672,7 @@ function Dashboard({
       const group = await api.joinGroup(userId, joinCode.trim());
       setJoinCode("");
       setShowJoinGroup(false);
-      setSelectedTab(group.id);
+      changeTab(group.id);
       await loadData(group.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to join group.");
@@ -883,14 +930,14 @@ function Dashboard({
         <div className="tab-bar-container">
           <button
             className={`tab-btn ${selectedTab === "global" ? "active" : ""}`}
-            onClick={() => setSelectedTab("global")}
+            onClick={() => changeTab("global")}
             title="Global Leaderboard (All platform users)"
           >
             🌐 Global
           </button>
           <button
             className={`tab-btn ${selectedTab === "friends" ? "active" : ""}`}
-            onClick={() => setSelectedTab("friends")}
+            onClick={() => changeTab("friends")}
             title="My Friends (All group members across your groups)"
           >
             👥 My Friends
@@ -899,7 +946,7 @@ function Dashboard({
             <button
               key={g.id}
               className={`tab-btn ${selectedTab === g.id ? "active" : ""}`}
-              onClick={() => setSelectedTab(g.id)}
+              onClick={() => changeTab(g.id)}
             >
               👥 {g.name}
             </button>
