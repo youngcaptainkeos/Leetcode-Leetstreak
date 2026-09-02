@@ -8,6 +8,8 @@ import {
   GroupResponse,
   RecentSolve,
   VersionCheckResponse,
+  AppConfigResponse,
+  DynamicMenuItem,
 } from "./lib/api";
 import { getStored, setStored, clearStored } from "./storage";
 
@@ -418,14 +420,20 @@ function Dashboard({
   const [copiedCode, setCopiedCode] = useState(false);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
 
-  // Network Offline Listener State
+  // Network Offline Listener & Dynamic OTA Config States
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [appConfig, setAppConfig] = useState<AppConfigResponse | null>(null);
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
+
+    // Fetch dynamic Over-The-Air app configuration & menus
+    api.getAppConfig().then((cfg) => {
+      if (cfg) setAppConfig(cfg);
+    });
 
     return () => {
       window.removeEventListener("online", handleOnline);
@@ -740,6 +748,11 @@ function Dashboard({
       {isOffline && (
         <div className="offline-banner">
           ⚠️ Connection lost — checking network…
+        </div>
+      )}
+      {appConfig?.announcement && (
+        <div className="announcement-banner">
+          📢 {appConfig.announcement}
         </div>
       )}
       {syncMsg && <div className="sync-banner">{syncMsg}</div>}

@@ -76,6 +76,32 @@ export async function checkExtensionVersion(): Promise<VersionCheckResponse | nu
   }
 }
 
+export interface DynamicMenuItem {
+  id: string;
+  label: string;
+  icon: string;
+  type: "tab" | "link" | "modal";
+  url?: string;
+  enabled: boolean;
+}
+
+export interface AppConfigResponse {
+  version: string;
+  maintenance_mode: boolean;
+  announcement?: string;
+  menu_items: DynamicMenuItem[];
+}
+
+export async function getAppConfig(): Promise<AppConfigResponse | null> {
+  try {
+    const res = await fetch(`${API_BASE}/config/app`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export interface LeaderboardResponse {
   week_start: string;
   week_end: string;
@@ -194,5 +220,6 @@ export const api = {
     request<RecentSolve[]>(`/users/${userId}/recent-solves?limit=${limit}`),
   pollNow: () => request<{ polled: Record<string, number> }>("/admin/poll-now", { method: "POST" }),
   checkExtensionVersion: checkExtensionVersion,
+  getAppConfig: getAppConfig,
 };
 

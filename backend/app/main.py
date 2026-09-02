@@ -24,6 +24,7 @@ from .schemas import (
     GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema,
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
     KudosToggleRequest, UpdateUsernameRequest, ActivityFeedItemSchema,
+    DynamicMenuItem, AppConfigResponse,
 )
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
@@ -895,5 +896,23 @@ def download_extension_zip():
     if os.path.exists(zip_path):
         return FileResponse(zip_path, filename="leetstreak.zip", media_type="application/zip")
     return {"error": "Extension package file not found"}
+
+
+# ==========================================================================
+# 🌐 DYNAMIC BACKEND-DRIVEN OTA APP CONFIG & MENU ENDPOINT
+# ==========================================================================
+@app.get("/api/config/app", response_model=AppConfigResponse)
+def get_app_config():
+    """Serves dynamic over-the-air app configuration, feature flags, announcements, and dynamic menus."""
+    return AppConfigResponse(
+        version="1.0.0",
+        maintenance_mode=False,
+        announcement=None,
+        menu_items=[
+            DynamicMenuItem(id="dashboard", label="Dashboard", icon="📊", type="tab", enabled=True),
+            DynamicMenuItem(id="groups", label="Groups", icon="👥", type="tab", enabled=True),
+            DynamicMenuItem(id="coffee", label="Buy Me a Coffee", icon="☕", type="modal", enabled=True),
+        ]
+    )
 
 

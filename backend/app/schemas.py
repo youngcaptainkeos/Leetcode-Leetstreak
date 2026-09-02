@@ -138,3 +138,20 @@ class ActivityFeedItemSchema(BaseModel):
     leetcode_url: str
 
 
+class DynamicMenuItem(BaseModel):
+    id: str
+    label: str
+    icon: str
+    type: str  # "tab", "link", "modal"
+    url: Optional[str] = None
+    enabled: bool = True
+
+
+class AppConfigResponse(BaseModel):
+    version: str
+    maintenance_mode: bool = False
+    announcement: Optional[str] = None
+    menu_items: List[DynamicMenuItem]
+
+
+
