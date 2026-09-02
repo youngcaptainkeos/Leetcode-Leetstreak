@@ -569,7 +569,12 @@ function Dashboard({
         })
         .catch(() => {});
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't load dashboard.");
+      const errMsg = err instanceof Error ? err.message : "";
+      if (errMsg.includes("404") || errMsg.includes("User not found")) {
+        onResetUser();
+      } else {
+        setError(err instanceof Error ? err.message : "Couldn't load dashboard.");
+      }
     }
   }
 
