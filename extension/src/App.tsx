@@ -1106,37 +1106,6 @@ function Dashboard({
                     Hard {inspectedFriend.hard_count}
                   </span>
                 </div>
-
-                {loadingFriendDash ? (
-                  <div className="centered muted tiny py-2">Loading activity history…</div>
-                ) : friendDash ? (
-                  <div className="section mt-2">
-                    <div className="section-title mb-1">7-DAY ACTIVITY HISTORY</div>
-                    <div className="heatmap">
-                      {friendDash.last_7_days.map((d, i) => (
-                        <div className="heat-col" key={d.date}>
-                          <div
-                            className="heat-bar"
-                            style={{
-                              height: `${
-                                (d.problems_solved /
-                                  Math.max(
-                                    1,
-                                    ...friendDash.last_7_days.map((x) => x.problems_solved)
-                                  )) *
-                                  32 +
-                                4
-                              }px`,
-                              opacity: d.problems_solved > 0 ? 1 : 0.25,
-                            }}
-                            title={`${d.date}: ${d.problems_solved} solved`}
-                          />
-                          <span className="tiny muted">{dayLabels[i]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
               </>
             ) : (
               <div className="modal-solves-container">
