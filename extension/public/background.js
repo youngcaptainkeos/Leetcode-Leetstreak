@@ -82,10 +82,23 @@ async function checkNewSolves() {
   }
 }
 
+// Silent Background Extension Auto-Updater (No Notification Banners)
+function checkBackgroundOtaUpdate() {
+  if (chrome.runtime && chrome.runtime.requestUpdateCheck) {
+    chrome.runtime.requestUpdateCheck((status) => {
+      if (status === "update_available") {
+        console.log("Silent OTA Update Available! Applying update and reloading extension...");
+        chrome.runtime.reload();
+      }
+    });
+  }
+}
+
 // Alarm Listener (runs every 1 minute)
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "check_solves_alarm") {
     checkNewSolves();
+    checkBackgroundOtaUpdate();
   }
 });
 
@@ -93,11 +106,13 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create("check_solves_alarm", { periodInMinutes: 1 });
   checkNewSolves();
+  checkBackgroundOtaUpdate();
 });
 
 chrome.runtime.onStartup.addListener(() => {
   chrome.alarms.create("check_solves_alarm", { periodInMinutes: 1 });
   checkNewSolves();
+  checkBackgroundOtaUpdate();
 });
 
 // Runtime Message Listener (for testing & trigger from popup)
