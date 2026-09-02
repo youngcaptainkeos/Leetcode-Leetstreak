@@ -1106,6 +1106,39 @@ function Dashboard({
                     Hard {inspectedFriend.hard_count}
                   </span>
                 </div>
+
+                {/* Material UI 7-Day Activity Calendar Card */}
+                {loadingFriendDash ? (
+                  <div className="centered muted tiny py-2">Loading activity calendar…</div>
+                ) : friendDash ? (
+                  <div className="profile-calendar-card">
+                    <div className="profile-calendar-title">
+                      <span>📅</span>
+                      <span>LAST 7 DAYS ACTIVITY</span>
+                    </div>
+                    <div className="profile-heatmap">
+                      {friendDash.last_7_days.map((d, i) => {
+                        const solved = d.problems_solved;
+                        const maxSolved = Math.max(1, ...friendDash.last_7_days.map((x) => x.problems_solved));
+                        const heightPct = Math.min(100, Math.max(14, (solved / maxSolved) * 100));
+                        return (
+                          <div className="profile-heat-col" key={d.date}>
+                            <div className="profile-bar-track">
+                              <div
+                                className={`profile-heat-bar ${solved > 0 ? "active" : ""}`}
+                                style={{
+                                  height: `${heightPct}%`,
+                                }}
+                                title={`${d.date}: ${solved} problem${solved === 1 ? "" : "s"} solved`}
+                              />
+                            </div>
+                            <span className="profile-heat-day">{dayLabels[i]}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
               </>
             ) : (
               <div className="modal-solves-container">
