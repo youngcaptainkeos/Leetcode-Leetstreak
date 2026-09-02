@@ -401,8 +401,9 @@ function Dashboard({
     leetcode_url: string;
   } | null>(null);
 
-  // Settings Modal State
+  // Settings & Coffee Modal States
   const [showSettings, setShowSettings] = useState(false);
+  const [showCoffeeModal, setShowCoffeeModal] = useState(false);
   const [newLeetcodeUsername, setNewLeetcodeUsername] = useState("");
   const [updatingUsername, setUpdatingUsername] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
@@ -705,6 +706,13 @@ function Dashboard({
         </div>
 
         <div className="profile-actions">
+          <button
+            className="coffee-btn"
+            onClick={() => setShowCoffeeModal(true)}
+            title="Buy Me a Coffee ☕"
+          >
+            ☕
+          </button>
           <button
             className="settings-btn"
             onClick={() => {
@@ -1211,6 +1219,42 @@ function Dashboard({
                 {updatingUsername ? "Verifying & Updating…" : "Save New Username"}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Buy Me a Coffee Modal */}
+      {showCoffeeModal && (
+        <div className="modal-overlay" onClick={() => setShowCoffeeModal(false)}>
+          <div className="modal-content coffee-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>☕ Buy Me a Coffee</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowCoffeeModal(false)}
+                title="Close modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="coffee-modal-body">
+              <div className="qr-container">
+                <img src="upi_qr.png" alt="UPI QR Code" className="upi-qr-img" />
+              </div>
+
+              <div className="coffee-text-box">
+                <p className="coffee-gratitude-title">💛 Thank you for using LeetStreak!</p>
+                <p className="coffee-gratitude-text">
+                  If LeetStreak helps you and your friends stay consistent on LeetCode, consider buying me a coffee! Your support fuels server hosting, live features, and continuous updates. Every cup is deeply appreciated! ☕
+                </p>
+              </div>
+
+              <div className="upi-badge-box">
+                <span className="tiny muted uppercase">Scan with any UPI App</span>
+                <span className="upi-app-icons">GPay • PhonePe • Paytm • BHIM</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
