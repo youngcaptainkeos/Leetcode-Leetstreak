@@ -369,7 +369,14 @@ function Onboarding({
                   {busy ? "Resetting…" : "Reset & Log In"}
                 </button>
 
-                <div className="auth-footer-links">
+                <div className="auth-footer-links" style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+                  <button
+                    type="button"
+                    className="link-btn tiny"
+                    onClick={() => switchAuthMode("login")}
+                  >
+                    ← Back to Log In
+                  </button>
                   <button
                     type="button"
                     className="link-btn tiny"
