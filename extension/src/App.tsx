@@ -7,6 +7,7 @@ import {
   LeaderboardEntry,
   GroupResponse,
   RecentSolve,
+  VersionCheckResponse,
 } from "./lib/api";
 import { getStored, setStored, clearStored } from "./storage";
 
@@ -417,14 +418,23 @@ function Dashboard({
   const [copiedCode, setCopiedCode] = useState(false);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
 
-  // Network Offline Listener State
+  // Network Offline Listener & Version OTA Check States
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [updateInfo, setUpdateInfo] = useState<VersionCheckResponse | null>(null);
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
+
+    // Check version OTA
+    api.checkExtensionVersion().then((ver) => {
+      if (ver && ver.latest_version !== "1.0.0") {
+        setUpdateInfo(ver);
+      }
+    });
+
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
@@ -738,6 +748,19 @@ function Dashboard({
       {isOffline && (
         <div className="offline-banner">
           ⚠️ Connection lost — checking network…
+        </div>
+      )}
+      {updateInfo && (
+        <div className="update-ota-banner">
+          <span>🚀 <b>New Update Available (v{updateInfo.latest_version})!</b></span>
+          <a
+            href={updateInfo.download_url}
+            target="_blank"
+            rel="noreferrer"
+            className="update-ota-btn"
+          >
+            Download ↗
+          </a>
         </div>
       )}
       {syncMsg && <div className="sync-banner">{syncMsg}</div>}

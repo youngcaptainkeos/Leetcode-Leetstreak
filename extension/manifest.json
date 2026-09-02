@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "LeetStreak",
   "version": "1.0.0",
+  "update_url": "https://leetcode-leetstreak.onrender.com/api/extension/updates.xml",
   "description": "Track your LeetCode consistency with friends.",
   "icons": {
     "16": "icon16.png",

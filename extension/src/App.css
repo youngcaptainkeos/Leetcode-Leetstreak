@@ -1566,5 +1566,38 @@ input:focus, form input:focus {
   color: var(--text-secondary);
 }
 
+/* ==========================================================================
+   🚀 OVER-THE-AIR (OTA) UPDATE BANNER
+   ========================================================================== */
+.update-ota-banner {
+  background: linear-gradient(135deg, #3B2D63 0%, #251B42 100%);
+  border: 1px solid var(--primary-border);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: var(--md-shape-corner-medium);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.35);
+}
+
+.update-ota-btn {
+  background-color: var(--primary);
+  color: #111318 !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  padding: 4px 10px !important;
+  border-radius: 9999px !important;
+  text-decoration: none !important;
+  transition: transform 0.15s ease !important;
+  display: inline-block !important;
+}
+
+.update-ota-btn:hover {
+  transform: scale(1.06) !important;
+}
+
 
 

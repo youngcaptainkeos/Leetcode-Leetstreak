@@ -1,3 +1,4 @@
+import os
 import logging
 import secrets
 import string
@@ -6,6 +7,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional, Dict, Set
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Header
+from fastapi.responses import Response, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, func
 from sqlalchemy.orm import Session
@@ -857,4 +859,41 @@ def delete_user_by_id(user_id: int, db: Session = Depends(get_db)):
     db.delete(user)
     db.commit()
     return {"status": "deleted", "user_id": user_id, "username": deleted_username}
+
+
+# ==========================================================================
+# 🚀 EXTENSION OVER-THE-AIR (OTA) AUTO-UPDATE ENDPOINTS
+# ==========================================================================
+@app.get("/api/extension/updates.xml")
+def get_extension_updates_xml():
+    """Serves official Chrome Omaha XML manifest for background auto-updates."""
+    xml_content = """<?xml version='1.0' encoding='UTF-8'?>
+<gupdate xmlns='http://www.google.com/service/update2/crx' protocol='2.0'>
+  <app appid='leetstreak@example.com'>
+    <updatecheck codebase='https://leetcode-leetstreak.onrender.com/downloads/leetstreak.crx' version='1.0.0' />
+  </app>
+</gupdate>"""
+    return Response(content=xml_content, media_type="application/xml")
+
+
+@app.get("/api/extension/version")
+def get_extension_version():
+    """Serves latest extension version info for in-app update notification banner."""
+    return {
+        "latest_version": "1.0.0",
+        "min_supported_version": "1.0.0",
+        "release_notes": "Added Buy Me a Coffee feature, Sunday 12am reset, and full Firefox support!",
+        "download_url": "https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/leetstreak.zip",
+        "crx_url": "https://leetcode-leetstreak.onrender.com/downloads/leetstreak.crx"
+    }
+
+
+@app.get("/downloads/leetstreak.zip")
+def download_extension_zip():
+    """Serves downloadable leetstreak.zip file."""
+    zip_path = os.path.join(os.path.dirname(__file__), "..", "..", "leetstreak.zip")
+    if os.path.exists(zip_path):
+        return FileResponse(zip_path, filename="leetstreak.zip", media_type="application/zip")
+    return {"error": "Extension package file not found"}
+
 

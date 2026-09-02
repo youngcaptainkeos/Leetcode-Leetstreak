@@ -58,6 +58,24 @@ export interface LeaderboardEntry {
   has_kudosed?: boolean;
 }
 
+export interface VersionCheckResponse {
+  latest_version: string;
+  min_supported_version: string;
+  release_notes: string;
+  download_url: string;
+  crx_url: string;
+}
+
+export async function checkExtensionVersion(): Promise<VersionCheckResponse | null> {
+  try {
+    const res = await fetch(`${API_BASE}/extension/version`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export interface LeaderboardResponse {
   week_start: string;
   week_end: string;
@@ -175,5 +193,6 @@ export const api = {
   recentSolves: (userId: number, limit = 10) =>
     request<RecentSolve[]>(`/users/${userId}/recent-solves?limit=${limit}`),
   pollNow: () => request<{ polled: Record<string, number> }>("/admin/poll-now", { method: "POST" }),
+  checkExtensionVersion: checkExtensionVersion,
 };
 
