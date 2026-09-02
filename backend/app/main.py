@@ -285,6 +285,33 @@ def _active_dates(db: Session, user_id: int) -> set[date]:
     return {r[0] for r in rows}
 
 
+IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def get_ist_today() -> date:
+    """Returns today's date in Indian Standard Time (IST, UTC+5:30)."""
+    return datetime.now(IST).date()
+
+
+def get_current_week_start(today: date) -> date:
+    """Returns Sunday 00:00:00 (start of current week). Resets weekly counter every Sunday 12:00 AM."""
+    days_since_sunday = (today.weekday() + 1) % 7
+    return today - timedelta(days=days_since_sunday)
+
+
+def get_current_month_start(today: date) -> date:
+    """Returns 1st of the current calendar month 00:00:00. Resets monthly counter on the 1st of every month."""
+    return date(today.year, today.month, 1)
+
+
+def get_ist_today_start() -> datetime:
+    """Returns midnight (00:00:00) of current calendar day in Indian Standard Time (IST, UTC+5:30) converted to naive UTC for DB comparison."""
+    now_ist = datetime.now(IST)
+    midnight_ist = datetime(now_ist.year, now_ist.month, now_ist.day)
+    utc_midnight = midnight_ist - timedelta(hours=5, minutes=30)
+    return utc_midnight.replace(tzinfo=None)
+
+
 @app.get("/api/users/{user_id}/dashboard", response_model=DashboardResponse)
 def get_dashboard(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
@@ -292,14 +319,16 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
 
     today = get_ist_today()
+    week_start = get_current_week_start(today)
+    month_start = get_current_month_start(today)
+
     active_dates = _active_dates(db, user_id)
     streak = current_streak(active_dates, today)
 
-    def total_since(days: int) -> int:
-        start = today - timedelta(days=days - 1)
+    def total_since_date(start_date: date) -> int:
         rows = (
             db.query(DailyActivity)
-            .filter(DailyActivity.user_id == user_id, DailyActivity.date >= start)
+            .filter(DailyActivity.user_id == user_id, DailyActivity.date >= start_date)
             .all()
         )
         return sum(r.problems_solved for r in rows)
@@ -326,27 +355,11 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
         hard_count=user.hard_count or 0,
         current_streak=streak,
         today_count=today_row.problems_solved if today_row else 0,
-        weekly_total=total_since(7),
-        monthly_total=total_since(30),
+        weekly_total=total_since_date(week_start),
+        monthly_total=total_since_date(month_start),
         created_at=user.created_at,
         last_7_days=last_7,
     )
-
-
-IST = timezone(timedelta(hours=5, minutes=30))
-
-
-def get_ist_today() -> date:
-    """Returns today's date in Indian Standard Time (IST, UTC+5:30)."""
-    return datetime.now(IST).date()
-
-
-def get_ist_today_start() -> datetime:
-    """Returns midnight (00:00:00) of current calendar day in Indian Standard Time (IST, UTC+5:30) converted to naive UTC for DB comparison."""
-    now_ist = datetime.now(IST)
-    midnight_ist = datetime(now_ist.year, now_ist.month, now_ist.day)
-    utc_midnight = midnight_ist - timedelta(hours=5, minutes=30)
-    return utc_midnight.replace(tzinfo=None)
 
 
 def _compute_leaderboard(
@@ -357,7 +370,8 @@ def _compute_leaderboard(
     limit: Optional[int] = None,
 ) -> LeaderboardResponse:
     today = get_ist_today()
-    week_start = today - timedelta(days=6)
+    week_start = get_current_week_start(today)
+    days_in_week_so_far = (today - week_start).days + 1
     cutoff_today = get_ist_today_start()
 
     # Pre-fetch today's active kudos (IST calendar day)
@@ -396,7 +410,7 @@ def _compute_leaderboard(
         week_rows = week_rows_map[user.id]
         weekly_total = sum(r.problems_solved for r in week_rows)
         active_days_this_week = len(week_rows)
-        consistency = (active_days_this_week / 7) * 100
+        consistency = (active_days_this_week / days_in_week_so_far) * 100
         is_active_today = today in active_dates
         points = ((user.easy_count or 0) * 1) + ((user.medium_count or 0) * 3) + ((user.hard_count or 0) * 6)
         raw.append({
