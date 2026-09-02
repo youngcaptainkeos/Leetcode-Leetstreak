@@ -30,6 +30,27 @@ Follow these simple steps to install **LeetStreak** on Google Chrome, Microsoft 
 
 ---
 
+### 🦊 Firefox Setup Guide
+
+Follow these simple steps to install **LeetStreak** on Mozilla Firefox:
+
+1. **Download & Extract**:
+   - Download `LeetStreak-Firefox.zip` from [GitHub Releases](https://github.com/youngcaptainkeos/Leetcode-Leetstreak/releases).
+   - Unzip `LeetStreak-Firefox.zip` to a folder on your computer.
+
+2. **Open Firefox Debugging**:
+   - Open Mozilla Firefox.
+   - Type `about:debugging#/runtime/this-firefox` in the address bar and press **Enter**.
+
+3. **Load the Extension**:
+   - Click **Load Temporary Add-on...** (located near the top right).
+   - Select the `manifest.json` file inside your unzipped folder.
+
+4. **Pin & Launch**:
+   - Click the **Puzzle Piece (🧩)** icon in Firefox's top-right toolbar and click **Pin to Toolbar** next to **LeetStreak**.
+
+---
+
 ## ✨ Features
 
 - 🔥 **Active Daily Streak Tracking**: Keeps track of your daily coding streak with an automatic 1-day grace period.
