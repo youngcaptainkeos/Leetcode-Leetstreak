@@ -11,8 +11,8 @@ Track your LeetCode consistency, build active daily streaks, and compete on live
 Follow these simple steps to install **LeetStreak** on Google Chrome, Microsoft Edge, Brave, or any Chromium-based browser in under 1 minute!
 
 ### Step 1: Download the Extension
-1. Download the latest `LeetStreak.zip` release from the [GitHub Releases Page](https://github.com/youngcaptainkeos/Leetcode-Leetstreak/releases) (or grab the `dist` folder).
-2. Unzip `LeetStreak.zip` to any folder on your computer.
+1. Download the latest `leetstreak.zip` release from the [GitHub Releases Page](https://github.com/youngcaptainkeos/Leetcode-Leetstreak/releases).
+2. Unzip `leetstreak.zip` to any folder on your computer.
 
 ### Step 2: Load into Chrome / Edge / Brave
 1. Open your browser and go to the extensions page:
@@ -21,7 +21,7 @@ Follow these simple steps to install **LeetStreak** on Google Chrome, Microsoft 
    - **Brave**: Type `brave://extensions` in the address bar.
 2. Toggle ON **Developer mode** (switch located in the top right corner).
 3. Click the **Load unpacked** button (located in the top left).
-4. Select the unzipped `dist` folder.
+4. Select the unzipped folder containing `manifest.json`.
 
 ### Step 3: Pin & Open LeetStreak
 1. Click the **Puzzle Piece icon** (🧩) in your top-right browser toolbar.
@@ -35,8 +35,8 @@ Follow these simple steps to install **LeetStreak** on Google Chrome, Microsoft 
 Follow these simple steps to install **LeetStreak** on Mozilla Firefox:
 
 1. **Download & Extract**:
-   - Download `LeetStreak-Firefox.zip` from [GitHub Releases](https://github.com/youngcaptainkeos/Leetcode-Leetstreak/releases).
-   - Unzip `LeetStreak-Firefox.zip` to a folder on your computer.
+   - Download `leetstreak.zip` from [GitHub Releases](https://github.com/youngcaptainkeos/Leetcode-Leetstreak/releases).
+   - Unzip `leetstreak.zip` to a folder on your computer.
 
 2. **Open Firefox Debugging**:
    - Open Mozilla Firefox.
