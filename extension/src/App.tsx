@@ -435,6 +435,15 @@ function Dashboard({
           setSelectedTab(Number(storedTab));
         }
       }
+      // Instant 0ms stale-while-revalidate cached rendering
+      const cachedDash = await getStored("codestreak_cached_dash");
+      const cachedBoard = await getStored("codestreak_cached_board");
+      if (cachedDash) {
+        try { setDash(JSON.parse(cachedDash)); } catch (e) {}
+      }
+      if (cachedBoard) {
+        try { setBoard(JSON.parse(cachedBoard)); } catch (e) {}
+      }
     })();
   }, []);
 
@@ -528,19 +537,40 @@ function Dashboard({
     sortMode: "points" | "streak" = sortBy
   ) {
     try {
-      const dashRes = await api.dashboard(userId).catch((err) => {
-        if (err.message.includes("404") || err.message.includes("not found")) {
-          onResetUser();
-          return null;
-        }
-        throw err;
-      });
+      // 🚀 Parallelize all independent API calls to eliminate sequential network waterfalls!
+      const boardPromise =
+        tab === "global"
+          ? api.leaderboard(userId, sortMode)
+          : tab === "friends"
+          ? api.friendsLeaderboard(userId, sortMode)
+          : api.groupLeaderboard(tab, userId, sortMode);
+
+      const [dashRes, myGroupsRes, boardRes, feedData] = await Promise.all([
+        api.dashboard(userId).catch((err) => {
+          if (err.message.includes("404") || err.message.includes("not found")) {
+            onResetUser();
+            return null;
+          }
+          throw err;
+        }),
+        api.myGroups(userId).catch(() => ({ groups: [] })),
+        boardPromise.catch(() => null),
+        fetch(`${API_BASE}/api/feed/recent-solves?limit=10`)
+          .then((res) => (res.ok ? res.json() : []))
+          .catch(() => []),
+      ]);
 
       if (!dashRes) return;
 
-      const myGroupsRes = await api.myGroups(userId);
       setDash(dashRes);
-      setGroups(myGroupsRes.groups);
+      if (myGroupsRes?.groups) setGroups(myGroupsRes.groups);
+      if (boardRes) setBoard(boardRes);
+      if (Array.isArray(feedData)) setActivityFeed(feedData);
+      setError(null);
+
+      // Save stale-while-revalidate cache for instant 0ms load next time!
+      setStored("codestreak_cached_dash", JSON.stringify(dashRes));
+      if (boardRes) setStored("codestreak_cached_board", JSON.stringify(boardRes));
 
       // Update Chrome Extension Action Badge
       if (typeof chrome !== "undefined" && chrome.action && chrome.action.setBadgeText) {
@@ -548,26 +578,6 @@ function Dashboard({
         chrome.action.setBadgeText({ text: badgeText });
         chrome.action.setBadgeBackgroundColor({ color: dashRes.today_count > 0 ? "#10b981" : "#6366f1" });
       }
-
-      // Load leaderboard based on tab
-      let boardRes: LeaderboardResponse;
-      if (tab === "global") {
-        boardRes = await api.leaderboard(userId, sortMode);
-      } else if (tab === "friends") {
-        boardRes = await api.friendsLeaderboard(userId, sortMode);
-      } else {
-        boardRes = await api.groupLeaderboard(tab, userId, sortMode);
-      }
-      setBoard(boardRes);
-      setError(null);
-
-      // Fetch Recent Solve Activity Feed
-      fetch(`${API_BASE}/api/feed/recent-solves?limit=10`)
-        .then((res) => (res.ok ? res.json() : []))
-        .then((data) => {
-          if (Array.isArray(data)) setActivityFeed(data);
-        })
-        .catch(() => {});
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : "";
       if (errMsg.includes("404") || errMsg.includes("User not found")) {

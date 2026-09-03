@@ -94,8 +94,18 @@ function checkBackgroundOtaUpdate() {
   }
 }
 
+// Keep-Alive Warmup Ping for Render Free Tier (Prevents 30s Cold Starts)
+async function keepAlivePing() {
+  try {
+    fetch(`${DEFAULT_API_URL}/api/health`).catch(() => {});
+  } catch (err) {}
+}
+
 // Alarm Listener (runs every 1 minute)
 chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "keep_alive_alarm") {
+    keepAlivePing();
+  }
   if (alarm.name === "check_solves_alarm") {
     checkNewSolves();
     checkBackgroundOtaUpdate();
@@ -105,12 +115,16 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 // Setup alarm on startup / install
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create("check_solves_alarm", { periodInMinutes: 1 });
+  chrome.alarms.create("keep_alive_alarm", { periodInMinutes: 10 });
+  keepAlivePing();
   checkNewSolves();
   checkBackgroundOtaUpdate();
 });
 
 chrome.runtime.onStartup.addListener(() => {
   chrome.alarms.create("check_solves_alarm", { periodInMinutes: 1 });
+  chrome.alarms.create("keep_alive_alarm", { periodInMinutes: 10 });
+  keepAlivePing();
   checkNewSolves();
   checkBackgroundOtaUpdate();
 });
