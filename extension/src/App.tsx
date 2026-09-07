@@ -422,25 +422,16 @@ function Dashboard({
   const [tabBoards, setTabBoards] = useState<Record<string, LeaderboardResponse>>({});
   const [boardLoading, setBoardLoading] = useState<boolean>(false);
 
-  const changeTab = async (tab: BoardTab) => {
-    setSelectedTab(tab);
-    setStored("codestreak_active_tab", String(tab));
-
+  const changeTab = (tab: BoardTab) => {
     const tabKey = String(tab);
+    setSelectedTab(tab);
+    setStored("codestreak_active_tab", tabKey);
+
+    // ⚡ INSTANT SWAP (0ms): Clear old board immediately if not cached so old users vanish at once!
     if (tabBoards[tabKey]) {
       setBoard(tabBoards[tabKey]);
       setBoardLoading(false);
     } else {
-      const storedTabBoard = await getStored(`codestreak_cached_board_${tabKey}`);
-      if (storedTabBoard) {
-        try {
-          const parsed = JSON.parse(storedTabBoard);
-          setBoard(parsed);
-          setTabBoards((prev) => ({ ...prev, [tabKey]: parsed }));
-          setBoardLoading(false);
-          return;
-        } catch (e) {}
-      }
       setBoard(null);
       setBoardLoading(true);
     }
@@ -681,9 +672,56 @@ function Dashboard({
     }
   }
 
+  async function fetchLeaderboardOnly(
+    tab: BoardTab = selectedTab,
+    sortMode: "points" | "streak" = sortBy
+  ) {
+    const tabKey = String(tab);
+
+    // If cached in memory, use it instantly (0ms delay)
+    if (tabBoards[tabKey]) {
+      setBoard(tabBoards[tabKey]);
+      setBoardLoading(false);
+    } else {
+      // Clear board immediately so old users vanish on click
+      setBoard(null);
+      setBoardLoading(true);
+    }
+
+    try {
+      const boardPromise =
+        tab === "global"
+          ? api.leaderboard(userId, sortMode)
+          : tab === "friends"
+          ? api.friendsLeaderboard(userId, sortMode)
+          : api.groupLeaderboard(tab, userId, sortMode);
+
+      const boardRes = await boardPromise;
+      if (boardRes) {
+        setBoard(boardRes);
+        setTabBoards((prev) => ({ ...prev, [tabKey]: boardRes }));
+        setStored(`codestreak_cached_board_${tabKey}`, JSON.stringify(boardRes));
+      }
+    } catch (err) {
+      console.error("Leaderboard fetch error:", err);
+    } finally {
+      setBoardLoading(false);
+    }
+  }
+
+  // 1. Initial mount: load full app state (dashboard, groups, feed, active board)
   useEffect(() => {
-    loadData(selectedTab, sortBy);
-  }, [userId, selectedTab, sortBy]);
+    if (userId) {
+      loadData(selectedTab, sortBy);
+    }
+  }, [userId]);
+
+  // 2. Fast tab or sort switch: fetch ONLY the leaderboard endpoint (~100ms, old users vanish immediately!)
+  useEffect(() => {
+    if (userId) {
+      fetchLeaderboardOnly(selectedTab, sortBy);
+    }
+  }, [selectedTab, sortBy]);
 
   async function handleSync() {
     setSyncing(true);
