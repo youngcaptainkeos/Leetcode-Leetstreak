@@ -89,22 +89,59 @@ function Onboarding({
   const [sentEmail, setSentEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [draftsLoaded, setDraftsLoaded] = useState(false);
+
+  const AUTH_STORAGE_KEYS = [
+    "codestreak_auth_mode",
+    "codestreak_forgot_step",
+    "codestreak_sent_email",
+    "codestreak_draft_name",
+    "codestreak_draft_username",
+    "codestreak_draft_email",
+    "codestreak_draft_password",
+    "codestreak_draft_new_password",
+    "codestreak_draft_otp",
+  ];
 
   useEffect(() => {
     (async () => {
       const storedMode = await getStored("codestreak_auth_mode");
       const storedStep = await getStored("codestreak_forgot_step");
       const storedEmail = await getStored("codestreak_sent_email");
+
+      const draftName = await getStored("codestreak_draft_name");
+      const draftUsername = await getStored("codestreak_draft_username");
+      const draftEmail = await getStored("codestreak_draft_email");
+      const draftPassword = await getStored("codestreak_draft_password");
+      const draftNewPassword = await getStored("codestreak_draft_new_password");
+      const draftOtp = await getStored("codestreak_draft_otp");
+
+      if (draftName) setName(draftName);
+      if (draftUsername) setUsername(draftUsername);
+      if (draftEmail) setEmail(draftEmail);
+      if (draftPassword) setPassword(draftPassword);
+      if (draftNewPassword) setNewPassword(draftNewPassword);
+      if (draftOtp) setOtp(draftOtp);
+
       if (storedMode === "forgot" && storedStep === "2" && storedEmail) {
         setAuthMode("forgot");
         setForgotStep(2);
         setSentEmail(storedEmail);
-        setUsername(storedEmail);
+        if (!draftUsername) setUsername(storedEmail);
       } else if (storedMode === "login" || storedMode === "register" || storedMode === "forgot") {
         setAuthMode(storedMode as any);
       }
+      setDraftsLoaded(true);
     })();
   }, []);
+
+  // Save input drafts automatically as the user types
+  useEffect(() => { if (draftsLoaded) setStored("codestreak_draft_name", name); }, [name, draftsLoaded]);
+  useEffect(() => { if (draftsLoaded) setStored("codestreak_draft_username", username); }, [username, draftsLoaded]);
+  useEffect(() => { if (draftsLoaded) setStored("codestreak_draft_email", email); }, [email, draftsLoaded]);
+  useEffect(() => { if (draftsLoaded) setStored("codestreak_draft_password", password); }, [password, draftsLoaded]);
+  useEffect(() => { if (draftsLoaded) setStored("codestreak_draft_new_password", newPassword); }, [newPassword, draftsLoaded]);
+  useEffect(() => { if (draftsLoaded) setStored("codestreak_draft_otp", otp); }, [otp, draftsLoaded]);
 
   const switchAuthMode = async (mode: "login" | "register" | "forgot") => {
     setAuthMode(mode);
@@ -120,7 +157,7 @@ function Onboarding({
     onError(null);
     try {
       const res = await api.login(username.trim(), password);
-      await clearStored(["codestreak_auth_mode", "codestreak_forgot_step", "codestreak_sent_email"]);
+      await clearStored(AUTH_STORAGE_KEYS);
       onRegistered(res.id);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Login failed.");
@@ -136,7 +173,7 @@ function Onboarding({
     onError(null);
     try {
       const res = await api.register(name.trim(), username.trim(), email.trim(), password);
-      await clearStored(["codestreak_auth_mode", "codestreak_forgot_step", "codestreak_sent_email"]);
+      await clearStored(AUTH_STORAGE_KEYS);
       onRegistered(res.id);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Registration failed.");
@@ -174,7 +211,7 @@ function Onboarding({
       await api.verifyForgotPassword(username.trim(), otp.trim(), newPassword);
       setPassword(newPassword);
       const res = await api.login(username.trim(), newPassword);
-      await clearStored(["codestreak_auth_mode", "codestreak_forgot_step", "codestreak_sent_email"]);
+      await clearStored(AUTH_STORAGE_KEYS);
       onRegistered(res.id);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Verification failed.");
