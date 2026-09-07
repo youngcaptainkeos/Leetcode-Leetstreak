@@ -1178,15 +1178,6 @@ function Dashboard({
                 ? `🧠 ${board.total_users ?? board.entries.length} algorithm compadres in your squad`
                 : `⚔️ ${board.total_users ?? board.entries.length} devs grinding in this group`}
             </span>
-            {(board.total_users ?? board.entries.length) > 10 ? (
-              <span className="footer-context" title="Top 10 Hall of Fame + 1 rank above & 1 rank below your position">
-                Top 10 Hall of Fame + Your Spot
-              </span>
-            ) : (
-              <span className="footer-context">
-                Full Roster
-              </span>
-            )}
           </div>
         )}
       </div>
