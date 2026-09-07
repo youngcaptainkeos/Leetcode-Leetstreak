@@ -13,7 +13,13 @@ if "?pgbouncer=true" in db_url:
 elif "&pgbouncer=true" in db_url:
     db_url = db_url.replace("&pgbouncer=true", "")
 
-engine = create_engine(db_url, pool_pre_ping=True)
+engine = create_engine(
+    db_url,
+    pool_size=15,
+    max_overflow=25,
+    pool_recycle=300,
+    pool_pre_ping=True,
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

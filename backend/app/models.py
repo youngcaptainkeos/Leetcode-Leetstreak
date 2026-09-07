@@ -35,8 +35,8 @@ class DailyActivity(Base):
     __tablename__ = "daily_activity"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    date = Column(Date, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
     problems_solved = Column(Integer, nullable=False, default=0)
 
     user = relationship("User", back_populates="daily_activity")
@@ -52,10 +52,10 @@ class Solve(Base):
     __tablename__ = "solves"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     title_slug = Column(String(200), nullable=False)
     title = Column(String(300), nullable=True)
-    solved_at = Column(DateTime, nullable=False)
+    solved_at = Column(DateTime, nullable=False, index=True)
 
     user = relationship("User", back_populates="solves")
 
@@ -69,7 +69,7 @@ class Group(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     code = Column(String(20), nullable=False, unique=True, index=True)
-    creator_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    creator_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
 
     members = relationship("GroupMember", back_populates="group", cascade="all, delete-orphan")
@@ -80,8 +80,8 @@ class GroupMember(Base):
     __tablename__ = "group_members"
 
     id = Column(Integer, primary_key=True, index=True)
-    group_id = Column(Integer, ForeignKey("groups.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     joined_at = Column(DateTime, server_default=func.now())
 
     group = relationship("Group", back_populates="members")
@@ -95,9 +95,9 @@ class Kudos(Base):
     __tablename__ = "kudos"
 
     id = Column(Integer, primary_key=True, index=True)
-    from_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    to_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    from_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    to_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     __table_args__ = (UniqueConstraint("from_user_id", "to_user_id", name="uq_kudos_pair"),)
 

@@ -85,16 +85,39 @@ async def poll_user(db: Session, user: User) -> int:
     return new_count
 
 
+import asyncio
+
 async def poll_all_users() -> dict:
+    """Concurrently poll all users with a max concurrency limit (Semaphore=5) and separate DB sessions."""
     db = SessionLocal()
-    results = {}
+    users = []
     try:
-        users = db.query(User).all()
-        for user in users:
-            results[user.leetcode_username] = await poll_user(db, user)
+        users = db.query(User.id, User.leetcode_username).all()
     finally:
         db.close()
-    logger.info("Poll complete: %s", results)
+
+    semaphore = asyncio.Semaphore(5)
+    results = {}
+
+    async def _safe_poll(user_id: int, username: str):
+        async with semaphore:
+            user_db = SessionLocal()
+            try:
+                u = user_db.query(User).filter(User.id == user_id).first()
+                if u:
+                    solves = await poll_user(user_db, u)
+                    results[username] = solves
+            except Exception as e:
+                logger.error("Error polling user %s (ID %s): %s", username, user_id, e)
+                results[username] = 0
+            finally:
+                user_db.close()
+
+    tasks = [_safe_poll(u.id, u.leetcode_username) for u in users]
+    if tasks:
+        await asyncio.gather(*tasks)
+
+    logger.info("Poll complete for %d users: %s", len(users), results)
     return results
 
 

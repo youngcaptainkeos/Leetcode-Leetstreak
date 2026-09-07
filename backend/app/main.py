@@ -588,37 +588,46 @@ def join_group(payload: GroupJoinRequest, db: Session = Depends(get_db)):
 
 @app.get("/api/groups/my-groups/{user_id}", response_model=GroupListResponse)
 def get_my_groups(user_id: int, db: Session = Depends(get_db)):
-    memberships = db.query(GroupMember).filter(GroupMember.user_id == user_id).all()
-    group_responses = []
+    groups = (
+        db.query(Group)
+        .join(GroupMember, GroupMember.group_id == Group.id)
+        .filter(GroupMember.user_id == user_id)
+        .all()
+    )
+    if not groups:
+        return GroupListResponse(groups=[])
 
-    for mem in memberships:
-        group = db.query(Group).filter(Group.id == mem.group_id).first()
-        if not group:
-            continue
-        m_users = (
-            db.query(User)
-            .join(GroupMember, GroupMember.user_id == User.id)
-            .filter(GroupMember.group_id == group.id)
-            .all()
-        )
-        group_responses.append(
-            GroupResponse(
-                id=group.id,
-                name=group.name,
-                code=group.code,
-                creator_id=group.creator_id,
-                member_count=len(m_users),
-                members=[
-                    GroupMemberSchema(
-                        id=u.id,
-                        name=u.name,
-                        leetcode_username=u.leetcode_username,
-                        avatar_url=u.avatar_url,
-                    )
-                    for u in m_users
-                ],
+    group_ids = [g.id for g in groups]
+    # Fetch all members of these groups in a single batch query
+    all_memberships = (
+        db.query(GroupMember.group_id, User)
+        .join(User, GroupMember.user_id == User.id)
+        .filter(GroupMember.group_id.in_(group_ids))
+        .all()
+    )
+
+    group_members_map = defaultdict(list)
+    for g_id, user_obj in all_memberships:
+        group_members_map[g_id].append(
+            GroupMemberSchema(
+                id=user_obj.id,
+                name=user_obj.name,
+                leetcode_username=user_obj.leetcode_username,
+                avatar_url=user_obj.avatar_url,
             )
         )
+
+    group_responses = [
+        GroupResponse(
+            id=g.id,
+            name=g.name,
+            code=g.code,
+            creator_id=g.creator_id,
+            member_count=len(group_members_map[g.id]),
+            members=group_members_map[g.id],
+        )
+        for g in groups
+    ]
 
     return GroupListResponse(groups=group_responses)
 
@@ -796,7 +805,7 @@ async def get_global_recent_solves(limit: int = 15, db: Session = Depends(get_db
     return feed
 
 
-@app.post("/api/admin/poll-now")
+@app.post("/api/admin/poll-now", dependencies=[Depends(verify_admin_secret)])
 async def poll_now():
     """Manually trigger a poll of all users."""
     results = await poll_all_users()
