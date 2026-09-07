@@ -946,32 +946,7 @@ function Dashboard({
         </div>
       </div>
 
-      {/* Live Activity Feed Ticker */}
-      {activityFeed.length > 0 && (
-        <div className="activity-feed-card">
-          <div className="activity-feed-header">
-            <span className="pulse-dot" />
-            <span className="activity-feed-title">RECENT SOLVES</span>
-          </div>
-          <div className="activity-feed-list">
-            {activityFeed.slice(0, 2).map((item, idx) => (
-              <a
-                key={idx}
-                href={item.leetcode_url}
-                target="_blank"
-                rel="noreferrer"
-                className="activity-feed-item"
-                title={`Open "${item.title}" on LeetCode`}
-              >
-                <span className="act-name">{item.user_name}</span>
-                <span className="act-verb">solved</span>
-                <span className="act-title">"{item.title}"</span>
-                <span className="act-time">{item.relative_time} ↗</span>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* Groups & Leaderboard Navigation */}
       <div className="section">
