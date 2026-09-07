@@ -1,4 +1,6 @@
-export const API_BASE = import.meta.env.VITE_API_BASE || "https://codestreak-api.onrender.com/api";
+export const API_BASE =
+  (typeof import.meta !== "undefined" && import.meta?.env?.VITE_API_BASE) ||
+  "https://leetcode-leetstreak.onrender.com";
 
 export interface RegisterResponse {
   id: number;
