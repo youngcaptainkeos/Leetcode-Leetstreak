@@ -578,6 +578,17 @@ html, body, #root {
 .leaderboard li:last-child { border-bottom: none; }
 .leaderboard li.me { background-color: var(--md-sys-color-surface-container-high); }
 
+@keyframes leaderboardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .leaderboard-item {
   display: flex;
   align-items: center;
@@ -585,6 +596,37 @@ html, body, #root {
   gap: 4px;
   overflow-x: hidden;
   box-sizing: border-box;
+  animation: leaderboardFadeIn 0.2s ease-out forwards;
+}
+
+.leaderboard-skeleton-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.skeleton-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--md-sys-color-surface-container-high);
+  animation: pulseSkeleton 1.4s infinite ease-in-out;
+}
+
+.skeleton-line {
+  height: 12px;
+  flex: 1;
+  border-radius: 4px;
+  background: var(--md-sys-color-surface-container-high);
+  animation: pulseSkeleton 1.4s infinite ease-in-out;
+}
+
+@keyframes pulseSkeleton {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+  100% { opacity: 0.3; }
 }
 
 .clickable-user {

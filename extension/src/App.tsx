@@ -419,30 +419,58 @@ function Dashboard({
   const [sortBy, setSortBy] = useState<"points" | "streak">("points");
   const [revealedCodes, setRevealedCodes] = useState<Record<number, boolean>>({});
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
+  const [tabBoards, setTabBoards] = useState<Record<string, LeaderboardResponse>>({});
+  const [boardLoading, setBoardLoading] = useState<boolean>(false);
 
-  const changeTab = (tab: BoardTab) => {
+  const changeTab = async (tab: BoardTab) => {
     setSelectedTab(tab);
     setStored("codestreak_active_tab", String(tab));
+
+    const tabKey = String(tab);
+    if (tabBoards[tabKey]) {
+      setBoard(tabBoards[tabKey]);
+      setBoardLoading(false);
+    } else {
+      const storedTabBoard = await getStored(`codestreak_cached_board_${tabKey}`);
+      if (storedTabBoard) {
+        try {
+          const parsed = JSON.parse(storedTabBoard);
+          setBoard(parsed);
+          setTabBoards((prev) => ({ ...prev, [tabKey]: parsed }));
+          setBoardLoading(false);
+          return;
+        } catch (e) {}
+      }
+      setBoard(null);
+      setBoardLoading(true);
+    }
   };
 
   useEffect(() => {
     (async () => {
       const storedTab = await getStored("codestreak_active_tab");
+      let activeTabKey = "global";
       if (storedTab) {
         if (storedTab === "global" || storedTab === "friends") {
           setSelectedTab(storedTab);
+          activeTabKey = storedTab;
         } else if (!isNaN(Number(storedTab))) {
           setSelectedTab(Number(storedTab));
+          activeTabKey = storedTab;
         }
       }
       // Instant 0ms stale-while-revalidate cached rendering
       const cachedDash = await getStored("codestreak_cached_dash");
-      const cachedBoard = await getStored("codestreak_cached_board");
+      const cachedBoard = await getStored(`codestreak_cached_board_${activeTabKey}`) || await getStored("codestreak_cached_board");
       if (cachedDash) {
         try { setDash(JSON.parse(cachedDash)); } catch (e) {}
       }
       if (cachedBoard) {
-        try { setBoard(JSON.parse(cachedBoard)); } catch (e) {}
+        try {
+          const parsed = JSON.parse(cachedBoard);
+          setBoard(parsed);
+          setTabBoards((prev) => ({ ...prev, [activeTabKey]: parsed }));
+        } catch (e) {}
       }
     })();
   }, []);
@@ -560,17 +588,25 @@ function Dashboard({
           .catch(() => []),
       ]);
 
-      if (!dashRes) return;
+      if (!dashRes) {
+        setBoardLoading(false);
+        return;
+      }
 
       setDash(dashRes);
       if (myGroupsRes?.groups) setGroups(myGroupsRes.groups);
-      if (boardRes) setBoard(boardRes);
+      if (boardRes) {
+        setBoard(boardRes);
+        setTabBoards((prev) => ({ ...prev, [String(tab)]: boardRes }));
+        setStored(`codestreak_cached_board_${String(tab)}`, JSON.stringify(boardRes));
+        setStored("codestreak_cached_board", JSON.stringify(boardRes));
+      }
+      setBoardLoading(false);
       if (Array.isArray(feedData)) setActivityFeed(feedData);
       setError(null);
 
       // Save stale-while-revalidate cache for instant 0ms load next time!
       setStored("codestreak_cached_dash", JSON.stringify(dashRes));
-      if (boardRes) setStored("codestreak_cached_board", JSON.stringify(boardRes));
 
       // Update Chrome Extension Action Badge
       if (typeof chrome !== "undefined" && chrome.action && chrome.action.setBadgeText) {
@@ -579,6 +615,7 @@ function Dashboard({
         chrome.action.setBadgeBackgroundColor({ color: dashRes.today_count > 0 ? "#10b981" : "#6366f1" });
       }
     } catch (err) {
+      setBoardLoading(false);
       const errMsg = err instanceof Error ? err.message : "";
       if (errMsg.includes("404") || errMsg.includes("User not found")) {
         onResetUser();
@@ -1013,7 +1050,22 @@ function Dashboard({
 
         {/* Leaderboard List */}
         <ul className="leaderboard">
-          {board.entries.length === 0 ? (
+          {boardLoading || !board ? (
+            <>
+              <li className="leaderboard-skeleton-item">
+                <div className="skeleton-avatar" />
+                <div className="skeleton-line" />
+              </li>
+              <li className="leaderboard-skeleton-item">
+                <div className="skeleton-avatar" />
+                <div className="skeleton-line" />
+              </li>
+              <li className="leaderboard-skeleton-item">
+                <div className="skeleton-avatar" />
+                <div className="skeleton-line" />
+              </li>
+            </>
+          ) : board.entries.length === 0 ? (
             <li className="centered muted py-3">No members in this group yet.</li>
           ) : (
             board.entries.map((e, index, arr) => {
