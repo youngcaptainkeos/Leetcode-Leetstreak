@@ -720,13 +720,14 @@ a.profile-handle:hover {
 }
 .leaderboard-total-row {
   text-align: center;
-  padding: 6px 12px;
+  padding: 8px 12px;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   user-select: none;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
   border-radius: var(--md-shape-corner-medium);
   margin-top: 4px;
 }

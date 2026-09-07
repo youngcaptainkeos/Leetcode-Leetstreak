@@ -1166,25 +1166,25 @@ function Dashboard({
               );
             })
           )}
-          {board && (board.total_users ?? 0) > (board.entries[board.entries.length - 1]?.rank ?? 0) && (
-            <li className="leaderboard-gap" title="More registered users in squad">
-              <span>•••</span>
-            </li>
+          {board && (
+            <>
+              {(board.total_users ?? 0) > (board.entries[board.entries.length - 1]?.rank ?? 0) && (
+                <li className="leaderboard-gap" title="More registered users in squad">
+                  <span>•••</span>
+                </li>
+              )}
+              <li className="leaderboard-total-row">
+                <span>
+                  {selectedTab === "global"
+                    ? `⚡ ${board.total_users ?? board.entries.length} coders escaping O(N²) time limit`
+                    : selectedTab === "friends"
+                    ? `🧠 ${board.total_users ?? board.entries.length} algorithm compadres in your squad`
+                    : `⚔️ ${board.total_users ?? board.entries.length} devs grinding in this group`}
+                </span>
+              </li>
+            </>
           )}
         </ul>
-
-        {/* Leaderboard Total Users Footer Bar */}
-        {board && (
-          <div className="leaderboard-footer">
-            <span className="footer-total">
-              {selectedTab === "global"
-                ? `⚡ ${board.total_users ?? board.entries.length} coders escaping O(N²) time limit`
-                : selectedTab === "friends"
-                ? `🧠 ${board.total_users ?? board.entries.length} algorithm compadres in your squad`
-                : `⚔️ ${board.total_users ?? board.entries.length} devs grinding in this group`}
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Inspect Friend Modal */}
