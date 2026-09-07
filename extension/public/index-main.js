@@ -25653,7 +25653,7 @@
           }),
           board && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
             (board.total_users ?? 0) > (board.entries[board.entries.length - 1]?.rank ?? 0) && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { className: "leaderboard-gap", title: "More registered users in squad", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "\u2022\u2022\u2022" }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { className: "leaderboard-total-row", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: selectedTab === "global" ? `\u26A1 ${board.total_users ?? board.entries.length} coders escaping O(N\xB2) time limit` : selectedTab === "friends" ? `\u{1F9E0} ${board.total_users ?? board.entries.length} algorithm compadres in your squad` : `\u2694\uFE0F ${board.total_users ?? board.entries.length} devs grinding in this group` }) })
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { className: "leaderboard-total-row", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: selectedTab === "global" ? `\u{1F525} ${board.total_users ?? board.entries.length} algorithm warriors avoiding TLE in production` : selectedTab === "friends" ? `\u{1F9E0} ${board.total_users ?? board.entries.length} algorithm compadres in your squad` : `\u2694\uFE0F ${board.total_users ?? board.entries.length} devs grinding in this group` }) })
           ] })
         ] })
       ] }),
