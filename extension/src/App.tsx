@@ -574,7 +574,7 @@ function Dashboard({
         }),
         api.myGroups(userId).catch(() => ({ groups: [] })),
         boardPromise.catch(() => null),
-        fetch(`${API_BASE}/api/feed/recent-solves?limit=10`)
+        fetch(`${API_BASE}/feed/recent-solves?limit=10`)
           .then((res) => (res.ok ? res.json() : []))
           .catch(() => []),
       ]);
