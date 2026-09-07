@@ -25543,113 +25543,122 @@
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ul", { className: "leaderboard", children: boardLoading || !board ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { className: "leaderboard-skeleton-item", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "skeleton-avatar" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "skeleton-line" })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { className: "leaderboard-skeleton-item", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "skeleton-avatar" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "skeleton-line" })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { className: "leaderboard-skeleton-item", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "skeleton-avatar" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "skeleton-line" })
-          ] })
-        ] }) : board.entries.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { className: "centered muted py-3", children: "No members in this group yet." }) : board.entries.map((e, index, arr) => {
-          const prevEntry = index > 0 ? arr[index - 1] : null;
-          const showGap = prevEntry && e.rank > prevEntry.rank + 1;
-          return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_react.default.Fragment, { children: [
-            showGap && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { className: "leaderboard-gap", title: "Ranks between Top 10 and your position", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "\u2022\u2022\u2022" }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
-              "li",
-              {
-                className: `leaderboard-item ${e.id === userId ? "me" : ""}`,
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
-                    "div",
-                    {
-                      className: "clickable-user",
-                      onClick: () => handleInspectFriend(e),
-                      title: "Click to view detailed friend stats",
-                      children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "rank", children: e.rank }),
-                        e.avatar_url ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: e.avatar_url, alt: e.name, className: "rank-avatar" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "rank-avatar-placeholder", children: e.name[0] }),
-                        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "name-col", children: [
-                          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "name-row", children: [
-                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-                              "span",
-                              {
-                                className: "dot",
-                                style: { opacity: e.is_active_today ? 1 : 0.25 },
-                                title: e.is_active_today ? "Solved today" : "Not solved today",
-                                children: "\u25CF"
-                              }
-                            ),
-                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "name", children: e.name })
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("ul", { className: "leaderboard", children: [
+          boardLoading || !board ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { className: "leaderboard-skeleton-item", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "skeleton-avatar" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "skeleton-line" })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { className: "leaderboard-skeleton-item", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "skeleton-avatar" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "skeleton-line" })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { className: "leaderboard-skeleton-item", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "skeleton-avatar" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "skeleton-line" })
+            ] })
+          ] }) : board.entries.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { className: "centered muted py-3", children: "No members in this group yet." }) : board.entries.map((e, index, arr) => {
+            const prevEntry = index > 0 ? arr[index - 1] : null;
+            const showGap = prevEntry && e.rank > prevEntry.rank + 1;
+            return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_react.default.Fragment, { children: [
+              showGap && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { className: "leaderboard-gap", title: "Ranks between Top 10 and your position", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "\u2022\u2022\u2022" }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                "li",
+                {
+                  className: `leaderboard-item ${e.id === userId ? "me" : ""}`,
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                      "div",
+                      {
+                        className: "clickable-user",
+                        onClick: () => handleInspectFriend(e),
+                        title: "Click to view detailed friend stats",
+                        children: [
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "rank", children: e.rank }),
+                          e.avatar_url ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: e.avatar_url, alt: e.name, className: "rank-avatar" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "rank-avatar-placeholder", children: e.name[0] }),
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "name-col", children: [
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "name-row", children: [
+                              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                                "span",
+                                {
+                                  className: "dot",
+                                  style: { opacity: e.is_active_today ? 1 : 0.25 },
+                                  title: e.is_active_today ? "Solved today" : "Not solved today",
+                                  children: "\u25CF"
+                                }
+                              ),
+                              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "name", children: e.name })
+                            ] }),
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "handle-mini", children: [
+                              "@",
+                              e.leetcode_username
+                            ] })
                           ] }),
-                          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "handle-mini", children: [
-                            "@",
-                            e.leetcode_username
-                          ] })
-                        ] }),
-                        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "streak-mini", children: [
-                          "\u{1F525}",
-                          e.current_streak,
-                          "d"
-                        ] }),
-                        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "solves-badge", title: "Questions solved this week", children: [
-                          "\u{1F4DD}",
-                          e.weekly_total
-                        ] }),
-                        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
-                          "span",
-                          {
-                            className: "points-badge",
-                            title: `Easy: ${e.easy_count} | Medium: ${e.medium_count} | Hard: ${e.hard_count}`,
-                            children: [
-                              "\u2B50",
-                              e.points ?? e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6
-                            ]
-                          }
-                        ),
-                        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
-                          "button",
-                          {
-                            type: "button",
-                            className: `kudos-badge ${e.has_kudosed ? "active" : ""} ${e.id === userId ? "disabled" : ""}`,
-                            title: e.id === userId ? "Your active streak" : e.has_kudosed ? "Click to remove kudos (resets daily IST)" : "Click to give kudos (resets daily IST)",
-                            onClick: (evt) => {
-                              evt.stopPropagation();
-                              handleToggleKudos(e.id);
-                            },
-                            children: [
-                              "\u{1F44D} ",
-                              e.kudos_count || 0
-                            ]
-                          }
-                        )
-                      ]
-                    }
-                  ),
-                  isGroupOwner && Number(e.id) !== Number(userId) && activeGroup && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-                    "button",
-                    {
-                      type: "button",
-                      className: "remove-btn",
-                      onClick: (evt) => {
-                        evt.stopPropagation();
-                        handleRemoveMember(activeGroup.id, e.id, e.name);
-                      },
-                      title: `Remove ${e.name} from group`,
-                      children: "\u{1F5D1}\uFE0F"
-                    }
-                  )
-                ]
-              }
-            )
-          ] }, e.id);
-        }) }),
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "streak-mini", children: [
+                            "\u{1F525}",
+                            e.current_streak,
+                            "d"
+                          ] }),
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "solves-badge", title: "Questions solved this week", children: [
+                            "\u{1F4DD}",
+                            e.weekly_total
+                          ] }),
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                            "span",
+                            {
+                              className: "points-badge",
+                              title: `Easy: ${e.easy_count} | Medium: ${e.medium_count} | Hard: ${e.hard_count}`,
+                              children: [
+                                "\u2B50",
+                                e.points ?? e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6
+                              ]
+                            }
+                          ),
+                          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+                            "button",
+                            {
+                              type: "button",
+                              className: `kudos-badge ${e.has_kudosed ? "active" : ""} ${e.id === userId ? "disabled" : ""}`,
+                              title: e.id === userId ? "Your active streak" : e.has_kudosed ? "Click to remove kudos (resets daily IST)" : "Click to give kudos (resets daily IST)",
+                              onClick: (evt) => {
+                                evt.stopPropagation();
+                                handleToggleKudos(e.id);
+                              },
+                              children: [
+                                "\u{1F44D} ",
+                                e.kudos_count || 0
+                              ]
+                            }
+                          )
+                        ]
+                      }
+                    ),
+                    isGroupOwner && Number(e.id) !== Number(userId) && activeGroup && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                      "button",
+                      {
+                        type: "button",
+                        className: "remove-btn",
+                        onClick: (evt) => {
+                          evt.stopPropagation();
+                          handleRemoveMember(activeGroup.id, e.id, e.name);
+                        },
+                        title: `Remove ${e.name} from group`,
+                        children: "\u{1F5D1}\uFE0F"
+                      }
+                    )
+                  ]
+                }
+              )
+            ] }, e.id);
+          }),
+          board && (board.total_users ?? 0) > (board.entries[board.entries.length - 1]?.rank ?? 0) && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { className: "leaderboard-gap", title: "Remaining registered users", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "\u2022\u2022\u2022" }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("li", { className: "leaderboard-total-row", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: [
+              board.total_users,
+              " users"
+            ] }) })
+          ] })
+        ] }),
         board && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "leaderboard-footer", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "footer-total", children: selectedTab === "global" ? `\u26A1 ${board.total_users ?? board.entries.length} coders escaping O(N\xB2) time limit` : selectedTab === "friends" ? `\u{1F9E0} ${board.total_users ?? board.entries.length} algorithm compadres in your squad` : `\u2694\uFE0F ${board.total_users ?? board.entries.length} devs grinding in this group` }) })
       ] }),
       inspectedFriend && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "modal-overlay", onClick: () => setInspectedFriend(null), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "modal-content", onClick: (e) => e.stopPropagation(), children: [

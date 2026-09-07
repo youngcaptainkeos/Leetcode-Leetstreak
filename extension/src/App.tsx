@@ -1166,6 +1166,16 @@ function Dashboard({
               );
             })
           )}
+          {board && (board.total_users ?? 0) > (board.entries[board.entries.length - 1]?.rank ?? 0) && (
+            <>
+              <li className="leaderboard-gap" title="Remaining registered users">
+                <span>•••</span>
+              </li>
+              <li className="leaderboard-total-row">
+                <span>{board.total_users} users</span>
+              </li>
+            </>
+          )}
         </ul>
 
         {/* Leaderboard Total Users & Context Footer Bar */}
