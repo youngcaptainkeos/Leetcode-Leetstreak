@@ -487,7 +487,7 @@ def _compute_leaderboard(
 def get_global_leaderboard(
     user_id: Optional[int] = Query(None),
     sort_by: str = Query("points", pattern="^(points|streak)$"),
-    limit: Optional[int] = Query(50, ge=1, le=100),
+    limit: Optional[int] = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
     # Global Leaderboard includes all registered users on the platform
