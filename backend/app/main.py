@@ -459,18 +459,28 @@ def _compute_leaderboard(
         for i, r in enumerate(raw)
     ]
 
-    # Top Limit + User Rank Pinning
+    total_users = len(entries)
+
+    # Top Limit + User Rank Pinning (includes 1 rank above and 1 rank below when requester is outside Top N)
     if limit is not None and len(entries) > limit:
         top_entries = entries[:limit]
         if requester_id is not None:
             user_in_top = any(e.id == requester_id for e in top_entries)
             if not user_in_top:
-                requester_entry = next((e for e in entries if e.id == requester_id), None)
-                if requester_entry:
-                    top_entries.append(requester_entry)
+                req_idx = next((idx for idx, e in enumerate(entries) if e.id == requester_id), None)
+                if req_idx is not None:
+                    pinned_indices = set()
+                    if req_idx > 0 and req_idx - 1 >= limit:
+                        pinned_indices.add(req_idx - 1)  # 1 user above
+                    pinned_indices.add(req_idx)          # Requester themselves
+                    if req_idx + 1 < len(entries):
+                        pinned_indices.add(req_idx + 1)  # 1 user below
+
+                    for p_i in sorted(pinned_indices):
+                        top_entries.append(entries[p_i])
         entries = top_entries
 
-    return LeaderboardResponse(week_start=week_start, week_end=today, entries=entries)
+    return LeaderboardResponse(week_start=week_start, week_end=today, total_users=total_users, entries=entries)
 
 
 @app.get("/api/leaderboard", response_model=LeaderboardResponse)

@@ -629,6 +629,29 @@ html, body, #root {
   100% { opacity: 0.3; }
 }
 
+.leaderboard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  margin-top: 6px;
+  background-color: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-corner-medium);
+  font-size: 11px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.footer-total {
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+}
+
+.footer-context {
+  opacity: 0.75;
+  font-size: 10px;
+}
+
 .clickable-user {
   display: flex;
   align-items: center;

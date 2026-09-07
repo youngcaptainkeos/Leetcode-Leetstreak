@@ -105,6 +105,7 @@ export async function getAppConfig(): Promise<AppConfigResponse | null> {
 export interface LeaderboardResponse {
   week_start: string;
   week_end: string;
+  total_users?: number;
   entries: LeaderboardEntry[];
 }
 

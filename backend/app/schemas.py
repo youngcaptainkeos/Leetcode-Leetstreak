@@ -94,6 +94,7 @@ class KudosToggleRequest(BaseModel):
 class LeaderboardResponse(BaseModel):
     week_start: date
     week_end: date
+    total_users: int = 0
     entries: List[LeaderboardEntry]
 
 

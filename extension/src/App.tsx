@@ -1192,6 +1192,24 @@ function Dashboard({
             })
           )}
         </ul>
+
+        {/* Leaderboard Total Users & Context Footer Bar */}
+        {board && (
+          <div className="leaderboard-footer">
+            <span className="footer-total">
+              {selectedTab === "global"
+                ? `🌐 ${board.total_users || board.entries.length} total platform users`
+                : selectedTab === "friends"
+                ? `👥 ${board.total_users || board.entries.length} total friends`
+                : `👥 ${board.total_users || board.entries.length} group members`}
+            </span>
+            {board.total_users && board.total_users > 10 ? (
+              <span className="footer-context">
+                Showing Top 10 + your position context
+              </span>
+            ) : null}
+          </div>
+        )}
       </div>
 
       {/* Inspect Friend Modal */}
