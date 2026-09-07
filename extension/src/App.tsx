@@ -1198,16 +1198,20 @@ function Dashboard({
           <div className="leaderboard-footer">
             <span className="footer-total">
               {selectedTab === "global"
-                ? `🌐 ${board.total_users || board.entries.length} total platform users`
+                ? `⚡ ${board.total_users ?? board.entries.length} coders escaping O(N²) time limit`
                 : selectedTab === "friends"
-                ? `👥 ${board.total_users || board.entries.length} total friends`
-                : `👥 ${board.total_users || board.entries.length} group members`}
+                ? `🧠 ${board.total_users ?? board.entries.length} algorithm compadres in your squad`
+                : `⚔️ ${board.total_users ?? board.entries.length} devs grinding in this group`}
             </span>
-            {board.total_users && board.total_users > 10 ? (
-              <span className="footer-context">
-                Showing Top 10 + your position context
+            {(board.total_users ?? board.entries.length) > 10 ? (
+              <span className="footer-context" title="Top 10 Hall of Fame + 1 rank above & 1 rank below your position">
+                Top 10 Hall of Fame + Your Spot
               </span>
-            ) : null}
+            ) : (
+              <span className="footer-context">
+                Full Roster
+              </span>
+            )}
           </div>
         )}
       </div>
