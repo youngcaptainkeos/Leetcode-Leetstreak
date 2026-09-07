@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "LeetStreak",
+  "version": "1.0.0",
+  "update_url": "https://codestreak-api.onrender.com/api/extension/updates.xml",
+  "description": "Track your LeetCode consistency with friends.",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "LeetStreak",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "permissions": ["storage", "notifications", "alarms"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["notification.html", "icon48.png"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "leetstreak@example.com",
+      "strict_min_version": "109.0"
+    }
+  },
+  "host_permissions": ["http://localhost:8000/*", "https://*/*", "http://*/*"]
+}
