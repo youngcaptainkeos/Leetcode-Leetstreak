@@ -493,6 +493,12 @@ function Dashboard({
   const [updatingUsername, setUpdatingUsername] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
 
+  // Delete Account States
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   // Group Modal States
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showJoinGroup, setShowJoinGroup] = useState(false);
@@ -548,6 +554,23 @@ function Dashboard({
       setError(err instanceof Error ? err.message : "Failed to update username.");
     } finally {
       setUpdatingUsername(false);
+    }
+  }
+
+  async function handleDeleteAccount(e: React.FormEvent) {
+    e.preventDefault();
+    if (!deletePassword) return;
+    setDeletingAccount(true);
+    setDeleteError(null);
+    try {
+      await api.deleteAccount(userId, deletePassword);
+      setShowDeleteModal(false);
+      setShowSettings(false);
+      onResetUser();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Incorrect password. Account deletion failed.");
+    } finally {
+      setDeletingAccount(false);
     }
   }
 
@@ -1385,6 +1408,82 @@ function Dashboard({
               >
                 {updatingUsername ? "Verifying & Updating…" : "Save New Username"}
               </button>
+            </form>
+
+            <div className="danger-zone">
+              <hr className="modal-divider" />
+              <div className="danger-zone-header">
+                <span className="danger-zone-title">Danger Zone</span>
+              </div>
+              <button
+                type="button"
+                className="danger-btn modal-action-btn"
+                onClick={() => {
+                  setShowSettings(false);
+                  setDeletePassword("");
+                  setDeleteError(null);
+                  setShowDeleteModal(true);
+                }}
+              >
+                🗑️ Delete Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="danger-title">🗑️ Delete Account</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowDeleteModal(false)}
+                title="Cancel"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="modal-description danger-text">
+              This action is permanent and cannot be undone. All your streaks, points, and group memberships will be deleted.
+            </p>
+
+            {deleteError && <div className="error-banner">{deleteError}</div>}
+
+            <form onSubmit={handleDeleteAccount} className="modal-form">
+              <div className="modal-field">
+                <label>
+                  <span>Enter Password to Confirm</span>
+                  <input
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="Account password"
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className="modal-actions-row">
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={deletingAccount}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="danger-btn modal-action-btn"
+                  disabled={deletingAccount || !deletePassword}
+                >
+                  {deletingAccount ? "Deleting…" : "Confirm & Delete"}
+                </button>
+              </div>
             </form>
           </div>
         </div>

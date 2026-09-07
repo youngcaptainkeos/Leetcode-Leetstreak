@@ -37,6 +37,10 @@ class UpdateUsernameRequest(BaseModel):
     leetcode_username: str = Field(min_length=1, max_length=80)
 
 
+class DeleteAccountRequest(BaseModel):
+    password: str = Field(min_length=1, max_length=100)
+
+
 class RegisterResponse(BaseModel):
     id: int
     name: str

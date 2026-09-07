@@ -1,6 +1,4 @@
-export const API_BASE =
-  (typeof import.meta !== "undefined" && import.meta?.env?.VITE_API_BASE) ||
-  "https://leetcode-leetstreak.onrender.com/api";
+export const API_BASE = "https://codestreak-api.onrender.com/api";
 
 export interface RegisterResponse {
   id: number;
@@ -176,6 +174,11 @@ export const api = {
         body: JSON.stringify({ leetcode_username }),
       }
     ),
+  deleteAccount: (userId: number, password: string) =>
+    request<{ status: string; message: string }>(`/users/${userId}/delete-account`, {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
   leaderboard: (userId?: number, sortBy: "points" | "streak" = "points") => {
     const params = new URLSearchParams();
     if (userId) params.set("user_id", String(userId));

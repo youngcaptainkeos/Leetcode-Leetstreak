@@ -24555,6 +24555,10 @@
         body: JSON.stringify({ leetcode_username })
       }
     ),
+    deleteAccount: (userId, password) => request(`/users/${userId}/delete-account`, {
+      method: "POST",
+      body: JSON.stringify({ password })
+    }),
     leaderboard: (userId, sortBy = "points") => {
       const params = new URLSearchParams();
       if (userId) params.set("user_id", String(userId));
@@ -25046,6 +25050,10 @@
     const [newLeetcodeUsername, setNewLeetcodeUsername] = (0, import_react.useState)("");
     const [updatingUsername, setUpdatingUsername] = (0, import_react.useState)(false);
     const [settingsMsg, setSettingsMsg] = (0, import_react.useState)(null);
+    const [showDeleteModal, setShowDeleteModal] = (0, import_react.useState)(false);
+    const [deletePassword, setDeletePassword] = (0, import_react.useState)("");
+    const [deletingAccount, setDeletingAccount] = (0, import_react.useState)(false);
+    const [deleteError, setDeleteError] = (0, import_react.useState)(null);
     const [showCreateGroup, setShowCreateGroup] = (0, import_react.useState)(false);
     const [showJoinGroup, setShowJoinGroup] = (0, import_react.useState)(false);
     const [newGroupName, setNewGroupName] = (0, import_react.useState)("");
@@ -25092,6 +25100,22 @@
         setError(err instanceof Error ? err.message : "Failed to update username.");
       } finally {
         setUpdatingUsername(false);
+      }
+    }
+    async function handleDeleteAccount(e) {
+      e.preventDefault();
+      if (!deletePassword) return;
+      setDeletingAccount(true);
+      setDeleteError(null);
+      try {
+        await api.deleteAccount(userId, deletePassword);
+        setShowDeleteModal(false);
+        setShowSettings(false);
+        onResetUser();
+      } catch (err) {
+        setDeleteError(err instanceof Error ? err.message : "Incorrect password. Account deletion failed.");
+      } finally {
+        setDeletingAccount(false);
       }
     }
     async function loadData(tab = selectedTab, sortMode = sortBy) {
@@ -25850,6 +25874,76 @@
               children: updatingUsername ? "Verifying & Updating\u2026" : "Save New Username"
             }
           )
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "danger-zone", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("hr", { className: "modal-divider" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "danger-zone-header", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "danger-zone-title", children: "Danger Zone" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "button",
+            {
+              type: "button",
+              className: "danger-btn modal-action-btn",
+              onClick: () => {
+                setShowSettings(false);
+                setDeletePassword("");
+                setDeleteError(null);
+                setShowDeleteModal(true);
+              },
+              children: "\u{1F5D1}\uFE0F Delete Account"
+            }
+          )
+        ] })
+      ] }) }),
+      showDeleteModal && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "modal-overlay", onClick: () => setShowDeleteModal(false), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "modal-content", onClick: (e) => e.stopPropagation(), children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "modal-header", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { className: "danger-title", children: "\u{1F5D1}\uFE0F Delete Account" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "button",
+            {
+              className: "modal-close",
+              onClick: () => setShowDeleteModal(false),
+              title: "Cancel",
+              children: "\u2715"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "modal-description danger-text", children: "This action is permanent and cannot be undone. All your streaks, points, and group memberships will be deleted." }),
+        deleteError && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "error-banner", children: deleteError }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", { onSubmit: handleDeleteAccount, className: "modal-form", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "modal-field", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Enter Password to Confirm" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              "input",
+              {
+                type: "password",
+                value: deletePassword,
+                onChange: (e) => setDeletePassword(e.target.value),
+                placeholder: "Account password",
+                required: true
+              }
+            )
+          ] }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "modal-actions-row", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              "button",
+              {
+                type: "button",
+                className: "secondary-btn",
+                onClick: () => setShowDeleteModal(false),
+                disabled: deletingAccount,
+                children: "Cancel"
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              "button",
+              {
+                type: "submit",
+                className: "danger-btn modal-action-btn",
+                disabled: deletingAccount || !deletePassword,
+                children: deletingAccount ? "Deleting\u2026" : "Confirm & Delete"
+              }
+            )
+          ] })
         ] })
       ] }) }),
       showCoffeeModal && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "modal-overlay", onClick: () => setShowCoffeeModal(false), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "modal-content coffee-modal", onClick: (e) => e.stopPropagation(), children: [

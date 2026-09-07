@@ -24,7 +24,7 @@ from .schemas import (
     GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema,
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
     KudosToggleRequest, UpdateUsernameRequest, ActivityFeedItemSchema,
-    DynamicMenuItem, AppConfigResponse,
+    DynamicMenuItem, AppConfigResponse, DeleteAccountRequest,
 )
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
@@ -277,6 +277,27 @@ async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest,
         "leetcode_username": user.leetcode_username,
         "avatar_url": user.avatar_url,
     }
+
+
+@app.post("/api/users/{user_id}/delete-account")
+def delete_user_account(user_id: int, payload: DeleteAccountRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not user.password_hash or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Incorrect password. Account deletion failed.")
+
+    db.query(GroupMember).filter(GroupMember.user_id == user_id).delete()
+    db.query(DailyActivity).filter(DailyActivity.user_id == user_id).delete()
+    db.query(Solve).filter(Solve.user_id == user_id).delete()
+    db.query(Kudos).filter((Kudos.from_user_id == user_id) | (Kudos.to_user_id == user_id)).delete()
+    db.query(Group).filter(Group.creator_id == user_id).update({Group.creator_id: None})
+
+    db.delete(user)
+    db.commit()
+
+    return {"status": "account_deleted", "message": "Account deleted successfully"}
 
 
 def _active_dates(db: Session, user_id: int) -> set[date]:
