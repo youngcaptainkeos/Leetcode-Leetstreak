@@ -1176,7 +1176,7 @@ function Dashboard({
               <li className="leaderboard-total-row">
                 <span>
                   {selectedTab === "global"
-                    ? `🔥 ${board.total_users ?? board.entries.length} algorithm warriors avoiding TLE in production`
+                    ? `⚔️ ${board.total_users ?? board.entries.length} algorithm warriors on leetstreak`
                     : selectedTab === "friends"
                     ? `🧠 ${board.total_users ?? board.entries.length} algorithm compadres in your squad`
                     : `⚔️ ${board.total_users ?? board.entries.length} devs grinding in this group`}
