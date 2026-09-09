@@ -789,7 +789,6 @@ function Dashboard({
     setError(null);
     try {
       const res = await api.syncUser(userId);
-      await api.pollNow();
       await loadData();
       setSyncMsg(
         res.new_solves > 0

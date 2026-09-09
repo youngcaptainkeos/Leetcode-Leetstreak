@@ -25291,7 +25291,6 @@
       setError(null);
       try {
         const res = await api.syncUser(userId);
-        await api.pollNow();
         await loadData();
         setSyncMsg(
           res.new_solves > 0 ? `Synced! ${res.new_solves} new solve(s) added.` : "LeetCode up to date!"
