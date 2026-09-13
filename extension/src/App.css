@@ -775,22 +775,27 @@ html, body, #root {
   text-overflow: ellipsis;
 }
 
-.inline-remove-btn {
-  background: transparent;
-  border: none;
-  font-size: 11px;
+.remove-btn {
+  background-color: var(--md-sys-color-error-container);
+  border: 1px solid var(--md-sys-color-error);
+  color: var(--md-sys-color-on-error-container);
   cursor: pointer;
-  padding: 0 1px;
-  margin-left: 2px;
-  opacity: 0.6;
-  transition: opacity 0.15s ease, transform 0.15s ease;
-  line-height: 1;
+  font-size: 11px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: var(--md-shape-corner-extra-small);
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  line-height: 1;
+  margin-left: 2px;
 }
-
-.inline-remove-btn:hover {
-  opacity: 1;
-  transform: scale(1.15);
+.remove-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
 }
 
 .handle-mini {

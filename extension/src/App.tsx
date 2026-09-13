@@ -1380,19 +1380,6 @@ function Dashboard({
                             ●
                           </span>
                           <span className="name">{e.name}</span>
-                          {isGroupOwner && Number(e.id) !== Number(userId) && activeGroup && (
-                            <button
-                              type="button"
-                              className="inline-remove-btn"
-                              title={`Remove ${e.name} from group`}
-                              onClick={(evt) => {
-                                evt.stopPropagation();
-                                handlePromptRemoveMember(e.id, e.name);
-                              }}
-                            >
-                              🗑️
-                            </button>
-                          )}
                         </div>
                         <span className="handle-mini">@{e.leetcode_username}</span>
                       </div>
@@ -1424,6 +1411,20 @@ function Dashboard({
                         👍 {e.kudos_count || 0}
                       </button>
                     </div>
+
+                    {isGroupOwner && Number(e.id) !== Number(userId) && activeGroup && (
+                      <button
+                        type="button"
+                        className="remove-btn"
+                        onClick={(evt) => {
+                          evt.stopPropagation();
+                          handlePromptRemoveMember(e.id, e.name);
+                        }}
+                        title={`Remove ${e.name} from group`}
+                      >
+                        🗑️
+                      </button>
+                    )}
                   </li>
                 </React.Fragment>
               );
