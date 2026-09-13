@@ -775,6 +775,24 @@ html, body, #root {
   text-overflow: ellipsis;
 }
 
+.inline-remove-btn {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 1px;
+  margin-left: 2px;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.inline-remove-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
 .handle-mini {
   font-size: 10px;
   color: var(--md-sys-color-on-surface-variant);

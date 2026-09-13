@@ -1380,6 +1380,19 @@ function Dashboard({
                             ●
                           </span>
                           <span className="name">{e.name}</span>
+                          {isGroupOwner && Number(e.id) !== Number(userId) && activeGroup && (
+                            <button
+                              type="button"
+                              className="inline-remove-btn"
+                              title={`Remove ${e.name} from group`}
+                              onClick={(evt) => {
+                                evt.stopPropagation();
+                                handlePromptRemoveMember(e.id, e.name);
+                              }}
+                            >
+                              🗑️
+                            </button>
+                          )}
                         </div>
                         <span className="handle-mini">@{e.leetcode_username}</span>
                       </div>
@@ -1603,23 +1616,6 @@ function Dashboard({
               </div>
             )}
 
-            {isGroupOwner && inspectedFriend.id !== userId && activeGroup && (
-              <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid var(--md-sys-color-outline-variant)", textAlign: "center" }}>
-                <button
-                  type="button"
-                  className="danger-btn modal-action-btn"
-                  onClick={() => {
-                    const mId = inspectedFriend.id;
-                    const mName = inspectedFriend.name;
-                    setInspectedFriend(null);
-                    handlePromptRemoveMember(mId, mName);
-                  }}
-                  style={{ fontSize: "11.5px", padding: "6px 12px", width: "100%" }}
-                >
-                  🗑️ Remove {inspectedFriend.name} from Group
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}
