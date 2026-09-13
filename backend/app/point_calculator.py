@@ -4,12 +4,11 @@ Dynamic LeetCode Point Calculation Engine.
 Rules:
 1. Base Points:
    - Primary (Option 1): If problem has contest rating (800..3500), Base = Rating / 100
-   - Fallback (Option 3): Category Base (Easy: 10, Medium: 25, Hard: 45) * (1 + (50 - AC_Rate) / 100)
+   - Fallback (Option 3): Category Base (Easy: 8, Medium: 15, Hard: 24) * (1 + (50 - AC_Rate) / 100)
 2. Additive Bonuses:
-   - LeetCode Daily Bonus: +10.0 pts
-   - First-Try Bonus (0 failed submissions): +5.0 pts
+   - LeetCode Daily Bonus: +5.0 pts
 3. Multipliers:
-   - Streak Multiplier: 1.0 + (0.25 * min(1.0, max(0.0, streak_days) / 30.0)) (Capped at 1.25x for 30+ days)
+   - Streak Multiplier: 1.0 + (0.10 * min(1.0, max(0.0, streak_days) / 30.0)) (Capped at 1.10x for 30+ days)
 4. Final Score = (Base + Bonuses) * StreakMultiplier
 """
 
@@ -29,7 +28,6 @@ def compute_solve_points(
     difficulty: Optional[str] = None,
     ac_rate: Optional[float] = None,
     is_daily: bool = False,
-    is_first_try: bool = True,
     streak_days: int = 0,
 ) -> float:
     """
@@ -38,10 +36,8 @@ def compute_solve_points(
     rating = get_contest_rating(title_slug)
 
     if rating is not None and rating > 0:
-        # Option 1: Rating / 100 (e.g. 1550 rating -> 15.5 pts, 2400 -> 24.0 pts)
         base_points = rating / 100.0
     else:
-        # Option 3 Fallback (Easy: 8, Medium: 15, Hard: 24)
         diff_str = (difficulty or "Medium").capitalize()
         category_bases = {"Easy": 8.0, "Medium": 15.0, "Hard": 24.0}
         cat_base = category_bases.get(diff_str, 15.0)
@@ -52,13 +48,9 @@ def compute_solve_points(
         else:
             base_points = cat_base
 
-    # Additive bonuses (Daily: +5.0, First-Try: +3.0)
     daily_bonus = 5.0 if is_daily else 0.0
-    first_try_bonus = 3.0 if is_first_try else 0.0
+    subtotal = base_points + daily_bonus
 
-    subtotal = base_points + daily_bonus + first_try_bonus
-
-    # Streak Multiplier (1.0x to 1.10x max capped at 30 days)
     streak_capped = min(30, max(0, streak_days))
     streak_multiplier = 1.0 + (0.10 * (streak_capped / 30.0))
 
@@ -71,7 +63,6 @@ def compute_solve_points_breakdown(
     difficulty: Optional[str] = None,
     ac_rate: Optional[float] = None,
     is_daily: bool = False,
-    is_first_try: bool = True,
     streak_days: int = 0,
 ) -> dict:
     """Returns detailed breakdown components for a solve."""
@@ -99,9 +90,7 @@ def compute_solve_points_breakdown(
             base_points = cat_base
 
     daily_bonus = 5.0 if is_daily else 0.0
-    first_try_bonus = 3.0 if is_first_try else 0.0
-
-    subtotal = round(base_points + daily_bonus + first_try_bonus, 2)
+    subtotal = round(base_points + daily_bonus, 2)
 
     streak_capped = min(30, max(0, streak_days))
     streak_multiplier = round(1.0 + (0.10 * (streak_capped / 30.0)), 2)
@@ -119,8 +108,6 @@ def compute_solve_points_breakdown(
         "contest_rating": rating,
         "is_daily": is_daily,
         "daily_bonus": daily_bonus,
-        "is_first_try": is_first_try,
-        "first_try_bonus": first_try_bonus,
         "subtotal": subtotal,
         "streak_days": streak_days,
         "streak_multiplier": streak_multiplier,
@@ -132,11 +119,10 @@ def recalculate_user_points(
     user: User,
     db: Session,
     today_daily_slug: Optional[str] = None,
-    attempts_map: Optional[dict] = None,
 ) -> float:
     """
     Recalculates a single user's total points based on their solves ledger
-    and total difficulty counts, accounting for daily challenge bonus and attempt tracking.
+    and total difficulty counts, accounting for daily challenge bonus.
     Uses the exact streak active on the date each problem was solved.
     """
     solves = db.query(Solve).filter(Solve.user_id == user.id).all()
@@ -154,13 +140,6 @@ def recalculate_user_points(
         slug = solve.title_slug or ""
         is_daily = bool(today_daily_slug and slug.lower() == today_daily_slug.lower())
 
-        is_first_try = getattr(solve, "is_first_try", True)
-        if is_first_try is None:
-            is_first_try = True
-        if attempts_map and isinstance(attempts_map, dict) and slug in attempts_map:
-            is_first_try = bool(attempts_map[slug].get("is_first_try", True))
-            solve.is_first_try = is_first_try
-
         solve_date = solve.solved_at.date() if hasattr(solve.solved_at, "date") else solve.solved_at
         streak_on_date = current_streak(active_dates, solve_date)
 
@@ -169,20 +148,16 @@ def recalculate_user_points(
             difficulty=solve.difficulty,
             ac_rate=solve.ac_rate,
             is_daily=is_daily,
-            is_first_try=is_first_try,
             streak_days=streak_on_date,
         )
         solve.points_earned = pts
         total_points += pts
 
-    # Handle remaining problem counts not explicitly logged in solves table
-    # Base fallback if solves ledger has fewer items than total count
     num_solves_logged = len(solves)
     total_known_solves = (user.easy_count or 0) + (user.medium_count or 0) + (user.hard_count or 0)
 
     legacy_pts = 0.0
     if total_known_solves > num_solves_logged and total_known_solves > 0:
-        # Ratio of unlogged solves
         unlogged_ratio = (total_known_solves - num_solves_logged) / float(total_known_solves)
         unlogged_easy = (user.easy_count or 0) * unlogged_ratio
         unlogged_med = (user.medium_count or 0) * unlogged_ratio

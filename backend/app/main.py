@@ -251,23 +251,12 @@ def verify_forgot_password(payload: ForgotPasswordVerifyRequest, db: Session = D
 
 
 @app.post("/api/users/{user_id}/sync")
-async def sync_user(user_id: int, payload: Optional[SyncRequest] = None, db: Session = Depends(get_db)):
+async def sync_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    attempts_map = payload.attempts_map if payload else None
-    solves_added = await poll_user(db, user, attempts_map=attempts_map)
+    solves_added = await poll_user(db, user)
     return {"status": "synced", "user_id": user_id, "new_solves": solves_added}
-
-
-@app.post("/api/users/{user_id}/attempts")
-async def post_user_attempts(user_id: int, payload: SyncRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if payload.attempts_map:
-        await poll_user(db, user, attempts_map=payload.attempts_map)
-    return {"status": "ok", "user_id": user_id}
 
 
 @app.put("/api/users/{user_id}/leetcode-username")
@@ -868,15 +857,11 @@ async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = De
         solve_date = s.solved_at.date() if hasattr(s.solved_at, "date") else s.solved_at
         streak_on_date = current_streak(active_dates, solve_date)
         is_daily = bool(today_daily_slug and s.title_slug == today_daily_slug and solve_date == date.today())
-        solve_first_try = getattr(s, "is_first_try", True)
-        if solve_first_try is None:
-            solve_first_try = True
         breakdown_data = compute_solve_points_breakdown(
             title_slug=s.title_slug,
             difficulty=diff,
             ac_rate=ac,
             is_daily=is_daily,
-            is_first_try=solve_first_try,
             streak_days=streak_on_date,
         )
         points_val = breakdown_data["points_earned"]

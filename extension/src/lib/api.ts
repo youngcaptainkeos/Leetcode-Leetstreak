@@ -25,8 +25,6 @@ export interface PointBreakdown {
   contest_rating?: number;
   is_daily: boolean;
   daily_bonus: number;
-  is_first_try: boolean;
-  first_try_bonus: number;
   subtotal?: number;
   streak_days: number;
   streak_multiplier: number;
@@ -184,11 +182,8 @@ export const api = {
     }),
   dashboard: (userId: number) =>
     request<DashboardResponse>(`/users/${userId}/dashboard`),
-  syncUser: (userId: number, attemptsMap?: Record<string, any>) =>
-    request<{ status: string; new_solves: number }>(`/users/${userId}/sync`, {
-      method: "POST",
-      body: JSON.stringify({ attempts_map: attemptsMap || {} }),
-    }),
+  syncUser: (userId: number) =>
+    request<{ status: string; new_solves: number }>(`/users/${userId}/sync`, { method: "POST" }),
   updateLeetcodeUsername: (userId: number, leetcode_username: string) =>
     request<{ status: string; user_id: number; leetcode_username: string; avatar_url?: string }>(
       `/users/${userId}/leetcode-username`,

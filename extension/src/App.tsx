@@ -898,14 +898,7 @@ function Dashboard({
     setSyncMsg(null);
     setError(null);
     try {
-      let attemptsMap = {};
-      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-        const stored = await new Promise<any>((resolve) => {
-          chrome.storage.local.get(["codestreak_attempts_map"], (res) => resolve(res));
-        });
-        attemptsMap = stored?.codestreak_attempts_map || {};
-      }
-      const res = await api.syncUser(userId, attemptsMap);
+      const res = await api.syncUser(userId);
       await loadData();
       setSyncMsg(
         res.new_solves > 0
@@ -1782,12 +1775,6 @@ function Dashboard({
                 </span>
               </div>
               <div className="breakdown-row">
-                <span className="row-label">First-Try Accuracy Bonus:</span>
-                <span className={`row-val ${(selectedSolveBreakdown.breakdown?.first_try_bonus || 0) > 0 ? "text-green" : "text-muted"}`}>
-                  +{(selectedSolveBreakdown.breakdown?.first_try_bonus || 0)} pts
-                </span>
-              </div>
-              <div className="breakdown-row">
                 <span className="row-label">Streak Multiplier:</span>
                 <span className="row-val text-violet">
                   {selectedSolveBreakdown.breakdown?.streak_multiplier || 1.0}× <span className="tiny muted">({selectedSolveBreakdown.breakdown?.streak_days || 0}d streak)</span>
@@ -1866,10 +1853,6 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
               <div className="bonus-box">
                 <span className="bonus-label">Daily Challenge</span>
                 <span className="bonus-val">+5 Pts</span>
-              </div>
-              <div className="bonus-box">
-                <span className="bonus-label">First-Try Success</span>
-                <span className="bonus-val">+3 Pts</span>
               </div>
             </div>
           </div>

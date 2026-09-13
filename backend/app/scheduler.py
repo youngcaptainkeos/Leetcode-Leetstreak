@@ -17,7 +17,7 @@ from .contest_ratings import refresh_zerotrac_dataset
 logger = logging.getLogger("codestreak.scheduler")
 
 
-async def poll_user(db: Session, user: User, attempts_map: Optional[dict] = None) -> int:
+async def poll_user(db: Session, user: User) -> int:
     """Fetch complete LeetCode profile, calendar history, and recent AC submissions for one user."""
     try:
         data = await fetch_leetcode_user_data(user.leetcode_username)
@@ -57,18 +57,9 @@ async def poll_user(db: Session, user: User, attempts_map: Optional[dict] = None
     new_count = 0
     submissions = data.get("recent_submissions") or []
     
-    db_solves = db.query(Solve).filter(Solve.user_id == user.id).all()
-    solves_map = {s.title_slug: s for s in db_solves}
-    existing_solves = set(solves_map.keys())
-
-    # Update existing solves from attempts_map if available
-    if attempts_map and isinstance(attempts_map, dict):
-        for slug, att_info in attempts_map.items():
-            if slug in solves_map and isinstance(att_info, dict):
-                first_try_val = bool(att_info.get("is_first_try", True))
-                if solves_map[slug].is_first_try != first_try_val:
-                    solves_map[slug].is_first_try = first_try_val
-
+    existing_solves = {
+        r[0] for r in db.query(Solve.title_slug).filter(Solve.user_id == user.id).all()
+    }
     solves_by_date = {}
 
     for sub in submissions:
@@ -79,9 +70,6 @@ async def poll_user(db: Session, user: User, attempts_map: Optional[dict] = None
         if title_slug not in existing_solves:
             existing_solves.add(title_slug)
             prob_info = await fetch_problem_info(title_slug)
-            is_first_try = True
-            if attempts_map and isinstance(attempts_map, dict) and title_slug in attempts_map:
-                is_first_try = bool(attempts_map[title_slug].get("is_first_try", True))
 
             new_solve = Solve(
                 user_id=user.id,
@@ -90,10 +78,8 @@ async def poll_user(db: Session, user: User, attempts_map: Optional[dict] = None
                 difficulty=prob_info.get("difficulty"),
                 ac_rate=prob_info.get("ac_rate"),
                 solved_at=solved_at,
-                is_first_try=is_first_try,
             )
             db.add(new_solve)
-            solves_map[title_slug] = new_solve
             new_count += 1
 
         solves_by_date[day] = solves_by_date.get(day, 0) + 1
