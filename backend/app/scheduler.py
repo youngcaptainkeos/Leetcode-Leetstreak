@@ -92,7 +92,7 @@ async def poll_user(db: Session, user: User) -> int:
             db.add(new_row)
             existing_daily[day] = new_row
 
-    recalculate_user_points(user, db, attempts_map=attempts_map)
+    recalculate_user_points(user, db, today_daily_slug=today_daily_slug)
     db.commit()
     return new_count
 
