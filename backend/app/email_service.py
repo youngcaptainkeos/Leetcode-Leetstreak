@@ -160,7 +160,7 @@ async def send_update_notification_email(
     username: str,
     commit_id: str = "3677be4",
     release_notes: str = "ZeroTrac Elo Contest Ratings, detailed points breakdown modal, Sunday 12am reset, and in-app update notifications!",
-    download_url: str = "https://leetcode-leetstreak.onrender.com/downloads/leetstreak.zip"
+    download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip"
 ) -> bool:
     """Sends update notification email with styled 'Download Update Package' CTA button and README setup guide link."""
     subject = "🚀 New LeetStreak Extension Update is Available!"

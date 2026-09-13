@@ -11,7 +11,7 @@ Track your LeetCode consistency, build active daily streaks, and compete on live
 Follow these simple steps to install **LeetStreak** on Google Chrome, Microsoft Edge, Brave, or any Chromium-based browser in under 1 minute!
 
 ### Step 1: Download the Extension
-1. Download the latest [`leetstreak.zip`](https://leetcode-leetstreak.onrender.com/downloads/leetstreak.zip) package.
+1. Download the latest [`leetstreak.zip`](https://codestreak-api.onrender.com/downloads/leetstreak.zip) package.
 2. Unzip `leetstreak.zip` to any folder on your computer.
 
 ### Step 2: Load into Chrome / Edge / Brave
@@ -36,7 +36,7 @@ Follow these simple steps to install **LeetStreak** on Google Chrome, Microsoft 
 Follow these simple steps to install **LeetStreak** on Mozilla Firefox:
 
 1. **Download & Extract**:
-   - Download [`leetstreak.zip`](https://leetcode-leetstreak.onrender.com/downloads/leetstreak.zip).
+   - Download [`leetstreak.zip`](https://codestreak-api.onrender.com/downloads/leetstreak.zip).
    - Unzip `leetstreak.zip` to a folder on your computer.
 
 2. **Open Firefox Debugging**:
