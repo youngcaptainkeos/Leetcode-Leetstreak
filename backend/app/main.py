@@ -442,7 +442,7 @@ def _compute_leaderboard(
         active_days_this_week = len(week_rows)
         consistency = (active_days_this_week / days_in_week_so_far) * 100
         is_active_today = today in active_dates
-        points = round(user.points or 0.0, 2)
+        points = int(round(user.points or 0.0))
         raw.append({
             "user": user,
             "weekly_total": weekly_total,
