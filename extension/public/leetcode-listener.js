@@ -27,11 +27,12 @@
       const titleSlug = parseSlugFromUrl();
       if (!titleSlug) return;
       await verifyProblemAttempts(titleSlug);
+      setTimeout(syncAllRecentSolves, 1000);
     }
   }
 
   async function verifyProblemAttempts(titleSlug) {
-    if (!titleSlug) return;
+    if (!titleSlug) return null;
     try {
       const fetchFn = origFetch || window.fetch;
       const res = await fetchFn("https://leetcode.com/graphql", {
@@ -60,41 +61,59 @@
         const sorted = [...subs].sort((a, b) => parseInt(a.timestamp) - parseInt(b.timestamp));
         const firstSub = sorted[0];
         const isFirstTry = (firstSub.statusDisplay === "Accepted" || firstSub.statusDisplay === "AC");
-
-        if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-          chrome.storage.local.get(["codestreak_attempts_map"], (result) => {
-            const attemptsMap = result.codestreak_attempts_map || {};
-            attemptsMap[titleSlug] = {
-              is_first_try: isFirstTry,
-              attempt_count: sorted.length,
-              timestamp: Date.now(),
-            };
-            chrome.storage.local.set({ codestreak_attempts_map: attemptsMap }, () => {
-              console.log(`[LeetStreak] Verified ${titleSlug}: is_first_try=${isFirstTry} (total subs: ${sorted.length})`);
-              syncAttemptsToBackend(attemptsMap);
-            });
-          });
-        }
+        return isFirstTry;
       }
     } catch (e) {
       console.warn("[LeetStreak] Error verifying submission list for", titleSlug, e);
     }
+    return null;
   }
 
-  function syncAttemptsToBackend(attemptsMap) {
-    if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get(["codestreak_user"], (res) => {
-        const user = res.codestreak_user;
-        if (user && user.id) {
-          const fetchFn = origFetch || window.fetch;
-          fetchFn(`https://codestreak-api.onrender.com/api/users/${user.id}/attempts`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ attempts_map: attemptsMap })
-          }).catch(() => {});
+  async function syncAllRecentSolves() {
+    if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) return;
+
+    chrome.storage.local.get(["codestreak_user", "codestreak_attempts_map"], async (res) => {
+      const user = res.codestreak_user;
+      if (!user || !user.id) return;
+
+      const attemptsMap = res.codestreak_attempts_map || {};
+      const fetchFn = origFetch || window.fetch;
+
+      try {
+        const solvesResp = await fetchFn(`https://codestreak-api.onrender.com/api/users/${user.id}/recent-solves?limit=15`);
+        if (!solvesResp.ok) return;
+        const solves = await solvesResp.json();
+
+        let mapChanged = false;
+        for (const solve of solves) {
+          const slug = solve.title_slug;
+          if (!slug) continue;
+
+          const isFirstTry = await verifyProblemAttempts(slug);
+          if (isFirstTry !== null) {
+            if (!attemptsMap[slug] || attemptsMap[slug].is_first_try !== isFirstTry) {
+              attemptsMap[slug] = {
+                is_first_try: isFirstTry,
+                timestamp: Date.now(),
+              };
+              mapChanged = true;
+            }
+          }
         }
-      });
-    }
+
+        if (mapChanged) {
+          chrome.storage.local.set({ codestreak_attempts_map: attemptsMap }, () => {
+            fetchFn(`https://codestreak-api.onrender.com/api/users/${user.id}/sync`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ attempts_map: attemptsMap })
+            }).catch(() => {});
+          });
+        }
+      } catch (e) {
+        console.warn("[LeetStreak] Auto-sync recent solves attempts failed", e);
+      }
+    });
   }
 
   function parseSlugFromUrl() {
@@ -106,11 +125,8 @@
     return null;
   }
 
-  // Auto-verify when landing on a problem page
-  const currentSlug = parseSlugFromUrl();
-  if (currentSlug) {
-    setTimeout(() => {
-      verifyProblemAttempts(currentSlug);
-    }, 1200);
-  }
+  // Auto-verify all recent solves when landing on any LeetCode page
+  setTimeout(() => {
+    syncAllRecentSolves();
+  }, 1500);
 })();
