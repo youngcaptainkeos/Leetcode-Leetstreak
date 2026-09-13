@@ -158,52 +158,76 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
 async def send_update_notification_email(
     to_email: str,
     username: str,
-    commit_id: str = "3677be4",
-    release_notes: str = "ZeroTrac Elo Contest Ratings, detailed points breakdown modal, Sunday 12am reset, and in-app update notifications!",
+    commit_id: str = "26e30e6",
+    release_notes: str = None,
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip"
 ) -> bool:
-    """Sends update notification email with styled 'Download Update Package' CTA button and README setup guide link."""
-    subject = "🚀 New LeetStreak Extension Update is Available!"
+    """Sends professional update notification email with download package link and setup guide."""
+    subject = "LeetStreak Update Available"
+    
+    if not release_notes or "ZeroTrac" in release_notes or "Sunday 12am" in release_notes:
+        release_notes_html = """
+        <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #cbd5e1; font-size: 14px; line-height: 1.6;">
+          <li style="margin-bottom: 6px;"><strong>ZeroTrac Elo Contest Ratings</strong>: Contest problems now use official Elo ratings for accurate problem point distribution.</li>
+          <li style="margin-bottom: 6px;"><strong>Detailed Points Breakdown</strong>: Click any recent solve in your dashboard to view exact base points, contest ratings, acceptance deltas, and streak multipliers.</li>
+          <li style="margin-bottom: 6px;"><strong>Sunday Midnight Resets</strong>: Weekly leaderboards now reset reliably every Sunday at 12:00 AM.</li>
+          <li style="margin-bottom: 6px;"><strong>In-App Update Notifications</strong>: Automatic update banner in the extension popup when new versions are released.</li>
+        </ul>
+        """
+    else:
+        release_notes_html = f'<p style="margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px; line-height: 1.6;">{release_notes}</p>'
+
     html_content = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; background: #111318; color: #e6e7eb; border-radius: 16px; border: 1px solid #2d3245; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);">
-      <div style="text-align: center; margin-bottom: 24px;">
-        <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/icon128.png" alt="LeetStreak" style="width: 56px; height: 56px; border-radius: 12px; vertical-align: middle; display: inline-block;" />
-        <h2 style="margin: 12px 0 4px 0; font-size: 22px; font-weight: 800; color: #818cf8;">LeetStreak Extension Update</h2>
-        <span style="display: inline-block; background: #312e81; color: #c7d2fe; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 9999px; border: 1px solid #6366f1;">
-          New Update Released
-        </span>
-      </div>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    </head>
+    <body style="background-color: #0b0f19; margin: 0; padding: 32px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f1f5f9;">
+      <div style="max-width: 520px; margin: 0 auto; background-color: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 32px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);">
+        
+        <!-- Header Logo & Title -->
+        <div style="margin-bottom: 24px; text-align: left;">
+          <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/icon128.png" alt="LeetStreak" style="width: 44px; height: 44px; border-radius: 8px; vertical-align: middle; margin-right: 12px;" />
+          <span style="font-size: 20px; font-weight: 700; color: #f8fafc; letter-spacing: -0.3px; vertical-align: middle;">LeetStreak Update</span>
+        </div>
 
-      <p style="font-size: 15px; line-height: 1.5;">Hello <strong>{username}</strong> 👋,</p>
-      <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1;">
-        A new update for the <strong>LeetStreak</strong> extension is now available! Get the latest features, performance enhancements, and points breakdown improvements right away.
-      </p>
-
-      <div style="background: #1e2029; padding: 16px; border-radius: 10px; border-left: 4px solid #6366f1; margin: 20px 0;">
-        <h4 style="margin: 0 0 8px 0; font-size: 14px; color: #a5b4fc; text-transform: uppercase; letter-spacing: 0.5px;">✨ What's New in this Update</h4>
-        <p style="margin: 0; font-size: 13px; color: #e2e8f0; line-height: 1.5;">
-          {release_notes}
+        <!-- Greeting -->
+        <p style="font-size: 15px; margin-top: 0; margin-bottom: 14px; color: #f8fafc;">Hi <strong>{username}</strong>,</p>
+        
+        <p style="font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 24px;">
+          A new update for the <strong>LeetStreak</strong> extension is now available. Here is a summary of what has been updated:
         </p>
-      </div>
 
-      <div style="text-align: center; margin: 28px 0 20px 0;">
-        <a href="{download_url}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 14px 32px; border-radius: 10px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);">
-          📦 Download Update Package (leetstreak.zip)
-        </a>
-      </div>
+        <!-- What's New Section -->
+        <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 20px; margin-bottom: 28px;">
+          <h2 style="margin: 0 0 10px 0; font-size: 12px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.8px;">What's New</h2>
+          {release_notes_html}
+        </div>
 
-      <div style="background: #181b24; padding: 16px; border-radius: 8px; font-size: 13px; color: #94a3b8; text-align: center; margin-top: 24px;">
-        Need help updating your browser?<br />
-        <a href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme" target="_blank" style="color: #818cf8; font-weight: 700; text-decoration: underline; display: inline-block; margin-top: 6px;">
-          📖 View Installation & Update Guide (Chrome, Edge, Brave & Firefox)
-        </a>
-      </div>
+        <!-- Action Button -->
+        <div style="text-align: center; margin-bottom: 28px;">
+          <a href="{download_url}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 13px 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);">
+            Download Extension Package (leetstreak.zip)
+          </a>
+        </div>
 
-      <hr style="border: 0; border-top: 1px solid #272a37; margin: 24px 0 16px 0;" />
-      <p style="font-size: 11px; text-align: center; color: #64748b; margin: 0;">
-        Keep grinding LeetCode with your friends! • LeetStreak Team
-      </p>
-    </div>
+        <!-- Installation Instructions Link -->
+        <div style="border-top: 1px solid #1e293b; padding-top: 20px; font-size: 13px; color: #94a3b8; text-align: center;">
+          <span style="display: block; margin-bottom: 6px; font-weight: 500;">Installation & Setup Guide</span>
+          <a href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme" target="_blank" style="color: #818cf8; text-decoration: none; font-weight: 600;">
+            View Setup Instructions (Chrome, Edge, Brave & Firefox) &rarr;
+          </a>
+        </div>
+
+        <!-- Footer -->
+        <div style="margin-top: 28px; border-top: 1px solid #1e293b; padding-top: 16px; text-align: center; font-size: 12px; color: #64748b;">
+          LeetStreak Team
+        </div>
+      </div>
+    </body>
+    </html>
     """
     logger.info("Initiating Update notification email to user: %s (Email: %s, Internal Commit: %s)", username, to_email, commit_id)
     return await send_email_dispatch(to_email, subject, html_content)

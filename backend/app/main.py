@@ -1071,11 +1071,12 @@ async def broadcast_update_email(
     count = 0
     for user in users:
         if user.last_notified_commit != commit_id:
+            display_name = user.name.strip() if (user.name and user.name.strip()) else user.leetcode_username
             background_tasks.add_task(
                 send_and_update_user_commit,
                 user_id=user.id,
                 to_email=user.email,
-                username=user.leetcode_username or user.name,
+                username=display_name,
                 commit_id=commit_id,
                 release_notes=release_notes,
                 download_url=download_url
