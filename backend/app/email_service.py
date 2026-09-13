@@ -221,6 +221,14 @@ async def send_update_notification_email(
           </a>
         </div>
 
+        <!-- Share with Friends Section -->
+        <div style="border-top: 1px solid #1e293b; padding-top: 20px; margin-top: 20px; font-size: 13px; color: #94a3b8; text-align: center;">
+          <span style="display: block; margin-bottom: 8px; font-weight: 600; color: #e2e8f0;">Know others grinding LeetCode?</span>
+          <a href="https://api.whatsapp.com/send?text=Check%20out%20LeetStreak%20to%20track%20your%20LeetCode%20daily%20streak%20and%20compete%20on%20leaderboards%20with%20friends!%20Download%20link:%20https://codestreak-api.onrender.com/downloads/leetstreak.zip%20%7C%20Setup%20Guide:%20https://github.com/youngcaptainkeos/Leetcode-Leetstreak%23readme" target="_blank" style="display: inline-block; background-color: #1e293b; border: 1px solid #334155; color: #38bdf8; text-decoration: none; font-size: 12px; font-weight: 600; padding: 7px 16px; border-radius: 6px; margin-top: 4px;">
+            💬 Share Download & Setup Link with Friends
+          </a>
+        </div>
+
         <!-- Footer -->
         <div style="margin-top: 28px; border-top: 1px solid #1e293b; padding-top: 16px; text-align: center; font-size: 12px; color: #64748b;">
           LeetStreak Team
