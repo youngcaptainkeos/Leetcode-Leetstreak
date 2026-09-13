@@ -637,6 +637,8 @@ function Dashboard({
   const [showJoinGroup, setShowJoinGroup] = useState(false);
   const [showDeleteGroupModal, setShowDeleteGroupModal] = useState(false);
   const [deletingGroup, setDeletingGroup] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<{ id: number; name: string } | null>(null);
+  const [removingMember, setRemovingMember] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [groupActionBusy, setGroupActionBusy] = useState(false);
@@ -1003,18 +1005,32 @@ function Dashboard({
     }
   }
 
-  async function handleRemoveMember(
-    groupId: number,
-    memberUserId: number,
-    memberName: string
-  ) {
-    if (!confirm(`Are you sure you want to remove ${memberName} from this group?`))
-      return;
+  function handlePromptRemoveMember(memberUserId: number, memberName: string) {
+    setMemberToRemove({ id: memberUserId, name: memberName });
+  }
+
+  async function confirmRemoveMember() {
+    if (!activeGroup || !userId || !memberToRemove) return;
+    setRemovingMember(true);
     try {
-      await api.removeMember(groupId, memberUserId, userId);
-      await loadData(groupId);
+      await api.removeMember(activeGroup.id, memberToRemove.id, userId);
+      const targetId = memberToRemove.id;
+      const targetName = memberToRemove.name;
+      setBoard((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          entries: prev.entries.filter((e) => e.id !== targetId),
+          total_users: Math.max(0, (prev.total_users || 1) - 1),
+        };
+      });
+      setSyncMsg(`Removed ${targetName} from group.`);
+      setMemberToRemove(null);
+      setTimeout(() => setSyncMsg(null), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not remove member.");
+    } finally {
+      setRemovingMember(false);
     }
   }
 
@@ -1395,21 +1411,6 @@ function Dashboard({
                         👍 {e.kudos_count || 0}
                       </button>
                     </div>
-
-                    {/* Owner Remove Button */}
-                    {isGroupOwner && Number(e.id) !== Number(userId) && activeGroup && (
-                      <button
-                        type="button"
-                        className="remove-btn"
-                        onClick={(evt) => {
-                          evt.stopPropagation();
-                          handleRemoveMember(activeGroup.id, e.id, e.name);
-                        }}
-                        title={`Remove ${e.name} from group`}
-                      >
-                        🗑️
-                      </button>
-                    )}
                   </li>
                 </React.Fragment>
               );
@@ -1608,8 +1609,10 @@ function Dashboard({
                   type="button"
                   className="danger-btn modal-action-btn"
                   onClick={() => {
-                    handleRemoveMember(activeGroup.id, inspectedFriend.id, inspectedFriend.name);
+                    const mId = inspectedFriend.id;
+                    const mName = inspectedFriend.name;
                     setInspectedFriend(null);
+                    handlePromptRemoveMember(mId, mName);
                   }}
                   style={{ fontSize: "11.5px", padding: "6px 12px", width: "100%" }}
                 >
@@ -1617,6 +1620,45 @@ function Dashboard({
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Remove Member Confirmation Modal */}
+      {memberToRemove && activeGroup && (
+        <div className="modal-overlay" onClick={() => setMemberToRemove(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="danger-title">🗑️ Remove Member</h3>
+              <button
+                className="modal-close"
+                onClick={() => setMemberToRemove(null)}
+                title="Cancel"
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ fontSize: "13px", color: "var(--md-sys-color-on-surface-variant)", margin: "12px 0", lineHeight: "1.4" }}>
+              Are you sure you want to remove <strong>{memberToRemove.name}</strong> from <strong>{activeGroup.name}</strong>?
+            </p>
+            <div className="modal-actions-row">
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => setMemberToRemove(null)}
+                disabled={removingMember}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="danger-btn modal-action-btn"
+                onClick={confirmRemoveMember}
+                disabled={removingMember}
+              >
+                {removingMember ? "Removing…" : "Confirm & Remove"}
+              </button>
+            </div>
           </div>
         </div>
       )}
