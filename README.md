@@ -54,6 +54,29 @@ Follow these simple steps to install **LeetStreak** on Mozilla Firefox:
 
 ---
 
+### 🧭 Safari (macOS) Setup Guide
+
+LeetStreak uses standard WebExtensions (Manifest V3) fully compatible with macOS Safari 14+:
+
+1. **Download & Extract**:
+   - Download [`leetstreak.zip`](https://codestreak-api.onrender.com/downloads/leetstreak.zip) and extract it to a folder.
+
+2. **Enable Safari Developer Mode**:
+   - Open **Safari** → **Settings** (or **Preferences**) → **Advanced** tab.
+   - Check **Show features for web developers** (or *Show Develop menu in menu bar*).
+
+3. **Allow Unsigned Extensions**:
+   - Click **Develop** in the top macOS menu bar and check **Allow Unsigned Extensions** (enter your Mac password if prompted).
+
+4. **Build & Run for Safari**:
+   - Convert standard Manifest V3 using Apple's built-in tool:
+     ```bash
+     xcrun safari-web-extension-converter /path/to/unzipped/leetstreak
+     ```
+   - Open the generated Xcode project, press **Run** (⌘R), and check **LeetStreak** in **Safari → Settings → Extensions**!
+
+---
+
 ## 🎯 How Points & Scoring System Work
 
 LeetStreak uses an advanced, fair scoring system based on actual problem difficulty, ZeroTrac contest ratings, acceptance ratios, and consistency bonuses:
