@@ -21,9 +21,9 @@
   "permissions": ["storage", "notifications", "alarms"],
   "content_scripts": [
     {
-      "matches": ["https://leetcode.com/problems/*"],
+      "matches": ["https://leetcode.com/*"],
       "js": ["leetcode-listener.js"],
-      "run_at": "document_start"
+      "run_at": "document_idle"
     }
   ],
   "background": {
