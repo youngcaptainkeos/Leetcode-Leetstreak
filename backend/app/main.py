@@ -1052,7 +1052,7 @@ async def send_and_update_user_commit(
 async def broadcast_update_email(
     background_tasks: BackgroundTasks,
     commit_id: str = "588495a",
-    release_notes: str = "Added Buy Me a Coffee feature, Sunday 12am reset, Elo Ratings, and dynamic update notifications!",
+    release_notes: str = "ZeroTrac Elo Contest Ratings, detailed points breakdown modal, Sunday 12am reset, and in-app update notifications!",
     download_url: str = "https://leetcode-leetstreak.onrender.com/downloads/leetstreak.zip",
     db: Session = Depends(get_db)
 ):
@@ -1088,7 +1088,7 @@ async def test_update_email(
     to_email: str,
     username: str = "Developer",
     commit_id: str = "588495a",
-    release_notes: str = "Added Buy Me a Coffee feature, Sunday 12am reset, Elo Ratings, and dynamic update notifications!",
+    release_notes: str = "ZeroTrac Elo Contest Ratings, detailed points breakdown modal, Sunday 12am reset, and in-app update notifications!",
     download_url: str = "https://leetcode-leetstreak.onrender.com/downloads/leetstreak.zip"
 ):
     """

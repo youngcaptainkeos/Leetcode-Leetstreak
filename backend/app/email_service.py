@@ -158,29 +158,29 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
 async def send_update_notification_email(
     to_email: str,
     username: str,
-    commit_id: str = "588495a",
-    release_notes: str = "Added Buy Me a Coffee feature, Sunday 12am reset, Elo Ratings, and dynamic update notifications!",
+    commit_id: str = "3677be4",
+    release_notes: str = "ZeroTrac Elo Contest Ratings, detailed points breakdown modal, Sunday 12am reset, and in-app update notifications!",
     download_url: str = "https://leetcode-leetstreak.onrender.com/downloads/leetstreak.zip"
 ) -> bool:
-    """Sends update notification email with styled 'Download Update Package' CTA button."""
-    subject = f"🚀 New LeetStreak Extension Update (Commit {commit_id}) is Available!"
+    """Sends update notification email with styled 'Download Update Package' CTA button and README setup guide link."""
+    subject = "🚀 New LeetStreak Extension Update is Available!"
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; background: #111318; color: #e6e7eb; border-radius: 16px; border: 1px solid #2d3245; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);">
       <div style="text-align: center; margin-bottom: 24px;">
         <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/icon128.png" alt="LeetStreak" style="width: 56px; height: 56px; border-radius: 12px; vertical-align: middle; display: inline-block;" />
         <h2 style="margin: 12px 0 4px 0; font-size: 22px; font-weight: 800; color: #818cf8;">LeetStreak Extension Update</h2>
         <span style="display: inline-block; background: #312e81; color: #c7d2fe; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 9999px; border: 1px solid #6366f1;">
-          Commit #{commit_id} Released
+          New Update Released
         </span>
       </div>
 
       <p style="font-size: 15px; line-height: 1.5;">Hello <strong>{username}</strong> 👋,</p>
       <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1;">
-        A new update for the <strong>LeetStreak</strong> Chrome extension (Commit <code>{commit_id}</code>) is now available! Get the latest features, performance enhancements, and points breakdown improvements right away.
+        A new update for the <strong>LeetStreak</strong> extension is now available! Get the latest features, performance enhancements, and points breakdown improvements right away.
       </p>
 
       <div style="background: #1e2029; padding: 16px; border-radius: 10px; border-left: 4px solid #6366f1; margin: 20px 0;">
-        <h4 style="margin: 0 0 8px 0; font-size: 14px; color: #a5b4fc; text-transform: uppercase; letter-spacing: 0.5px;">✨ What's New in Commit #{commit_id}</h4>
+        <h4 style="margin: 0 0 8px 0; font-size: 14px; color: #a5b4fc; text-transform: uppercase; letter-spacing: 0.5px;">✨ What's New in this Update</h4>
         <p style="margin: 0; font-size: 13px; color: #e2e8f0; line-height: 1.5;">
           {release_notes}
         </p>
@@ -192,12 +192,11 @@ async def send_update_notification_email(
         </a>
       </div>
 
-      <div style="background: #181b24; padding: 14px; border-radius: 8px; font-size: 12px; color: #94a3b8; line-height: 1.5; margin-top: 24px;">
-        <strong style="color: #cbd5e1;">How to Update Installed Extension:</strong><br />
-        1. Click the button above to download <code>leetstreak.zip</code> and unzip it.<br />
-        2. Open Chrome and go to <code>chrome://extensions</code>.<br />
-        3. Enable <em>Developer Mode</em> (top right switch) and click <strong>Load Unpacked</strong>.<br />
-        4. Select the unzipped folder (or <code>dist</code> folder) containing <code>manifest.json</code>!
+      <div style="background: #181b24; padding: 16px; border-radius: 8px; font-size: 13px; color: #94a3b8; text-align: center; margin-top: 24px;">
+        Need help updating your browser?<br />
+        <a href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme" target="_blank" style="color: #818cf8; font-weight: 700; text-decoration: underline; display: inline-block; margin-top: 6px;">
+          📖 View Installation & Update Guide (Chrome, Edge, Brave & Firefox)
+        </a>
       </div>
 
       <hr style="border: 0; border-top: 1px solid #272a37; margin: 24px 0 16px 0;" />
@@ -206,5 +205,5 @@ async def send_update_notification_email(
       </p>
     </div>
     """
-    logger.info("Initiating Update notification email to user: %s (Email: %s, Commit: %s)", username, to_email, commit_id)
+    logger.info("Initiating Update notification email to user: %s (Email: %s, Internal Commit: %s)", username, to_email, commit_id)
     return await send_email_dispatch(to_email, subject, html_content)
