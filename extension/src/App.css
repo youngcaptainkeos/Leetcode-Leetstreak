@@ -834,27 +834,67 @@ html, body, #root {
   opacity: 0.9;
 }
 
-.remove-btn {
-  background-color: var(--md-sys-color-error-container);
-  border: 1px solid var(--md-sys-color-error);
-  color: var(--md-sys-color-on-error-container);
-  cursor: pointer;
+.group-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--md-sys-color-surface-container-high);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-corner-medium);
+  padding: 4px 10px;
+  margin: 4px 0 6px 0;
+  gap: 8px;
+}
+
+.group-code-badge {
   font-size: 11px;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s ease;
+}
+
+.group-code-badge:hover {
+  color: var(--md-sys-color-primary);
+}
+
+.leaderboard-item {
+  position: relative;
+}
+
+.remove-btn {
+  background-color: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 10px;
   width: 20px;
   height: 20px;
   padding: 0;
-  border-radius: var(--md-shape-corner-extra-small);
-  flex-shrink: 0;
+  border-radius: 50%;
+  position: absolute;
+  right: 6px;
+  opacity: 0;
+  pointer-events: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
-  line-height: 1;
-  margin-left: 2px;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 5;
 }
+
+.leaderboard-item:hover .remove-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .remove-btn:hover {
-  opacity: 0.9;
-  transform: scale(1.05);
+  background-color: #ef4444;
+  color: #ffffff;
+  transform: scale(1.1);
 }
 
 .leaderboard-gap {

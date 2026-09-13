@@ -1274,7 +1274,7 @@ function Dashboard({
             </div>
           </div>
 
-          <div className="sort-right-group" style={{ display: "flex", gap: "6px" }}>
+          <div className="sort-right-group">
             <button
               type="button"
               className="kudos-all-btn"
@@ -1284,30 +1284,31 @@ function Dashboard({
             >
               👏 {kudosAllBusy ? "Sending…" : "Kudos All"}
             </button>
-            {activeGroup && (
-              <>
-                <button
-                  type="button"
-                  className="group-code-btn"
-                  onClick={() => handleCopyCode(activeGroup.code)}
-                  title={`Click to copy invite code (${activeGroup.code})`}
-                >
-                  📋 {copiedCode ? "Copied!" : "Code"}
-                </button>
-                {activeGroup.creator_id === userId && (
-                  <button
-                    type="button"
-                    className="group-delete-btn"
-                    onClick={() => setShowDeleteGroupModal(true)}
-                    title="Delete group (owner only)"
-                  >
-                    🗑️
-                  </button>
-                )}
-              </>
-            )}
           </div>
         </div>
+
+        {/* Dedicated Group Management Bar */}
+        {activeGroup && (
+          <div className="group-info-bar">
+            <div
+              className="group-code-badge"
+              onClick={() => handleCopyCode(activeGroup.code)}
+              title={`Click to copy invite code (${activeGroup.code})`}
+            >
+              📋 Code: <strong>{activeGroup.code}</strong> {copiedCode ? "✓ Copied!" : ""}
+            </div>
+            {activeGroup.creator_id === userId && (
+              <button
+                type="button"
+                className="group-delete-btn"
+                onClick={() => setShowDeleteGroupModal(true)}
+                title="Delete group (owner only)"
+              >
+                🗑️ Delete Group
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Leaderboard List */}
         <ul className="leaderboard">
@@ -1598,6 +1599,22 @@ function Dashboard({
                     ))}
                   </ul>
                 )}
+              </div>
+            )}
+
+            {isGroupOwner && inspectedFriend.id !== userId && activeGroup && (
+              <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px solid var(--md-sys-color-outline-variant)", textAlign: "center" }}>
+                <button
+                  type="button"
+                  className="danger-btn modal-action-btn"
+                  onClick={() => {
+                    handleRemoveMember(activeGroup.id, inspectedFriend.id, inspectedFriend.name);
+                    setInspectedFriend(null);
+                  }}
+                  style={{ fontSize: "11.5px", padding: "6px 12px", width: "100%" }}
+                >
+                  🗑️ Remove {inspectedFriend.name} from Group
+                </button>
               </div>
             )}
           </div>
