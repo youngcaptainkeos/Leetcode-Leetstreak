@@ -10,6 +10,7 @@ import {
   VersionCheckResponse,
   AppConfigResponse,
   DynamicMenuItem,
+  checkExtensionVersion,
 } from "./lib/api";
 import { getStored, setStored, clearStored } from "./storage";
 
@@ -21,6 +22,7 @@ export default function App() {
   const [userId, setUserId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPointsHelp, setShowPointsHelp] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<VersionCheckResponse | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -30,6 +32,39 @@ export default function App() {
         setView("dashboard");
       } else {
         setView("onboarding");
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const info = await checkExtensionVersion();
+        if (info && info.latest_version) {
+          const currentVer =
+            (typeof chrome !== "undefined" && chrome.runtime?.getManifest?.()?.version) ||
+            "1.0.0";
+          const cParts = currentVer.split(".").map(Number);
+          const lParts = info.latest_version.split(".").map(Number);
+          let isNewer = false;
+          for (let i = 0; i < Math.max(cParts.length, lParts.length); i++) {
+            const c = cParts[i] || 0;
+            const l = lParts[i] || 0;
+            if (l > c) {
+              isNewer = true;
+              break;
+            }
+            if (l < c) {
+              isNewer = false;
+              break;
+            }
+          }
+          if (isNewer) {
+            setUpdateInfo(info);
+          }
+        }
+      } catch (err) {
+        console.warn("Update check error:", err);
       }
     })();
   }, []);
@@ -65,6 +100,25 @@ export default function App() {
           </div>
         )}
       </header>
+
+      {updateInfo && (
+        <div className="update-ota-banner">
+          <div>
+            🚀 <strong>Update v{updateInfo.latest_version} Available!</strong>
+            <div style={{ fontSize: "10px", opacity: 0.85, marginTop: "2px" }}>
+              {updateInfo.release_notes || "Performance fixes and new features available."}
+            </div>
+          </div>
+          <a
+            href={updateInfo.download_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="update-ota-btn"
+          >
+            Update Now
+          </a>
+        </div>
+      )}
 
       {showPointsHelp && <PointsHelpModal onClose={() => setShowPointsHelp(false)} />}
 
