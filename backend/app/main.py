@@ -1012,9 +1012,16 @@ def get_extension_version():
 @app.get("/downloads/leetstreak.zip")
 def download_extension_zip():
     """Serves downloadable leetstreak.zip file."""
-    zip_path = os.path.join(os.path.dirname(__file__), "..", "..", "leetstreak.zip")
-    if os.path.exists(zip_path):
-        return FileResponse(zip_path, filename="leetstreak.zip", media_type="application/zip")
+    possible_paths = [
+        os.path.join(os.path.dirname(__file__), "leetstreak.zip"),
+        os.path.join(os.path.dirname(__file__), "..", "leetstreak.zip"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "leetstreak.zip"),
+        "/app/app/leetstreak.zip",
+        "/app/leetstreak.zip",
+    ]
+    for zip_path in possible_paths:
+        if os.path.exists(zip_path):
+            return FileResponse(zip_path, filename="leetstreak.zip", media_type="application/zip")
     return {"error": "Extension package file not found"}
 
 
