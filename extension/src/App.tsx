@@ -58,12 +58,9 @@ export default function App() {
             <button
               className="help-btn"
               onClick={() => setShowPointsHelp(true)}
-              title="Points Rules ❓"
+              title="How Points Work ❓"
             >
-              ❓ Rules
-            </button>
-            <button className="link-btn" onClick={handleLogout}>
-              Switch user
+              ❓ Help
             </button>
           </div>
         )}
@@ -1473,6 +1470,19 @@ function Dashboard({
                 {updatingUsername ? "Verifying & Updating…" : "Save New Username"}
               </button>
             </form>
+
+            <div style={{ marginTop: "12px" }}>
+              <button
+                type="button"
+                className="secondary-btn modal-action-btn"
+                onClick={() => {
+                  setShowSettings(false);
+                  onResetUser();
+                }}
+              >
+                🔄 Switch User
+              </button>
+            </div>
 
             <div className="danger-zone">
               <hr className="modal-divider" />

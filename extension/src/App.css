@@ -1780,6 +1780,27 @@ input:focus, form input:focus {
 /* ==========================================================================
    🎯 POINTS RULEBOOK MODAL & STYLING
    ========================================================================== */
+.help-btn {
+  background-color: var(--md-sys-color-primary-container) !important;
+  color: var(--md-sys-color-on-primary-container) !important;
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  border-radius: var(--md-shape-corner-full) !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  transition: all 0.15s ease !important;
+}
+
+.help-btn:hover {
+  background-color: var(--primary) !important;
+  color: #1E1B4B !important;
+  transform: translateY(-1px) !important;
+}
+
 .rules-icon-btn {
   background-color: var(--md-sys-color-primary-container) !important;
   color: var(--md-sys-color-on-primary-container) !important;
