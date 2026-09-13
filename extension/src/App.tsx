@@ -1654,7 +1654,7 @@ function Dashboard({
         <div className="modal-overlay" onClick={() => setSelectedSolveBreakdown(null)}>
           <div className="modal-content solve-breakdown-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>⭐ Points Breakdown</h3>
+              <h3 className="modal-heading">⭐ Points Breakdown</h3>
               <button
                 className="modal-close"
                 onClick={() => setSelectedSolveBreakdown(null)}
@@ -1663,57 +1663,85 @@ function Dashboard({
                 ✕
               </button>
             </div>
-            <p className="tiny muted mb-2">Question: <strong>{selectedSolveBreakdown.title}</strong></p>
-            <div className="breakdown-list">
+
+            <div className="question-title-card">
+              <span className="tiny muted">QUESTION</span>
+              <div className="question-title-text">{selectedSolveBreakdown.title}</div>
+            </div>
+
+            {/* Base Problem Score Card */}
+            <div className="breakdown-card">
+              <div className="breakdown-card-header">
+                <span className="card-label">1. Base Problem Score</span>
+                {selectedSolveBreakdown.breakdown?.contest_rating ? (
+                  <span className="badge-contest">ZeroTrac Elo {Math.round(selectedSolveBreakdown.breakdown.contest_rating)}</span>
+                ) : (
+                  <span className="badge-diff">{selectedSolveBreakdown.breakdown?.difficulty || "Medium"} Category</span>
+                )}
+              </div>
+
               {selectedSolveBreakdown.breakdown?.contest_rating ? (
-                <div className="breakdown-item">
-                  <span>Contest Base Points:</span>
-                  <strong>
-                    {selectedSolveBreakdown.breakdown.base_points} pts{" "}
-                    <span className="tiny muted">(ZeroTrac Elo {selectedSolveBreakdown.breakdown.contest_rating})</span>
-                  </strong>
+                <div className="breakdown-row">
+                  <span className="row-label">Contest Base Points (Elo / 100):</span>
+                  <span className="row-val main-val">{selectedSolveBreakdown.breakdown.base_points} pts</span>
                 </div>
               ) : (
                 <>
-                  <div className="breakdown-item">
-                    <span>Category Base Points ({selectedSolveBreakdown.breakdown?.difficulty || "Medium"}):</span>
-                    <strong>{selectedSolveBreakdown.breakdown?.raw_base_points ?? selectedSolveBreakdown.breakdown?.base_points ?? 0} pts</strong>
+                  <div className="breakdown-row">
+                    <span className="row-label">Category Base Points ({selectedSolveBreakdown.breakdown?.difficulty || "Medium"}):</span>
+                    <span className="row-val">{selectedSolveBreakdown.breakdown?.raw_base_points ?? selectedSolveBreakdown.breakdown?.base_points ?? 0} pts</span>
                   </div>
-                  <div className="breakdown-item">
-                    <span>Acceptance Rate Adjustment:</span>
-                    <strong style={{ color: (selectedSolveBreakdown.breakdown?.ac_adjustment || 0) >= 0 ? "#10b981" : "#ef4444" }}>
+                  <div className="breakdown-row">
+                    <span className="row-label">Acceptance Rate Adjustment:</span>
+                    <span className={`row-val ${(selectedSolveBreakdown.breakdown?.ac_adjustment || 0) >= 0 ? "text-green" : "text-red"}`}>
                       {(selectedSolveBreakdown.breakdown?.ac_adjustment || 0) >= 0 ? "+" : ""}
-                      {selectedSolveBreakdown.breakdown?.ac_adjustment !== undefined
-                        ? selectedSolveBreakdown.breakdown.ac_adjustment
-                        : 0}{" "}
-                      pts
+                      {selectedSolveBreakdown.breakdown?.ac_adjustment ?? 0} pts
                       {selectedSolveBreakdown.breakdown?.ac_rate !== undefined && selectedSolveBreakdown.breakdown?.ac_rate !== null && (
-                        <span className="tiny muted"> ({selectedSolveBreakdown.breakdown.ac_rate}% AC rate)</span>
+                        <span className="tiny muted"> ({selectedSolveBreakdown.breakdown.ac_rate}% AC)</span>
                       )}
-                    </strong>
+                    </span>
+                  </div>
+                  <div className="breakdown-subtotal-line">
+                    <span className="row-label font-bold">Effective Base Score:</span>
+                    <span className="row-val font-bold">{selectedSolveBreakdown.breakdown?.base_points} pts</span>
                   </div>
                 </>
               )}
-              <div className="breakdown-item">
-                <span>Daily Challenge Bonus:</span>
-                <strong>+{selectedSolveBreakdown.breakdown?.daily_bonus || 0} pts</strong>
+            </div>
+
+            {/* Bonuses & Multipliers Card */}
+            <div className="breakdown-card">
+              <div className="breakdown-card-header">
+                <span className="card-label">2. Bonuses & Multipliers</span>
               </div>
-              <div className="breakdown-item">
-                <span>First-Try Accuracy Bonus:</span>
-                <strong>+{selectedSolveBreakdown.breakdown?.first_try_bonus || 0} pts</strong>
+              <div className="breakdown-row">
+                <span className="row-label">Daily Challenge Bonus:</span>
+                <span className={`row-val ${(selectedSolveBreakdown.breakdown?.daily_bonus || 0) > 0 ? "text-amber" : "text-muted"}`}>
+                  +{(selectedSolveBreakdown.breakdown?.daily_bonus || 0)} pts
+                </span>
               </div>
-              <div className="breakdown-item">
-                <span>Streak Multiplier:</span>
-                <strong>
-                  {selectedSolveBreakdown.breakdown?.streak_multiplier || 1.0}× ({selectedSolveBreakdown.breakdown?.streak_days || 0}d streak)
-                </strong>
+              <div className="breakdown-row">
+                <span className="row-label">First-Try Accuracy Bonus:</span>
+                <span className={`row-val ${(selectedSolveBreakdown.breakdown?.first_try_bonus || 0) > 0 ? "text-green" : "text-muted"}`}>
+                  +{(selectedSolveBreakdown.breakdown?.first_try_bonus || 0)} pts
+                </span>
               </div>
-              <div className="breakdown-divider" />
-              <div className="breakdown-item total">
-                <span>Points Earned:</span>
-                <strong className="points-highlight">
-                  ⭐ {selectedSolveBreakdown.points_earned ?? selectedSolveBreakdown.breakdown?.points_earned ?? 0} pts
-                </strong>
+              <div className="breakdown-row">
+                <span className="row-label">Streak Multiplier:</span>
+                <span className="row-val text-violet">
+                  {selectedSolveBreakdown.breakdown?.streak_multiplier || 1.0}× <span className="tiny muted">({selectedSolveBreakdown.breakdown?.streak_days || 0}d streak)</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Total Score Box */}
+            <div className="breakdown-total-card">
+              <div className="total-title-group">
+                <div className="total-title">Total Points Earned</div>
+                <div className="tiny muted">Base + Bonuses × Streak</div>
+              </div>
+              <div className="total-score-badge">
+                ⭐ {selectedSolveBreakdown.points_earned ?? selectedSolveBreakdown.breakdown?.points_earned ?? 0} pts
               </div>
             </div>
             <div className="modal-footer centered-footer">
