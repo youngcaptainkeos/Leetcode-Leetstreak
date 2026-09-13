@@ -12,6 +12,7 @@ from .database import SessionLocal
 from .models import User, Solve, DailyActivity
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
 from .point_calculator import recalculate_user_points
+from .contest_ratings import refresh_zerotrac_dataset
 
 logger = logging.getLogger("codestreak.scheduler")
 
