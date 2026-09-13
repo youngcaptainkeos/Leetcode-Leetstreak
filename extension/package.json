@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npx esbuild src/App.tsx --bundle --outfile=public/index-main.js --loader:.tsx=tsx --loader:.ts=ts --loader:.css=css --jsx=automatic && cp public/index-main.js index-main.js && cp manifest.json index.html public/"
+    "build": "npx esbuild src/main.tsx --bundle --outfile=public/index-main.js --loader:.tsx=tsx --loader:.ts=ts --loader:.css=css --jsx=automatic --minify && cp public/index-main.js index-main.js && cp public/index-main.css index-main.css && cp manifest.json index.html public/ && mkdir -p dist && cp -r public/* dist/"
   },
   "dependencies": {
     "react": "^18.3.1",
