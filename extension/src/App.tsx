@@ -521,6 +521,7 @@ function Dashboard({
   const [modalTab, setModalTab] = useState<"overview" | "solves">("overview");
   const [recentSolvesList, setRecentSolvesList] = useState<RecentSolve[]>([]);
   const [loadingRecentSolves, setLoadingRecentSolves] = useState(false);
+  const [selectedSolveBreakdown, setSelectedSolveBreakdown] = useState<RecentSolve | null>(null);
   const [avatarLoadError, setAvatarLoadError] = useState(false);
 
   const [syncing, setSyncing] = useState(false);
@@ -1406,6 +1407,14 @@ function Dashboard({
                             {s.title} ↗
                           </a>
                         </div>
+                        <button
+                          type="button"
+                          className="solve-points-badge"
+                          onClick={() => setSelectedSolveBreakdown(s)}
+                          title="Click to see how these points were calculated"
+                        >
+                          ⭐ {s.points_earned ?? s.breakdown?.points_earned ?? 0} pts
+                        </button>
                         <span className="solve-time">{s.relative_time}</span>
                       </li>
                     ))}
@@ -1584,6 +1593,65 @@ function Dashboard({
         </div>
       )}
 
+      {/* Solve Points Breakdown Modal */}
+      {selectedSolveBreakdown && (
+        <div className="modal-overlay" onClick={() => setSelectedSolveBreakdown(null)}>
+          <div className="modal-content solve-breakdown-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>⭐ Points Breakdown</h3>
+              <button
+                className="modal-close"
+                onClick={() => setSelectedSolveBreakdown(null)}
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="tiny muted mb-2">Question: <strong>{selectedSolveBreakdown.title}</strong></p>
+            <div className="breakdown-list">
+              <div className="breakdown-item">
+                <span>Base Points:</span>
+                <strong>
+                  {selectedSolveBreakdown.breakdown?.contest_rating
+                    ? `${selectedSolveBreakdown.breakdown.base_points} pts (Rating ${selectedSolveBreakdown.breakdown.contest_rating})`
+                    : `${selectedSolveBreakdown.breakdown?.base_points || 0} pts`}
+                </strong>
+              </div>
+              <div className="breakdown-item">
+                <span>Daily Challenge Bonus:</span>
+                <strong>+{selectedSolveBreakdown.breakdown?.daily_bonus || 0} pts</strong>
+              </div>
+              <div className="breakdown-item">
+                <span>First-Try Accuracy Bonus:</span>
+                <strong>+{selectedSolveBreakdown.breakdown?.first_try_bonus || 0} pts</strong>
+              </div>
+              <div className="breakdown-item">
+                <span>Streak Multiplier:</span>
+                <strong>
+                  {selectedSolveBreakdown.breakdown?.streak_multiplier || 1.0}× ({selectedSolveBreakdown.breakdown?.streak_days || 0}d streak)
+                </strong>
+              </div>
+              <div className="breakdown-divider" />
+              <div className="breakdown-item total">
+                <span>Points Earned:</span>
+                <strong className="points-highlight">
+                  ⭐ {selectedSolveBreakdown.points_earned ?? selectedSolveBreakdown.breakdown?.points_earned ?? 0} pts
+                </strong>
+              </div>
+            </div>
+            <div className="modal-footer centered-footer">
+              <button
+                type="button"
+                className="primary-btn center-btn"
+                onClick={() => setSelectedSolveBreakdown(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -1620,7 +1688,7 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
                 <strong>Contest Rating (Primary):</strong> Base points equal <code>Rating / 100</code> (e.g. 1550 rating = <strong>15.5 pts</strong>, 2400 rating = <strong>24.0 pts</strong>).
               </li>
               <li>
-                <strong>Non-Contest Problems:</strong> Evaluated using category defaults (Easy: <strong>10 pts</strong>, Medium: <strong>25 pts</strong>, Hard: <strong>45 pts</strong>) adjusted by acceptance rate.
+                <strong>Non-Contest Problems:</strong> Evaluated using category defaults (Easy: <strong>8 pts</strong>, Medium: <strong>15 pts</strong>, Hard: <strong>24 pts</strong>) adjusted by acceptance rate.
               </li>
             </ul>
           </div>
@@ -1649,8 +1717,8 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <div className="modal-footer">
-          <button type="button" className="primary-btn block-btn" onClick={onClose}>
+        <div className="modal-footer centered-footer">
+          <button type="button" className="primary-btn center-btn" onClick={onClose}>
             Got it
           </button>
         </div>

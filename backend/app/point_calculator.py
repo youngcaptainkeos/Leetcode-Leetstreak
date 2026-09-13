@@ -40,10 +40,10 @@ def compute_solve_points(
         # Option 1: Rating / 100 (e.g. 1550 rating -> 15.5 pts, 2400 -> 24.0 pts)
         base_points = rating / 100.0
     else:
-        # Option 3 Fallback (Easy: 10, Medium: 25, Hard: 45)
+        # Option 3 Fallback (Easy: 8, Medium: 15, Hard: 24)
         diff_str = (difficulty or "Medium").capitalize()
-        category_bases = {"Easy": 10.0, "Medium": 25.0, "Hard": 45.0}
-        cat_base = category_bases.get(diff_str, 25.0)
+        category_bases = {"Easy": 8.0, "Medium": 15.0, "Hard": 24.0}
+        cat_base = category_bases.get(diff_str, 15.0)
 
         rate = ac_rate if (ac_rate is not None and 0.0 <= ac_rate <= 100.0) else 45.0
         ac_multiplier = 1.0 + ((50.0 - rate) / 100.0)
@@ -61,6 +61,52 @@ def compute_solve_points(
 
     final_points = subtotal * streak_multiplier
     return round(final_points, 4)
+
+
+def compute_solve_points_breakdown(
+    title_slug: str = "",
+    difficulty: Optional[str] = None,
+    ac_rate: Optional[float] = None,
+    is_daily: bool = False,
+    is_first_try: bool = False,
+    streak_days: int = 0,
+) -> dict:
+    """Returns detailed breakdown components for a solve."""
+    rating = get_contest_rating(title_slug)
+
+    if rating is not None and rating > 0:
+        base_points = round(rating / 100.0, 2)
+    else:
+        diff_str = (difficulty or "Medium").capitalize()
+        category_bases = {"Easy": 8.0, "Medium": 15.0, "Hard": 24.0}
+        cat_base = category_bases.get(diff_str, 15.0)
+
+        rate = ac_rate if (ac_rate is not None and 0.0 <= ac_rate <= 100.0) else 45.0
+        ac_multiplier = 1.0 + ((50.0 - rate) / 100.0)
+        base_points = round(cat_base * max(0.2, ac_multiplier), 2)
+
+    daily_bonus = 5.0 if is_daily else 0.0
+    first_try_bonus = 3.0 if is_first_try else 0.0
+
+    subtotal = base_points + daily_bonus + first_try_bonus
+
+    streak_capped = min(30, max(0, streak_days))
+    streak_multiplier = round(1.0 + (0.10 * (streak_capped / 30.0)), 2)
+
+    total_float = subtotal * streak_multiplier
+    points_earned = int(round(total_float))
+
+    return {
+        "base_points": base_points,
+        "contest_rating": rating,
+        "is_daily": is_daily,
+        "daily_bonus": daily_bonus,
+        "is_first_try": is_first_try,
+        "first_try_bonus": first_try_bonus,
+        "streak_days": streak_days,
+        "streak_multiplier": streak_multiplier,
+        "points_earned": points_earned,
+    }
 
 
 def recalculate_user_points(

@@ -15,12 +15,26 @@ export interface DayCount {
   problems_solved: number;
 }
 
+export interface PointBreakdown {
+  base_points: number;
+  contest_rating?: number;
+  is_daily: boolean;
+  daily_bonus: number;
+  is_first_try: boolean;
+  first_try_bonus: number;
+  streak_days: number;
+  streak_multiplier: number;
+  points_earned: number;
+}
+
 export interface RecentSolve {
   title_slug: string;
   title: string;
   solved_at: string;
   relative_time: string;
   leetcode_url: string;
+  points_earned?: number;
+  breakdown?: PointBreakdown;
 }
 
 export interface DashboardResponse {

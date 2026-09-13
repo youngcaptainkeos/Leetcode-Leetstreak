@@ -3,12 +3,26 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
+class PointBreakdownSchema(BaseModel):
+    base_points: float = 0.0
+    contest_rating: Optional[float] = None
+    is_daily: bool = False
+    daily_bonus: float = 0.0
+    is_first_try: bool = False
+    first_try_bonus: float = 0.0
+    streak_days: int = 0
+    streak_multiplier: float = 1.0
+    points_earned: int = 0
+
+
 class RecentSolveSchema(BaseModel):
     title_slug: str
     title: str
     solved_at: datetime
     relative_time: str
     leetcode_url: str
+    points_earned: int = 0
+    breakdown: Optional[PointBreakdownSchema] = None
 
 
 class RegisterRequest(BaseModel):

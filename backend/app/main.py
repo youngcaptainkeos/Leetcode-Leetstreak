@@ -21,14 +21,15 @@ from .email_service import send_otp_email
 from .schemas import (
     RegisterRequest, RegisterResponse, DashboardResponse, DayCount,
     LeaderboardResponse, LeaderboardEntry, GroupCreateRequest, GroupJoinRequest,
-    GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema,
+    GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema, PointBreakdownSchema,
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
     KudosToggleRequest, UpdateUsernameRequest, ActivityFeedItemSchema,
     DynamicMenuItem, AppConfigResponse, DeleteAccountRequest,
 )
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
-from .leetcode_client import fetch_leetcode_user_data, LeetCodeError
+from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, LeetCodeError
+from .point_calculator import compute_solve_points_breakdown
 
 
 def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Secret")):
@@ -801,16 +802,33 @@ async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = De
             .all()
         )
 
-    return [
-        RecentSolveSchema(
+    today_daily_slug = await fetch_today_daily_challenge_slug()
+    user_streak = user.official_streak or 0
+
+    results = []
+    for s in solves:
+        is_daily = bool(today_daily_slug and s.title_slug == today_daily_slug and s.solved_at.astimezone(timezone(timedelta(hours=5, minutes=30))).date() == date.today())
+        breakdown_data = compute_solve_points_breakdown(
             title_slug=s.title_slug,
-            title=s.title or s.title_slug.replace("-", " ").title(),
-            solved_at=s.solved_at,
-            relative_time=_time_ago(s.solved_at),
-            leetcode_url=f"https://leetcode.com/problems/{s.title_slug}",
+            is_daily=is_daily,
+            streak_days=user_streak,
         )
-        for s in solves
-    ]
+        points_val = int(round(s.points_earned)) if (s.points_earned and s.points_earned > 0) else breakdown_data["points_earned"]
+        breakdown_data["points_earned"] = points_val
+
+        results.append(
+            RecentSolveSchema(
+                title_slug=s.title_slug,
+                title=s.title or s.title_slug.replace("-", " ").title(),
+                solved_at=s.solved_at,
+                relative_time=_time_ago(s.solved_at),
+                leetcode_url=f"https://leetcode.com/problems/{s.title_slug}",
+                points_earned=points_val,
+                breakdown=PointBreakdownSchema(**breakdown_data),
+            )
+        )
+
+    return results
 
 
 @app.get("/api/feed/recent-solves", response_model=List[ActivityFeedItemSchema])

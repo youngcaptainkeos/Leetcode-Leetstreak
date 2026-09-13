@@ -1930,5 +1930,87 @@ input:focus, form input:focus {
   margin-top: 16px;
 }
 
+.centered-footer {
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin-top: 14px !important;
+}
+
+.center-btn {
+  width: 120px !important;
+}
+
+.solve-points-badge {
+  background: var(--points-container);
+  color: var(--points);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: var(--md-shape-corner-full);
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+  margin: 0 6px;
+}
+
+.solve-points-badge:hover {
+  background: var(--points);
+  color: #3A3014;
+}
+
+.solve-breakdown-modal {
+  max-width: 320px !important;
+  width: 88% !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--md-shape-corner-medium) !important;
+  padding: 16px !important;
+}
+
+.breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+  background: var(--surface-low);
+  border: 1px solid var(--border);
+  border-radius: var(--md-shape-corner-small);
+  padding: 10px 12px;
+}
+
+.breakdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.breakdown-item strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.breakdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.breakdown-item.total {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.points-highlight {
+  color: var(--points) !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+}
+
 
 
