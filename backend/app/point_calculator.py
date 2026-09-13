@@ -84,20 +84,24 @@ def compute_solve_points_breakdown(
     if rating is not None and rating > 0:
         raw_base_points = round(rating / 100.0, 2)
         ac_multiplier = 1.0
+        ac_adjustment = 0.0
         base_points = raw_base_points
     else:
         raw_base_points = cat_base
         if ac_rate is not None and 0.0 <= ac_rate <= 100.0:
-            ac_multiplier = round(max(0.2, 1.0 + ((50.0 - ac_rate) / 100.0)), 2)
-            base_points = round(cat_base * ac_multiplier, 2)
+            ac_mult_raw = max(0.2, 1.0 + ((50.0 - ac_rate) / 100.0))
+            ac_multiplier = round(ac_mult_raw, 2)
+            base_points = round(cat_base * ac_mult_raw, 2)
+            ac_adjustment = round(base_points - cat_base, 2)
         else:
             ac_multiplier = 1.0
+            ac_adjustment = 0.0
             base_points = cat_base
 
     daily_bonus = 5.0 if is_daily else 0.0
     first_try_bonus = 3.0 if is_first_try else 0.0
 
-    subtotal = base_points + daily_bonus + first_try_bonus
+    subtotal = round(base_points + daily_bonus + first_try_bonus, 2)
 
     streak_capped = min(30, max(0, streak_days))
     streak_multiplier = round(1.0 + (0.10 * (streak_capped / 30.0)), 2)
@@ -106,15 +110,18 @@ def compute_solve_points_breakdown(
     points_earned = int(round(total_float))
 
     return {
+        "difficulty": diff_str,
         "raw_base_points": raw_base_points,
         "ac_rate": ac_rate,
         "ac_multiplier": ac_multiplier,
+        "ac_adjustment": ac_adjustment,
         "base_points": base_points,
         "contest_rating": rating,
         "is_daily": is_daily,
         "daily_bonus": daily_bonus,
         "is_first_try": is_first_try,
         "first_try_bonus": first_try_bonus,
+        "subtotal": subtotal,
         "streak_days": streak_days,
         "streak_multiplier": streak_multiplier,
         "points_earned": points_earned,

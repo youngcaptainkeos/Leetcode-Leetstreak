@@ -16,15 +16,18 @@ export interface DayCount {
 }
 
 export interface PointBreakdown {
+  difficulty?: string;
   raw_base_points?: number;
   ac_rate?: number;
   ac_multiplier?: number;
+  ac_adjustment?: number;
   base_points: number;
   contest_rating?: number;
   is_daily: boolean;
   daily_bonus: number;
   is_first_try: boolean;
   first_try_bonus: number;
+  subtotal?: number;
   streak_days: number;
   streak_multiplier: number;
   points_earned: number;

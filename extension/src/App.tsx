@@ -1676,15 +1676,19 @@ function Dashboard({
               ) : (
                 <>
                   <div className="breakdown-item">
-                    <span>Category Base Points:</span>
-                    <strong>{selectedSolveBreakdown.breakdown?.raw_base_points || selectedSolveBreakdown.breakdown?.base_points || 0} pts</strong>
+                    <span>Category Base Points ({selectedSolveBreakdown.breakdown?.difficulty || "Medium"}):</span>
+                    <strong>{selectedSolveBreakdown.breakdown?.raw_base_points ?? selectedSolveBreakdown.breakdown?.base_points ?? 0} pts</strong>
                   </div>
                   <div className="breakdown-item">
-                    <span>After AC Ratio Correction:</span>
-                    <strong>
-                      {selectedSolveBreakdown.breakdown?.base_points || 0} pts
+                    <span>Acceptance Rate Adjustment:</span>
+                    <strong style={{ color: (selectedSolveBreakdown.breakdown?.ac_adjustment || 0) >= 0 ? "#10b981" : "#ef4444" }}>
+                      {(selectedSolveBreakdown.breakdown?.ac_adjustment || 0) >= 0 ? "+" : ""}
+                      {selectedSolveBreakdown.breakdown?.ac_adjustment !== undefined
+                        ? selectedSolveBreakdown.breakdown.ac_adjustment
+                        : 0}{" "}
+                      pts
                       {selectedSolveBreakdown.breakdown?.ac_rate !== undefined && selectedSolveBreakdown.breakdown?.ac_rate !== null && (
-                        <span className="tiny muted"> ({selectedSolveBreakdown.breakdown.ac_rate}% AC rate, {selectedSolveBreakdown.breakdown?.ac_multiplier || 1.0}×)</span>
+                        <span className="tiny muted"> ({selectedSolveBreakdown.breakdown.ac_rate}% AC rate)</span>
                       )}
                     </strong>
                   </div>
