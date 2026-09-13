@@ -1601,92 +1601,57 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content points-help-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header align-start">
-          <div className="modal-title-group">
-            <span className="modal-badge-icon">🎯</span>
-            <div>
-              <h3 className="modal-main-heading">How Points Work</h3>
-              <p className="tiny muted">LeetStreak Dynamic Scoring Guide</p>
-            </div>
-          </div>
-          <button className="modal-close" onClick={onClose} title="Close rules">
+        <div className="modal-header">
+          <h3>How Points Work</h3>
+          <button className="modal-close" onClick={onClose} title="Close">
             ✕
           </button>
         </div>
 
-        <div className="points-rules-container">
-          {/* Card 1: Base Points */}
-          <div className="rule-card">
-            <div className="rule-card-header">
-              <span className="rule-step">1</span>
-              <span className="rule-card-title">Base Points (True Difficulty)</span>
-            </div>
-            <div className="rule-body">
-              <div className="rule-pill-row">
-                <span className="rule-pill primary">Contest Rating / 100</span>
-              </div>
-              <p className="rule-desc">
-                If official contest rating exists: Points = <code>Rating / 100</code>.
-              </p>
-              <div className="example-tag-row">
-                <span className="ex-chip">1550 Rating ➜ <b>16 pts</b></span>
-                <span className="ex-chip">2400 Rating ➜ <b>24 pts</b></span>
-              </div>
-              <div className="rule-divider" />
-              <p className="rule-desc tiny muted">
-                <strong>Fallback:</strong> Easy 10 • Medium 25 • Hard 45 (adjusted by AC %).
-              </p>
-            </div>
+        <div className="help-section-list">
+          {/* Section 1: Base Points */}
+          <div className="help-section">
+            <h4 className="help-section-title">1. Base Problem Points</h4>
+            <p className="help-text">
+              Points per problem are calculated based on official LeetCode difficulty data:
+            </p>
+            <ul className="help-bullet-list">
+              <li>
+                <strong>Contest Rating (Primary):</strong> Base points equal <code>Rating / 100</code> (e.g. 1550 rating = <strong>15.5 pts</strong>, 2400 rating = <strong>24.0 pts</strong>).
+              </li>
+              <li>
+                <strong>Non-Contest Problems:</strong> Evaluated using category defaults (Easy: <strong>10 pts</strong>, Medium: <strong>25 pts</strong>, Hard: <strong>45 pts</strong>) adjusted by acceptance rate.
+              </li>
+            </ul>
           </div>
 
-          {/* Card 2: Extra Bonuses */}
-          <div className="rule-card">
-            <div className="rule-card-header">
-              <span className="rule-step bonus">2</span>
-              <span className="rule-card-title">Extra Bonuses</span>
-            </div>
-            <div className="rule-body">
-              <div className="bonus-chip-grid">
-                <div className="bonus-chip daily">
-                  <div className="bonus-icon">🌟</div>
-                  <div className="bonus-info">
-                    <span className="bonus-title">Daily Challenge</span>
-                    <span className="bonus-value">+5 Pts</span>
-                  </div>
-                </div>
-                <div className="bonus-chip precision">
-                  <div className="bonus-icon">⚡</div>
-                  <div className="bonus-info">
-                    <span className="bonus-title">1st Try Precision</span>
-                    <span className="bonus-value">+3 Pts</span>
-                  </div>
-                </div>
+          {/* Section 2: Bonus Rewards */}
+          <div className="help-section">
+            <h4 className="help-section-title">2. Bonus Rewards</h4>
+            <div className="bonus-row">
+              <div className="bonus-box">
+                <span className="bonus-label">Daily Challenge</span>
+                <span className="bonus-val">+5 Pts</span>
+              </div>
+              <div className="bonus-box">
+                <span className="bonus-label">First-Try Success</span>
+                <span className="bonus-val">+3 Pts</span>
               </div>
             </div>
           </div>
 
-          {/* Card 3: Streak Multiplier */}
-          <div className="rule-card">
-            <div className="rule-card-header">
-              <span className="rule-step streak">3</span>
-              <span className="rule-card-title">Active Streak Multiplier</span>
-            </div>
-            <div className="rule-body">
-              <p className="rule-desc">
-                Boost total points up to <strong>+10%</strong> with an active streak!
-              </p>
-              <div className="streak-scale-grid">
-                <div className="scale-item">Day 1: <span>1.00x</span></div>
-                <div className="scale-item">Day 15: <span>1.05x</span></div>
-                <div className="scale-item">Day 30+: <span className="highlight">1.10x Max</span></div>
-              </div>
-            </div>
+          {/* Section 3: Streak Multiplier */}
+          <div className="help-section">
+            <h4 className="help-section-title">3. Streak Multiplier</h4>
+            <p className="help-text">
+              Maintaining an active daily streak boosts your total points up to <strong>+10% max</strong> (scaling linearly from 1.00× on Day 1 to 1.10× at Day 30+).
+            </p>
           </div>
         </div>
 
-        <div className="modal-actions-row">
+        <div className="modal-footer">
           <button type="button" className="primary-btn block-btn" onClick={onClose}>
-            Got it, let's code! 🚀
+            Got it
           </button>
         </div>
       </div>
