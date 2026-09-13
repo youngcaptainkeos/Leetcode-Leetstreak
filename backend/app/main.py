@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional, Dict, Set
 
-from fastapi import FastAPI, HTTPException, Depends, Query, Header
+from fastapi import FastAPI, HTTPException, Depends, Query, Header, BackgroundTasks
 from fastapi.responses import Response, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, func
@@ -17,7 +17,7 @@ from .config import CORS_ORIGINS, ADMIN_SECRET
 from .database import Base, engine, get_db, SessionLocal
 from .models import User, DailyActivity, Group, GroupMember, Solve, Kudos
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
-from .email_service import send_otp_email
+from .email_service import send_otp_email, send_update_notification_email
 from .schemas import (
     RegisterRequest, RegisterResponse, DashboardResponse, DayCount,
     LeaderboardResponse, LeaderboardEntry, GroupCreateRequest, GroupJoinRequest,
@@ -1014,6 +1014,63 @@ def download_extension_zip():
     if os.path.exists(zip_path):
         return FileResponse(zip_path, filename="leetstreak.zip", media_type="application/zip")
     return {"error": "Extension package file not found"}
+
+
+@app.post("/api/admin/broadcast-update-email")
+async def broadcast_update_email(
+    background_tasks: BackgroundTasks,
+    version: str = "1.0.0",
+    release_notes: str = "Added Buy Me a Coffee feature, Sunday 12am reset, Elo Ratings, and dynamic update notifications!",
+    download_url: str = "https://leetcode-leetstreak.onrender.com/downloads/leetstreak.zip",
+    db: Session = Depends(get_db)
+):
+    """
+    Broadcasts update notification email with a styled 'Download Update Package' CTA button to all registered users.
+    """
+    users = db.query(User).filter(User.email.isnot(None), User.email != "").all()
+    count = 0
+    for user in users:
+        background_tasks.add_task(
+            send_update_notification_email,
+            to_email=user.email,
+            username=user.leetcode_username or user.name,
+            version=version,
+            release_notes=release_notes,
+            download_url=download_url
+        )
+        count += 1
+
+    return {
+        "status": "success",
+        "queued_emails": count,
+        "version": version,
+        "message": f"Queued update emails with download package button to {count} registered users."
+    }
+
+
+@app.post("/api/admin/test-update-email")
+async def test_update_email(
+    to_email: str,
+    username: str = "Developer",
+    version: str = "1.0.0",
+    release_notes: str = "Added Buy Me a Coffee feature, Sunday 12am reset, Elo Ratings, and dynamic update notifications!",
+    download_url: str = "https://leetcode-leetstreak.onrender.com/downloads/leetstreak.zip"
+):
+    """
+    Sends a test update notification email with 'Download Update Package' CTA button to a specific email address.
+    """
+    success = await send_update_notification_email(
+        to_email=to_email,
+        username=username,
+        version=version,
+        release_notes=release_notes,
+        download_url=download_url
+    )
+    return {
+        "status": "sent" if success else "failed",
+        "to_email": to_email,
+        "version": version
+    }
 
 
 # ==========================================================================

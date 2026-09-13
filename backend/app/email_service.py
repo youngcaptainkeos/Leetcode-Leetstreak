@@ -15,35 +15,12 @@ SMTP_EMAIL = os.getenv("SMTP_EMAIL", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "shashu2804@gmail.com")
 
-async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
-    """
-    Sends 6-digit OTP code to user's email address over HTTPS (Port 443).
-    Supports:
-    1. Brevo HTTPS API (BREVO_API_KEY) - 300 free emails/day to ANY email address, 0 domain required!
-    2. SendGrid HTTPS API (SENDGRID_API_KEY) - 100 free emails/day to ANY email address, 0 domain required!
-    3. Resend API (RESEND_API_KEY)
-    4. Gmail SMTP / Server log fallback
-    """
-    subject = "LeetStreak - Password Reset Verification Code"
-    html_content = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background: #151821; color: #e6e7eb; border-radius: 12px; border: 1px solid #2d3245;">
-      <div style="text-align: center; margin-bottom: 18px;">
-        <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/icon128.png" alt="LeetStreak" style="width: 44px; height: 44px; border-radius: 9px; vertical-align: middle; display: inline-block; margin-right: 10px;" />
-        <span style="font-size: 20px; font-weight: 700; color: #6366f1; vertical-align: middle; display: inline-block;">LeetStreak Password Reset</span>
-      </div>
-      <p>Hello <strong>{username}</strong>,</p>
-      <p>We received a request to reset your password. Use the 6-digit verification code below:</p>
-      <div style="text-align: center; margin: 24px 0;">
-        <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; background: #232734; color: #a5b4fc; padding: 12px 24px; border-radius: 8px; border: 1px solid #4338ca;">
-          {otp_code}
-        </span>
-      </div>
-      <p style="font-size: 13px; color: #9ca3af;">This code is valid for 15 minutes. If you did not request a password reset, you can safely ignore this email.</p>
-    </div>
-    """
 
-    logger.info("Initiating OTP verification email to user: %s (Email: %s)", username, to_email)
-
+async def send_email_dispatch(to_email: str, subject: str, html_content: str) -> bool:
+    """
+    Dispatches HTML emails over HTTPS/SMTP.
+    Supports Brevo, SendGrid, Resend, and Gmail SMTP fallback.
+    """
     # 1. Try Brevo HTTPS API (Zero domain required, 300 free emails/day to ANY address worldwide!)
     clean_brevo_key = BREVO_API_KEY.strip().strip("'").strip('"')
     if clean_brevo_key:
@@ -64,12 +41,12 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
                     },
                 )
                 if resp.status_code in [200, 201]:
-                    logger.info("OTP Email successfully sent via Brevo to %s", to_email)
+                    logger.info("Email successfully sent via Brevo to %s", to_email)
                     return True
                 else:
                     logger.error("Brevo API error (%s): %s", resp.status_code, resp.text)
         except Exception as e:
-            logger.error("Failed to send OTP email via Brevo: %s", e)
+            logger.error("Failed to send email via Brevo: %s", e)
 
     # 2. Try SendGrid HTTPS API (Zero domain required, 100 free emails/day to ANY address worldwide!)
     if SENDGRID_API_KEY:
@@ -89,12 +66,12 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
                     },
                 )
                 if resp.status_code in [200, 202]:
-                    logger.info("OTP Email successfully sent via SendGrid to %s", to_email)
+                    logger.info("Email successfully sent via SendGrid to %s", to_email)
                     return True
                 else:
                     logger.error("SendGrid API error (%s): %s", resp.status_code, resp.text)
         except Exception as e:
-            logger.error("Failed to send OTP email via SendGrid: %s", e)
+            logger.error("Failed to send email via SendGrid: %s", e)
 
     # 3. Try Resend API
     if RESEND_API_KEY:
@@ -114,15 +91,15 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
                     },
                 )
                 if resp.status_code in [200, 201]:
-                    logger.info("OTP Email successfully sent via Resend to %s", to_email)
+                    logger.info("Email successfully sent via Resend to %s", to_email)
                     return True
                 elif resp.status_code == 403 and "testing emails" in resp.text:
-                    logger.warning("Resend Free Testing Sandbox mode: Resend restricted sending to %s. OTP Code: %s", to_email, otp_code)
+                    logger.warning("Resend Free Testing Sandbox mode: Restricted sending to %s", to_email)
                     return True
                 else:
                     logger.error("Resend API error (%s): %s", resp.status_code, resp.text)
         except Exception as e:
-            logger.error("Failed to send OTP email via Resend: %s", e)
+            logger.error("Failed to send email via Resend: %s", e)
 
     # 4. Fallback: Gmail SMTP (if raw socket port allowed)
     if SMTP_EMAIL and SMTP_PASSWORD:
@@ -145,11 +122,89 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
                 server.starttls()
                 server.login(clean_email, clean_pw)
                 server.sendmail(clean_email, to_email, msg.as_string())
-            logger.info("OTP Email successfully sent via Gmail SMTP to %s", to_email)
+            logger.info("Email successfully sent via Gmail SMTP to %s", to_email)
             return True
         except Exception as e:
-            logger.error("Failed to send OTP email via Gmail SMTP: %s", e)
+            logger.error("Failed to send email via Gmail SMTP: %s", e)
 
     # 5. Fallback: Log in server terminal
-    logger.info("No active email sender. Verification OTP Code for %s (%s): %s", username, to_email, otp_code)
+    logger.info("No active email sender configured. Would have sent subject '%s' to %s", subject, to_email)
     return True
+
+
+async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
+    """Sends 6-digit OTP code to user's email address."""
+    subject = "LeetStreak - Password Reset Verification Code"
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background: #151821; color: #e6e7eb; border-radius: 12px; border: 1px solid #2d3245;">
+      <div style="text-align: center; margin-bottom: 18px;">
+        <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/icon128.png" alt="LeetStreak" style="width: 44px; height: 44px; border-radius: 9px; vertical-align: middle; display: inline-block; margin-right: 10px;" />
+        <span style="font-size: 20px; font-weight: 700; color: #6366f1; vertical-align: middle; display: inline-block;">LeetStreak Password Reset</span>
+      </div>
+      <p>Hello <strong>{username}</strong>,</p>
+      <p>We received a request to reset your password. Use the 6-digit verification code below:</p>
+      <div style="text-align: center; margin: 24px 0;">
+        <span style="font-size: 32px; font-weight: 800; letter-spacing: 6px; background: #232734; color: #a5b4fc; padding: 12px 24px; border-radius: 8px; border: 1px solid #4338ca;">
+          {otp_code}
+        </span>
+      </div>
+      <p style="font-size: 13px; color: #9ca3af;">This code is valid for 15 minutes. If you did not request a password reset, you can safely ignore this email.</p>
+    </div>
+    """
+    logger.info("Initiating OTP verification email to user: %s (Email: %s)", username, to_email)
+    return await send_email_dispatch(to_email, subject, html_content)
+
+
+async def send_update_notification_email(
+    to_email: str,
+    username: str,
+    version: str = "1.0.0",
+    release_notes: str = "Added Buy Me a Coffee feature, Sunday 12am reset, Elo Ratings, and dynamic update notifications!",
+    download_url: str = "https://leetcode-leetstreak.onrender.com/downloads/leetstreak.zip"
+) -> bool:
+    """Sends update notification email with styled 'Download Update Package' CTA button."""
+    subject = f"🚀 New LeetStreak Update v{version} is Available!"
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; background: #111318; color: #e6e7eb; border-radius: 16px; border: 1px solid #2d3245; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/icon128.png" alt="LeetStreak" style="width: 56px; height: 56px; border-radius: 12px; vertical-align: middle; display: inline-block;" />
+        <h2 style="margin: 12px 0 4px 0; font-size: 22px; font-weight: 800; color: #818cf8;">LeetStreak Extension Update</h2>
+        <span style="display: inline-block; background: #312e81; color: #c7d2fe; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 9999px; border: 1px solid #6366f1;">
+          Version {version} Released
+        </span>
+      </div>
+
+      <p style="font-size: 15px; line-height: 1.5;">Hello <strong>{username}</strong> 👋,</p>
+      <p style="font-size: 14px; line-height: 1.6; color: #cbd5e1;">
+        A new update for the <strong>LeetStreak</strong> Chrome extension is now available! Get the latest features, performance enhancements, and points breakdown improvements right away.
+      </p>
+
+      <div style="background: #1e2029; padding: 16px; border-radius: 10px; border-left: 4px solid #6366f1; margin: 20px 0;">
+        <h4 style="margin: 0 0 8px 0; font-size: 14px; color: #a5b4fc; text-transform: uppercase; letter-spacing: 0.5px;">✨ What's New in v{version}</h4>
+        <p style="margin: 0; font-size: 13px; color: #e2e8f0; line-height: 1.5;">
+          {release_notes}
+        </p>
+      </div>
+
+      <div style="text-align: center; margin: 28px 0 20px 0;">
+        <a href="{download_url}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 14px 32px; border-radius: 10px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);">
+          📦 Download Update Package (leetstreak.zip)
+        </a>
+      </div>
+
+      <div style="background: #181b24; padding: 14px; border-radius: 8px; font-size: 12px; color: #94a3b8; line-height: 1.5; margin-top: 24px;">
+        <strong style="color: #cbd5e1;">How to Update Installed Extension:</strong><br />
+        1. Click the button above to download <code>leetstreak.zip</code> and unzip it.<br />
+        2. Open Chrome and go to <code>chrome://extensions</code>.<br />
+        3. Enable <em>Developer Mode</em> (top right switch) and click <strong>Load Unpacked</strong>.<br />
+        4. Select the updated <code>leetstreak</code> folder!
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #272a37; margin: 24px 0 16px 0;" />
+      <p style="font-size: 11px; text-align: center; color: #64748b; margin: 0;">
+        Keep grinding LeetCode with your friends! • LeetStreak Team
+      </p>
+    </div>
+    """
+    logger.info("Initiating Update notification email to user: %s (Email: %s, Version: %s)", username, to_email, version)
+    return await send_email_dispatch(to_email, subject, html_content)
