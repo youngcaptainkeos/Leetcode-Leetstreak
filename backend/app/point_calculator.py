@@ -77,17 +77,21 @@ def compute_solve_points_breakdown(
     """Returns detailed breakdown components for a solve."""
     rating = get_contest_rating(title_slug)
 
-    if rating is not None and rating > 0:
-        base_points = round(rating / 100.0, 2)
-    else:
-        diff_str = (difficulty or "Medium").capitalize()
-        category_bases = {"Easy": 8.0, "Medium": 15.0, "Hard": 24.0}
-        cat_base = category_bases.get(diff_str, 15.0)
+    diff_str = (difficulty or "Medium").capitalize()
+    category_bases = {"Easy": 8.0, "Medium": 15.0, "Hard": 24.0}
+    cat_base = category_bases.get(diff_str, 15.0)
 
+    if rating is not None and rating > 0:
+        raw_base_points = round(rating / 100.0, 2)
+        ac_multiplier = 1.0
+        base_points = raw_base_points
+    else:
+        raw_base_points = cat_base
         if ac_rate is not None and 0.0 <= ac_rate <= 100.0:
-            ac_multiplier = 1.0 + ((50.0 - ac_rate) / 100.0)
-            base_points = round(cat_base * max(0.2, ac_multiplier), 2)
+            ac_multiplier = round(max(0.2, 1.0 + ((50.0 - ac_rate) / 100.0)), 2)
+            base_points = round(cat_base * ac_multiplier, 2)
         else:
+            ac_multiplier = 1.0
             base_points = cat_base
 
     daily_bonus = 5.0 if is_daily else 0.0
@@ -102,6 +106,9 @@ def compute_solve_points_breakdown(
     points_earned = int(round(total_float))
 
     return {
+        "raw_base_points": raw_base_points,
+        "ac_rate": ac_rate,
+        "ac_multiplier": ac_multiplier,
         "base_points": base_points,
         "contest_rating": rating,
         "is_daily": is_daily,

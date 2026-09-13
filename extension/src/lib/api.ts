@@ -16,6 +16,9 @@ export interface DayCount {
 }
 
 export interface PointBreakdown {
+  raw_base_points?: number;
+  ac_rate?: number;
+  ac_multiplier?: number;
   base_points: number;
   contest_rating?: number;
   is_daily: boolean;

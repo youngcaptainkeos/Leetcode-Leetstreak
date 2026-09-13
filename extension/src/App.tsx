@@ -1665,14 +1665,31 @@ function Dashboard({
             </div>
             <p className="tiny muted mb-2">Question: <strong>{selectedSolveBreakdown.title}</strong></p>
             <div className="breakdown-list">
-              <div className="breakdown-item">
-                <span>Base Points:</span>
-                <strong>
-                  {selectedSolveBreakdown.breakdown?.contest_rating
-                    ? `${selectedSolveBreakdown.breakdown.base_points} pts (Rating ${selectedSolveBreakdown.breakdown.contest_rating})`
-                    : `${selectedSolveBreakdown.breakdown?.base_points || 0} pts`}
-                </strong>
-              </div>
+              {selectedSolveBreakdown.breakdown?.contest_rating ? (
+                <div className="breakdown-item">
+                  <span>Contest Base Points:</span>
+                  <strong>
+                    {selectedSolveBreakdown.breakdown.base_points} pts{" "}
+                    <span className="tiny muted">(ZeroTrac Elo {selectedSolveBreakdown.breakdown.contest_rating})</span>
+                  </strong>
+                </div>
+              ) : (
+                <>
+                  <div className="breakdown-item">
+                    <span>Category Base Points:</span>
+                    <strong>{selectedSolveBreakdown.breakdown?.raw_base_points || selectedSolveBreakdown.breakdown?.base_points || 0} pts</strong>
+                  </div>
+                  <div className="breakdown-item">
+                    <span>After AC Ratio Correction:</span>
+                    <strong>
+                      {selectedSolveBreakdown.breakdown?.base_points || 0} pts
+                      {selectedSolveBreakdown.breakdown?.ac_rate !== undefined && selectedSolveBreakdown.breakdown?.ac_rate !== null && (
+                        <span className="tiny muted"> ({selectedSolveBreakdown.breakdown.ac_rate}% AC rate, {selectedSolveBreakdown.breakdown?.ac_multiplier || 1.0}×)</span>
+                      )}
+                    </strong>
+                  </div>
+                </>
+              )}
               <div className="breakdown-item">
                 <span>Daily Challenge Bonus:</span>
                 <strong>+{selectedSolveBreakdown.breakdown?.daily_bonus || 0} pts</strong>

@@ -4,6 +4,9 @@ from pydantic import BaseModel, Field
 
 
 class PointBreakdownSchema(BaseModel):
+    raw_base_points: float = 0.0
+    ac_rate: Optional[float] = None
+    ac_multiplier: float = 1.0
     base_points: float = 0.0
     contest_rating: Optional[float] = None
     is_daily: bool = False
