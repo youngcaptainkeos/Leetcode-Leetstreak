@@ -225,6 +225,11 @@ export const api = {
       `/groups/${groupId}/members/${memberUserId}?requester_id=${requesterUserId}`,
       { method: "DELETE" }
     ),
+  deleteGroup: (groupId: number, requesterUserId: number) =>
+    request<{ status: string; group_id: number }>(
+      `/groups/${groupId}?requester_id=${requesterUserId}`,
+      { method: "DELETE" }
+    ),
   myGroups: (userId: number) =>
     request<GroupListResponse>(`/groups/my-groups/${userId}`),
   groupLeaderboard: (groupId: number, userId?: number, sortBy: "points" | "streak" = "points") => {

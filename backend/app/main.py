@@ -692,6 +692,24 @@ def remove_group_member(group_id: int, user_id: int, requester_id: int, db: Sess
     return {"status": "removed", "group_id": group_id, "user_id": user_id}
 
 
+@app.delete("/api/groups/{group_id}")
+def delete_group(group_id: int, requester_id: int, db: Session = Depends(get_db)):
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    if group.creator_id != requester_id:
+        raise HTTPException(status_code=403, detail="Only the group creator can delete this group.")
+
+    # Delete all member associations first
+    db.query(GroupMember).filter(GroupMember.group_id == group_id).delete()
+    # Delete the group
+    db.delete(group)
+    db.commit()
+
+    return {"status": "deleted", "group_id": group_id}
+
+
 @app.get("/api/groups/{group_id}/leaderboard", response_model=LeaderboardResponse)
 def get_group_leaderboard(
     group_id: int,

@@ -635,6 +635,8 @@ function Dashboard({
   // Group Modal States
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showJoinGroup, setShowJoinGroup] = useState(false);
+  const [showDeleteGroupModal, setShowDeleteGroupModal] = useState(false);
+  const [deletingGroup, setDeletingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [groupActionBusy, setGroupActionBusy] = useState(false);
@@ -983,6 +985,24 @@ function Dashboard({
     }
   }
 
+  async function handleDeleteGroup() {
+    if (!activeGroup || !userId) return;
+    setDeletingGroup(true);
+    try {
+      await api.deleteGroup(activeGroup.id, userId);
+      const deletedId = activeGroup.id;
+      setGroups((prev) => prev.filter((g) => g.id !== deletedId));
+      setShowDeleteGroupModal(false);
+      changeTab("global");
+      setSyncMsg("Group deleted successfully.");
+      setTimeout(() => setSyncMsg(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete group.");
+    } finally {
+      setDeletingGroup(false);
+    }
+  }
+
   async function handleRemoveMember(
     groupId: number,
     memberUserId: number,
@@ -1265,14 +1285,26 @@ function Dashboard({
               👏 {kudosAllBusy ? "Sending…" : "Kudos All"}
             </button>
             {activeGroup && (
-              <button
-                type="button"
-                className="group-code-btn"
-                onClick={() => handleCopyCode(activeGroup.code)}
-                title={`Click to copy invite code (${activeGroup.code})`}
-              >
-                📋 {copiedCode ? "Copied!" : "Code"}
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="group-code-btn"
+                  onClick={() => handleCopyCode(activeGroup.code)}
+                  title={`Click to copy invite code (${activeGroup.code})`}
+                >
+                  📋 {copiedCode ? "Copied!" : "Code"}
+                </button>
+                {activeGroup.creator_id === userId && (
+                  <button
+                    type="button"
+                    className="group-delete-btn"
+                    onClick={() => setShowDeleteGroupModal(true)}
+                    title="Delete group (owner only)"
+                  >
+                    🗑️
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1640,6 +1672,45 @@ function Dashboard({
                 }}
               >
                 🗑️ Delete Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Group Confirmation Modal */}
+      {showDeleteGroupModal && activeGroup && (
+        <div className="modal-overlay" onClick={() => setShowDeleteGroupModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="danger-title">🗑️ Delete Group</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowDeleteGroupModal(false)}
+                title="Cancel"
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ fontSize: "13px", color: "var(--md-sys-color-on-surface-variant)", margin: "12px 0", lineHeight: "1.4" }}>
+              Are you sure you want to delete <strong>{activeGroup.name}</strong>? All members will be removed and this group will be deleted permanently.
+            </p>
+            <div className="modal-actions-row">
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => setShowDeleteGroupModal(false)}
+                disabled={deletingGroup}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="danger-btn modal-action-btn"
+                onClick={handleDeleteGroup}
+                disabled={deletingGroup}
+              >
+                {deletingGroup ? "Deleting…" : "Delete Group"}
               </button>
             </div>
           </div>
