@@ -25417,15 +25417,6 @@
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "button",
             {
-              className: "help-btn",
-              onClick: () => setShowPointsHelp(true),
-              title: "How Points Work \u2753",
-              children: "\u2753 Rules"
-            }
-          ),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-            "button",
-            {
               className: "coffee-btn",
               onClick: () => setShowCoffeeModal(true),
               title: "Buy Me a Coffee \u2615",
@@ -25443,6 +25434,15 @@
               },
               title: "Account Settings (Change LeetCode Username)",
               children: "\u2699\uFE0F"
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "button",
+            {
+              className: "rules-icon-btn",
+              onClick: () => setShowPointsHelp(true),
+              title: "Points System Rulebook \u2753",
+              children: "\u2753"
             }
           ),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
@@ -25595,6 +25595,16 @@
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "sort-toggle-bar", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "sort-left-group", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "sort-label", children: "Sort:" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              "button",
+              {
+                type: "button",
+                className: "rules-chip-btn",
+                onClick: () => setShowPointsHelp(true),
+                title: "How Points Work \u2753",
+                children: "\u2753 Rules"
+              }
+            ),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "sort-btn-group", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
                 "button",
@@ -26075,13 +26085,13 @@
               "\u{1F31F} ",
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "LeetCode Daily Challenge:" }),
               " ",
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "+10.00 Bonus Pts" })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "+5.00 Bonus Pts" })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { children: [
               "\u26A1 ",
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "First-Try Precision (0 Fails):" }),
               " ",
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "+5.00 Bonus Pts" })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "+3.00 Bonus Pts" })
             ] })
           ] })
         ] }),
@@ -26091,8 +26101,8 @@
             "Your total points scale linearly from ",
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "1.0x" }),
             " (Day 1) up to ",
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "1.25x" }),
-            " max (30+ day streak)."
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "1.10x" }),
+            " (+10% max for 30+ day streak)."
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "streak-scale-grid", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "scale-item", children: [
@@ -26101,11 +26111,11 @@
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "scale-item", children: [
               "Day 15: ",
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "1.13x" })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "1.05x" })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "scale-item", children: [
               "Day 30+: ",
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "1.25x (Max)" })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "1.10x (Max)" })
             ] })
           ] })
         ] })

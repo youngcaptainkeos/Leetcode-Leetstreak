@@ -933,13 +933,6 @@ function Dashboard({
 
         <div className="profile-actions">
           <button
-            className="help-btn"
-            onClick={() => setShowPointsHelp(true)}
-            title="How Points Work ❓"
-          >
-            ❓ Rules
-          </button>
-          <button
             className="coffee-btn"
             onClick={() => setShowCoffeeModal(true)}
             title="Buy Me a Coffee ☕"
@@ -956,6 +949,13 @@ function Dashboard({
             title="Account Settings (Change LeetCode Username)"
           >
             ⚙️
+          </button>
+          <button
+            className="rules-icon-btn"
+            onClick={() => setShowPointsHelp(true)}
+            title="Points System Rulebook ❓"
+          >
+            ❓
           </button>
           <button
             className="sync-btn"
@@ -1108,6 +1108,14 @@ function Dashboard({
         <div className="sort-toggle-bar">
           <div className="sort-left-group">
             <span className="sort-label">Sort:</span>
+            <button
+              type="button"
+              className="rules-chip-btn"
+              onClick={() => setShowPointsHelp(true)}
+              title="How Points Work ❓"
+            >
+              ❓ Rules
+            </button>
             <div className="sort-btn-group">
               <button
                 type="button"
@@ -1619,20 +1627,20 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
           <div className="rule-card">
             <div className="rule-card-title">2️⃣ Extra Bonuses</div>
             <ul className="rule-list">
-              <li>🌟 <strong>LeetCode Daily Challenge:</strong> <code>+10.00 Bonus Pts</code></li>
-              <li>⚡ <strong>First-Try Precision (0 Fails):</strong> <code>+5.00 Bonus Pts</code></li>
+              <li>🌟 <strong>LeetCode Daily Challenge:</strong> <code>+5.00 Bonus Pts</code></li>
+              <li>⚡ <strong>First-Try Precision (0 Fails):</strong> <code>+3.00 Bonus Pts</code></li>
             </ul>
           </div>
 
           <div className="rule-card">
             <div className="rule-card-title">3️⃣ Active Streak Multiplier</div>
             <p className="rule-desc">
-              Your total points scale linearly from <strong>1.0x</strong> (Day 1) up to <strong>1.25x</strong> max (30+ day streak).
+              Your total points scale linearly from <strong>1.0x</strong> (Day 1) up to <strong>1.10x</strong> (+10% max for 30+ day streak).
             </p>
             <div className="streak-scale-grid">
               <div className="scale-item">Day 1: <span>1.00x</span></div>
-              <div className="scale-item">Day 15: <span>1.13x</span></div>
-              <div className="scale-item">Day 30+: <span>1.25x (Max)</span></div>
+              <div className="scale-item">Day 15: <span>1.05x</span></div>
+              <div className="scale-item">Day 30+: <span>1.10x (Max)</span></div>
             </div>
           </div>
         </div>

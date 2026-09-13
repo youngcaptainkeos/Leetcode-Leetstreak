@@ -49,15 +49,15 @@ def compute_solve_points(
         ac_multiplier = 1.0 + ((50.0 - rate) / 100.0)
         base_points = cat_base * max(0.2, ac_multiplier)
 
-    # Additive bonuses
-    daily_bonus = 10.0 if is_daily else 0.0
-    first_try_bonus = 5.0 if is_first_try else 0.0
+    # Additive bonuses (Daily: +5.0, First-Try: +3.0)
+    daily_bonus = 5.0 if is_daily else 0.0
+    first_try_bonus = 3.0 if is_first_try else 0.0
 
     subtotal = base_points + daily_bonus + first_try_bonus
 
-    # Streak Multiplier (1.0x to 1.25x capped at 30 days)
+    # Streak Multiplier (1.0x to 1.10x max capped at 30 days)
     streak_capped = min(30, max(0, streak_days))
-    streak_multiplier = 1.0 + (0.25 * (streak_capped / 30.0))
+    streak_multiplier = 1.0 + (0.10 * (streak_capped / 30.0))
 
     final_points = subtotal * streak_multiplier
     return round(final_points, 4)
@@ -98,7 +98,7 @@ def recalculate_user_points(user: User, db: Session) -> float:
         unlogged_med = (user.medium_count or 0) * unlogged_ratio
         unlogged_hard = (user.hard_count or 0) * unlogged_ratio
 
-        streak_mult = 1.0 + (0.25 * (min(30, max(0, user_streak)) / 30.0))
+        streak_mult = 1.0 + (0.10 * (min(30, max(0, user_streak)) / 30.0))
         legacy_pts += unlogged_easy * compute_solve_points(difficulty="Easy", streak_days=0) * streak_mult
         legacy_pts += unlogged_med * compute_solve_points(difficulty="Medium", streak_days=0) * streak_mult
         legacy_pts += unlogged_hard * compute_solve_points(difficulty="Hard", streak_days=0) * streak_mult

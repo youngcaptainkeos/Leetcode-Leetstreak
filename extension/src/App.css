@@ -1780,25 +1780,43 @@ input:focus, form input:focus {
 /* ==========================================================================
    🎯 POINTS RULEBOOK MODAL & STYLING
    ========================================================================== */
-.help-btn {
+.rules-icon-btn {
   background-color: var(--md-sys-color-primary-container) !important;
   color: var(--md-sys-color-on-primary-container) !important;
   border: 1px solid var(--md-sys-color-outline-variant) !important;
   border-radius: var(--md-shape-corner-full) !important;
-  padding: 3px 9px !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  cursor: pointer !important;
+  width: 28px !important;
+  height: 28px !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 4px !important;
-  transition: all 0.15s ease !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+  justify-content: center !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  transition: transform 0.15s ease !important;
 }
 
-.help-btn:hover {
-  filter: brightness(1.15) !important;
-  transform: translateY(-1px) !important;
+.rules-icon-btn:hover {
+  transform: scale(1.1) !important;
+}
+
+.rules-chip-btn {
+  background-color: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-corner-full);
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+}
+
+.rules-chip-btn:hover {
+  background-color: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
 }
 
 .points-help-modal {
