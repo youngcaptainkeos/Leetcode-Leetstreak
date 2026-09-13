@@ -948,13 +948,6 @@ function Dashboard({
             ⚙️
           </button>
           <button
-            className="rules-icon-btn"
-            onClick={() => setShowPointsHelp(true)}
-            title="Points System Rulebook ❓"
-          >
-            ❓
-          </button>
-          <button
             className="sync-btn"
             onClick={handleSync}
             disabled={syncing}
@@ -1616,48 +1609,92 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content points-help-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>🎯 Points System Rulebook</h3>
+        <div className="modal-header align-start">
+          <div className="modal-title-group">
+            <span className="modal-badge-icon">🎯</span>
+            <div>
+              <h3 className="modal-main-heading">How Points Work</h3>
+              <p className="tiny muted">LeetStreak Dynamic Scoring Guide</p>
+            </div>
+          </div>
           <button className="modal-close" onClick={onClose} title="Close rules">
             ✕
           </button>
         </div>
 
         <div className="points-rules-container">
+          {/* Card 1: Base Points */}
           <div className="rule-card">
-            <div className="rule-card-title">1️⃣ Base Points (True Difficulty)</div>
-            <p className="rule-desc">
-              <strong>Contest Questions:</strong> Points equal <code>Contest Rating / 100</code> (e.g. 1550 rating = <strong>15.50 pts</strong>, 2400 rating = <strong>24.00 pts</strong>).
-            </p>
-            <p className="rule-desc">
-              <strong>Other Questions:</strong> Category Base (Easy: 10, Medium: 25, Hard: 45) dynamically adjusted by Acceptance Rate.
-            </p>
+            <div className="rule-card-header">
+              <span className="rule-step">1</span>
+              <span className="rule-card-title">Base Points (True Difficulty)</span>
+            </div>
+            <div className="rule-body">
+              <div className="rule-pill-row">
+                <span className="rule-pill primary">Contest Rating / 100</span>
+              </div>
+              <p className="rule-desc">
+                If official contest rating exists: Points = <code>Rating / 100</code>.
+              </p>
+              <div className="example-tag-row">
+                <span className="ex-chip">1550 Rating ➜ <b>16 pts</b></span>
+                <span className="ex-chip">2400 Rating ➜ <b>24 pts</b></span>
+              </div>
+              <div className="rule-divider" />
+              <p className="rule-desc tiny muted">
+                <strong>Fallback:</strong> Easy 10 • Medium 25 • Hard 45 (adjusted by AC %).
+              </p>
+            </div>
           </div>
 
+          {/* Card 2: Extra Bonuses */}
           <div className="rule-card">
-            <div className="rule-card-title">2️⃣ Extra Bonuses</div>
-            <ul className="rule-list">
-              <li>🌟 <strong>LeetCode Daily Challenge:</strong> <code>+5.00 Bonus Pts</code></li>
-              <li>⚡ <strong>First-Try Precision (0 Fails):</strong> <code>+3.00 Bonus Pts</code></li>
-            </ul>
+            <div className="rule-card-header">
+              <span className="rule-step bonus">2</span>
+              <span className="rule-card-title">Extra Bonuses</span>
+            </div>
+            <div className="rule-body">
+              <div className="bonus-chip-grid">
+                <div className="bonus-chip daily">
+                  <div className="bonus-icon">🌟</div>
+                  <div className="bonus-info">
+                    <span className="bonus-title">Daily Challenge</span>
+                    <span className="bonus-value">+5 Pts</span>
+                  </div>
+                </div>
+                <div className="bonus-chip precision">
+                  <div className="bonus-icon">⚡</div>
+                  <div className="bonus-info">
+                    <span className="bonus-title">1st Try Precision</span>
+                    <span className="bonus-value">+3 Pts</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
+          {/* Card 3: Streak Multiplier */}
           <div className="rule-card">
-            <div className="rule-card-title">3️⃣ Active Streak Multiplier</div>
-            <p className="rule-desc">
-              Your total points scale linearly from <strong>1.0x</strong> (Day 1) up to <strong>1.10x</strong> (+10% max for 30+ day streak).
-            </p>
-            <div className="streak-scale-grid">
-              <div className="scale-item">Day 1: <span>1.00x</span></div>
-              <div className="scale-item">Day 15: <span>1.05x</span></div>
-              <div className="scale-item">Day 30+: <span>1.10x (Max)</span></div>
+            <div className="rule-card-header">
+              <span className="rule-step streak">3</span>
+              <span className="rule-card-title">Active Streak Multiplier</span>
+            </div>
+            <div className="rule-body">
+              <p className="rule-desc">
+                Boost total points up to <strong>+10%</strong> with an active streak!
+              </p>
+              <div className="streak-scale-grid">
+                <div className="scale-item">Day 1: <span>1.00x</span></div>
+                <div className="scale-item">Day 15: <span>1.05x</span></div>
+                <div className="scale-item">Day 30+: <span className="highlight">1.10x Max</span></div>
+              </div>
             </div>
           </div>
         </div>
 
         <div className="modal-actions-row">
-          <button type="button" className="primary-btn sm block-btn" onClick={onClose}>
-            Got it!
+          <button type="button" className="primary-btn block-btn" onClick={onClose}>
+            Got it, let's code! 🚀
           </button>
         </div>
       </div>
