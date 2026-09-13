@@ -1,7 +1,7 @@
 from datetime import datetime, date as date_type
 
 from sqlalchemy import (
-    Column, Integer, String, Date, DateTime, ForeignKey, UniqueConstraint, func
+    Column, Integer, Float, String, Date, DateTime, ForeignKey, UniqueConstraint, func
 )
 from sqlalchemy.orm import relationship
 
@@ -23,6 +23,7 @@ class User(Base):
     medium_count = Column(Integer, default=0)
     hard_count = Column(Integer, default=0)
     official_streak = Column(Integer, default=0)
+    points = Column(Float, default=0.0)
     created_at = Column(DateTime, server_default=func.now())
 
     daily_activity = relationship("DailyActivity", back_populates="user", cascade="all, delete-orphan")
@@ -56,6 +57,7 @@ class Solve(Base):
     title_slug = Column(String(200), nullable=False)
     title = Column(String(300), nullable=True)
     solved_at = Column(DateTime, nullable=False, index=True)
+    points_earned = Column(Float, default=0.0)
 
     user = relationship("User", back_populates="solves")
 

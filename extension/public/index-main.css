@@ -1771,5 +1771,94 @@ input:focus, form input:focus {
   transform: scale(1.06) !important;
 }
 
+/* ==========================================================================
+   🎯 POINTS RULEBOOK MODAL & STYLING
+   ========================================================================== */
+.help-btn {
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  color: var(--text-primary);
+  border-radius: var(--md-shape-corner-small);
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.help-btn:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.points-help-modal {
+  max-width: 360px !important;
+  width: 90% !important;
+}
+
+.points-rules-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 16px 0;
+}
+
+.rule-card {
+  background-color: var(--md-sys-color-surface-container-high);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-corner-medium);
+  padding: 10px 12px;
+}
+
+.rule-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.rule-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 2px 0;
+}
+
+.rule-desc code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1px 4px;
+  border-radius: 4px;
+  color: #FFD700;
+  font-family: monospace;
+}
+
+.rule-list {
+  margin: 4px 0 0 0;
+  padding-left: 14px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.streak-scale-grid {
+  display: flex;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.scale-item span {
+  font-weight: 700;
+  color: var(--easy);
+}
+
 
 

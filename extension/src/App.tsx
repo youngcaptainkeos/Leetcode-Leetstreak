@@ -544,6 +544,7 @@ function Dashboard({
   const [groupActionBusy, setGroupActionBusy] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
+  const [showPointsHelp, setShowPointsHelp] = useState(false);
 
   // Network Offline Listener & Dynamic OTA Config States
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -920,6 +921,13 @@ function Dashboard({
 
         <div className="profile-actions">
           <button
+            className="help-btn"
+            onClick={() => setShowPointsHelp(true)}
+            title="How Points Work ❓"
+          >
+            ❓ Rules
+          </button>
+          <button
             className="coffee-btn"
             onClick={() => setShowCoffeeModal(true)}
             title="Buy Me a Coffee ☕"
@@ -1185,7 +1193,7 @@ function Dashboard({
                         className="points-badge"
                         title={`Easy: ${e.easy_count} | Medium: ${e.medium_count} | Hard: ${e.hard_count}`}
                       >
-                        ⭐{e.points ?? (e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6)}
+                        ⭐{Math.round(e.points ?? (e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6))}
                       </span>
                       <button
                         type="button"
@@ -1556,6 +1564,66 @@ function Dashboard({
                 <span className="tiny muted uppercase">Scan with any UPI App</span>
                 <span className="upi-app-icons">GPay • PhonePe • Paytm • BHIM</span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Points Calculation Rulebook Modal */}
+      {showPointsHelp && (
+        <div className="modal-overlay" onClick={() => setShowPointsHelp(false)}>
+          <div className="modal-content points-help-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🎯 Points System Rulebook</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowPointsHelp(false)}
+                title="Close rules"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="points-rules-container">
+              <div className="rule-card">
+                <div className="rule-card-title">1️⃣ Base Points (True Difficulty)</div>
+                <p className="rule-desc">
+                  <strong>Contest Questions:</strong> Points equal <code>Contest Rating / 100</code> (e.g. 1650 rating = <strong>16.5 pts</strong>, 2400 rating = <strong>24.0 pts</strong>).
+                </p>
+                <p className="rule-desc">
+                  <strong>Other Questions:</strong> Category Base (Easy: 10, Medium: 25, Hard: 45) dynamically adjusted by Acceptance Rate (harder low-AC% questions give higher points).
+                </p>
+              </div>
+
+              <div className="rule-card">
+                <div className="rule-card-title">2️⃣ Extra Bonuses</div>
+                <ul className="rule-list">
+                  <li>🌟 <strong>LeetCode Daily Challenge:</strong> <code>+10.0 Bonus Pts</code></li>
+                  <li>⚡ <strong>First-Try Precision (0 Fails):</strong> <code>+5.0 Bonus Pts</code></li>
+                </ul>
+              </div>
+
+              <div className="rule-card">
+                <div className="rule-card-title">3️⃣ Active Streak Multiplier</div>
+                <p className="rule-desc">
+                  Your total points scale linearly from <strong>1.0x</strong> (Day 1) up to <strong>1.25x</strong> max (30+ day streak).
+                </p>
+                <div className="streak-scale-grid">
+                  <div className="scale-item">Day 1: <span>1.00x</span></div>
+                  <div className="scale-item">Day 15: <span>1.13x</span></div>
+                  <div className="scale-item">Day 30+: <span>1.25x (Max)</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-actions-row">
+              <button
+                type="button"
+                className="primary-btn sm block-btn"
+                onClick={() => setShowPointsHelp(false)}
+              >
+                Got it!
+              </button>
             </div>
           </div>
         </div>

@@ -81,7 +81,7 @@ class LeaderboardEntry(BaseModel):
     easy_count: int = 0
     medium_count: int = 0
     hard_count: int = 0
-    points: int = 0
+    points: float = 0.0
     weekly_total: int
     current_streak: int
     consistency_score: float  # 0-100, active days / 7

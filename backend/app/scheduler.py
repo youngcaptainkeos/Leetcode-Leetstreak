@@ -10,6 +10,7 @@ from .config import POLL_INTERVAL_MINUTES
 from .database import SessionLocal
 from .models import User, Solve, DailyActivity
 from .leetcode_client import fetch_leetcode_user_data, LeetCodeError
+from .point_calculator import recalculate_user_points
 
 logger = logging.getLogger("codestreak.scheduler")
 
@@ -81,6 +82,7 @@ async def poll_user(db: Session, user: User) -> int:
             db.add(new_row)
             existing_daily[day] = new_row
 
+    recalculate_user_points(user, db)
     db.commit()
     return new_count
 

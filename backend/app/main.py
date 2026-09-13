@@ -95,6 +95,10 @@ async def on_startup():
                 func.date(Solve.solved_at) == r.date
             ).count()
             r.problems_solved = max(1, solves_count)
+
+        # Recalculate points for all existing users with new scoring rules
+        from .point_calculator import recalculate_all_users_points
+        recalculate_all_users_points(db)
         db.commit()
     except Exception as e:
         logger.warning("Startup activity cleanup failed: %s", e)
@@ -436,7 +440,7 @@ def _compute_leaderboard(
         active_days_this_week = len(week_rows)
         consistency = (active_days_this_week / days_in_week_so_far) * 100
         is_active_today = today in active_dates
-        points = ((user.easy_count or 0) * 1) + ((user.medium_count or 0) * 3) + ((user.hard_count or 0) * 6)
+        points = round(user.points or 0.0, 2)
         raw.append({
             "user": user,
             "weekly_total": weekly_total,
