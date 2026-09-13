@@ -1620,7 +1620,7 @@ function Dashboard({
                   onResetUser();
                 }}
               >
-                🔄 Switch User
+                🚪 Log Out
               </button>
             </div>
 
