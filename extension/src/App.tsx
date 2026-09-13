@@ -1184,6 +1184,7 @@ function Dashboard({
           <span className="diff-pill easy">Easy {dash.easy_count}</span>
           <span className="diff-pill medium">Med {dash.medium_count}</span>
           <span className="diff-pill hard">Hard {dash.hard_count}</span>
+          <span className="diff-pill total">Total {dash.easy_count + dash.medium_count + dash.hard_count}</span>
         </div>
       </div>
 
@@ -1543,6 +1544,9 @@ function Dashboard({
                   </span>
                   <span className="diff-pill hard">
                     Hard {inspectedFriend.hard_count}
+                  </span>
+                  <span className="diff-pill total">
+                    Total {inspectedFriend.easy_count + inspectedFriend.medium_count + inspectedFriend.hard_count}
                   </span>
                 </div>
 
