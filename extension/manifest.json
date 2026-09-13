@@ -19,6 +19,13 @@
     }
   },
   "permissions": ["storage", "notifications", "alarms"],
+  "content_scripts": [
+    {
+      "matches": ["https://leetcode.com/problems/*"],
+      "js": ["leetcode-listener.js"],
+      "run_at": "document_start"
+    }
+  ],
   "background": {
     "service_worker": "background.js"
   },

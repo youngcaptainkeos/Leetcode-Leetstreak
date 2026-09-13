@@ -24,6 +24,18 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
 }
 
+DAILY_CHALLENGE_QUERY = """
+query questionOfToday {
+  activeDailyCodingChallengeQuestion {
+    date
+    question {
+      title
+      titleSlug
+    }
+  }
+}
+"""
+
 RECENT_AC_QUERY = """
 query recentAcSubmissions($username: String!, $limit: Int!) {
   recentAcSubmissionList(username: $username, limit: $limit) {
@@ -34,6 +46,24 @@ query recentAcSubmissions($username: String!, $limit: Int!) {
   }
 }
 """
+
+async def fetch_today_daily_challenge_slug() -> Optional[str]:
+    """Fetches today's official LeetCode Daily Challenge titleSlug."""
+    try:
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            resp = await client.post(
+                GRAPHQL_URL,
+                headers=HEADERS,
+                json={"query": DAILY_CHALLENGE_QUERY},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                q = (data.get("data") or {}).get("activeDailyCodingChallengeQuestion") or {}
+                question = q.get("question") or {}
+                return question.get("titleSlug")
+    except Exception as e:
+        logger.warning("Failed to fetch LeetCode Daily Challenge slug: %s", e)
+    return None
 
 USER_FULL_PROFILE_QUERY = """
 query userFullProfile($username: String!) {

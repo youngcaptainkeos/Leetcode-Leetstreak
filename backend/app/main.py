@@ -100,7 +100,7 @@ async def on_startup():
 
         # Recalculate points for all existing users with new scoring rules
         from .point_calculator import recalculate_all_users_points
-        recalculate_all_users_points(db)
+        await recalculate_all_users_points(db)
         db.commit()
     except Exception as e:
         logger.warning("Startup activity cleanup failed: %s", e)

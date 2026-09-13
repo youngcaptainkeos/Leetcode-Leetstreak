@@ -63,10 +63,15 @@ def compute_solve_points(
     return round(final_points, 4)
 
 
-def recalculate_user_points(user: User, db: Session) -> float:
+def recalculate_user_points(
+    user: User,
+    db: Session,
+    today_daily_slug: Optional[str] = None,
+    attempts_map: Optional[dict] = None,
+) -> float:
     """
     Recalculates a single user's total points based on their solves ledger
-    and total difficulty counts.
+    and total difficulty counts, accounting for daily challenge bonus and attempt tracking.
     """
     solves = db.query(Solve).filter(Solve.user_id == user.id).all()
     user_streak = user.official_streak or 0
@@ -74,12 +79,18 @@ def recalculate_user_points(user: User, db: Session) -> float:
     total_points = 0.0
     for solve in solves:
         slug = solve.title_slug or ""
+        is_daily = bool(today_daily_slug and slug.lower() == today_daily_slug.lower())
+
+        is_first_try = True
+        if attempts_map and isinstance(attempts_map, dict) and slug in attempts_map:
+            is_first_try = bool(attempts_map[slug].get("is_first_try", True))
+
         pts = compute_solve_points(
             title_slug=slug,
             difficulty=None,
             ac_rate=None,
-            is_daily=False,
-            is_first_try=True,
+            is_daily=is_daily,
+            is_first_try=is_first_try,
             streak_days=user_streak,
         )
         solve.points_earned = pts
@@ -108,14 +119,16 @@ def recalculate_user_points(user: User, db: Session) -> float:
     return final_total
 
 
-def recalculate_all_users_points(db: Session) -> int:
+async def recalculate_all_users_points(db: Session) -> int:
     """
     Updates total points for all users in the database.
     """
+    from .leetcode_client import fetch_today_daily_challenge_slug
+    today_daily_slug = await fetch_today_daily_challenge_slug()
     users = db.query(User).all()
     count = 0
     for u in users:
-        recalculate_user_points(u, db)
+        recalculate_user_points(u, db, today_daily_slug=today_daily_slug)
         count += 1
     db.commit()
     logger.info("Recalculated points for %d users.", count)

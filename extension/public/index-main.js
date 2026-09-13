@@ -25709,7 +25709,7 @@
                               title: `Easy: ${e.easy_count} | Medium: ${e.medium_count} | Hard: ${e.hard_count}`,
                               children: [
                                 "\u2B50",
-                                Math.round(e.points ?? e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6)
+                                e.points !== null && e.points !== void 0 ? Math.round(e.points) : "\u2022\u2022\u2022"
                               ]
                             }
                           ),

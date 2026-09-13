@@ -1213,7 +1213,7 @@ function Dashboard({
                         className="points-badge"
                         title={`Easy: ${e.easy_count} | Medium: ${e.medium_count} | Hard: ${e.hard_count}`}
                       >
-                        ⭐{Math.round(e.points ?? (e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6))}
+                        ⭐{e.points !== null && e.points !== undefined ? Math.round(e.points) : "•••"}
                       </span>
                       <button
                         type="button"

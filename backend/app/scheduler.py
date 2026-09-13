@@ -9,19 +9,21 @@ from sqlalchemy.orm import Session
 from .config import POLL_INTERVAL_MINUTES
 from .database import SessionLocal
 from .models import User, Solve, DailyActivity
-from .leetcode_client import fetch_leetcode_user_data, LeetCodeError
+from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, LeetCodeError
 from .point_calculator import recalculate_user_points
 
 logger = logging.getLogger("codestreak.scheduler")
 
 
-async def poll_user(db: Session, user: User) -> int:
+async def poll_user(db: Session, user: User, attempts_map: Optional[dict] = None) -> int:
     """Fetch complete LeetCode profile, calendar history, and recent AC submissions for one user."""
     try:
         data = await fetch_leetcode_user_data(user.leetcode_username)
     except LeetCodeError as e:
         logger.warning("LeetCode fetch failed for %s: %s", user.leetcode_username, e)
         return 0
+
+    today_daily_slug = await fetch_today_daily_challenge_slug()
 
     # 1. Update user metadata & difficulty totals
     if data.get("avatar_url"):
