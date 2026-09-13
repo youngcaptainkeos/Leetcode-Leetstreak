@@ -24,7 +24,7 @@ from .schemas import (
     GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema, PointBreakdownSchema,
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
     KudosToggleRequest, KudosAllRequest, UpdateUsernameRequest, ActivityFeedItemSchema,
-    DynamicMenuItem, AppConfigResponse, DeleteAccountRequest,
+    DynamicMenuItem, AppConfigResponse, DeleteAccountRequest, SyncRequest,
 )
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
@@ -251,12 +251,23 @@ def verify_forgot_password(payload: ForgotPasswordVerifyRequest, db: Session = D
 
 
 @app.post("/api/users/{user_id}/sync")
-async def sync_user(user_id: int, db: Session = Depends(get_db)):
+async def sync_user(user_id: int, payload: Optional[SyncRequest] = None, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    solves_added = await poll_user(db, user)
+    attempts_map = payload.attempts_map if payload else None
+    solves_added = await poll_user(db, user, attempts_map=attempts_map)
     return {"status": "synced", "user_id": user_id, "new_solves": solves_added}
+
+
+@app.post("/api/users/{user_id}/attempts")
+async def post_user_attempts(user_id: int, payload: SyncRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if payload.attempts_map:
+        await poll_user(db, user, attempts_map=payload.attempts_map)
+    return {"status": "ok", "user_id": user_id}
 
 
 @app.put("/api/users/{user_id}/leetcode-username")

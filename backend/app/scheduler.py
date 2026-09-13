@@ -56,9 +56,19 @@ async def poll_user(db: Session, user: User, attempts_map: Optional[dict] = None
     # 3. Dedup recent AC submissions into Solves ledger & update daily count from actual AC solves
     new_count = 0
     submissions = data.get("recent_submissions") or []
-    existing_solves = {
-        r[0] for r in db.query(Solve.title_slug).filter(Solve.user_id == user.id).all()
-    }
+    
+    db_solves = db.query(Solve).filter(Solve.user_id == user.id).all()
+    solves_map = {s.title_slug: s for s in db_solves}
+    existing_solves = set(solves_map.keys())
+
+    # Update existing solves from attempts_map if available
+    if attempts_map and isinstance(attempts_map, dict):
+        for slug, att_info in attempts_map.items():
+            if slug in solves_map and isinstance(att_info, dict):
+                first_try_val = bool(att_info.get("is_first_try", True))
+                if solves_map[slug].is_first_try != first_try_val:
+                    solves_map[slug].is_first_try = first_try_val
+
     solves_by_date = {}
 
     for sub in submissions:
@@ -69,15 +79,21 @@ async def poll_user(db: Session, user: User, attempts_map: Optional[dict] = None
         if title_slug not in existing_solves:
             existing_solves.add(title_slug)
             prob_info = await fetch_problem_info(title_slug)
-            db.add(Solve(
+            is_first_try = True
+            if attempts_map and isinstance(attempts_map, dict) and title_slug in attempts_map:
+                is_first_try = bool(attempts_map[title_slug].get("is_first_try", True))
+
+            new_solve = Solve(
                 user_id=user.id,
                 title_slug=title_slug,
                 title=sub.get("title"),
                 difficulty=prob_info.get("difficulty"),
                 ac_rate=prob_info.get("ac_rate"),
                 solved_at=solved_at,
-                is_first_try=True,
-            ))
+                is_first_try=is_first_try,
+            )
+            db.add(new_solve)
+            solves_map[title_slug] = new_solve
             new_count += 1
 
         solves_by_date[day] = solves_by_date.get(day, 0) + 1
@@ -90,7 +106,7 @@ async def poll_user(db: Session, user: User, attempts_map: Optional[dict] = None
             db.add(new_row)
             existing_daily[day] = new_row
 
-    recalculate_user_points(user, db)
+    recalculate_user_points(user, db, attempts_map=attempts_map)
     db.commit()
     return new_count
 

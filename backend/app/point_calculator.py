@@ -154,9 +154,12 @@ def recalculate_user_points(
         slug = solve.title_slug or ""
         is_daily = bool(today_daily_slug and slug.lower() == today_daily_slug.lower())
 
-        is_first_try = True
+        is_first_try = getattr(solve, "is_first_try", True)
+        if is_first_try is None:
+            is_first_try = True
         if attempts_map and isinstance(attempts_map, dict) and slug in attempts_map:
             is_first_try = bool(attempts_map[slug].get("is_first_try", True))
+            solve.is_first_try = is_first_try
 
         solve_date = solve.solved_at.date() if hasattr(solve.solved_at, "date") else solve.solved_at
         streak_on_date = current_streak(active_dates, solve_date)

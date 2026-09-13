@@ -898,7 +898,14 @@ function Dashboard({
     setSyncMsg(null);
     setError(null);
     try {
-      const res = await api.syncUser(userId);
+      let attemptsMap = {};
+      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+        const stored = await new Promise<any>((resolve) => {
+          chrome.storage.local.get(["codestreak_attempts_map"], (res) => resolve(res));
+        });
+        attemptsMap = stored?.codestreak_attempts_map || {};
+      }
+      const res = await api.syncUser(userId, attemptsMap);
       await loadData();
       setSyncMsg(
         res.new_solves > 0
