@@ -76,6 +76,7 @@ async def poll_user(db: Session, user: User, attempts_map: Optional[dict] = None
                 difficulty=prob_info.get("difficulty"),
                 ac_rate=prob_info.get("ac_rate"),
                 solved_at=solved_at,
+                is_first_try=True,
             ))
             new_count += 1
 

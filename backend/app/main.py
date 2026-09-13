@@ -52,6 +52,7 @@ try:
         conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS points_earned DOUBLE PRECISION DEFAULT 0.0;"))
         conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20);"))
         conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS ac_rate DOUBLE PRECISION;"))
+        conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS is_first_try BOOLEAN DEFAULT TRUE;"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_notified_commit VARCHAR(40) DEFAULT 'legacy';"))
         # Drop unique constraint on leetcode_username if present
         conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_leetcode_username_key;"))
@@ -856,11 +857,15 @@ async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = De
         solve_date = s.solved_at.date() if hasattr(s.solved_at, "date") else s.solved_at
         streak_on_date = current_streak(active_dates, solve_date)
         is_daily = bool(today_daily_slug and s.title_slug == today_daily_slug and solve_date == date.today())
+        solve_first_try = getattr(s, "is_first_try", True)
+        if solve_first_try is None:
+            solve_first_try = True
         breakdown_data = compute_solve_points_breakdown(
             title_slug=s.title_slug,
             difficulty=diff,
             ac_rate=ac,
             is_daily=is_daily,
+            is_first_try=solve_first_try,
             streak_days=streak_on_date,
         )
         points_val = breakdown_data["points_earned"]

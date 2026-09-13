@@ -29,7 +29,7 @@ def compute_solve_points(
     difficulty: Optional[str] = None,
     ac_rate: Optional[float] = None,
     is_daily: bool = False,
-    is_first_try: bool = False,
+    is_first_try: bool = True,
     streak_days: int = 0,
 ) -> float:
     """
@@ -71,7 +71,7 @@ def compute_solve_points_breakdown(
     difficulty: Optional[str] = None,
     ac_rate: Optional[float] = None,
     is_daily: bool = False,
-    is_first_try: bool = False,
+    is_first_try: bool = True,
     streak_days: int = 0,
 ) -> dict:
     """Returns detailed breakdown components for a solve."""

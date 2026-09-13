@@ -13,8 +13,8 @@ class PointBreakdownSchema(BaseModel):
     contest_rating: Optional[float] = None
     is_daily: bool = False
     daily_bonus: float = 0.0
-    is_first_try: bool = False
-    first_try_bonus: float = 0.0
+    is_first_try: bool = True
+    first_try_bonus: float = 3.0
     subtotal: float = 0.0
     streak_days: int = 0
     streak_multiplier: float = 1.0

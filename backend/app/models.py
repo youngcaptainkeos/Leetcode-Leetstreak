@@ -1,7 +1,7 @@
 from datetime import datetime, date as date_type
 
 from sqlalchemy import (
-    Column, Integer, Float, String, Date, DateTime, ForeignKey, UniqueConstraint, func
+    Column, Integer, Float, String, Date, DateTime, ForeignKey, UniqueConstraint, func, Boolean
 )
 from sqlalchemy.orm import relationship
 
@@ -61,6 +61,7 @@ class Solve(Base):
     ac_rate = Column(Float, nullable=True)
     solved_at = Column(DateTime, nullable=False, index=True)
     points_earned = Column(Float, default=0.0)
+    is_first_try = Column(Boolean, default=True)
 
     user = relationship("User", back_populates="solves")
 
