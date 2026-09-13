@@ -18,7 +18,8 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from .contest_ratings import get_contest_rating
-from .models import User, Solve
+from .models import User, Solve, DailyActivity
+from .streak import current_streak
 
 logger = logging.getLogger("codestreak.points")
 
@@ -122,9 +123,17 @@ def recalculate_user_points(
     """
     Recalculates a single user's total points based on their solves ledger
     and total difficulty counts, accounting for daily challenge bonus and attempt tracking.
+    Uses the exact streak active on the date each problem was solved.
     """
     solves = db.query(Solve).filter(Solve.user_id == user.id).all()
     user_streak = user.official_streak or 0
+
+    active_dates = {
+        r.date for r in db.query(DailyActivity.date).filter(
+            DailyActivity.user_id == user.id,
+            DailyActivity.problems_solved > 0
+        ).all()
+    }
 
     total_points = 0.0
     for solve in solves:
@@ -135,13 +144,16 @@ def recalculate_user_points(
         if attempts_map and isinstance(attempts_map, dict) and slug in attempts_map:
             is_first_try = bool(attempts_map[slug].get("is_first_try", True))
 
+        solve_date = solve.solved_at.date() if hasattr(solve.solved_at, "date") else solve.solved_at
+        streak_on_date = current_streak(active_dates, solve_date)
+
         pts = compute_solve_points(
             title_slug=slug,
-            difficulty=None,
-            ac_rate=None,
+            difficulty=solve.difficulty,
+            ac_rate=solve.ac_rate,
             is_daily=is_daily,
             is_first_try=is_first_try,
-            streak_days=user_streak,
+            streak_days=streak_on_date,
         )
         solve.points_earned = pts
         total_points += pts

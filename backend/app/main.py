@@ -837,15 +837,19 @@ async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = De
         )
 
     today_daily_slug = await fetch_today_daily_challenge_slug()
-    user_streak = user.official_streak or 0
+    active_dates = _active_dates(db, user_id)
 
     results = []
     for s in solves:
-        is_daily = bool(today_daily_slug and s.title_slug == today_daily_slug and s.solved_at.astimezone(timezone(timedelta(hours=5, minutes=30))).date() == date.today())
+        solve_date = s.solved_at.date() if hasattr(s.solved_at, "date") else s.solved_at
+        streak_on_date = current_streak(active_dates, solve_date)
+        is_daily = bool(today_daily_slug and s.title_slug == today_daily_slug and solve_date == date.today())
         breakdown_data = compute_solve_points_breakdown(
             title_slug=s.title_slug,
+            difficulty=s.difficulty,
+            ac_rate=s.ac_rate,
             is_daily=is_daily,
-            streak_days=user_streak,
+            streak_days=streak_on_date,
         )
         points_val = int(round(s.points_earned)) if (s.points_earned and s.points_earned > 0) else breakdown_data["points_earned"]
         breakdown_data["points_earned"] = points_val

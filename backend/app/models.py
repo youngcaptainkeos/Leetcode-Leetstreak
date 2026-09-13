@@ -56,6 +56,8 @@ class Solve(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     title_slug = Column(String(200), nullable=False)
     title = Column(String(300), nullable=True)
+    difficulty = Column(String(20), nullable=True)
+    ac_rate = Column(Float, nullable=True)
     solved_at = Column(DateTime, nullable=False, index=True)
     points_earned = Column(Float, default=0.0)
 

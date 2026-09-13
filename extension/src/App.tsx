@@ -1741,10 +1741,10 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
             </p>
             <ul className="help-bullet-list">
               <li>
-                <strong>Contest Rating (Primary):</strong> Base points equal <code>Rating / 100</code> (e.g. 1550 rating = <strong>15.5 pts</strong>, 2400 rating = <strong>24.0 pts</strong>).
+                <strong>Contest Rating (Primary):</strong> Sourced from <strong>ZeroTrac</strong> contest ratings. Base points equal <code>Rating / 100</code> (e.g. 1550 rating = <strong>15.5 pts</strong>, 2400 rating = <strong>24.0 pts</strong>).
               </li>
               <li>
-                <strong>Non-Contest Problems:</strong> Evaluated using category defaults (Easy: <strong>8 pts</strong>, Medium: <strong>15 pts</strong>, Hard: <strong>24 pts</strong>) adjusted by acceptance rate.
+                <strong>Non-Contest Problems:</strong> Evaluated using difficulty category defaults (Easy: <strong>8 pts</strong>, Medium: <strong>15 pts</strong>, Hard: <strong>24 pts</strong>) scaled inversely by acceptance rate (lower acceptance rate yields higher points).
               </li>
             </ul>
           </div>

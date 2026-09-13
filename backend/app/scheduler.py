@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from .config import POLL_INTERVAL_MINUTES
 from .database import SessionLocal
 from .models import User, Solve, DailyActivity
-from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, LeetCodeError
+from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
 from .point_calculator import recalculate_user_points
 
 logger = logging.getLogger("codestreak.scheduler")
@@ -67,10 +67,13 @@ async def poll_user(db: Session, user: User, attempts_map: Optional[dict] = None
 
         if title_slug not in existing_solves:
             existing_solves.add(title_slug)
+            prob_info = await fetch_problem_info(title_slug)
             db.add(Solve(
                 user_id=user.id,
                 title_slug=title_slug,
                 title=sub.get("title"),
+                difficulty=prob_info.get("difficulty"),
+                ac_rate=prob_info.get("ac_rate"),
                 solved_at=solved_at,
             ))
             new_count += 1

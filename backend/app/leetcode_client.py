@@ -192,3 +192,63 @@ async def fetch_leetcode_user_data(username: str) -> dict:
             "recent_submissions": recent_submissions,
         }
 
+
+PROBLEM_INFO_QUERY = """
+query questionData($titleSlug: String!) {
+  question(titleSlug: $titleSlug) {
+    title
+    titleSlug
+    difficulty
+    stats
+  }
+}
+"""
+
+_PROBLEM_INFO_CACHE: Dict[str, dict] = {}
+
+
+async def fetch_problem_info(title_slug: str) -> dict:
+    """
+    Fetches difficulty ('Easy', 'Medium', 'Hard') and ac_rate (float 0..100) for a titleSlug.
+    Caches results in memory to minimize GraphQL calls.
+    """
+    if not title_slug:
+        return {"difficulty": "Medium", "ac_rate": None}
+
+    slug = title_slug.strip().lower()
+    if slug in _PROBLEM_INFO_CACHE:
+        return _PROBLEM_INFO_CACHE[slug]
+
+    try:
+        async with httpx.AsyncClient(timeout=8, follow_redirects=True) as client:
+            resp = await client.post(
+                GRAPHQL_URL,
+                headers=HEADERS,
+                json={"query": PROBLEM_INFO_QUERY, "variables": {"titleSlug": slug}},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                q = (data.get("data") or {}).get("question")
+                if q:
+                    diff = q.get("difficulty") or "Medium"
+                    ac_rate = None
+                    stats_raw = q.get("stats")
+                    if stats_raw:
+                        try:
+                            stats_dict = json.loads(stats_raw)
+                            ac_str = str(stats_dict.get("acRate", "")).replace("%", "").strip()
+                            if ac_str:
+                                ac_rate = float(ac_str)
+                        except Exception:
+                            pass
+                    info = {"difficulty": diff, "ac_rate": ac_rate}
+                    _PROBLEM_INFO_CACHE[slug] = info
+                    return info
+    except Exception as e:
+        logger.warning("Failed to fetch problem info for %s: %s", slug, e)
+
+    default_info = {"difficulty": "Medium", "ac_rate": None}
+    _PROBLEM_INFO_CACHE[slug] = default_info
+    return default_info
+
+
