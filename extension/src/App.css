@@ -1801,26 +1801,33 @@ input:focus, form input:focus {
   transform: translateY(-1px) !important;
 }
 
-.whatsapp-share-btn {
-  background-color: #10b981 !important;
+.whatsapp-icon-btn {
+  background-color: #25D366 !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  border-radius: var(--md-shape-corner-full) !important;
-  padding: 4px 10px !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  cursor: pointer !important;
+  border-radius: 50% !important;
+  width: 28px !important;
+  height: 28px !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 4px !important;
+  justify-content: center !important;
+  cursor: pointer !important;
   text-decoration: none !important;
   transition: all 0.15s ease !important;
+  padding: 0 !important;
 }
 
-.whatsapp-share-btn:hover {
-  background-color: #059669 !important;
+.whatsapp-icon-btn:hover {
+  background-color: #20ba5a !important;
   color: #ffffff !important;
-  transform: translateY(-1px) !important;
+  transform: translateY(-1px) scale(1.05) !important;
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.4) !important;
+}
+
+.whatsapp-icon-svg {
+  width: 15px !important;
+  height: 15px !important;
+  fill: #ffffff !important;
 }
 
 .rules-icon-btn {
