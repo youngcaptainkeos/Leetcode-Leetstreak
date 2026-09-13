@@ -24,6 +24,8 @@ export default function App() {
   const [showPointsHelp, setShowPointsHelp] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<VersionCheckResponse | null>(null);
 
+  const [appConfig, setAppConfig] = useState<AppConfigResponse | null>(null);
+
   useEffect(() => {
     (async () => {
       const stored = await getStored("codestreak_user_id");
@@ -32,6 +34,17 @@ export default function App() {
         setView("dashboard");
       } else {
         setView("onboarding");
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const cfg = await api.getAppConfig();
+        if (cfg) setAppConfig(cfg);
+      } catch (err) {
+        console.warn("App config fetch error:", err);
       }
     })();
   }, []);
@@ -142,7 +155,7 @@ export default function App() {
         <Onboarding onRegistered={handleRegistered} onError={setError} />
       )}
       {view === "dashboard" && userId && (
-        <Dashboard userId={userId} onResetUser={handleLogout} />
+        <Dashboard userId={userId} onResetUser={handleLogout} appConfigProp={appConfig} />
       )}
       {error && <div className="error-banner">{error}</div>}
     </div>
@@ -523,9 +536,11 @@ interface ActivityFeedItem {
 function Dashboard({
   userId,
   onResetUser,
+  appConfigProp,
 }: {
   userId: number;
   onResetUser: () => void;
+  appConfigProp?: AppConfigResponse | null;
 }) {
   const [dash, setDash] = useState<DashboardResponse | null>(null);
   const [board, setBoard] = useState<LeaderboardResponse | null>(null);
@@ -628,7 +643,11 @@ function Dashboard({
 
   // Network Offline Listener & Dynamic OTA Config States
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [appConfig, setAppConfig] = useState<AppConfigResponse | null>(null);
+  const [appConfig, setAppConfig] = useState<AppConfigResponse | null>(appConfigProp || null);
+
+  useEffect(() => {
+    if (appConfigProp) setAppConfig(appConfigProp);
+  }, [appConfigProp]);
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
