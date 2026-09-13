@@ -108,6 +108,7 @@ export interface AppConfigResponse {
   maintenance_mode: boolean;
   announcement?: string;
   menu_items: DynamicMenuItem[];
+  whatsapp_share_url?: string;
 }
 
 export async function getAppConfig(): Promise<AppConfigResponse | null> {

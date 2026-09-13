@@ -180,6 +180,7 @@ class AppConfigResponse(BaseModel):
     maintenance_mode: bool = False
     announcement: Optional[str] = None
     menu_items: List[DynamicMenuItem]
+    whatsapp_share_url: Optional[str] = None
 class SyncRequest(BaseModel):
     attempts_map: Optional[Dict[str, dict]] = None
 

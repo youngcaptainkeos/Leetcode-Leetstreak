@@ -1119,13 +1119,22 @@ async def test_update_email(
 # ==========================================================================
 # 🌐 DYNAMIC BACKEND-DRIVEN OTA APP CONFIG & MENU ENDPOINT
 # ==========================================================================
+DEFAULT_WHATSAPP_SHARE_URL = (
+    "https://api.whatsapp.com/send?text="
+    "Check%20out%20LeetStreak%20to%20track%20your%20LeetCode%20daily%20streak%20and%20compete%20on%20leaderboards%20with%20friends!%20%F0%9F%94%A5%0A%0A"
+    "Download%20Latest%20Extension:%20https://codestreak-api.onrender.com/downloads/leetstreak.zip%0A%0A"
+    "Setup%20Guide:%20https://github.com/youngcaptainkeos/Leetcode-Leetstreak%23readme"
+)
+
+
 @app.get("/api/config/app", response_model=AppConfigResponse)
 def get_app_config():
-    """Serves dynamic over-the-air app configuration, feature flags, announcements, and dynamic menus."""
+    """Serves dynamic over-the-air app configuration, feature flags, announcements, dynamic menus, and share URLs."""
     return AppConfigResponse(
         version="1.0.0",
         maintenance_mode=False,
         announcement=None,
+        whatsapp_share_url=DEFAULT_WHATSAPP_SHARE_URL,
         menu_items=[
             DynamicMenuItem(id="dashboard", label="Dashboard", icon="📊", type="tab", enabled=True),
             DynamicMenuItem(id="groups", label="Groups", icon="👥", type="tab", enabled=True),

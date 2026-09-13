@@ -90,6 +90,21 @@ export default function App() {
         </div>
         {view === "dashboard" && (
           <div className="header-actions">
+            <a
+              href={
+                appConfig?.whatsapp_share_url ||
+                "https://api.whatsapp.com/send?text=" +
+                  encodeURIComponent(
+                    "Check out LeetStreak to track your LeetCode daily streak and compete on leaderboards with friends! 🔥\n\nDownload Latest Extension: https://codestreak-api.onrender.com/downloads/leetstreak.zip\n\nSetup Guide: https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme"
+                  )
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="whatsapp-share-btn"
+              title="Share LeetStreak on WhatsApp 💬"
+            >
+              💬 Share
+            </a>
             <button
               className="help-btn"
               onClick={() => setShowPointsHelp(true)}
