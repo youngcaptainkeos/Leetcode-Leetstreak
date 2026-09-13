@@ -24636,6 +24636,7 @@
     const [view, setView] = (0, import_react.useState)("loading");
     const [userId, setUserId] = (0, import_react.useState)(null);
     const [error, setError] = (0, import_react.useState)(null);
+    const [showPointsHelp, setShowPointsHelp] = (0, import_react.useState)(false);
     (0, import_react.useEffect)(() => {
       (async () => {
         const stored = await getStored("codestreak_user_id");
@@ -24663,8 +24664,20 @@
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icon48.png", alt: "LeetStreak", className: "header-logo-img" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "logo-text", children: "LeetStreak" })
         ] }),
-        view === "dashboard" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { className: "link-btn", onClick: handleLogout, children: "Switch user" })
+        view === "dashboard" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "header-actions", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "button",
+            {
+              className: "help-btn",
+              onClick: () => setShowPointsHelp(true),
+              title: "Points Rules \u2753",
+              children: "\u2753 Rules"
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { className: "link-btn", onClick: handleLogout, children: "Switch user" })
+        ] })
       ] }),
+      showPointsHelp && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PointsHelpModal, { onClose: () => setShowPointsHelp(false) }),
       view === "loading" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "centered muted", children: "Loading profile\u2026" }),
       view === "onboarding" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Onboarding, { onRegistered: handleRegistered, onError: setError }),
       view === "dashboard" && userId && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dashboard, { userId, onResetUser: handleLogout }),
@@ -26022,89 +26035,6 @@
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "upi-app-icons", children: "GPay \u2022 PhonePe \u2022 Paytm \u2022 BHIM" })
           ] })
         ] })
-      ] }) }),
-      showPointsHelp && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "modal-overlay", onClick: () => setShowPointsHelp(false), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "modal-content points-help-modal", onClick: (e) => e.stopPropagation(), children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "modal-header", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { children: "\u{1F3AF} Points System Rulebook" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-            "button",
-            {
-              className: "modal-close",
-              onClick: () => setShowPointsHelp(false),
-              title: "Close rules",
-              children: "\u2715"
-            }
-          )
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "points-rules-container", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "rule-card", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "rule-card-title", children: "1\uFE0F\u20E3 Base Points (True Difficulty)" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "rule-desc", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "Contest Questions:" }),
-              " Points equal ",
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "Contest Rating / 100" }),
-              " (e.g. 1650 rating = ",
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "16.5 pts" }),
-              ", 2400 rating = ",
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "24.0 pts" }),
-              ")."
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "rule-desc", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "Other Questions:" }),
-              " Category Base (Easy: 10, Medium: 25, Hard: 45) dynamically adjusted by Acceptance Rate (harder low-AC% questions give higher points)."
-            ] })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "rule-card", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "rule-card-title", children: "2\uFE0F\u20E3 Extra Bonuses" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("ul", { className: "rule-list", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { children: [
-                "\u{1F31F} ",
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "LeetCode Daily Challenge:" }),
-                " ",
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "+10.0 Bonus Pts" })
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { children: [
-                "\u26A1 ",
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "First-Try Precision (0 Fails):" }),
-                " ",
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "+5.0 Bonus Pts" })
-              ] })
-            ] })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "rule-card", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "rule-card-title", children: "3\uFE0F\u20E3 Active Streak Multiplier" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "rule-desc", children: [
-              "Your total points scale linearly from ",
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "1.0x" }),
-              " (Day 1) up to ",
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "1.25x" }),
-              " max (30+ day streak)."
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "streak-scale-grid", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "scale-item", children: [
-                "Day 1: ",
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "1.00x" })
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "scale-item", children: [
-                "Day 15: ",
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "1.13x" })
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "scale-item", children: [
-                "Day 30+: ",
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "1.25x (Max)" })
-              ] })
-            ] })
-          ] })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "modal-actions-row", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-          "button",
-          {
-            type: "button",
-            className: "primary-btn sm block-btn",
-            onClick: () => setShowPointsHelp(false),
-            children: "Got it!"
-          }
-        ) })
       ] }) })
     ] });
   }
@@ -26113,6 +26043,75 @@
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "stat-value", children: value }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "tiny muted", children: label })
     ] });
+  }
+  function PointsHelpModal({ onClose }) {
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "modal-overlay", onClick: onClose, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "modal-content points-help-modal", onClick: (e) => e.stopPropagation(), children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "modal-header", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", { children: "\u{1F3AF} Points System Rulebook" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { className: "modal-close", onClick: onClose, title: "Close rules", children: "\u2715" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "points-rules-container", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "rule-card", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "rule-card-title", children: "1\uFE0F\u20E3 Base Points (True Difficulty)" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "rule-desc", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "Contest Questions:" }),
+            " Points equal ",
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "Contest Rating / 1000" }),
+            " (e.g. 1650 rating = ",
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "1.65 pts" }),
+            ", 2400 rating = ",
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "2.40 pts" }),
+            ")."
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "rule-desc", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "Other Questions:" }),
+            " Category Base (Easy: 1.0, Medium: 2.5, Hard: 4.5) dynamically adjusted by Acceptance Rate."
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "rule-card", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "rule-card-title", children: "2\uFE0F\u20E3 Extra Bonuses" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("ul", { className: "rule-list", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { children: [
+              "\u{1F31F} ",
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "LeetCode Daily Challenge:" }),
+              " ",
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "+1.0 Bonus Pt" })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { children: [
+              "\u26A1 ",
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "First-Try Precision (0 Fails):" }),
+              " ",
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "+0.5 Bonus Pt" })
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "rule-card", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "rule-card-title", children: "3\uFE0F\u20E3 Active Streak Multiplier" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "rule-desc", children: [
+            "Your total points scale linearly from ",
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "1.0x" }),
+            " (Day 1) up to ",
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "1.25x" }),
+            " max (30+ day streak)."
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "streak-scale-grid", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "scale-item", children: [
+              "Day 1: ",
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "1.00x" })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "scale-item", children: [
+              "Day 15: ",
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "1.13x" })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "scale-item", children: [
+              "Day 30+: ",
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "1.25x (Max)" })
+            ] })
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "modal-actions-row", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "primary-btn sm block-btn", onClick: onClose, children: "Got it!" }) })
+    ] }) });
   }
 
   // src/main.tsx

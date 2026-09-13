@@ -20,6 +20,7 @@ export default function App() {
   const [view, setView] = useState<View>("loading");
   const [userId, setUserId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showPointsHelp, setShowPointsHelp] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -53,11 +54,22 @@ export default function App() {
           <span className="logo-text">LeetStreak</span>
         </div>
         {view === "dashboard" && (
-          <button className="link-btn" onClick={handleLogout}>
-            Switch user
-          </button>
+          <div className="header-actions">
+            <button
+              className="help-btn"
+              onClick={() => setShowPointsHelp(true)}
+              title="Points Rules ❓"
+            >
+              ❓ Rules
+            </button>
+            <button className="link-btn" onClick={handleLogout}>
+              Switch user
+            </button>
+          </div>
         )}
       </header>
+
+      {showPointsHelp && <PointsHelpModal onClose={() => setShowPointsHelp(false)} />}
 
       {view === "loading" && <div className="centered muted">Loading profile…</div>}
       {view === "onboarding" && (
@@ -1569,65 +1581,6 @@ function Dashboard({
         </div>
       )}
 
-      {/* Points Calculation Rulebook Modal */}
-      {showPointsHelp && (
-        <div className="modal-overlay" onClick={() => setShowPointsHelp(false)}>
-          <div className="modal-content points-help-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>🎯 Points System Rulebook</h3>
-              <button
-                className="modal-close"
-                onClick={() => setShowPointsHelp(false)}
-                title="Close rules"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="points-rules-container">
-              <div className="rule-card">
-                <div className="rule-card-title">1️⃣ Base Points (True Difficulty)</div>
-                <p className="rule-desc">
-                  <strong>Contest Questions:</strong> Points equal <code>Contest Rating / 100</code> (e.g. 1650 rating = <strong>16.5 pts</strong>, 2400 rating = <strong>24.0 pts</strong>).
-                </p>
-                <p className="rule-desc">
-                  <strong>Other Questions:</strong> Category Base (Easy: 10, Medium: 25, Hard: 45) dynamically adjusted by Acceptance Rate (harder low-AC% questions give higher points).
-                </p>
-              </div>
-
-              <div className="rule-card">
-                <div className="rule-card-title">2️⃣ Extra Bonuses</div>
-                <ul className="rule-list">
-                  <li>🌟 <strong>LeetCode Daily Challenge:</strong> <code>+10.0 Bonus Pts</code></li>
-                  <li>⚡ <strong>First-Try Precision (0 Fails):</strong> <code>+5.0 Bonus Pts</code></li>
-                </ul>
-              </div>
-
-              <div className="rule-card">
-                <div className="rule-card-title">3️⃣ Active Streak Multiplier</div>
-                <p className="rule-desc">
-                  Your total points scale linearly from <strong>1.0x</strong> (Day 1) up to <strong>1.25x</strong> max (30+ day streak).
-                </p>
-                <div className="streak-scale-grid">
-                  <div className="scale-item">Day 1: <span>1.00x</span></div>
-                  <div className="scale-item">Day 15: <span>1.13x</span></div>
-                  <div className="scale-item">Day 30+: <span>1.25x (Max)</span></div>
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-actions-row">
-              <button
-                type="button"
-                className="primary-btn sm block-btn"
-                onClick={() => setShowPointsHelp(false)}
-              >
-                Got it!
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -1637,6 +1590,59 @@ function Stat({ label, value }: { label: string; value: number }) {
     <div className="stat">
       <div className="stat-value">{value}</div>
       <div className="tiny muted">{label}</div>
+    </div>
+  );
+}
+
+function PointsHelpModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content points-help-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>🎯 Points System Rulebook</h3>
+          <button className="modal-close" onClick={onClose} title="Close rules">
+            ✕
+          </button>
+        </div>
+
+        <div className="points-rules-container">
+          <div className="rule-card">
+            <div className="rule-card-title">1️⃣ Base Points (True Difficulty)</div>
+            <p className="rule-desc">
+              <strong>Contest Questions:</strong> Points equal <code>Contest Rating / 1000</code> (e.g. 1650 rating = <strong>1.65 pts</strong>, 2400 rating = <strong>2.40 pts</strong>).
+            </p>
+            <p className="rule-desc">
+              <strong>Other Questions:</strong> Category Base (Easy: 1.0, Medium: 2.5, Hard: 4.5) dynamically adjusted by Acceptance Rate.
+            </p>
+          </div>
+
+          <div className="rule-card">
+            <div className="rule-card-title">2️⃣ Extra Bonuses</div>
+            <ul className="rule-list">
+              <li>🌟 <strong>LeetCode Daily Challenge:</strong> <code>+1.0 Bonus Pt</code></li>
+              <li>⚡ <strong>First-Try Precision (0 Fails):</strong> <code>+0.5 Bonus Pt</code></li>
+            </ul>
+          </div>
+
+          <div className="rule-card">
+            <div className="rule-card-title">3️⃣ Active Streak Multiplier</div>
+            <p className="rule-desc">
+              Your total points scale linearly from <strong>1.0x</strong> (Day 1) up to <strong>1.25x</strong> max (30+ day streak).
+            </p>
+            <div className="streak-scale-grid">
+              <div className="scale-item">Day 1: <span>1.00x</span></div>
+              <div className="scale-item">Day 15: <span>1.13x</span></div>
+              <div className="scale-item">Day 30+: <span>1.25x (Max)</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="modal-actions-row">
+          <button type="button" className="primary-btn sm block-btn" onClick={onClose}>
+            Got it!
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

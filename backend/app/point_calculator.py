@@ -32,26 +32,26 @@ def compute_solve_points(
     streak_days: int = 0,
 ) -> float:
     """
-    Computes exact float points for a single problem solve.
+    Computes exact float points for a single problem solve (scaled down ~10x).
     """
     rating = get_contest_rating(title_slug)
 
     if rating is not None and rating > 0:
-        # Option 1: Rating / 100 (e.g. 1550 rating -> 15.5 pts)
-        base_points = rating / 100.0
+        # Option 1: Rating / 1000 (e.g. 1550 rating -> 1.55 pts, 2400 -> 2.4 pts)
+        base_points = rating / 1000.0
     else:
-        # Option 3 Fallback
+        # Option 3 Fallback (Easy: 1.0, Medium: 2.5, Hard: 4.5)
         diff_str = (difficulty or "Medium").capitalize()
-        category_bases = {"Easy": 10.0, "Medium": 25.0, "Hard": 45.0}
-        cat_base = category_bases.get(diff_str, 25.0)
+        category_bases = {"Easy": 1.0, "Medium": 2.5, "Hard": 4.5}
+        cat_base = category_bases.get(diff_str, 2.5)
 
         rate = ac_rate if (ac_rate is not None and 0.0 <= ac_rate <= 100.0) else 45.0
         ac_multiplier = 1.0 + ((50.0 - rate) / 100.0)
         base_points = cat_base * max(0.2, ac_multiplier)
 
     # Additive bonuses
-    daily_bonus = 10.0 if is_daily else 0.0
-    first_try_bonus = 5.0 if is_first_try else 0.0
+    daily_bonus = 1.0 if is_daily else 0.0
+    first_try_bonus = 0.5 if is_first_try else 0.0
 
     subtotal = base_points + daily_bonus + first_try_bonus
 
@@ -72,42 +72,36 @@ def recalculate_user_points(user: User, db: Session) -> float:
     user_streak = user.official_streak or 0
 
     total_points = 0.0
-    processed_slugs = set()
-
     for solve in solves:
         slug = solve.title_slug or ""
-        processed_slugs.add(slug)
-        # Calculate points for each recorded solve
         pts = compute_solve_points(
             title_slug=slug,
-            difficulty=None,  # Will fallback or lookup rating
+            difficulty=None,
             ac_rate=None,
             is_daily=False,
-            is_first_try=True,  # Logged solves default to accepted first try
+            is_first_try=True,
             streak_days=user_streak,
         )
         solve.points_earned = pts
         total_points += pts
 
     # Handle remaining problem counts not explicitly logged in solves table
-    easy_remaining = max(0, (user.easy_count or 0) - len([s for s in solves if False]))
-    medium_remaining = max(0, (user.medium_count or 0) - len([s for s in solves if False]))
-    hard_remaining = max(0, (user.hard_count or 0) - len([s for s in solves if False]))
+    # Base fallback if solves ledger has fewer items than total count
+    num_solves_logged = len(solves)
+    total_known_solves = (user.easy_count or 0) + (user.medium_count or 0) + (user.hard_count or 0)
 
-    # For legacy/historical solve counts not in `solves` table, apply standard difficulty fallback points
     legacy_pts = 0.0
-    # Apply streak multiplier to legacy solves as well
-    streak_mult = 1.0 + (0.25 * (min(30, max(0, user_streak)) / 30.0))
+    if total_known_solves > num_solves_logged and total_known_solves > 0:
+        # Ratio of unlogged solves
+        unlogged_ratio = (total_known_solves - num_solves_logged) / float(total_known_solves)
+        unlogged_easy = (user.easy_count or 0) * unlogged_ratio
+        unlogged_med = (user.medium_count or 0) * unlogged_ratio
+        unlogged_hard = (user.hard_count or 0) * unlogged_ratio
 
-    if easy_remaining > 0:
-        base_easy = compute_solve_points(difficulty="Easy", streak_days=0)
-        legacy_pts += easy_remaining * base_easy * streak_mult
-    if medium_remaining > 0:
-        base_med = compute_solve_points(difficulty="Medium", streak_days=0)
-        legacy_pts += medium_remaining * base_med * streak_mult
-    if hard_remaining > 0:
-        base_hard = compute_solve_points(difficulty="Hard", streak_days=0)
-        legacy_pts += hard_remaining * base_hard * streak_mult
+        streak_mult = 1.0 + (0.25 * (min(30, max(0, user_streak)) / 30.0))
+        legacy_pts += unlogged_easy * compute_solve_points(difficulty="Easy", streak_days=0) * streak_mult
+        legacy_pts += unlogged_med * compute_solve_points(difficulty="Medium", streak_days=0) * streak_mult
+        legacy_pts += unlogged_hard * compute_solve_points(difficulty="Hard", streak_days=0) * streak_mult
 
     final_total = round(total_points + legacy_pts, 2)
     user.points = final_total
