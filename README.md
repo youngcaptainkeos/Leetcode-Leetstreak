@@ -92,8 +92,7 @@ LeetStreak uses an advanced, fair scoring system based on actual problem difficu
   - **Acceptance Rate Adjustment**: Harder problems with lower acceptance rates reward bonus points (up to `+20 pts`), while higher acceptance problems adjust proportionally (`Adjustment = +20 × (1 - (2 × AcceptanceRate - 0.5))`).
 
 ### 2. Consistency & Performance Bonuses
-- 🌅 **Daily First Solve Bonus**: `+5 pts` for your very first problem solved each day!
-- 🎯 **First Try Bonus**: `+3 pts` for solving a problem on your first attempt without failed submissions.
+- 🌅 **Daily Challenge Bonus**: `+5 pts` for solving today's official LeetCode Daily Problem!
 - 🔥 **Active Streak Multiplier**: Up to **+10% boost** (`+1%` extra per active streak day up to 10 days) applied to all your daily solve points!
 
 ---
