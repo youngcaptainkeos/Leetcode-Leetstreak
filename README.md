@@ -50,6 +50,8 @@ Follow these simple steps to install **LeetStreak** on Mozilla Firefox:
 4. **Pin & Launch**:
    - Click the **Puzzle Piece (🧩)** icon in Firefox's top-right toolbar and click **Pin to Toolbar** next to **LeetStreak**.
 
+> 💡 **Firefox Note on Restarts**: Loading via `about:debugging` ("Load Temporary Add-on") is temporary by default in standard Firefox releases and unloads when Firefox closes. To keep unsigned extensions permanently across browser restarts, use **Firefox Developer Edition**, **Firefox Nightly**, or **Firefox ESR**, go to `about:config`, and toggle `xpinstall.signatures.required` to `false`.
+
 ---
 
 ## 🎯 How Points & Scoring System Work
