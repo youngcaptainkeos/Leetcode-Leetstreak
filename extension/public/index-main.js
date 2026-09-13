@@ -26056,16 +26056,16 @@
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "rule-desc", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "Contest Questions:" }),
             " Points equal ",
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "Contest Rating / 1000" }),
-            " (e.g. 1650 rating = ",
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "1.65 pts" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "Contest Rating / 100" }),
+            " (e.g. 1550 rating = ",
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "15.50 pts" }),
             ", 2400 rating = ",
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "2.40 pts" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "24.00 pts" }),
             ")."
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "rule-desc", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "Other Questions:" }),
-            " Category Base (Easy: 1.0, Medium: 2.5, Hard: 4.5) dynamically adjusted by Acceptance Rate."
+            " Category Base (Easy: 10, Medium: 25, Hard: 45) dynamically adjusted by Acceptance Rate."
           ] })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "rule-card", children: [
@@ -26075,13 +26075,13 @@
               "\u{1F31F} ",
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "LeetCode Daily Challenge:" }),
               " ",
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "+1.0 Bonus Pt" })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "+10.00 Bonus Pts" })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", { children: [
               "\u26A1 ",
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "First-Try Precision (0 Fails):" }),
               " ",
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "+0.5 Bonus Pt" })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("code", { children: "+5.00 Bonus Pts" })
             ] })
           ] })
         ] }),

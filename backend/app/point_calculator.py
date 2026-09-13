@@ -32,26 +32,26 @@ def compute_solve_points(
     streak_days: int = 0,
 ) -> float:
     """
-    Computes exact float points for a single problem solve (scaled down ~10x).
+    Computes exact float points for a single problem solve based on Rulebook scale.
     """
     rating = get_contest_rating(title_slug)
 
     if rating is not None and rating > 0:
-        # Option 1: Rating / 1000 (e.g. 1550 rating -> 1.55 pts, 2400 -> 2.4 pts)
-        base_points = rating / 1000.0
+        # Option 1: Rating / 100 (e.g. 1550 rating -> 15.5 pts, 2400 -> 24.0 pts)
+        base_points = rating / 100.0
     else:
-        # Option 3 Fallback (Easy: 1.0, Medium: 2.5, Hard: 4.5)
+        # Option 3 Fallback (Easy: 10, Medium: 25, Hard: 45)
         diff_str = (difficulty or "Medium").capitalize()
-        category_bases = {"Easy": 1.0, "Medium": 2.5, "Hard": 4.5}
-        cat_base = category_bases.get(diff_str, 2.5)
+        category_bases = {"Easy": 10.0, "Medium": 25.0, "Hard": 45.0}
+        cat_base = category_bases.get(diff_str, 25.0)
 
         rate = ac_rate if (ac_rate is not None and 0.0 <= ac_rate <= 100.0) else 45.0
         ac_multiplier = 1.0 + ((50.0 - rate) / 100.0)
         base_points = cat_base * max(0.2, ac_multiplier)
 
     # Additive bonuses
-    daily_bonus = 1.0 if is_daily else 0.0
-    first_try_bonus = 0.5 if is_first_try else 0.0
+    daily_bonus = 10.0 if is_daily else 0.0
+    first_try_bonus = 5.0 if is_first_try else 0.0
 
     subtotal = base_points + daily_bonus + first_try_bonus
 

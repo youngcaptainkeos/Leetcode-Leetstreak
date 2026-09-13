@@ -1609,18 +1609,18 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
           <div className="rule-card">
             <div className="rule-card-title">1️⃣ Base Points (True Difficulty)</div>
             <p className="rule-desc">
-              <strong>Contest Questions:</strong> Points equal <code>Contest Rating / 1000</code> (e.g. 1650 rating = <strong>1.65 pts</strong>, 2400 rating = <strong>2.40 pts</strong>).
+              <strong>Contest Questions:</strong> Points equal <code>Contest Rating / 100</code> (e.g. 1550 rating = <strong>15.50 pts</strong>, 2400 rating = <strong>24.00 pts</strong>).
             </p>
             <p className="rule-desc">
-              <strong>Other Questions:</strong> Category Base (Easy: 1.0, Medium: 2.5, Hard: 4.5) dynamically adjusted by Acceptance Rate.
+              <strong>Other Questions:</strong> Category Base (Easy: 10, Medium: 25, Hard: 45) dynamically adjusted by Acceptance Rate.
             </p>
           </div>
 
           <div className="rule-card">
             <div className="rule-card-title">2️⃣ Extra Bonuses</div>
             <ul className="rule-list">
-              <li>🌟 <strong>LeetCode Daily Challenge:</strong> <code>+1.0 Bonus Pt</code></li>
-              <li>⚡ <strong>First-Try Precision (0 Fails):</strong> <code>+0.5 Bonus Pt</code></li>
+              <li>🌟 <strong>LeetCode Daily Challenge:</strong> <code>+10.00 Bonus Pts</code></li>
+              <li>⚡ <strong>First-Try Precision (0 Fails):</strong> <code>+5.00 Bonus Pts</code></li>
             </ul>
           </div>
 
