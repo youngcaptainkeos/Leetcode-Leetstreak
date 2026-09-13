@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 28 28" fill="none" style="overflow: visible;">
   <style>
     @keyframes flame-outer-anim {
       0%, 100% { transform: scale(1) translateY(0); opacity: 0.95; }

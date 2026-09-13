@@ -25593,17 +25593,14 @@
                   ]
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
                 "button",
                 {
                   type: "button",
                   className: `sort-btn ${sortBy === "streak" ? "active" : ""}`,
                   onClick: () => setSortBy("streak"),
                   title: "Sort leaderboard by active daily streak",
-                  children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icons/fire.svg", className: "fire-icon-inline", alt: "Streak" }),
-                    " Streak"
-                  ]
+                  children: "\u{1F525} Streak"
                 }
               )
             ] })
@@ -25674,7 +25671,7 @@
                             ] })
                           ] }),
                           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "streak-mini", children: [
-                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icons/fire.svg", className: "fire-icon-inline", alt: "Streak" }),
+                            "\u{1F525}",
                             e.current_streak,
                             "d"
                           ] }),

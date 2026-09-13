@@ -1104,7 +1104,7 @@ function Dashboard({
                 onClick={() => setSortBy("streak")}
                 title="Sort leaderboard by active daily streak"
               >
-                <img src="/icons/fire.svg" className="fire-icon-inline" alt="Streak" /> Streak
+                🔥 Streak
               </button>
             </div>
           </div>
@@ -1178,9 +1178,7 @@ function Dashboard({
                         </div>
                         <span className="handle-mini">@{e.leetcode_username}</span>
                       </div>
-                      <span className="streak-mini">
-                        <img src="/icons/fire.svg" className="fire-icon-inline" alt="Streak" />{e.current_streak}d
-                      </span>
+                      <span className="streak-mini">🔥{e.current_streak}d</span>
                       <span className="solves-badge" title="Questions solved this week">
                         📝{e.weekly_total}
                       </span>
