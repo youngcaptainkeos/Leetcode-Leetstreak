@@ -52,6 +52,7 @@ try:
         conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS points_earned DOUBLE PRECISION DEFAULT 0.0;"))
         conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20);"))
         conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS ac_rate DOUBLE PRECISION;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_notified_commit VARCHAR(40) DEFAULT 'legacy';"))
         # Drop unique constraint on leetcode_username if present
         conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_leetcode_username_key;"))
         conn.execute(text("DROP INDEX IF EXISTS ix_users_leetcode_username;"))
@@ -1000,9 +1001,10 @@ def get_extension_version():
     """Serves latest extension version info for in-app update notification banner."""
     return {
         "latest_version": "1.0.0",
+        "latest_commit": "588495a",
         "min_supported_version": "1.0.0",
         "release_notes": "Added Buy Me a Coffee feature, Sunday 12am reset, and full Firefox support!",
-        "download_url": "https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/leetstreak.zip",
+        "download_url": "https://leetcode-leetstreak.onrender.com/downloads/leetstreak.zip",
         "crx_url": "https://leetcode-leetstreak.onrender.com/downloads/leetstreak.crx"
     }
 
@@ -1016,35 +1018,68 @@ def download_extension_zip():
     return {"error": "Extension package file not found"}
 
 
+async def send_and_update_user_commit(
+    user_id: int,
+    to_email: str,
+    username: str,
+    commit_id: str,
+    release_notes: str,
+    download_url: str
+):
+    """Sends update notification email and updates user's last_notified_commit in DB upon success."""
+    success = await send_update_notification_email(
+        to_email=to_email,
+        username=username,
+        commit_id=commit_id,
+        release_notes=release_notes,
+        download_url=download_url
+    )
+    if success:
+        db = SessionLocal()
+        try:
+            u = db.query(User).filter(User.id == user_id).first()
+            if u:
+                u.last_notified_commit = commit_id
+                db.commit()
+                logging.info(f"Updated user {user_id} ({username}) last_notified_commit to '{commit_id}'")
+        except Exception as e:
+            logging.error(f"Failed to update last_notified_commit for user {user_id}: {e}")
+        finally:
+            db.close()
+
+
 @app.post("/api/admin/broadcast-update-email")
 async def broadcast_update_email(
     background_tasks: BackgroundTasks,
-    version: str = "1.0.0",
+    commit_id: str = "588495a",
     release_notes: str = "Added Buy Me a Coffee feature, Sunday 12am reset, Elo Ratings, and dynamic update notifications!",
     download_url: str = "https://leetcode-leetstreak.onrender.com/downloads/leetstreak.zip",
     db: Session = Depends(get_db)
 ):
     """
-    Broadcasts update notification email with a styled 'Download Update Package' CTA button to all registered users.
+    Broadcasts update notification email with a styled 'Download Update Package' CTA button to registered users.
+    Upon successful delivery, updates user's last_notified_commit in the database to the target commit_id.
     """
     users = db.query(User).filter(User.email.isnot(None), User.email != "").all()
     count = 0
     for user in users:
-        background_tasks.add_task(
-            send_update_notification_email,
-            to_email=user.email,
-            username=user.leetcode_username or user.name,
-            version=version,
-            release_notes=release_notes,
-            download_url=download_url
-        )
-        count += 1
+        if user.last_notified_commit != commit_id:
+            background_tasks.add_task(
+                send_and_update_user_commit,
+                user_id=user.id,
+                to_email=user.email,
+                username=user.leetcode_username or user.name,
+                commit_id=commit_id,
+                release_notes=release_notes,
+                download_url=download_url
+            )
+            count += 1
 
     return {
         "status": "success",
         "queued_emails": count,
-        "version": version,
-        "message": f"Queued update emails with download package button to {count} registered users."
+        "commit_id": commit_id,
+        "message": f"Queued update emails with download package button to {count} registered users. Database records will update to commit '{commit_id}' upon delivery."
     }
 
 
@@ -1052,7 +1087,7 @@ async def broadcast_update_email(
 async def test_update_email(
     to_email: str,
     username: str = "Developer",
-    version: str = "1.0.0",
+    commit_id: str = "588495a",
     release_notes: str = "Added Buy Me a Coffee feature, Sunday 12am reset, Elo Ratings, and dynamic update notifications!",
     download_url: str = "https://leetcode-leetstreak.onrender.com/downloads/leetstreak.zip"
 ):
@@ -1062,14 +1097,14 @@ async def test_update_email(
     success = await send_update_notification_email(
         to_email=to_email,
         username=username,
-        version=version,
+        commit_id=commit_id,
         release_notes=release_notes,
         download_url=download_url
     )
     return {
         "status": "sent" if success else "failed",
         "to_email": to_email,
-        "version": version
+        "commit_id": commit_id
     }
 
 
