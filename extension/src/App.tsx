@@ -1098,14 +1098,6 @@ function Dashboard({
         <div className="sort-toggle-bar">
           <div className="sort-left-group">
             <span className="sort-label">Sort:</span>
-            <button
-              type="button"
-              className="rules-chip-btn"
-              onClick={() => setShowPointsHelp(true)}
-              title="How Points Work ❓"
-            >
-              ❓ Rules
-            </button>
             <div className="sort-btn-group">
               <button
                 type="button"
