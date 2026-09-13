@@ -1592,30 +1592,46 @@ function Dashboard({
                   <div className="centered muted tiny py-3">No recent solves recorded yet.</div>
                 ) : (
                   <ul className="recent-solves-list">
-                    {recentSolvesList.map((s, idx) => (
-                      <li key={idx} className="solve-item">
-                        <span className="solve-bullet">✔</span>
-                        <div className="solve-info">
+                    {recentSolvesList.map((s, idx) => {
+                      const problemUrl = s.leetcode_url || `https://leetcode.com/problems/${s.title_slug}`;
+                      return (
+                        <li
+                          key={idx}
+                          className="solve-item"
+                          onClick={() => setSelectedSolveBreakdown(s)}
+                          title="Click to view points breakdown"
+                        >
+                          <span className="solve-bullet">✔</span>
+                          <div className="solve-info">
+                            <span className="solve-title">
+                              {s.title}
+                            </span>
+                          </div>
                           <a
-                            href={s.leetcode_url}
+                            href={problemUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="solve-title"
+                            className="solve-external-link"
+                            onClick={(e) => e.stopPropagation()}
+                            title="Open on LeetCode"
                           >
-                            {s.title} ↗
+                            ↗
                           </a>
-                        </div>
-                        <button
-                          type="button"
-                          className="solve-points-badge"
-                          onClick={() => setSelectedSolveBreakdown(s)}
-                          title="Click to see how these points were calculated"
-                        >
-                          ⭐ {s.points_earned ?? s.breakdown?.points_earned ?? 0} pts
-                        </button>
-                        <span className="solve-time">{s.relative_time}</span>
-                      </li>
-                    ))}
+                          <button
+                            type="button"
+                            className="solve-points-badge"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedSolveBreakdown(s);
+                            }}
+                            title="Click to see how these points were calculated"
+                          >
+                            ⭐ {s.points_earned ?? s.breakdown?.points_earned ?? 0} pts
+                          </button>
+                          <span className="solve-time">{s.relative_time}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
@@ -1887,7 +1903,18 @@ function Dashboard({
 
             <div className="question-title-card">
               <span className="tiny muted">QUESTION</span>
-              <div className="question-title-text">{selectedSolveBreakdown.title}</div>
+              <a
+                href={
+                  selectedSolveBreakdown.leetcode_url ||
+                  `https://leetcode.com/problems/${selectedSolveBreakdown.title_slug}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="question-title-text"
+                title="Click to open question on LeetCode"
+              >
+                {selectedSolveBreakdown.title} ↗
+              </a>
             </div>
 
             {/* Base Problem Score Card */}
