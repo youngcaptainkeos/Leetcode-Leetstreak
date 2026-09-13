@@ -236,6 +236,11 @@ export const api = {
         body: JSON.stringify({ from_user_id: fromUserId }),
       }
     ),
+  kudosAll: (fromUserId: number, targetUserIds: number[]) =>
+    request<{ status: string; updated_count: number }>("/kudos/kudos-all", {
+      method: "POST",
+      body: JSON.stringify({ from_user_id: fromUserId, target_user_ids: targetUserIds }),
+    }),
   recentSolves: (userId: number, limit = 10) =>
     request<RecentSolve[]>(`/users/${userId}/recent-solves?limit=${limit}`),
   pollNow: () => request<{ polled: Record<string, number> }>("/admin/poll-now", { method: "POST" }),

@@ -23,7 +23,7 @@ from .schemas import (
     LeaderboardResponse, LeaderboardEntry, GroupCreateRequest, GroupJoinRequest,
     GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema, PointBreakdownSchema,
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
-    KudosToggleRequest, UpdateUsernameRequest, ActivityFeedItemSchema,
+    KudosToggleRequest, KudosAllRequest, UpdateUsernameRequest, ActivityFeedItemSchema,
     DynamicMenuItem, AppConfigResponse, DeleteAccountRequest,
 )
 from .streak import current_streak
@@ -756,6 +756,40 @@ def toggle_kudos(to_user_id: int, payload: KudosToggleRequest, db: Session = Dep
         "kudos_count": active_count,
         "has_kudosed": has_active,
     }
+
+
+@app.post("/api/kudos/kudos-all")
+def kudos_all_users(payload: KudosAllRequest, db: Session = Depends(get_db)):
+    from_id = payload.from_user_id
+    targets = [tid for tid in payload.target_user_ids if tid != from_id]
+    if not targets:
+        return {"status": "ok", "updated_count": 0}
+
+    cutoff_today = get_ist_today_start()
+
+    existing_kudos = (
+        db.query(Kudos)
+        .filter(Kudos.from_user_id == from_id, Kudos.to_user_id.in_(targets))
+        .all()
+    )
+    existing_map = {k.to_user_id: k for k in existing_kudos}
+
+    updated = 0
+    now = datetime.now()
+
+    for tid in targets:
+        k = existing_map.get(tid)
+        if k:
+            if k.created_at < cutoff_today:
+                k.created_at = now
+                updated += 1
+        else:
+            new_k = Kudos(from_user_id=from_id, to_user_id=tid)
+            db.add(new_k)
+            updated += 1
+
+    db.commit()
+    return {"status": "ok", "updated_count": updated}
 
 
 def _time_ago(dt: datetime) -> str:

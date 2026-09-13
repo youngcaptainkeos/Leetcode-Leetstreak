@@ -555,6 +555,7 @@ function Dashboard({
   const [copiedCode, setCopiedCode] = useState(false);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [showPointsHelp, setShowPointsHelp] = useState(false);
+  const [kudosAllBusy, setKudosAllBusy] = useState(false);
 
   // Network Offline Listener & Dynamic OTA Config States
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -740,6 +741,50 @@ function Dashboard({
           ),
         };
       });
+    }
+  }
+
+  async function handleKudosAll() {
+    if (!userId || !board || !board.entries || !board.entries.length) return;
+    const targetUserIds = board.entries
+      .filter((e) => e.id !== userId && !e.has_kudosed)
+      .map((e) => e.id);
+
+    if (targetUserIds.length === 0) {
+      setSyncMsg("All visible members already kudosed! 👏");
+      setTimeout(() => setSyncMsg(null), 2500);
+      return;
+    }
+
+    setKudosAllBusy(true);
+
+    // Optimistically update visible entries
+    setBoard((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        entries: prev.entries.map((e) => {
+          if (targetUserIds.includes(e.id)) {
+            return {
+              ...e,
+              kudos_count: (e.kudos_count || 0) + 1,
+              has_kudosed: true,
+            };
+          }
+          return e;
+        }),
+      };
+    });
+
+    try {
+      await api.kudosAll(userId, targetUserIds);
+      setSyncMsg(`Gave kudos to ${targetUserIds.length} member${targetUserIds.length === 1 ? "" : "s"}! 👏`);
+      setTimeout(() => setSyncMsg(null), 2500);
+    } catch (err) {
+      console.error("Kudos All failed:", err);
+      loadData(selectedTab, sortBy);
+    } finally {
+      setKudosAllBusy(false);
     }
   }
 
@@ -1119,16 +1164,27 @@ function Dashboard({
             </div>
           </div>
 
-          {activeGroup && (
+          <div className="sort-right-group" style={{ display: "flex", gap: "6px" }}>
             <button
               type="button"
-              className="group-code-btn"
-              onClick={() => handleCopyCode(activeGroup.code)}
-              title={`Click to copy invite code (${activeGroup.code})`}
+              className="kudos-all-btn"
+              onClick={handleKudosAll}
+              disabled={kudosAllBusy}
+              title="Give kudos to all visible members on this leaderboard!"
             >
-              📋 {copiedCode ? "Copied!" : "Code"}
+              👏 {kudosAllBusy ? "Sending…" : "Kudos All"}
             </button>
-          )}
+            {activeGroup && (
+              <button
+                type="button"
+                className="group-code-btn"
+                onClick={() => handleCopyCode(activeGroup.code)}
+                title={`Click to copy invite code (${activeGroup.code})`}
+              >
+                📋 {copiedCode ? "Copied!" : "Code"}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Leaderboard List */}

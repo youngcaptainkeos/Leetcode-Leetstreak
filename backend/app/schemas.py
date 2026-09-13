@@ -109,6 +109,11 @@ class KudosToggleRequest(BaseModel):
     from_user_id: int
 
 
+class KudosAllRequest(BaseModel):
+    from_user_id: int
+    target_user_ids: List[int]
+
+
 class LeaderboardResponse(BaseModel):
     week_start: date
     week_end: date
