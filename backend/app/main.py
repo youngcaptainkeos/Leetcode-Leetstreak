@@ -49,6 +49,8 @@ try:
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(6);"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS points DOUBLE PRECISION DEFAULT 0.0;"))
+        conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS points_earned DOUBLE PRECISION DEFAULT 0.0;"))
         # Drop unique constraint on leetcode_username if present
         conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_leetcode_username_key;"))
         conn.execute(text("DROP INDEX IF EXISTS ix_users_leetcode_username;"))
