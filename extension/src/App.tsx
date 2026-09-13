@@ -1589,6 +1589,19 @@ function Dashboard({
 
             {settingsMsg && <div className="sync-banner">{settingsMsg}</div>}
 
+            <div style={{ marginBottom: "16px" }}>
+              <button
+                type="button"
+                className="secondary-btn modal-action-btn"
+                onClick={() => {
+                  setShowSettings(false);
+                  onResetUser();
+                }}
+              >
+                🚪 Log Out
+              </button>
+            </div>
+
             <form onSubmit={handleUpdateUsername} className="modal-form">
               <div className="modal-field">
                 <label>
@@ -1610,19 +1623,6 @@ function Dashboard({
                 {updatingUsername ? "Verifying & Updating…" : "Save New Username"}
               </button>
             </form>
-
-            <div style={{ marginTop: "12px" }}>
-              <button
-                type="button"
-                className="secondary-btn modal-action-btn"
-                onClick={() => {
-                  setShowSettings(false);
-                  onResetUser();
-                }}
-              >
-                🚪 Log Out
-              </button>
-            </div>
 
             <div className="danger-zone">
               <hr className="modal-divider" />
