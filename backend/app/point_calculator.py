@@ -45,9 +45,11 @@ def compute_solve_points(
         category_bases = {"Easy": 8.0, "Medium": 15.0, "Hard": 24.0}
         cat_base = category_bases.get(diff_str, 15.0)
 
-        rate = ac_rate if (ac_rate is not None and 0.0 <= ac_rate <= 100.0) else 45.0
-        ac_multiplier = 1.0 + ((50.0 - rate) / 100.0)
-        base_points = cat_base * max(0.2, ac_multiplier)
+        if ac_rate is not None and 0.0 <= ac_rate <= 100.0:
+            ac_multiplier = 1.0 + ((50.0 - ac_rate) / 100.0)
+            base_points = cat_base * max(0.2, ac_multiplier)
+        else:
+            base_points = cat_base
 
     # Additive bonuses (Daily: +5.0, First-Try: +3.0)
     daily_bonus = 5.0 if is_daily else 0.0
@@ -81,9 +83,11 @@ def compute_solve_points_breakdown(
         category_bases = {"Easy": 8.0, "Medium": 15.0, "Hard": 24.0}
         cat_base = category_bases.get(diff_str, 15.0)
 
-        rate = ac_rate if (ac_rate is not None and 0.0 <= ac_rate <= 100.0) else 45.0
-        ac_multiplier = 1.0 + ((50.0 - rate) / 100.0)
-        base_points = round(cat_base * max(0.2, ac_multiplier), 2)
+        if ac_rate is not None and 0.0 <= ac_rate <= 100.0:
+            ac_multiplier = 1.0 + ((50.0 - ac_rate) / 100.0)
+            base_points = round(cat_base * max(0.2, ac_multiplier), 2)
+        else:
+            base_points = cat_base
 
     daily_bonus = 5.0 if is_daily else 0.0
     first_try_bonus = 3.0 if is_first_try else 0.0
