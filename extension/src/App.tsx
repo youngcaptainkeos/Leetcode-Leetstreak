@@ -943,8 +943,7 @@ function Dashboard({
             disabled={syncing}
             title="Force sync latest LeetCode activity"
           >
-            <img src="/icons/repeat.svg" className={`btn-icon-svg ${syncing ? "spinning" : ""}`} alt="Sync" />
-            {syncing ? "Syncing…" : "Sync"}
+            {syncing ? "Syncing…" : "🔄 Sync"}
           </button>
         </div>
       </div>
@@ -966,7 +965,7 @@ function Dashboard({
       {toastSolve && (
         <div className="solve-toast-popup">
           <div className="toast-content">
-            <img src="/icons/fire.svg" className="fire-icon-animated" alt="Streak" />
+            <span className="toast-flame">🔥</span>
             <div className="toast-text">
               <strong>{toastSolve.user_name}</strong> just solved <strong>"{toastSolve.title}"</strong> on LeetCode!
             </div>
@@ -988,7 +987,7 @@ function Dashboard({
       {/* Unified M3 Hero Container Card */}
       <div className="hero-card">
         <div className="streak-hero">
-          <img src="/icons/fire.svg" className="fire-icon-animated" alt="Streak" />
+          <span className="flame-icon">🔥</span>
           <span className="streak-count">{dash.current_streak}</span>
         </div>
         <div className="streak-label">DAY STREAK</div>
@@ -1072,7 +1071,7 @@ function Dashboard({
             onClick={() => changeTab("friends")}
             title="My Friends (All group members across your groups)"
           >
-            <img src="/icons/team.svg" className="btn-icon-svg" alt="Friends" /> My Friends
+            👥 My Friends
           </button>
           {groups.map((g) => (
             <button
@@ -1080,7 +1079,7 @@ function Dashboard({
               className={`tab-btn ${selectedTab === g.id ? "active" : ""}`}
               onClick={() => changeTab(g.id)}
             >
-              <img src="/icons/team.svg" className="btn-icon-svg" alt="Group" /> {g.name}
+              👥 {g.name}
             </button>
           ))}
         </div>
@@ -1096,7 +1095,7 @@ function Dashboard({
                 onClick={() => setSortBy("points")}
                 title="Sort leaderboard by total points"
               >
-                <img src="/icons/sparkle.svg" className="btn-icon-svg" alt="Points" /> Points
+                ⭐ Points
               </button>
               <button
                 type="button"
@@ -1186,7 +1185,7 @@ function Dashboard({
                         className="points-badge"
                         title={`Easy: ${e.easy_count} | Medium: ${e.medium_count} | Hard: ${e.hard_count}`}
                       >
-                        <img src="/icons/sparkle.svg" className="btn-icon-svg" alt="Points" />{e.points ?? (e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6)}
+                        ⭐{e.points ?? (e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6)}
                       </span>
                       <button
                         type="button"
@@ -1218,7 +1217,7 @@ function Dashboard({
                         }}
                         title={`Remove ${e.name} from group`}
                       >
-                        <img src="/icons/trash.svg" className="btn-icon-svg" alt="Remove" />
+                        🗑️
                       </button>
                     )}
                   </li>
@@ -1462,16 +1461,8 @@ function Dashboard({
                   setShowDeleteModal(true);
                 }}
               >
-                <img src="/icons/trash.svg" className="btn-icon-svg" alt="Delete" /> Delete Account
+                🗑️ Delete Account
               </button>
-            </div>
-
-            <div className="flaticon-attributions">
-              <strong>Icon Credits:</strong>
-              <div>• <a href="https://www.flaticon.com/free-icons/repeat" title="repeat icons" target="_blank" rel="noreferrer">Repeat icon</a> by SyafriStudio</div>
-              <div>• <a href="https://www.flaticon.com/free-icons/sparkle" title="sparkle icons" target="_blank" rel="noreferrer">Sparkle icon</a> by Muhammad_Usman</div>
-              <div>• <a href="https://www.flaticon.com/free-icons/trash-can" title="trash can icons" target="_blank" rel="noreferrer">Trash can icon</a> by IYAHICON</div>
-              <div>• <a href="https://www.flaticon.com/free-icons/team" title="team icons" target="_blank" rel="noreferrer">Team icon</a> &amp; <a href="https://www.flaticon.com/free-animated-icons/fire" title="fire animated icons" target="_blank" rel="noreferrer">Animated fire icon</a> by Magnific</div>
             </div>
           </div>
         </div>
