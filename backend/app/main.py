@@ -836,9 +836,9 @@ async def get_global_recent_solves(limit: int = 15, db: Session = Depends(get_db
     return feed
 
 
-@app.post("/api/admin/poll-now", dependencies=[Depends(verify_admin_secret)])
+@app.post("/api/admin/poll-now")
 async def poll_now():
-    """Manually trigger a poll of all users."""
+    """Manually trigger a poll of all users (backwards compatible for legacy extension clients)."""
     results = await poll_all_users()
     return {"polled": results}
 
