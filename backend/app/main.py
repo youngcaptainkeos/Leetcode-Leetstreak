@@ -41,10 +41,8 @@ from sqlalchemy import text, func
 
 logging.basicConfig(level=logging.INFO)
 
-Base.metadata.create_all(bind=engine)
-
-# Safe auto-migration for existing PostgreSQL/SQLite tables
 try:
+    Base.metadata.create_all(bind=engine)
     with engine.connect() as conn:
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(120);"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);"))
@@ -52,13 +50,15 @@ try:
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP;"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS points DOUBLE PRECISION DEFAULT 0.0;"))
         conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS points_earned DOUBLE PRECISION DEFAULT 0.0;"))
+        conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20);"))
+        conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS ac_rate DOUBLE PRECISION;"))
         # Drop unique constraint on leetcode_username if present
         conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_leetcode_username_key;"))
         conn.execute(text("DROP INDEX IF EXISTS ix_users_leetcode_username;"))
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_leetcode_username ON users (leetcode_username);"))
         conn.commit()
 except Exception as migration_err:
-    logging.warning("Auto-migration executed: %s", migration_err)
+    logging.warning("Auto-migration executed with warning: %s", migration_err)
 
 app = FastAPI(title="LeetStreak API")
 
