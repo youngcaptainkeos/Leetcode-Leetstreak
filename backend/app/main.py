@@ -28,7 +28,7 @@ from .schemas import (
 )
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
-from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, LeetCodeError
+from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
 from .point_calculator import compute_solve_points_breakdown
 
 
@@ -839,20 +839,33 @@ async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = De
     today_daily_slug = await fetch_today_daily_challenge_slug()
     active_dates = _active_dates(db, user_id)
 
+    db_changed = False
     results = []
     for s in solves:
+        diff = s.difficulty
+        ac = s.ac_rate
+        if not diff or ac is None:
+            info = await fetch_problem_info(s.title_slug)
+            diff = info.get("difficulty") or "Medium"
+            ac = info.get("ac_rate")
+            s.difficulty = diff
+            s.ac_rate = ac
+            db_changed = True
+
         solve_date = s.solved_at.date() if hasattr(s.solved_at, "date") else s.solved_at
         streak_on_date = current_streak(active_dates, solve_date)
         is_daily = bool(today_daily_slug and s.title_slug == today_daily_slug and solve_date == date.today())
         breakdown_data = compute_solve_points_breakdown(
             title_slug=s.title_slug,
-            difficulty=s.difficulty,
-            ac_rate=s.ac_rate,
+            difficulty=diff,
+            ac_rate=ac,
             is_daily=is_daily,
             streak_days=streak_on_date,
         )
-        points_val = int(round(s.points_earned)) if (s.points_earned and s.points_earned > 0) else breakdown_data["points_earned"]
-        breakdown_data["points_earned"] = points_val
+        points_val = breakdown_data["points_earned"]
+        if s.points_earned != float(points_val):
+            s.points_earned = float(points_val)
+            db_changed = True
 
         results.append(
             RecentSolveSchema(
@@ -865,6 +878,9 @@ async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = De
                 breakdown=PointBreakdownSchema(**breakdown_data),
             )
         )
+
+    if db_changed:
+        db.commit()
 
     return results
 
