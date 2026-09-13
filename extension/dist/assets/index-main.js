@@ -25422,14 +25422,17 @@
               children: "\u2699\uFE0F"
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
             "button",
             {
               className: "sync-btn",
               onClick: handleSync,
               disabled: syncing,
               title: "Force sync latest LeetCode activity",
-              children: syncing ? "Syncing\u2026" : "\u{1F504} Sync"
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icons/repeat.svg", className: `btn-icon-svg ${syncing ? "spinning" : ""}`, alt: "Sync" }),
+                syncing ? "Syncing\u2026" : "Sync"
+              ]
             }
           )
         ] })
@@ -25442,7 +25445,7 @@
       syncMsg && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "sync-banner", children: syncMsg }),
       error && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "error-banner", children: error }),
       toastSolve && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "solve-toast-popup", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "toast-content", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "toast-flame", children: "\u{1F525}" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icons/fire.svg", className: "fire-icon-animated", alt: "Streak" }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "toast-text", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: toastSolve.user_name }),
           " just solved ",
@@ -25467,7 +25470,7 @@
       ] }) }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "hero-card", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "streak-hero", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "flame-icon", children: "\u{1F525}" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icons/fire.svg", className: "fire-icon-animated", alt: "Streak" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "streak-count", children: dash.current_streak })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "streak-label", children: "DAY STREAK" }),
@@ -25547,13 +25550,16 @@
               children: "\u{1F310} Global"
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
             "button",
             {
               className: `tab-btn ${selectedTab === "friends" ? "active" : ""}`,
               onClick: () => changeTab("friends"),
               title: "My Friends (All group members across your groups)",
-              children: "\u{1F465} My Friends"
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icons/team.svg", className: "btn-icon-svg", alt: "Friends" }),
+                " My Friends"
+              ]
             }
           ),
           groups.map((g) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
@@ -25562,7 +25568,8 @@
               className: `tab-btn ${selectedTab === g.id ? "active" : ""}`,
               onClick: () => changeTab(g.id),
               children: [
-                "\u{1F465} ",
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icons/team.svg", className: "btn-icon-svg", alt: "Group" }),
+                " ",
                 g.name
               ]
             },
@@ -25573,24 +25580,30 @@
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "sort-left-group", children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "sort-label", children: "Sort:" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "sort-btn-group", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
                 "button",
                 {
                   type: "button",
                   className: `sort-btn ${sortBy === "points" ? "active" : ""}`,
                   onClick: () => setSortBy("points"),
                   title: "Sort leaderboard by total points",
-                  children: "\u2B50 Points"
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icons/sparkle.svg", className: "btn-icon-svg", alt: "Points" }),
+                    " Points"
+                  ]
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
                 "button",
                 {
                   type: "button",
                   className: `sort-btn ${sortBy === "streak" ? "active" : ""}`,
                   onClick: () => setSortBy("streak"),
                   title: "Sort leaderboard by active daily streak",
-                  children: "\u{1F525} Streak"
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icons/fire.svg", className: "fire-icon-inline", alt: "Streak" }),
+                    " Streak"
+                  ]
                 }
               )
             ] })
@@ -25661,7 +25674,7 @@
                             ] })
                           ] }),
                           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "streak-mini", children: [
-                            "\u{1F525}",
+                            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icons/fire.svg", className: "fire-icon-inline", alt: "Streak" }),
                             e.current_streak,
                             "d"
                           ] }),
@@ -25675,7 +25688,7 @@
                               className: "points-badge",
                               title: `Easy: ${e.easy_count} | Medium: ${e.medium_count} | Hard: ${e.hard_count}`,
                               children: [
-                                "\u2B50",
+                                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icons/sparkle.svg", className: "btn-icon-svg", alt: "Points" }),
                                 e.points ?? e.easy_count * 1 + e.medium_count * 3 + e.hard_count * 6
                               ]
                             }
@@ -25709,7 +25722,7 @@
                           handleRemoveMember(activeGroup.id, e.id, e.name);
                         },
                         title: `Remove ${e.name} from group`,
-                        children: "\u{1F5D1}\uFE0F"
+                        children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icons/trash.svg", className: "btn-icon-svg", alt: "Remove" })
                       }
                     )
                   ]
@@ -25920,7 +25933,7 @@
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "danger-zone", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("hr", { className: "modal-divider" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "danger-zone-header", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "danger-zone-title", children: "Danger Zone" }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
             "button",
             {
               type: "button",
@@ -25931,9 +25944,37 @@
                 setDeleteError(null);
                 setShowDeleteModal(true);
               },
-              children: "\u{1F5D1}\uFE0F Delete Account"
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: "/icons/trash.svg", className: "btn-icon-svg", alt: "Delete" }),
+                " Delete Account"
+              ]
             }
           )
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "flaticon-attributions", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "Icon Credits:" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+            "\u2022 ",
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", { href: "https://www.flaticon.com/free-icons/repeat", title: "repeat icons", target: "_blank", rel: "noreferrer", children: "Repeat icon" }),
+            " by SyafriStudio"
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+            "\u2022 ",
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", { href: "https://www.flaticon.com/free-icons/sparkle", title: "sparkle icons", target: "_blank", rel: "noreferrer", children: "Sparkle icon" }),
+            " by Muhammad_Usman"
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+            "\u2022 ",
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", { href: "https://www.flaticon.com/free-icons/trash-can", title: "trash can icons", target: "_blank", rel: "noreferrer", children: "Trash can icon" }),
+            " by IYAHICON"
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [
+            "\u2022 ",
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", { href: "https://www.flaticon.com/free-icons/team", title: "team icons", target: "_blank", rel: "noreferrer", children: "Team icon" }),
+            " & ",
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", { href: "https://www.flaticon.com/free-animated-icons/fire", title: "fire animated icons", target: "_blank", rel: "noreferrer", children: "Animated fire icon" }),
+            " by Magnific"
+          ] })
         ] })
       ] }) }),
       showDeleteModal && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "modal-overlay", onClick: () => setShowDeleteModal(false), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "modal-content", onClick: (e) => e.stopPropagation(), children: [

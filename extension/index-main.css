@@ -435,6 +435,53 @@ a.profile-handle:hover {
   text-transform: uppercase;
   letter-spacing: 0.6px;
 }
+.btn-icon-svg {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  vertical-align: middle;
+  object-fit: contain;
+  margin-right: 4px;
+}
+.fire-icon-animated {
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 4px;
+  filter: drop-shadow(0 0 6px rgba(255, 87, 34, 0.5));
+}
+.fire-icon-inline {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 2px;
+}
+.spinning {
+  animation: spin-rotate 0.8s linear infinite;
+}
+@keyframes spin-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.flaticon-attributions {
+  font-size: 10px;
+  color: var(--text-secondary);
+  opacity: 0.75;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  line-height: 1.4;
+}
+.flaticon-attributions a {
+  color: var(--text-secondary);
+  text-decoration: underline;
+}
 .sort-btn-group {
   display: flex;
   background-color: var(--md-sys-color-surface-container-high);
