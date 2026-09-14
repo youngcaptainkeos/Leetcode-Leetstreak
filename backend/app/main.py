@@ -739,6 +739,37 @@ def get_group_leaderboard(
     return _compute_leaderboard(db, users, requester_id=user_id, sort_by=sort_by, limit=limit)
 
 
+@app.post("/api/kudos/kudos-all")
+def kudos_all_users(payload: KudosAllRequest, db: Session = Depends(get_db)):
+    from_id = payload.from_user_id
+    targets = [tid for tid in payload.target_user_ids if tid != from_id]
+    if not targets:
+        return {"status": "ok", "updated_count": 0}
+
+    now = datetime.utcnow()
+
+    existing_kudos = (
+        db.query(Kudos)
+        .filter(Kudos.from_user_id == from_id, Kudos.to_user_id.in_(targets))
+        .all()
+    )
+    existing_map = {k.to_user_id: k for k in existing_kudos}
+
+    updated = 0
+    for tid in targets:
+        k = existing_map.get(tid)
+        if k:
+            k.created_at = now
+            updated += 1
+        else:
+            new_k = Kudos(from_user_id=from_id, to_user_id=tid, created_at=now)
+            db.add(new_k)
+            updated += 1
+
+    db.commit()
+    return {"status": "ok", "updated_count": updated}
+
+
 @app.post("/api/kudos/{to_user_id}")
 def toggle_kudos(to_user_id: int, payload: KudosToggleRequest, db: Session = Depends(get_db)):
     from_id = payload.from_user_id
@@ -762,11 +793,11 @@ def toggle_kudos(to_user_id: int, payload: KudosToggleRequest, db: Session = Dep
             db.commit()
             status = "removed"
         else:
-            existing.created_at = datetime.now()
+            existing.created_at = datetime.utcnow()
             db.commit()
             status = "renewed"
     else:
-        k = Kudos(from_user_id=from_id, to_user_id=to_user_id)
+        k = Kudos(from_user_id=from_id, to_user_id=to_user_id, created_at=datetime.utcnow())
         db.add(k)
         db.commit()
         status = "added"
@@ -783,40 +814,6 @@ def toggle_kudos(to_user_id: int, payload: KudosToggleRequest, db: Session = Dep
         "kudos_count": active_count,
         "has_kudosed": has_active,
     }
-
-
-@app.post("/api/kudos/kudos-all")
-def kudos_all_users(payload: KudosAllRequest, db: Session = Depends(get_db)):
-    from_id = payload.from_user_id
-    targets = [tid for tid in payload.target_user_ids if tid != from_id]
-    if not targets:
-        return {"status": "ok", "updated_count": 0}
-
-    cutoff_today = get_ist_today_start()
-
-    existing_kudos = (
-        db.query(Kudos)
-        .filter(Kudos.from_user_id == from_id, Kudos.to_user_id.in_(targets))
-        .all()
-    )
-    existing_map = {k.to_user_id: k for k in existing_kudos}
-
-    updated = 0
-    now = datetime.now()
-
-    for tid in targets:
-        k = existing_map.get(tid)
-        if k:
-            if k.created_at < cutoff_today:
-                k.created_at = now
-                updated += 1
-        else:
-            new_k = Kudos(from_user_id=from_id, to_user_id=tid)
-            db.add(new_k)
-            updated += 1
-
-    db.commit()
-    return {"status": "ok", "updated_count": updated}
 
 
 def _time_ago(dt: datetime) -> str:

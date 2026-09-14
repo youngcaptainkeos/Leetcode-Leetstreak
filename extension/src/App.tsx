@@ -875,7 +875,20 @@ function Dashboard({
       await api.kudosAll(userId, targetUserIds);
       setSyncMsg(`Gave kudos to ${targetUserIds.length} member${targetUserIds.length === 1 ? "" : "s"}! 👏`);
       setTimeout(() => setSyncMsg(null), 2500);
-      await fetchLeaderboardOnly(selectedTab, sortBy);
+
+      const freshBoard = await (
+        selectedTab === "global"
+          ? api.leaderboard(userId, sortBy)
+          : selectedTab === "friends"
+          ? api.friendsLeaderboard(userId, sortBy)
+          : api.groupLeaderboard(selectedTab, userId, sortBy)
+      );
+
+      if (freshBoard) {
+        setBoard(freshBoard);
+        setTabBoards((prev) => ({ ...prev, [activeTabKey]: freshBoard }));
+        setStored(`codestreak_cached_board_${activeTabKey}`, JSON.stringify(freshBoard));
+      }
     } catch (err) {
       console.error("Kudos All failed:", err);
       loadData(selectedTab, sortBy);
