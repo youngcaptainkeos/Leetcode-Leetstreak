@@ -742,7 +742,7 @@ def get_group_leaderboard(
 @app.post("/api/kudos/kudos-all")
 def kudos_all_users(payload: KudosAllRequest, db: Session = Depends(get_db)):
     from_id = payload.from_user_id
-    targets = [tid for tid in payload.target_user_ids if tid != from_id]
+    targets = [tid for tid in (payload.target_user_ids or []) if tid != from_id]
     if not targets:
         return {"status": "ok", "updated_count": 0}
 

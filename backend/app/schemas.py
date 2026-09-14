@@ -115,7 +115,7 @@ class KudosToggleRequest(BaseModel):
 
 class KudosAllRequest(BaseModel):
     from_user_id: int
-    target_user_ids: List[int]
+    target_user_ids: List[int] = Field(default_factory=list)
 
 
 class LeaderboardResponse(BaseModel):
