@@ -66,6 +66,46 @@ async def fetch_today_daily_challenge_slug() -> Optional[str]:
         logger.warning("Failed to fetch LeetCode Daily Challenge slug: %s", e)
     return None
 
+
+MONTHLY_DAILY_CHALLENGES_QUERY = """
+query dailyCodingChallengeV2($year: Int!, $month: Int!) {
+  dailyCodingChallengeV2(year: $year, month: $month) {
+    challenges {
+      date
+      question {
+        titleSlug
+        title
+      }
+    }
+  }
+}
+"""
+
+
+async def fetch_monthly_daily_challenges(year: int, month: int) -> Dict[str, str]:
+    """Fetches full monthly archive of LeetCode Daily Challenge titleSlugs mapped by 'YYYY-MM-DD'."""
+    try:
+        async with httpx.AsyncClient(timeout=12, follow_redirects=True) as client:
+            resp = await client.post(
+                GRAPHQL_URL,
+                headers=HEADERS,
+                json={"query": MONTHLY_DAILY_CHALLENGES_QUERY, "variables": {"year": year, "month": month}},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                challenges = (data.get("data") or {}).get("dailyCodingChallengeV2", {}).get("challenges") or []
+                res = {}
+                for c in challenges:
+                    dt = c.get("date")
+                    q = c.get("question") or {}
+                    slug = q.get("titleSlug")
+                    if dt and slug:
+                        res[dt] = slug.strip().lower()
+                return res
+    except Exception as e:
+        logger.warning("Failed to fetch monthly daily challenges for %d-%d: %s", year, month, e)
+    return {}
+
 USER_FULL_PROFILE_QUERY = """
 query userFullProfile($username: String!) {
   matchedUser(username: $username) {

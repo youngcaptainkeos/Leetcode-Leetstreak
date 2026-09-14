@@ -104,6 +104,10 @@ async def on_startup():
             ).count()
             r.problems_solved = max(1, solves_count)
 
+        # Backfill full daily challenge history from LeetCode GraphQL
+        from .scheduler import backfill_daily_challenges_archive
+        await backfill_daily_challenges_archive(db)
+
         # Recalculate points for all existing users with new scoring rules
         from .point_calculator import recalculate_all_users_points
         await recalculate_all_users_points(db)

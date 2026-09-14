@@ -10,11 +10,32 @@ from sqlalchemy.orm import Session
 from .config import POLL_INTERVAL_MINUTES
 from .database import SessionLocal
 from .models import User, Solve, DailyActivity, DailyChallenge
-from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
+from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_monthly_daily_challenges, fetch_problem_info, LeetCodeError
 from .point_calculator import recalculate_user_points
 from .contest_ratings import refresh_zerotrac_dataset
 
 logger = logging.getLogger("codestreak.scheduler")
+
+
+async def backfill_daily_challenges_archive(db: Session):
+    """Backfills daily challenges archive from LeetCode GraphQL for 2024 to current year/month."""
+    now = datetime.now()
+    current_year = now.year
+    current_month = now.month
+
+    for year in range(2024, current_year + 1):
+        max_m = current_month if year == current_year else 12
+        for month in range(1, max_m + 1):
+            try:
+                m_map = await fetch_monthly_daily_challenges(year, month)
+                for d_str, slug in m_map.items():
+                    d_obj = datetime.strptime(d_str, "%Y-%m-%d").date()
+                    existing = db.query(DailyChallenge).filter(DailyChallenge.date == d_obj).first()
+                    if not existing:
+                        db.add(DailyChallenge(date=d_obj, title_slug=slug))
+            except Exception as e:
+                logger.warning("Backfill failed for %d-%d: %s", year, month, e)
+    db.commit()
 
 
 async def poll_user(db: Session, user: User) -> int:
