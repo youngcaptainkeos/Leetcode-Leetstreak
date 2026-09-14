@@ -852,28 +852,30 @@ function Dashboard({
 
     setKudosAllBusy(true);
 
-    // Optimistically update visible entries
-    setBoard((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        entries: prev.entries.map((e) => {
-          if (targetUserIds.includes(e.id)) {
-            return {
-              ...e,
-              kudos_count: (e.kudos_count || 0) + 1,
-              has_kudosed: true,
-            };
-          }
-          return e;
-        }),
-      };
+    const activeTabKey = String(selectedTab);
+    const updatedEntries = board.entries.map((e) => {
+      if (targetUserIds.includes(e.id)) {
+        return {
+          ...e,
+          kudos_count: (e.kudos_count || 0) + 1,
+          has_kudosed: true,
+        };
+      }
+      return e;
     });
+
+    const newBoard = { ...board, entries: updatedEntries };
+
+    setBoard(newBoard);
+    setTabBoards((prev) => ({ ...prev, [activeTabKey]: newBoard }));
+    setStored(`codestreak_cached_board_${activeTabKey}`, JSON.stringify(newBoard));
+    setStored("codestreak_cached_board", JSON.stringify(newBoard));
 
     try {
       await api.kudosAll(userId, targetUserIds);
       setSyncMsg(`Gave kudos to ${targetUserIds.length} member${targetUserIds.length === 1 ? "" : "s"}! 👏`);
       setTimeout(() => setSyncMsg(null), 2500);
+      await fetchLeaderboardOnly(selectedTab, sortBy);
     } catch (err) {
       console.error("Kudos All failed:", err);
       loadData(selectedTab, sortBy);
@@ -1292,15 +1294,30 @@ function Dashboard({
           </div>
 
           <div className="sort-right-group">
-            <button
-              type="button"
-              className="kudos-all-btn"
-              onClick={handleKudosAll}
-              disabled={kudosAllBusy}
-              title="Give kudos to all visible members on this leaderboard!"
-            >
-              👏 {kudosAllBusy ? "Sending…" : "Kudos All"}
-            </button>
+            {(() => {
+              const otherMembers = board?.entries?.filter((e) => e.id !== userId) || [];
+              const unKudosed = otherMembers.filter((e) => !e.has_kudosed);
+              const isAllKudosed = otherMembers.length > 0 && unKudosed.length === 0;
+              return (
+                <button
+                  type="button"
+                  className={`kudos-all-btn ${isAllKudosed ? "active" : ""}`}
+                  onClick={handleKudosAll}
+                  disabled={kudosAllBusy || isAllKudosed}
+                  title={
+                    isAllKudosed
+                      ? "All members on this leaderboard have been kudosed today! 🙌"
+                      : "Give kudos to all members on this leaderboard!"
+                  }
+                >
+                  {kudosAllBusy
+                    ? "Sending…"
+                    : isAllKudosed
+                    ? "🙌 All Kudosed"
+                    : "👏 Kudos All"}
+                </button>
+              );
+            })()}
           </div>
         </div>
 
