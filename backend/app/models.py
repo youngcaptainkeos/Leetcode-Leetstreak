@@ -60,11 +60,22 @@ class Solve(Base):
     difficulty = Column(String(20), nullable=True)
     ac_rate = Column(Float, nullable=True)
     solved_at = Column(DateTime, nullable=False, index=True)
+    is_daily = Column(Boolean, default=False, nullable=False)
     points_earned = Column(Float, default=0.0)
 
     user = relationship("User", back_populates="solves")
 
     __table_args__ = (UniqueConstraint("user_id", "title_slug", name="uq_user_problem"),)
+
+
+class DailyChallenge(Base):
+    """
+    Archive of official LeetCode Daily Challenge titleSlugs by date.
+    """
+    __tablename__ = "daily_challenges"
+
+    date = Column(Date, primary_key=True, index=True)
+    title_slug = Column(String(200), nullable=False)
 
 
 class Group(Base):

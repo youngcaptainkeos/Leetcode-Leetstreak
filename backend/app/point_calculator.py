@@ -17,7 +17,8 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from .contest_ratings import get_contest_rating
-from .models import User, Solve, DailyActivity
+from datetime import date
+from .models import User, Solve, DailyActivity, DailyChallenge
 from .streak import current_streak
 
 logger = logging.getLogger("codestreak.points")
@@ -128,6 +129,11 @@ def recalculate_user_points(
     solves = db.query(Solve).filter(Solve.user_id == user.id).all()
     user_streak = user.official_streak or 0
 
+    daily_slugs_by_date = {
+        r.date: r.title_slug.lower()
+        for r in db.query(DailyChallenge).all()
+    }
+
     active_dates = {
         r.date for r in db.query(DailyActivity.date).filter(
             DailyActivity.user_id == user.id,
@@ -138,9 +144,17 @@ def recalculate_user_points(
     total_points = 0.0
     for solve in solves:
         slug = solve.title_slug or ""
-        is_daily = bool(today_daily_slug and slug.lower() == today_daily_slug.lower())
-
         solve_date = solve.solved_at.date() if hasattr(solve.solved_at, "date") else solve.solved_at
+
+        is_daily = (
+            bool(getattr(solve, "is_daily", False))
+            or bool(today_daily_slug and solve_date == date.today() and slug.lower() == today_daily_slug.lower())
+            or bool(solve_date in daily_slugs_by_date and slug.lower() == daily_slugs_by_date[solve_date])
+        )
+
+        if is_daily and not getattr(solve, "is_daily", False):
+            solve.is_daily = True
+
         streak_on_date = current_streak(active_dates, solve_date)
 
         pts = compute_solve_points(

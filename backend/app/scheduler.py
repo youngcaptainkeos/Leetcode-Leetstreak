@@ -1,6 +1,6 @@
 import logging
 from typing import Optional, Dict, Any
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from .config import POLL_INTERVAL_MINUTES
 from .database import SessionLocal
-from .models import User, Solve, DailyActivity
+from .models import User, Solve, DailyActivity, DailyChallenge
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
 from .point_calculator import recalculate_user_points
 from .contest_ratings import refresh_zerotrac_dataset
@@ -26,6 +26,12 @@ async def poll_user(db: Session, user: User) -> int:
         return 0
 
     today_daily_slug = await fetch_today_daily_challenge_slug()
+    if today_daily_slug:
+        today_date = date.today()
+        existing_dc = db.query(DailyChallenge).filter(DailyChallenge.date == today_date).first()
+        if not existing_dc:
+            db.add(DailyChallenge(date=today_date, title_slug=today_daily_slug))
+            db.commit()
 
     # 1. Update user metadata & difficulty totals
     if data.get("avatar_url"):
@@ -71,6 +77,12 @@ async def poll_user(db: Session, user: User) -> int:
             existing_solves.add(title_slug)
             prob_info = await fetch_problem_info(title_slug)
 
+            is_daily_solve = bool(
+                today_daily_slug
+                and title_slug.lower() == today_daily_slug.lower()
+                and day == date.today()
+            )
+
             new_solve = Solve(
                 user_id=user.id,
                 title_slug=title_slug,
@@ -78,6 +90,7 @@ async def poll_user(db: Session, user: User) -> int:
                 difficulty=prob_info.get("difficulty"),
                 ac_rate=prob_info.get("ac_rate"),
                 solved_at=solved_at,
+                is_daily=is_daily_solve,
             )
             db.add(new_solve)
             new_count += 1

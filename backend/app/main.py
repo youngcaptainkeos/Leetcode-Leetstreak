@@ -15,7 +15,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .config import CORS_ORIGINS, ADMIN_SECRET
 from .database import Base, engine, get_db, SessionLocal
-from .models import User, DailyActivity, Group, GroupMember, Solve, Kudos
+from .models import User, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
 from .email_service import send_otp_email, send_update_notification_email
 from .schemas import (
@@ -82,6 +82,10 @@ async def on_startup():
         with engine.begin() as conn:
             conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_leetcode_username_key;"))
             conn.execute(text("CREATE TABLE IF NOT EXISTS kudos (id SERIAL PRIMARY KEY, from_user_id INTEGER NOT NULL, to_user_id INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"))
+            conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS is_daily BOOLEAN DEFAULT FALSE;"))
+            conn.execute(text("CREATE TABLE IF NOT EXISTS daily_challenges (date DATE PRIMARY KEY, title_slug VARCHAR(200) NOT NULL);"))
+            conn.execute(text("UPDATE solves SET is_daily = TRUE WHERE LOWER(title_slug) = 'image-overlap';"))
+            conn.execute(text("INSERT INTO daily_challenges (date, title_slug) VALUES ('2026-09-13', 'image-overlap') ON CONFLICT DO NOTHING;"))
     except Exception as e:
         logger.warning("Startup table migration warning: %s", e)
 
@@ -857,6 +861,10 @@ async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = De
 
     today_daily_slug = await fetch_today_daily_challenge_slug()
     active_dates = _active_dates(db, user_id)
+    daily_slugs_by_date = {
+        r.date: r.title_slug.lower()
+        for r in db.query(DailyChallenge).all()
+    }
 
     db_changed = False
     results = []
@@ -873,7 +881,15 @@ async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = De
 
         solve_date = s.solved_at.date() if hasattr(s.solved_at, "date") else s.solved_at
         streak_on_date = current_streak(active_dates, solve_date)
-        is_daily = bool(today_daily_slug and s.title_slug == today_daily_slug and solve_date == date.today())
+        is_daily = (
+            bool(getattr(s, "is_daily", False))
+            or bool(today_daily_slug and solve_date == date.today() and s.title_slug.lower() == today_daily_slug.lower())
+            or bool(solve_date in daily_slugs_by_date and s.title_slug.lower() == daily_slugs_by_date[solve_date])
+        )
+        if is_daily and not getattr(s, "is_daily", False):
+            s.is_daily = True
+            db_changed = True
+
         breakdown_data = compute_solve_points_breakdown(
             title_slug=s.title_slug,
             difficulty=diff,
