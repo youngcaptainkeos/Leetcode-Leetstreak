@@ -160,24 +160,25 @@ html, body, #root {
 .logo-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
 }
 
 .header-logo-img {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
   flex-shrink: 0;
-  filter: drop-shadow(0 2px 8px rgba(251, 146, 60, 0.35));
+  filter: drop-shadow(0 2px 6px rgba(251, 146, 60, 0.3));
 }
 
 .header-logo-text-img {
-  height: 20px;
+  height: 14px;
   width: auto;
-  max-width: 140px;
+  max-width: 95px;
   object-fit: contain;
   vertical-align: middle;
   display: inline-block;
+  opacity: 0.95;
 }
 
 .onboarding-logo-img {
