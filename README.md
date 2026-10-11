@@ -153,6 +153,21 @@ The backend automatically syncs every user's progress every 15 minutes. You can 
 
 ---
 
+## 📜 Legal, Privacy & Compliance
+
+LeetStreak is committed to user privacy, transparent data handling, and open-source compliance:
+
+* 📄 **[Privacy Policy](PRIVACY.md)** (Live Web: [codestreak-api.onrender.com/privacy](https://codestreak-api.onrender.com/privacy))
+* ⚖️ **[Terms of Service & EULA](TERMS.md)** (Live Web: [codestreak-api.onrender.com/terms](https://codestreak-api.onrender.com/terms))
+* 🛡️ **[Security Policy](SECURITY.md)**
+* 📑 **[MIT License](LICENSE)**
+* 🚀 **[Chrome Web Store Submission Guide](CHROME_STORE_SUBMISSION.md)**
+
+### ⚠️ Trademark Disclaimer
+LeetStreak is an independent open-source project and is **not affiliated, associated, authorized, endorsed by, or in any way officially connected with LeetCode LLC** or any of its subsidiaries or affiliates. The name "LeetCode" as well as related names, marks, emblems, and images are registered trademarks of their respective owners.
+
+---
+
 <p align="center">
   Built with ❤️ for coders keeping their streak alive! 🔥
 </p>

@@ -9,7 +9,8 @@ from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional, Dict, Set
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Header, BackgroundTasks
-from fastapi.responses import Response, FileResponse
+from fastapi.responses import Response, FileResponse, HTMLResponse
+from .legal_pages import PRIVACY_HTML, TERMS_HTML
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, func
 from sqlalchemy.orm import Session
@@ -133,6 +134,16 @@ async def on_startup():
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+def privacy_policy():
+    return HTMLResponse(content=PRIVACY_HTML)
+
+
+@app.get("/terms", response_class=HTMLResponse)
+def terms_of_service():
+    return HTMLResponse(content=TERMS_HTML)
 
 
 def _generate_group_code(length: int = 6) -> str:

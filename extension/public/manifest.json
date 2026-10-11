@@ -2,7 +2,6 @@
   "manifest_version": 3,
   "name": "LeetStreak",
   "version": "1.0.0",
-  "update_url": "https://codestreak-api.onrender.com/api/extension/updates.xml",
   "description": "Track your LeetCode consistency with friends.",
   "icons": {
     "16": "icon16.png",
@@ -41,5 +40,5 @@
       "strict_min_version": "109.0"
     }
   },
-  "host_permissions": ["http://localhost:8000/*", "https://*/*", "http://*/*"]
+  "host_permissions": ["https://leetcode.com/*", "https://codestreak-api.onrender.com/*", "http://localhost:8000/*"]
 }
