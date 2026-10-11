@@ -1215,7 +1215,12 @@ function Dashboard({
             disabled={syncing}
             title="Force sync latest LeetCode activity"
           >
-            {syncing ? "Syncing…" : "🔄 Sync"}
+            <img
+              src="/sync.png"
+              alt=""
+              className={`sync-btn-icon ${syncing ? "spinning" : ""}`}
+            />
+            <span>{syncing ? "Syncing…" : "Sync"}</span>
           </button>
         </div>
       </div>

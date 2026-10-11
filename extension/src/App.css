@@ -282,9 +282,32 @@ html, body, #root {
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.2;
+  transition: opacity 0.2s, transform 0.15s ease;
 }
 .sync-btn:hover { opacity: 0.9; }
+
+.sync-btn-icon {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+}
+
+.sync-btn-icon.spinning {
+  animation: syncSpin 0.85s linear infinite;
+}
+
+@keyframes syncSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
 /* Unified M3 Hero Container Card */
 .hero-card, .streak-card {
