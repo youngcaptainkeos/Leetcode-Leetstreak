@@ -1222,7 +1222,7 @@ function Dashboard({
       {toastSolve && (
         <div className="solve-toast-popup">
           <div className="toast-content">
-            <span className="toast-flame">🔥</span>
+            <img src="/streak_fire.png" alt="🔥" className="toast-flame-img" />
             <div className="toast-text">
               <strong>{toastSolve.user_name}</strong> just solved <strong>"{toastSolve.title}"</strong> on LeetCode!
             </div>
@@ -1244,7 +1244,7 @@ function Dashboard({
       {/* Unified M3 Hero Container Card */}
       <div className="hero-card">
         <div className="streak-hero">
-          <span className="flame-icon">🔥</span>
+          <img src="/main_fire.png" alt="🔥" className="hero-flame-img" />
           <span className="streak-count">{dash.current_streak}</span>
         </div>
         <div className="streak-label">DAY STREAK</div>
@@ -1363,7 +1363,7 @@ function Dashboard({
                 onClick={() => setSortBy("streak")}
                 title="Sort leaderboard by active daily streak"
               >
-                🔥 Streak
+                <img src="/streak_fire.png" alt="🔥" className="sort-fire-icon" /> Streak
               </button>
             </div>
           </div>
@@ -1476,7 +1476,10 @@ function Dashboard({
                         </div>
                         <span className="handle-mini">@{e.leetcode_username}</span>
                       </div>
-                      <span className="streak-mini">🔥{e.current_streak}d</span>
+                      <span className="streak-mini">
+                        <img src="/streak_fire.png" alt="🔥" className="streak-mini-fire" />
+                        {e.current_streak}d
+                      </span>
                       <span className="solves-badge" title="Questions solved this week">
                         📝{e.weekly_total}
                       </span>
@@ -1582,7 +1585,7 @@ function Dashboard({
             </div>
 
             <div className="modal-streak-box">
-              <span className="flame-icon">🔥</span>
+              <img src="/main_fire.png" alt="🔥" className="modal-flame-img" />
               <span className="modal-streak-count">
                 {inspectedFriend.current_streak} Day Streak
               </span>
