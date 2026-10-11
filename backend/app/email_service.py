@@ -202,9 +202,16 @@ async def send_update_notification_email(
         <!-- Greeting -->
         <p style="font-size: 15px; margin-top: 0; margin-bottom: 14px; color: #f8fafc;">Hi <strong>{username}</strong>,</p>
         
-        <p style="font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 20px;">
-          A new update for the <strong>LeetStreak</strong> extension is now available! Since LeetStreak runs as an unpacked extension, <strong>you need to reinstall it to apply the update</strong>. Here is a summary of what has been updated:
+        <p style="font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 14px;">
+          A new update for the <strong>LeetStreak</strong> extension is now available. Here is a summary of what has been updated:
         </p>
+
+        <!-- Prominent Reinstall Alert -->
+        <div style="background-color: rgba(239, 68, 68, 0.12); border: 1px solid #ef4444; border-left: 4px solid #ef4444; border-radius: 6px; padding: 12px 14px; margin-bottom: 22px;">
+          <p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: #fca5a5;">
+            ⚠️ <strong style="color: #ef4444; font-weight: 700;">Important:</strong> Since LeetStreak runs as an unpacked extension, <strong style="color: #ffffff; text-decoration: underline;">you need to reinstall it to apply the update.</strong>
+          </p>
+        </div>
 
         <!-- What's New Section -->
         <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
