@@ -121,22 +121,6 @@ async def on_startup():
         from .point_calculator import recalculate_all_users_points
         await recalculate_all_users_points(db)
 
-        # Clean up / delete tester accounts and demo group if they exist
-        tester_emails = ["tester_friends@leetstreak.test", "tester_global@leetstreak.test"]
-        tester_users = db.query(User).filter(func.lower(User.email).in_([e.lower() for e in tester_emails])).all()
-        for tu in tester_users:
-            db.query(Kudos).filter((Kudos.from_user_id == tu.id) | (Kudos.to_user_id == tu.id)).delete(synchronize_session=False)
-            db.query(DailyActivity).filter(DailyActivity.user_id == tu.id).delete(synchronize_session=False)
-            db.query(Solve).filter(Solve.user_id == tu.id).delete(synchronize_session=False)
-            db.query(GroupMember).filter(GroupMember.user_id == tu.id).delete(synchronize_session=False)
-            db.query(Group).filter(Group.creator_id == tu.id).delete(synchronize_session=False)
-            db.delete(tu)
-
-        demo_group = db.query(Group).filter(Group.code == "STREAK-DEMO").first()
-        if demo_group:
-            db.query(GroupMember).filter(GroupMember.group_id == demo_group.id).delete(synchronize_session=False)
-            db.delete(demo_group)
-        db.commit()
     except Exception as e:
         logger.warning("Startup activity cleanup failed: %s", e)
         db.rollback()
