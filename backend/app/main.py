@@ -20,7 +20,7 @@ from .config import CORS_ORIGINS, ADMIN_SECRET
 from .database import Base, engine, get_db, SessionLocal
 from .models import User, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
-from .email_service import send_otp_email, send_update_notification_email, DEFAULT_WHATSAPP_SHARE_URL
+from .email_service import send_otp_email, send_update_notification_email
 from .schemas import (
     RegisterRequest, RegisterResponse, DashboardResponse, DayCount,
     LeaderboardResponse, LeaderboardEntry, GroupCreateRequest, GroupJoinRequest,
@@ -1111,8 +1111,7 @@ async def send_and_update_user_commit(
     username: str,
     commit_id: str,
     release_notes: str,
-    download_url: str,
-    subject: Optional[str] = None
+    download_url: str
 ):
     """Sends update notification email and updates user's last_notified_commit in DB upon success."""
     success = await send_update_notification_email(
@@ -1120,8 +1119,7 @@ async def send_and_update_user_commit(
         username=username,
         commit_id=commit_id,
         release_notes=release_notes,
-        download_url=download_url,
-        subject=subject
+        download_url=download_url
     )
     if success:
         db = SessionLocal()
@@ -1140,10 +1138,9 @@ async def send_and_update_user_commit(
 @app.post("/api/admin/broadcast-update-email")
 async def broadcast_update_email(
     background_tasks: BackgroundTasks,
-    commit_id: str = "5671788",
+    commit_id: str = "40c6882",
     release_notes: str = "Clean redesigned settings panel, Global Leaderboard privacy toggle, custom high-res flame logos, and animated quick sync icon!",
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
-    subject: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
@@ -1162,8 +1159,7 @@ async def broadcast_update_email(
                 username=display_name,
                 commit_id=commit_id,
                 release_notes=release_notes,
-                download_url=download_url,
-                subject=subject
+                download_url=download_url
             )
             count += 1
 
@@ -1178,11 +1174,10 @@ async def broadcast_update_email(
 @app.post("/api/admin/test-update-email")
 async def test_update_email(
     to_email: str,
-    username: str = "Shashank",
-    commit_id: str = "5671788",
+    username: str = "Developer",
+    commit_id: str = "40c6882",
     release_notes: str = "Clean redesigned settings panel, Global Leaderboard privacy toggle, custom high-res flame logos, and animated quick sync icon!",
-    download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
-    subject: Optional[str] = None
+    download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip"
 ):
     """
     Sends a test update notification email with 'Download Update Package' CTA button to a specific email address.
@@ -1192,8 +1187,7 @@ async def test_update_email(
         username=username,
         commit_id=commit_id,
         release_notes=release_notes,
-        download_url=download_url,
-        subject=subject
+        download_url=download_url
     )
     return {
         "status": "sent" if success else "failed",
@@ -1205,6 +1199,13 @@ async def test_update_email(
 # ==========================================================================
 # 🌐 DYNAMIC BACKEND-DRIVEN OTA APP CONFIG & MENU ENDPOINT
 # ==========================================================================
+DEFAULT_WHATSAPP_SHARE_URL = (
+    "https://api.whatsapp.com/send?text="
+    "Check%20out%20LeetStreak%20to%20track%20your%20LeetCode%20daily%20streak%20and%20compete%20on%20leaderboards%20with%20friends%21%20%F0%9F%94%A5%0A%0A"
+    "%F0%9F%93%A5%20Download%20Extension%20%28.zip%29%3A%0Ahttps%3A//codestreak-api.onrender.com/downloads/leetstreak.zip%0A%0A"
+    "%F0%9F%9B%A0%EF%B8%8F%20Quick%2030-Sec%20Install%3A%0A1.%20Unzip%20leetstreak.zip%0A2.%20Open%20chrome%3A//extensions%20%26%20enable%20Developer%20mode%0A3.%20Click%20%22Load%20unpacked%22%20and%20select%20the%20unzipped%20folder%0A%0A"
+    "%F0%9F%93%96%20Full%20Setup%20Guide%3A%0Ahttps%3A//github.com/youngcaptainkeos/Leetcode-Leetstreak%23readme%0A"
+)
 
 
 @app.get("/api/config/app", response_model=AppConfigResponse)

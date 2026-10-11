@@ -15,7 +15,7 @@ We take the security and integrity of LeetStreak and our users' data seriously. 
 ### How to Report
 Please **do not** open a public GitHub issue for security vulnerabilities. Instead:
 
-1. Email us directly at: **[shashu2804@gmail.com](mailto:shashu2804@gmail.com)**
+1. Submit a private vulnerability advisory via **[GitHub Security Advisories](https://github.com/youngcaptainkeos/Leetcode-Leetstreak/security/advisories)**
 2. Provide a clear description of the vulnerability, including:
    - Steps to reproduce or proof-of-concept code.
    - The affected endpoint, component, or file.

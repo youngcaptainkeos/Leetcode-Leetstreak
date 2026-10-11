@@ -1,10 +1,7 @@
 import os
 import logging
-import secrets
 import socket
 import smtplib
-import urllib.parse
-from datetime import datetime, timezone
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import httpx
@@ -16,20 +13,7 @@ SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 SMTP_EMAIL = os.getenv("SMTP_EMAIL", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", "shashu2804@gmail.com")
-
-DEFAULT_WHATSAPP_SHARE_TEXT = (
-    "Check out LeetStreak to track your LeetCode daily streak and compete on leaderboards with friends! 🔥\n\n"
-    "📥 Download Extension (.zip):\n"
-    "https://codestreak-api.onrender.com/downloads/leetstreak.zip\n\n"
-    "🛠️ Quick 30-Sec Install:\n"
-    "1. Unzip leetstreak.zip\n"
-    "2. Open chrome://extensions & enable Developer mode\n"
-    "3. Click \"Load unpacked\" and select the unzipped folder\n\n"
-    "📖 Full Setup Guide:\n"
-    "https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme"
-)
-DEFAULT_WHATSAPP_SHARE_URL = "https://api.whatsapp.com/send?text=" + urllib.parse.quote(DEFAULT_WHATSAPP_SHARE_TEXT)
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", "notifications@codestreak.dev")
 
 
 async def send_email_dispatch(to_email: str, subject: str, html_content: str) -> bool:
@@ -41,7 +25,6 @@ async def send_email_dispatch(to_email: str, subject: str, html_content: str) ->
     clean_brevo_key = BREVO_API_KEY.strip().strip("'").strip('"')
     if clean_brevo_key:
         try:
-            unique_ref = secrets.token_hex(6)
             async with httpx.AsyncClient(timeout=10) as client:
                 resp = await client.post(
                     "https://api.brevo.com/v3/smtp/email",
@@ -55,9 +38,6 @@ async def send_email_dispatch(to_email: str, subject: str, html_content: str) ->
                         "to": [{"email": to_email}],
                         "subject": subject,
                         "htmlContent": html_content,
-                        "headers": {
-                            "X-Entity-Ref-ID": f"leetstreak-{unique_ref}",
-                        },
                     },
                 )
                 if resp.status_code in [200, 201]:
@@ -177,33 +157,29 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
 
 async def send_update_notification_email(
     to_email: str,
-    username: str = "Shashank",
-    commit_id: str = "5671788",
+    username: str,
+    commit_id: str = "26e30e6",
     release_notes: str = None,
-    download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
-    subject: str = None,
+    download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip"
 ) -> bool:
     """Sends professional update notification email with download package link and setup guide."""
-    if not subject:
-        subject = "LeetStreak Update is Live 🔥"
+    subject = "LeetStreak Update Available"
     
-    unique_nonce = secrets.token_hex(4)
-    
-    if not release_notes or "ZeroTrac" in release_notes or "Sunday 12am" in release_notes or "Redesign" in release_notes or "40c6882" in release_notes or "e7d6e17" in release_notes or "5671788" in release_notes:
+    if not release_notes or "ZeroTrac" in release_notes or "Sunday 12am" in release_notes or "Redesign" in release_notes or "40c6882" in release_notes:
         release_notes_html = """
-        <ul style="margin: 0; padding-left: 18px; color: #cbd5e1; font-size: 12.5px; line-height: 1.55;">
-          <li style="margin-bottom: 5px;">⚙️ <strong>New Settings UI:</strong> Clean, scrollable panel for preferences &amp; accounts.</li>
-          <li style="margin-bottom: 5px;">🌐 <strong>Global Leaderboard Toggle:</strong> 1-click switch between public &amp; friends-only mode.</li>
-          <li style="margin-bottom: 5px;">🔥 <strong>Refreshed Flame Art:</strong> Crisp new streak icons across dashboard &amp; leaderboards.</li>
-          <li style="margin-bottom: 5px;">🔄 <strong>Animated Quick Sync:</strong> Header sync icon spins live while fetching solves.</li>
-          <li style="margin-bottom: 5px;">👏 <strong>One-Click Kudos:</strong> Celebrate your entire squad in a single tap.</li>
-          <li>🛡️ <strong>Privacy &amp; Compliance:</strong> Live legal policies &amp; direct in-app account deletion.</li>
+        <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #cbd5e1; font-size: 14px; line-height: 1.6;">
+          <li style="margin-bottom: 8px;"><strong>Brand New Clean Settings Panel</strong>: Redesigned with organized sections for preferences, LeetCode account handle, danger zone, and viewport-optimized layout with smooth scrolling.</li>
+          <li style="margin-bottom: 8px;"><strong>Global Leaderboard Privacy Toggle</strong>: Easily switch between participating in the platform-wide public Global Leaderboard and private friends-only squad mode at any time.</li>
+          <li style="margin-bottom: 8px;"><strong>High-Res Custom Branding &amp; Flame Icons</strong>: Upgraded with new custom flame artwork for the streak hero card, dedicated streak fire badges across leaderboards, and clean monochrome WhatsApp icon.</li>
+          <li style="margin-bottom: 8px;"><strong>Animated Quick Sync Button</strong>: Added a dedicated cyan sync icon in the header that spins dynamically while fetching your latest LeetCode submissions.</li>
+          <li style="margin-bottom: 8px;"><strong>One-Click &ldquo;Kudos All&rdquo;</strong>: Hype up your entire squad's problem solves with a single tap, with celebratory toasts.</li>
+          <li style="margin-bottom: 8px;"><strong>Official Legal &amp; Chrome Web Store Compliance</strong>: Full privacy policy, terms of service, and direct in-app account deletion controls.</li>
         </ul>
         """
     elif "<" in release_notes:
         release_notes_html = release_notes
     else:
-        release_notes_html = f'<p style="margin: 0; color: #cbd5e1; font-size: 12.5px; line-height: 1.5;">{release_notes}</p>'
+        release_notes_html = f'<p style="margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px; line-height: 1.6;">{release_notes}</p>'
 
     html_content = f"""
     <!DOCTYPE html>
@@ -212,48 +188,54 @@ async def send_update_notification_email(
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     </head>
-    <body style="background-color: #0b0f19; margin: 0; padding: 20px 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f1f5f9;">
-      <div style="max-width: 440px; margin: 0 auto; background-color: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 22px 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);">
+    <body style="background-color: #0b0f19; margin: 0; padding: 32px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f1f5f9;">
+      <div style="max-width: 520px; margin: 0 auto; background-color: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 32px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);">
         
-        <!-- Header -->
-        <div style="margin-bottom: 18px;">
-          <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/logo_with_text.png" alt="LeetStreak" style="height: 26px; width: auto; display: block;" />
+        <!-- Header Logo & Title -->
+        <div style="margin-bottom: 24px; text-align: left;">
+          <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/logo_with_text.png" alt="LeetStreak" style="width: 140px; height: auto; border-radius: 8px; display: block; margin-bottom: 8px;" />
+          <span style="font-size: 18px; font-weight: 700; color: #f8fafc; letter-spacing: -0.3px;">New Extension Update</span>
         </div>
 
-        <!-- Greeting & Intro -->
-        <p style="font-size: 14px; margin: 0 0 8px 0; color: #f8fafc;">Hi <strong>{username}</strong>,</p>
-        <p style="font-size: 13px; line-height: 1.5; color: #94a3b8; margin: 0 0 14px 0;">
-          A fresh update for <strong>LeetStreak</strong> is live with new features and UI refinements:
+        <!-- Greeting -->
+        <p style="font-size: 15px; margin-top: 0; margin-bottom: 14px; color: #f8fafc;">Hi <strong>{username}</strong>,</p>
+        
+        <p style="font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 24px;">
+          A new update for the <strong>LeetStreak</strong> extension is now available. Here is a summary of what has been updated:
         </p>
 
-        <!-- What's New Card -->
-        <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px 14px; margin-bottom: 18px;">
-          <div style="font-size: 10.5px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px;">What's New</div>
+        <!-- What's New Section -->
+        <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 20px; margin-bottom: 28px;">
+          <h2 style="margin: 0 0 10px 0; font-size: 12px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.8px;">What's New</h2>
           {release_notes_html}
         </div>
 
         <!-- Action Button -->
-        <div style="text-align: center; margin-bottom: 18px;">
-          <a href="{download_url}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 11px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);">
-            ⚡ Download Update Package
+        <div style="text-align: center; margin-bottom: 28px;">
+          <a href="{download_url}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 13px 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);">
+            Download Extension Package (leetstreak.zip)
           </a>
         </div>
 
-        <!-- Links -->
-        <div style="border-top: 1px solid #1e293b; padding-top: 12px; font-size: 12px; color: #94a3b8; text-align: center; line-height: 1.8;">
-          <a href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme" target="_blank" style="color: #818cf8; text-decoration: none; font-weight: 600;">Setup Guide</a>
-          &nbsp;&bull;&nbsp;
-          <a href="{DEFAULT_WHATSAPP_SHARE_URL}" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Share with Friends</a>
-          &nbsp;&bull;&nbsp;
-          <a href="https://codestreak-api.onrender.com/privacy" target="_blank" style="color: #94a3b8; text-decoration: none;">Privacy</a>
+        <!-- Installation Instructions Link -->
+        <div style="border-top: 1px solid #1e293b; padding-top: 20px; font-size: 13px; color: #94a3b8; text-align: center;">
+          <span style="display: block; margin-bottom: 6px; font-weight: 500;">Installation & Setup Guide</span>
+          <a href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme" target="_blank" style="color: #818cf8; text-decoration: none; font-weight: 600;">
+            View Setup Instructions (Chrome, Edge, Brave & Firefox) &rarr;
+          </a>
+        </div>
+
+        <!-- Share with Friends Section -->
+        <div style="border-top: 1px solid #1e293b; padding-top: 20px; margin-top: 20px; font-size: 13px; color: #94a3b8; text-align: center;">
+          <span style="display: block; margin-bottom: 8px; font-weight: 600; color: #e2e8f0;">Know others grinding LeetCode?</span>
+          <a href="https://api.whatsapp.com/send?text=Check%20out%20LeetStreak%20to%20track%20your%20LeetCode%20daily%20streak%20and%20compete%20on%20leaderboards%20with%20friends%21%20%F0%9F%94%A5%0A%0A%F0%9F%93%A5%20Download%20Extension%20%28.zip%29%3A%0Ahttps%3A//codestreak-api.onrender.com/downloads/leetstreak.zip%0A%0A%F0%9F%9B%A0%EF%B8%8F%20Quick%2030-Sec%20Install%3A%0A1.%20Unzip%20leetstreak.zip%0A2.%20Open%20chrome%3A//extensions%20%26%20enable%20Developer%20mode%0A3.%20Click%20%22Load%20unpacked%22%20and%20select%20the%20unzipped%20folder%0A%0A%F0%9F%93%96%20Full%20Setup%20Guide%3A%0Ahttps%3A//github.com/youngcaptainkeos/Leetcode-Leetstreak%23readme%0A" target="_blank" style="display: inline-block; background-color: #1e293b; border: 1px solid #334155; color: #38bdf8; text-decoration: none; font-size: 12px; font-weight: 600; padding: 8px 18px; border-radius: 6px; margin-top: 4px;">
+            💬 Share Download &amp; Setup Link with Friends
+          </a>
         </div>
 
         <!-- Footer -->
-        <div style="margin-top: 12px; text-align: center; font-size: 11px; color: #64748b;">
-          LeetStreak &bull; Keep your streak alive 🔥
-          <div style="color: transparent; font-size: 1px; line-height: 1px; max-height: 1px; overflow: hidden; opacity: 0.01;">
-            ref-{unique_nonce}
-          </div>
+        <div style="margin-top: 28px; border-top: 1px solid #1e293b; padding-top: 16px; text-align: center; font-size: 12px; color: #64748b;">
+          LeetStreak Team
         </div>
       </div>
     </body>

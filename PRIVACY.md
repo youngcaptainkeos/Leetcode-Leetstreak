@@ -75,6 +75,6 @@ We may periodically update this Privacy Policy to reflect feature additions or r
 
 ## 9. Contact Us
 If you have any questions, concerns, or requests regarding this Privacy Policy or your personal data, please contact:
-* **Project Maintainer:** Shashank
-* **Email:** [shashu2804@gmail.com](mailto:shashu2804@gmail.com)
+* **Project:** LeetStreak Open Source
 * **GitHub Repository:** [https://github.com/youngcaptainkeos/Leetcode-Leetstreak](https://github.com/youngcaptainkeos/Leetcode-Leetstreak)
+* **Support & Inquiries:** [GitHub Issues](https://github.com/youngcaptainkeos/Leetcode-Leetstreak/issues)
