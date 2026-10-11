@@ -1786,84 +1786,135 @@ function Dashboard({
               </button>
             </div>
 
-            {settingsMsg && <div className="sync-banner">{settingsMsg}</div>}
+            {settingsMsg && <div className="settings-msg-banner">{settingsMsg}</div>}
 
-            <div style={{ marginBottom: "16px" }}>
+            {/* Profile Summary Card */}
+            <div className="settings-user-card">
+              <div className="settings-user-left">
+                {dash.avatar_url ? (
+                  <img src={dash.avatar_url} alt={dash.name} className="settings-avatar" />
+                ) : (
+                  <div className="settings-avatar-placeholder">
+                    {dash.name ? dash.name[0].toUpperCase() : "U"}
+                  </div>
+                )}
+                <div className="settings-user-meta">
+                  <span className="settings-user-name">{dash.name}</span>
+                  <a
+                    href={`https://leetcode.com/u/${dash.leetcode_username}/`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="settings-user-handle"
+                    title="View LeetCode Profile"
+                  >
+                    @{dash.leetcode_username} ↗
+                  </a>
+                </div>
+              </div>
               <button
                 type="button"
-                className="secondary-btn modal-action-btn"
+                className="settings-logout-btn"
                 onClick={() => {
                   setShowSettings(false);
                   onResetUser();
                 }}
+                title="Log Out of this device"
               >
                 🚪 Log Out
               </button>
             </div>
 
-            {/* Global Leaderboard Preference Card */}
-            <div className="settings-preference-card">
-              <div className="settings-pref-info">
-                <div className="settings-pref-title">🌐 Global Leaderboard</div>
-                <div className="settings-pref-desc">
-                  {dash?.global_leaderboard_enabled !== false
-                    ? "Enabled: Your profile is ranked globally and the Global tab is visible."
-                    : "Disabled: Global tab is hidden. You only compare streaks & points with friends."}
+            {/* Section: PREFERENCES */}
+            <div className="settings-section">
+              <div className="settings-section-title">PREFERENCES</div>
+              <div className="settings-card">
+                <div className="settings-row">
+                  <div className="settings-row-text">
+                    <span className="settings-row-label">🌐 Global Leaderboard</span>
+                    <span className="settings-row-caption">
+                      {dash?.global_leaderboard_enabled !== false
+                        ? "Visible publicly on global rankings"
+                        : "Hidden publicly (friends-only mode)"}
+                    </span>
+                  </div>
+                  <label
+                    className="settings-switch"
+                    title={
+                      dash?.global_leaderboard_enabled !== false
+                        ? "Click to disable global leaderboard"
+                        : "Click to enable global leaderboard"
+                    }
+                  >
+                    <input
+                      type="checkbox"
+                      checked={dash?.global_leaderboard_enabled !== false}
+                      onChange={handleToggleGlobalLeaderboard}
+                      disabled={togglingLeaderboard}
+                    />
+                    <span className="settings-slider" />
+                  </label>
                 </div>
               </div>
-              <button
-                type="button"
-                className={`settings-toggle-btn ${dash?.global_leaderboard_enabled !== false ? "active" : ""}`}
-                onClick={handleToggleGlobalLeaderboard}
-                disabled={togglingLeaderboard}
-              >
-                {togglingLeaderboard
-                  ? "Saving…"
-                  : dash?.global_leaderboard_enabled !== false
-                  ? "Disable Global Leaderboard"
-                  : "Enable Global Leaderboard"}
-              </button>
             </div>
 
-            <form onSubmit={handleUpdateUsername} className="modal-form">
-              <div className="modal-field">
-                <label>
-                  <span>LeetCode Username</span>
-                  <input
-                    value={newLeetcodeUsername}
-                    onChange={(e) => setNewLeetcodeUsername(e.target.value)}
-                    placeholder="e.g. neal_wu"
-                    required
-                  />
-                </label>
+            {/* Section: LEETCODE ACCOUNT */}
+            <div className="settings-section">
+              <div className="settings-section-title">LEETCODE ACCOUNT</div>
+              <div className="settings-card">
+                <form onSubmit={handleUpdateUsername} className="settings-username-form">
+                  <div className="settings-input-wrapper">
+                    <span className="settings-input-prefix">@</span>
+                    <input
+                      value={newLeetcodeUsername}
+                      onChange={(e) => setNewLeetcodeUsername(e.target.value)}
+                      placeholder="Username"
+                      className="settings-text-input"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      className="settings-action-btn"
+                      disabled={
+                        updatingUsername ||
+                        !newLeetcodeUsername.trim() ||
+                        newLeetcodeUsername.trim() === dash.leetcode_username
+                      }
+                    >
+                      {updatingUsername ? "Saving…" : "Update"}
+                    </button>
+                  </div>
+                  <span className="settings-input-hint">
+                    Syncs solves, contest rating, and streak from this LeetCode handle.
+                  </span>
+                </form>
               </div>
+            </div>
 
-              <button
-                type="submit"
-                className="primary-btn modal-action-btn"
-                disabled={updatingUsername}
-              >
-                {updatingUsername ? "Verifying & Updating…" : "Save New Username"}
-              </button>
-            </form>
-
-            <div className="danger-zone">
-              <hr className="modal-divider" />
-              <div className="danger-zone-header">
-                <span className="danger-zone-title">Danger Zone</span>
+            {/* Section: DANGER ZONE */}
+            <div className="settings-section danger-section">
+              <div className="settings-section-title danger-label">DANGER ZONE</div>
+              <div className="settings-card danger-card">
+                <div className="settings-row">
+                  <div className="settings-row-text">
+                    <span className="settings-row-label danger-text">Delete Account</span>
+                    <span className="settings-row-caption">
+                      Permanently wipe streaks and solve history
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="settings-delete-btn"
+                    onClick={() => {
+                      setShowSettings(false);
+                      setDeletePassword("");
+                      setDeleteError(null);
+                      setShowDeleteModal(true);
+                    }}
+                  >
+                    Delete…
+                  </button>
+                </div>
               </div>
-              <button
-                type="button"
-                className="danger-btn modal-action-btn"
-                onClick={() => {
-                  setShowSettings(false);
-                  setDeletePassword("");
-                  setDeleteError(null);
-                  setShowDeleteModal(true);
-                }}
-              >
-                🗑️ Delete Account
-              </button>
             </div>
           </div>
         </div>

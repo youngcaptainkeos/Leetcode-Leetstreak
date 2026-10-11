@@ -2324,8 +2324,140 @@ input:focus, form input:focus {
   text-transform: none !important;
 }
 
-/* Settings Leaderboard Preference Card */
-.settings-preference-card {
+/* ==========================================================================
+   Clean Redesigned Settings Panel (Material 3 / Modern iOS Aesthetic)
+   ========================================================================== */
+
+.settings-modal {
+  width: 350px !important;
+  max-width: 95vw !important;
+  max-height: 88vh !important;
+  overflow-y: auto !important;
+  padding: 16px 16px 18px 16px !important;
+  gap: 14px !important;
+}
+
+.settings-msg-banner {
+  background-color: var(--primary-container);
+  color: #DDD6FE;
+  border: 1px solid var(--primary-border);
+  padding: 8px 12px;
+  border-radius: var(--md-shape-corner-medium);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* 1. User Profile Snippet */
+.settings-user-card {
+  background-color: var(--surface-high);
+  border: 1px solid var(--border);
+  border-radius: var(--md-shape-corner-medium);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.settings-user-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.settings-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--primary);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.settings-avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #7C3AED);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.settings-user-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.settings-user-name {
+  font-family: var(--md-ref-typeface-brand);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-user-handle {
+  font-size: 11px;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-user-handle:hover {
+  text-decoration: underline;
+}
+
+.settings-logout-btn {
+  background-color: var(--surface-highest);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--md-shape-corner-full);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.settings-logout-btn:hover {
+  background-color: var(--surface-low);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* 2. Semantic Settings Sections */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding-left: 2px;
+}
+
+.settings-card {
   background-color: var(--surface-high);
   border: 1px solid var(--border);
   border-radius: var(--md-shape-corner-medium);
@@ -2333,61 +2465,203 @@ input:focus, form input:focus {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 12px;
 }
 
-.settings-pref-info {
+/* Rows with Switch / Actions */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-row-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  min-width: 0;
 }
 
-.settings-pref-title {
-  font-family: var(--md-ref-typeface-brand);
+.settings-row-label {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
+  letter-spacing: 0.1px;
 }
 
-.settings-pref-desc {
+.settings-row-caption {
   font-size: 11px;
   color: var(--text-secondary);
   line-height: 1.35;
 }
 
-.settings-toggle-btn {
+/* iOS / Material 3 Switch */
+.settings-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.settings-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.settings-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-color: var(--surface-highest);
-  color: var(--text-secondary);
   border: 1px solid var(--border);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 9999px;
+}
+
+.settings-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--text-secondary);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.settings-switch input:checked + .settings-slider {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(167, 139, 250, 0.35);
+}
+
+.settings-switch input:checked + .settings-slider:before {
+  transform: translateX(20px);
+  background-color: #FFFFFF;
+}
+
+.settings-switch input:disabled + .settings-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Inline LeetCode Username Input Group */
+.settings-username-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.settings-input-wrapper {
+  display: flex;
+  align-items: center;
+  background-color: var(--surface-highest);
+  border: 1px solid var(--border);
+  border-radius: var(--md-shape-corner-medium);
+  padding: 3px 4px 3px 10px;
+  gap: 6px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.settings-input-wrapper:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.15);
+}
+
+.settings-input-prefix {
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 13px;
+  user-select: none;
+}
+
+.settings-text-input {
+  flex: 1;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  color: var(--text-primary) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 6px 0 !important;
+  min-width: 0;
+}
+
+.settings-action-btn {
+  background-color: var(--primary);
+  color: #111318;
+  border: none;
   border-radius: var(--md-shape-corner-full);
-  padding: 7px 14px;
+  padding: 6px 14px;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  flex-shrink: 0;
 }
 
-.settings-toggle-btn:hover:not(:disabled) {
-  background-color: var(--surface-low);
-  color: var(--text-primary);
-  border-color: var(--primary-border);
+.settings-action-btn:hover:not(:disabled) {
+  opacity: 0.92;
+  box-shadow: 0 2px 6px rgba(167, 139, 250, 0.3);
 }
 
-.settings-toggle-btn.active {
-  background-color: var(--primary-container) !important;
-  color: #DDD6FE !important;
-  border-color: var(--primary-border) !important;
-  box-shadow: 0 0 8px rgba(167, 139, 250, 0.2);
-}
-
-.settings-toggle-btn:disabled {
-  opacity: 0.6;
+.settings-action-btn:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
+  background-color: var(--surface-low);
+  color: var(--text-muted);
 }
+
+.settings-input-hint {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  line-height: 1.35;
+  padding-left: 2px;
+}
+
+/* Danger Zone */
+.danger-section .danger-label {
+  color: #EF4444;
+}
+
+.danger-card {
+  border-color: rgba(239, 68, 68, 0.25);
+  background-color: rgba(239, 68, 68, 0.04);
+}
+
+.danger-text {
+  color: #F87171;
+}
+
+.settings-delete-btn {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #F87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: var(--md-shape-corner-full);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.settings-delete-btn:hover {
+  background-color: #EF4444;
+  color: #FFFFFF;
+  border-color: #EF4444;
+}
+
 
 
 
