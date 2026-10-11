@@ -137,9 +137,9 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
     subject = "LeetStreak - Password Reset Verification Code"
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; background: #151821; color: #e6e7eb; border-radius: 12px; border: 1px solid #2d3245;">
-      <div style="text-align: center; margin-bottom: 18px;">
-        <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/icon128.png" alt="LeetStreak" style="width: 44px; height: 44px; border-radius: 9px; vertical-align: middle; display: inline-block; margin-right: 10px;" />
-        <span style="font-size: 20px; font-weight: 700; color: #6366f1; vertical-align: middle; display: inline-block;">LeetStreak Password Reset</span>
+      <div style="text-align: center; margin-bottom: 20px;">
+        <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/logo_with_text.png" alt="LeetStreak" style="width: 130px; height: auto; border-radius: 10px; display: inline-block; margin-bottom: 10px;" />
+        <div style="font-size: 20px; font-weight: 700; color: #818cf8;">Password Reset Verification</div>
       </div>
       <p>Hello <strong>{username}</strong>,</p>
       <p>We received a request to reset your password. Use the 6-digit verification code below:</p>
@@ -189,8 +189,8 @@ async def send_update_notification_email(
         
         <!-- Header Logo & Title -->
         <div style="margin-bottom: 24px; text-align: left;">
-          <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/icon128.png" alt="LeetStreak" style="width: 44px; height: 44px; border-radius: 8px; vertical-align: middle; margin-right: 12px;" />
-          <span style="font-size: 20px; font-weight: 700; color: #f8fafc; letter-spacing: -0.3px; vertical-align: middle;">LeetStreak Update</span>
+          <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/logo_with_text.png" alt="LeetStreak" style="width: 140px; height: auto; border-radius: 8px; display: block; margin-bottom: 8px;" />
+          <span style="font-size: 18px; font-weight: 700; color: #f8fafc; letter-spacing: -0.3px;">New Extension Update</span>
         </div>
 
         <!-- Greeting -->

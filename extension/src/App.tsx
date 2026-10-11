@@ -98,8 +98,8 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div className="logo-group">
-          <img src="/icon48.png" alt="LeetStreak" className="header-logo-img" />
-          <span className="logo-text">LeetStreak</span>
+          <img src="/just_logo.png" alt="LeetStreak Logo" className="header-logo-img" />
+          <img src="/just_text.png" alt="LeetStreak" className="header-logo-text-img" />
         </div>
         {view === "dashboard" && (
           <div className="header-actions">
@@ -317,6 +317,7 @@ function Onboarding({
   return (
     <div className="onboarding">
       <div className="onboarding-welcome">
+        <img src="/logo_with_text.png" alt="LeetStreak" className="onboarding-logo-img" />
         <h2>Welcome to LeetStreak</h2>
         <p className="muted small">
           Track LeetCode consistency with friends, form private groups, and build your daily streak.

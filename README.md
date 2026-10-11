@@ -2,7 +2,9 @@
 
 Track your LeetCode consistency, build active daily streaks, and compete on live leaderboards with your friends!
 
-![LeetStreak Banner](https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/icon128.png)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/logo_with_text.png" alt="LeetStreak Logo" width="220" />
+</p>
 
 ---
 
