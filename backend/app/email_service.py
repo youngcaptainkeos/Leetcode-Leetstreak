@@ -167,19 +167,19 @@ async def send_update_notification_email(
     
     if not release_notes or "ZeroTrac" in release_notes or "Sunday 12am" in release_notes or "Redesign" in release_notes or "40c6882" in release_notes:
         release_notes_html = """
-        <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #cbd5e1; font-size: 14px; line-height: 1.6;">
-          <li style="margin-bottom: 8px;"><strong>Brand New Clean Settings Panel</strong>: Redesigned with organized sections for preferences, LeetCode account handle, danger zone, and viewport-optimized layout with smooth scrolling.</li>
-          <li style="margin-bottom: 8px;"><strong>Global Leaderboard Privacy Toggle</strong>: Easily switch between participating in the platform-wide public Global Leaderboard and private friends-only squad mode at any time.</li>
-          <li style="margin-bottom: 8px;"><strong>High-Res Custom Branding &amp; Flame Icons</strong>: Upgraded with new custom flame artwork for the streak hero card, dedicated streak fire badges across leaderboards, and clean monochrome WhatsApp icon.</li>
-          <li style="margin-bottom: 8px;"><strong>Animated Quick Sync Button</strong>: Added a dedicated cyan sync icon in the header that spins dynamically while fetching your latest LeetCode submissions.</li>
-          <li style="margin-bottom: 8px;"><strong>One-Click &ldquo;Kudos All&rdquo;</strong>: Hype up your entire squad's problem solves with a single tap, with celebratory toasts.</li>
-          <li style="margin-bottom: 8px;"><strong>Official Legal &amp; Chrome Web Store Compliance</strong>: Full privacy policy, terms of service, and direct in-app account deletion controls.</li>
+        <ul style="margin: 0; padding-left: 18px; color: #cbd5e1; font-size: 12.5px; line-height: 1.55;">
+          <li style="margin-bottom: 5px;">⚙️ <strong>New Settings UI:</strong> Clean, scrollable panel for preferences &amp; accounts.</li>
+          <li style="margin-bottom: 5px;">🌐 <strong>Global Leaderboard Toggle:</strong> 1-click switch between public &amp; friends-only mode.</li>
+          <li style="margin-bottom: 5px;">🔥 <strong>Refreshed Flame Art:</strong> Crisp new streak icons across dashboard &amp; leaderboards.</li>
+          <li style="margin-bottom: 5px;">🔄 <strong>Animated Quick Sync:</strong> Header sync icon spins live while fetching solves.</li>
+          <li style="margin-bottom: 5px;">👏 <strong>One-Click Kudos:</strong> Celebrate your entire squad in a single tap.</li>
+          <li>🛡️ <strong>Privacy &amp; Compliance:</strong> Live legal policies &amp; direct in-app account deletion.</li>
         </ul>
         """
     elif "<" in release_notes:
         release_notes_html = release_notes
     else:
-        release_notes_html = f'<p style="margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px; line-height: 1.6;">{release_notes}</p>'
+        release_notes_html = f'<p style="margin: 0; color: #cbd5e1; font-size: 12.5px; line-height: 1.5;">{release_notes}</p>'
 
     html_content = f"""
     <!DOCTYPE html>
@@ -188,54 +188,52 @@ async def send_update_notification_email(
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     </head>
-    <body style="background-color: #0b0f19; margin: 0; padding: 32px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f1f5f9;">
-      <div style="max-width: 520px; margin: 0 auto; background-color: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 32px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);">
+    <body style="background-color: #0b0f19; margin: 0; padding: 20px 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f1f5f9;">
+      <div style="max-width: 440px; margin: 0 auto; background-color: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 22px 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);">
         
-        <!-- Header Logo & Title -->
-        <div style="margin-bottom: 24px; text-align: left;">
-          <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/logo_with_text.png" alt="LeetStreak" style="width: 140px; height: auto; border-radius: 8px; display: block; margin-bottom: 8px;" />
-          <span style="font-size: 18px; font-weight: 700; color: #f8fafc; letter-spacing: -0.3px;">New Extension Update</span>
-        </div>
+        <!-- Header -->
+        <table style="width: 100%; border-bottom: 1px solid #1e293b; padding-bottom: 12px; margin-bottom: 16px;">
+          <tr>
+            <td style="text-align: left; vertical-align: middle;">
+              <img src="https://raw.githubusercontent.com/youngcaptainkeos/Leetcode-Leetstreak/main/extension/public/logo_with_text.png" alt="LeetStreak" style="height: 26px; width: auto; display: block;" />
+            </td>
+            <td style="text-align: right; vertical-align: middle;">
+              <span style="font-size: 11px; font-weight: 700; color: #a5b4fc; background-color: #312e81; padding: 3px 8px; border-radius: 999px;">v1.0.0 Update</span>
+            </td>
+          </tr>
+        </table>
 
-        <!-- Greeting -->
-        <p style="font-size: 15px; margin-top: 0; margin-bottom: 14px; color: #f8fafc;">Hi <strong>{username}</strong>,</p>
-        
-        <p style="font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 24px;">
-          A new update for the <strong>LeetStreak</strong> extension is now available. Here is a summary of what has been updated:
+        <!-- Greeting & Intro -->
+        <p style="font-size: 14px; margin: 0 0 8px 0; color: #f8fafc;">Hi <strong>{username}</strong>,</p>
+        <p style="font-size: 13px; line-height: 1.5; color: #94a3b8; margin: 0 0 14px 0;">
+          A fresh update for <strong>LeetStreak</strong> is live with new features and UI refinements:
         </p>
 
-        <!-- What's New Section -->
-        <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 20px; margin-bottom: 28px;">
-          <h2 style="margin: 0 0 10px 0; font-size: 12px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.8px;">What's New</h2>
+        <!-- What's New Card -->
+        <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px 14px; margin-bottom: 18px;">
+          <div style="font-size: 10.5px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px;">What's New</div>
           {release_notes_html}
         </div>
 
         <!-- Action Button -->
-        <div style="text-align: center; margin-bottom: 28px;">
-          <a href="{download_url}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 13px 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);">
-            Download Extension Package (leetstreak.zip)
+        <div style="text-align: center; margin-bottom: 18px;">
+          <a href="{download_url}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 11px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);">
+            ⚡ Download Update Package
           </a>
         </div>
 
-        <!-- Installation Instructions Link -->
-        <div style="border-top: 1px solid #1e293b; padding-top: 20px; font-size: 13px; color: #94a3b8; text-align: center;">
-          <span style="display: block; margin-bottom: 6px; font-weight: 500;">Installation & Setup Guide</span>
-          <a href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme" target="_blank" style="color: #818cf8; text-decoration: none; font-weight: 600;">
-            View Setup Instructions (Chrome, Edge, Brave & Firefox) &rarr;
-          </a>
-        </div>
-
-        <!-- Share with Friends Section -->
-        <div style="border-top: 1px solid #1e293b; padding-top: 20px; margin-top: 20px; font-size: 13px; color: #94a3b8; text-align: center;">
-          <span style="display: block; margin-bottom: 8px; font-weight: 600; color: #e2e8f0;">Know others grinding LeetCode?</span>
-          <a href="https://api.whatsapp.com/send?text=Check%20out%20LeetStreak%20to%20track%20your%20LeetCode%20daily%20streak%20and%20compete%20on%20leaderboards%20with%20friends!%20Download%20link:%20https://codestreak-api.onrender.com/downloads/leetstreak.zip%20%7C%20Setup%20Guide:%20https://github.com/youngcaptainkeos/Leetcode-Leetstreak%23readme" target="_blank" style="display: inline-block; background-color: #1e293b; border: 1px solid #334155; color: #38bdf8; text-decoration: none; font-size: 12px; font-weight: 600; padding: 7px 16px; border-radius: 6px; margin-top: 4px;">
-            💬 Share Download & Setup Link with Friends
-          </a>
+        <!-- Links -->
+        <div style="border-top: 1px solid #1e293b; padding-top: 12px; font-size: 12px; color: #94a3b8; text-align: center; line-height: 1.8;">
+          <a href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme" target="_blank" style="color: #818cf8; text-decoration: none; font-weight: 600;">Setup Guide</a>
+          &nbsp;&bull;&nbsp;
+          <a href="https://api.whatsapp.com/send?text=Check%20out%20LeetStreak%20to%20track%20your%20LeetCode%20daily%20streak%20and%20compete%20on%20leaderboards%20with%20friends!%20https://codestreak-api.onrender.com/downloads/leetstreak.zip" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Share with Friends</a>
+          &nbsp;&bull;&nbsp;
+          <a href="https://codestreak-api.onrender.com/privacy" target="_blank" style="color: #94a3b8; text-decoration: none;">Privacy</a>
         </div>
 
         <!-- Footer -->
-        <div style="margin-top: 28px; border-top: 1px solid #1e293b; padding-top: 16px; text-align: center; font-size: 12px; color: #64748b;">
-          LeetStreak Team
+        <div style="margin-top: 12px; text-align: center; font-size: 11px; color: #64748b;">
+          LeetStreak &bull; Keep your streak alive 🔥
         </div>
       </div>
     </body>
