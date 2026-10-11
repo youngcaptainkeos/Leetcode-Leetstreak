@@ -3,6 +3,7 @@ import logging
 import secrets
 import socket
 import smtplib
+import urllib.parse
 from datetime import datetime, timezone
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -16,6 +17,19 @@ RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 SMTP_EMAIL = os.getenv("SMTP_EMAIL", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "shashu2804@gmail.com")
+
+DEFAULT_WHATSAPP_SHARE_TEXT = (
+    "Check out LeetStreak to track your LeetCode daily streak and compete on leaderboards with friends! 🔥\n\n"
+    "📥 Download Extension (.zip):\n"
+    "https://codestreak-api.onrender.com/downloads/leetstreak.zip\n\n"
+    "🛠️ Quick 30-Sec Install:\n"
+    "1. Unzip leetstreak.zip\n"
+    "2. Open chrome://extensions & enable Developer mode\n"
+    "3. Click \"Load unpacked\" and select the unzipped folder\n\n"
+    "📖 Full Setup Guide:\n"
+    "https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme"
+)
+DEFAULT_WHATSAPP_SHARE_URL = "https://api.whatsapp.com/send?text=" + urllib.parse.quote(DEFAULT_WHATSAPP_SHARE_TEXT)
 
 
 async def send_email_dispatch(to_email: str, subject: str, html_content: str) -> bool:
@@ -248,7 +262,7 @@ async def send_update_notification_email(
         <div style="padding: 4px 0 10px 0; font-size: 12px; color: #94a3b8; text-align: center; line-height: 1.8;">
           <a href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme" target="_blank" style="color: #818cf8; text-decoration: none; font-weight: 600;">Full Setup Guide</a>
           &nbsp;&bull;&nbsp;
-          <a href="https://api.whatsapp.com/send?text=Check%20out%20LeetStreak%20to%20track%20your%20LeetCode%20daily%20streak%20and%20compete%20on%20leaderboards%20with%20friends!%20https://codestreak-api.onrender.com/downloads/leetstreak.zip" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Share with Friends</a>
+          <a href="{DEFAULT_WHATSAPP_SHARE_URL}" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Share with Friends</a>
           &nbsp;&bull;&nbsp;
           <a href="https://codestreak-api.onrender.com/privacy" target="_blank" style="color: #94a3b8; text-decoration: none;">Privacy</a>
         </div>

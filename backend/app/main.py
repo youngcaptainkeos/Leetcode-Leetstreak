@@ -20,7 +20,7 @@ from .config import CORS_ORIGINS, ADMIN_SECRET
 from .database import Base, engine, get_db, SessionLocal
 from .models import User, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
-from .email_service import send_otp_email, send_update_notification_email
+from .email_service import send_otp_email, send_update_notification_email, DEFAULT_WHATSAPP_SHARE_URL
 from .schemas import (
     RegisterRequest, RegisterResponse, DashboardResponse, DayCount,
     LeaderboardResponse, LeaderboardEntry, GroupCreateRequest, GroupJoinRequest,
@@ -1205,12 +1205,6 @@ async def test_update_email(
 # ==========================================================================
 # 🌐 DYNAMIC BACKEND-DRIVEN OTA APP CONFIG & MENU ENDPOINT
 # ==========================================================================
-DEFAULT_WHATSAPP_SHARE_URL = (
-    "https://api.whatsapp.com/send?text="
-    "Check%20out%20LeetStreak%20to%20track%20your%20LeetCode%20daily%20streak%20and%20compete%20on%20leaderboards%20with%20friends!%20%F0%9F%94%A5%0A%0A"
-    "Download%20Latest%20Extension:%20https://codestreak-api.onrender.com/downloads/leetstreak.zip%0A%0A"
-    "Setup%20Guide:%20https://github.com/youngcaptainkeos/Leetcode-Leetstreak%23readme"
-)
 
 
 @app.get("/api/config/app", response_model=AppConfigResponse)

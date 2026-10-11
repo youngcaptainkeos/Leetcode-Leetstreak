@@ -108,7 +108,15 @@ export default function App() {
                 appConfig?.whatsapp_share_url ||
                 "https://api.whatsapp.com/send?text=" +
                   encodeURIComponent(
-                    "Check out LeetStreak to track your LeetCode daily streak and compete on leaderboards with friends! 🔥\n\nDownload Latest Extension: https://codestreak-api.onrender.com/downloads/leetstreak.zip\n\nSetup Guide: https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme"
+                    "Check out LeetStreak to track your LeetCode daily streak and compete on leaderboards with friends! 🔥\n\n" +
+                    "📥 Download Extension (.zip):\n" +
+                    "https://codestreak-api.onrender.com/downloads/leetstreak.zip\n\n" +
+                    "🛠️ Quick 30-Sec Install:\n" +
+                    "1. Unzip leetstreak.zip\n" +
+                    "2. Open chrome://extensions & enable Developer mode\n" +
+                    "3. Click \"Load unpacked\" and select the unzipped folder\n\n" +
+                    "📖 Full Setup Guide:\n" +
+                    "https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme"
                   )
               }
               target="_blank"
@@ -715,7 +723,7 @@ function Dashboard({
   }, []);
 
   function handleShareGroup(groupName: string, code: string) {
-    const inviteText = `Join my LeetStreak group "${groupName}"! Use Invite Code: ${code}`;
+    const inviteText = `Join my LeetStreak group "${groupName}"! 🔥\nUse Invite Code: ${code}\n\n📥 Download Extension: https://codestreak-api.onrender.com/downloads/leetstreak.zip\n\n🛠️ Quick 30-Sec Install:\n1. Unzip leetstreak.zip\n2. Open chrome://extensions & enable Developer mode\n3. Click "Load unpacked" & select folder`;
     navigator.clipboard.writeText(inviteText);
     setShareMsg("Copied Invite!");
     setTimeout(() => setShareMsg(null), 2500);
