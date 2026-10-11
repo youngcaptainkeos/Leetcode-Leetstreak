@@ -1111,7 +1111,8 @@ async def send_and_update_user_commit(
     username: str,
     commit_id: str,
     release_notes: str,
-    download_url: str
+    download_url: str,
+    subject: Optional[str] = None
 ):
     """Sends update notification email and updates user's last_notified_commit in DB upon success."""
     success = await send_update_notification_email(
@@ -1119,7 +1120,8 @@ async def send_and_update_user_commit(
         username=username,
         commit_id=commit_id,
         release_notes=release_notes,
-        download_url=download_url
+        download_url=download_url,
+        subject=subject
     )
     if success:
         db = SessionLocal()
@@ -1138,9 +1140,10 @@ async def send_and_update_user_commit(
 @app.post("/api/admin/broadcast-update-email")
 async def broadcast_update_email(
     background_tasks: BackgroundTasks,
-    commit_id: str = "40c6882",
+    commit_id: str = "e7d6e17",
     release_notes: str = "Clean redesigned settings panel, Global Leaderboard privacy toggle, custom high-res flame logos, and animated quick sync icon!",
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
+    subject: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
@@ -1159,7 +1162,8 @@ async def broadcast_update_email(
                 username=display_name,
                 commit_id=commit_id,
                 release_notes=release_notes,
-                download_url=download_url
+                download_url=download_url,
+                subject=subject
             )
             count += 1
 
@@ -1175,7 +1179,7 @@ async def broadcast_update_email(
 async def test_update_email(
     to_email: str,
     username: str = "Developer",
-    commit_id: str = "40c6882",
+    commit_id: str = "e7d6e17",
     release_notes: str = "Clean redesigned settings panel, Global Leaderboard privacy toggle, custom high-res flame logos, and animated quick sync icon!",
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
     subject: Optional[str] = None

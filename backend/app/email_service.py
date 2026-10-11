@@ -3,6 +3,7 @@ import logging
 import secrets
 import socket
 import smtplib
+from datetime import datetime, timezone
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import httpx
@@ -26,6 +27,7 @@ async def send_email_dispatch(to_email: str, subject: str, html_content: str) ->
     clean_brevo_key = BREVO_API_KEY.strip().strip("'").strip('"')
     if clean_brevo_key:
         try:
+            unique_ref = secrets.token_hex(6)
             async with httpx.AsyncClient(timeout=10) as client:
                 resp = await client.post(
                     "https://api.brevo.com/v3/smtp/email",
@@ -39,6 +41,9 @@ async def send_email_dispatch(to_email: str, subject: str, html_content: str) ->
                         "to": [{"email": to_email}],
                         "subject": subject,
                         "htmlContent": html_content,
+                        "headers": {
+                            "X-Entity-Ref-ID": f"leetstreak-{unique_ref}",
+                        },
                     },
                 )
                 if resp.status_code in [200, 201]:
@@ -159,18 +164,19 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
 async def send_update_notification_email(
     to_email: str,
     username: str,
-    commit_id: str = "40c6882",
+    commit_id: str = "e7d6e17",
     release_notes: str = None,
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
     subject: str = None,
 ) -> bool:
     """Sends professional update notification email with download package link and setup guide."""
     if not subject:
-        subject = "LeetStreak v1.0.0 is Live 🔥"
+        subject = "LeetStreak Update: Download v1.0.0 Now 🔥"
     
     unique_nonce = secrets.token_hex(4)
+    current_date_str = datetime.now(timezone.utc).strftime("%b %d, %Y")
     
-    if not release_notes or "ZeroTrac" in release_notes or "Sunday 12am" in release_notes or "Redesign" in release_notes or "40c6882" in release_notes:
+    if not release_notes or "ZeroTrac" in release_notes or "Sunday 12am" in release_notes or "Redesign" in release_notes or "40c6882" in release_notes or "e7d6e17" in release_notes:
         release_notes_html = """
         <ul style="margin: 0; padding-left: 18px; color: #cbd5e1; font-size: 12.5px; line-height: 1.55;">
           <li style="margin-bottom: 5px;">⚙️ <strong>New Settings UI:</strong> Clean, scrollable panel for preferences &amp; accounts.</li>
@@ -194,7 +200,7 @@ async def send_update_notification_email(
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     </head>
     <body style="background-color: #0b0f19; margin: 0; padding: 20px 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f1f5f9;">
-      <div style="max-width: 440px; margin: 0 auto; background-color: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 22px 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);">
+      <div style="max-width: 460px; margin: 0 auto; background-color: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 22px 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);">
         
         <!-- Header -->
         <table style="width: 100%; border-bottom: 1px solid #1e293b; padding-bottom: 12px; margin-bottom: 16px;">
@@ -210,26 +216,37 @@ async def send_update_notification_email(
 
         <!-- Greeting & Intro -->
         <p style="font-size: 14px; margin: 0 0 8px 0; color: #f8fafc;">Hi <strong>{username}</strong>,</p>
-        <p style="font-size: 13px; line-height: 1.5; color: #94a3b8; margin: 0 0 14px 0;">
+        <p style="font-size: 13px; line-height: 1.5; color: #94a3b8; margin: 0 0 16px 0;">
           A fresh update for <strong>LeetStreak</strong> is live with new features and UI refinements:
         </p>
 
+        <!-- Download & Quick Install Card (Prominent Hero Section) -->
+        <div style="background-color: #1a1f2e; border: 1px solid #374151; border-radius: 10px; padding: 16px; margin-bottom: 16px; text-align: center;">
+          <div style="font-size: 13px; font-weight: 700; color: #f1f5f9; margin-bottom: 10px;">Get the Latest Extension</div>
+          <a href="{download_url}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 11px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);">
+            ⚡ Download Extension Package (.zip)
+          </a>
+          
+          <!-- 3-Step Quick Install -->
+          <div style="margin-top: 14px; text-align: left; background-color: #111827; border: 1px solid #2d3748; border-radius: 6px; padding: 10px 12px;">
+            <div style="font-size: 10.5px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px;">Quick 30-Sec Install / Update</div>
+            <ol style="margin: 0; padding-left: 18px; color: #cbd5e1; font-size: 12px; line-height: 1.55;">
+              <li style="margin-bottom: 4px;">Unzip the downloaded <code>leetstreak.zip</code> file.</li>
+              <li style="margin-bottom: 4px;">Open <code>chrome://extensions</code> &amp; enable <strong>Developer mode</strong> (top right).</li>
+              <li>Click <strong>Load unpacked</strong> and select the unzipped folder.</li>
+            </ol>
+          </div>
+        </div>
+
         <!-- What's New Card -->
         <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
-          <div style="font-size: 10.5px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px;">What's New</div>
+          <div style="font-size: 10.5px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px;">What's New in This Release</div>
           {release_notes_html}
         </div>
 
-        <!-- Action Button -->
-        <div style="text-align: center; margin-bottom: 16px;">
-          <a href="{download_url}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 11px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);">
-            ⚡ Download Update Package
-          </a>
-        </div>
-
         <!-- Links -->
-        <div style="padding: 10px 0 4px 0; font-size: 12px; color: #94a3b8; text-align: center; line-height: 1.8;">
-          <a href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme" target="_blank" style="color: #818cf8; text-decoration: none; font-weight: 600;">Setup Guide</a>
+        <div style="padding: 4px 0 10px 0; font-size: 12px; color: #94a3b8; text-align: center; line-height: 1.8;">
+          <a href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme" target="_blank" style="color: #818cf8; text-decoration: none; font-weight: 600;">Full Setup Guide</a>
           &nbsp;&bull;&nbsp;
           <a href="https://api.whatsapp.com/send?text=Check%20out%20LeetStreak%20to%20track%20your%20LeetCode%20daily%20streak%20and%20compete%20on%20leaderboards%20with%20friends!%20https://codestreak-api.onrender.com/downloads/leetstreak.zip" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Share with Friends</a>
           &nbsp;&bull;&nbsp;
@@ -237,8 +254,11 @@ async def send_update_notification_email(
         </div>
 
         <!-- Footer -->
-        <div style="margin-top: 10px; text-align: center; font-size: 11px; color: #64748b;">
+        <div style="text-align: center; font-size: 11px; color: #64748b;">
           LeetStreak &bull; Keep your streak alive 🔥
+          <div style="font-size: 10px; color: #475569; margin-top: 4px;">
+            Build {commit_id[:7]} &bull; {current_date_str}
+          </div>
           <div style="color: transparent; font-size: 1px; line-height: 1px; max-height: 1px; overflow: hidden; opacity: 0.01;">
             ref-{unique_nonce}
           </div>
