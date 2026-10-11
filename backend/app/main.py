@@ -121,85 +121,21 @@ async def on_startup():
         from .point_calculator import recalculate_all_users_points
         await recalculate_all_users_points(db)
 
-        # Provision 2 tester accounts for login & leaderboard visibility testing
-        tester_configs = [
-            {
-                "name": "Alex (Friends Only)",
-                "leetcode_username": "tester_friends",
-                "email": "tester_friends@leetstreak.test",
-                "password": "password123",
-                "global_leaderboard_enabled": False,
-                "easy_count": 25,
-                "medium_count": 15,
-                "hard_count": 4,
-                "official_streak": 8,
-                "points": 180.0,
-            },
-            {
-                "name": "Sam (Global Enabled)",
-                "leetcode_username": "tester_global",
-                "email": "tester_global@leetstreak.test",
-                "password": "password123",
-                "global_leaderboard_enabled": True,
-                "easy_count": 40,
-                "medium_count": 25,
-                "hard_count": 9,
-                "official_streak": 14,
-                "points": 320.0,
-            },
-        ]
-        seeded_users = []
-        for tc in tester_configs:
-            tu = db.query(User).filter(
-                (func.lower(User.email) == tc["email"].lower()) |
-                (func.lower(User.leetcode_username) == tc["leetcode_username"].lower())
-            ).first()
-            if not tu:
-                tu = User(
-                    name=tc["name"],
-                    leetcode_username=tc["leetcode_username"],
-                    email=tc["email"].lower(),
-                    password_hash=hash_password(tc["password"]),
-                    global_leaderboard_enabled=tc["global_leaderboard_enabled"],
-                    easy_count=tc["easy_count"],
-                    medium_count=tc["medium_count"],
-                    hard_count=tc["hard_count"],
-                    official_streak=tc["official_streak"],
-                    points=tc["points"],
-                    created_at=datetime.now(),
-                )
-                db.add(tu)
-                db.commit()
-                db.refresh(tu)
-            else:
-                tu.global_leaderboard_enabled = tc["global_leaderboard_enabled"]
-                tu.password_hash = hash_password(tc["password"])
-                db.commit()
-            seeded_users.append(tu)
+        # Clean up / delete tester accounts and demo group if they exist
+        tester_emails = ["tester_friends@leetstreak.test", "tester_global@leetstreak.test"]
+        tester_users = db.query(User).filter(func.lower(User.email).in_([e.lower() for e in tester_emails])).all()
+        for tu in tester_users:
+            db.query(Kudos).filter((Kudos.from_user_id == tu.id) | (Kudos.to_user_id == tu.id)).delete(synchronize_session=False)
+            db.query(DailyActivity).filter(DailyActivity.user_id == tu.id).delete(synchronize_session=False)
+            db.query(Solve).filter(Solve.user_id == tu.id).delete(synchronize_session=False)
+            db.query(GroupMember).filter(GroupMember.user_id == tu.id).delete(synchronize_session=False)
+            db.query(Group).filter(Group.creator_id == tu.id).delete(synchronize_session=False)
+            db.delete(tu)
 
-        # Seed shared squad "Squad Alpha" (code: STREAK-DEMO)
         demo_group = db.query(Group).filter(Group.code == "STREAK-DEMO").first()
-        if not demo_group and seeded_users:
-            demo_group = Group(name="Squad Alpha", code="STREAK-DEMO", creator_id=seeded_users[0].id)
-            db.add(demo_group)
-            db.commit()
-            db.refresh(demo_group)
-
         if demo_group:
-            for su in seeded_users:
-                gm = db.query(GroupMember).filter(
-                    GroupMember.group_id == demo_group.id,
-                    GroupMember.user_id == su.id
-                ).first()
-                if not gm:
-                    db.add(GroupMember(group_id=demo_group.id, user_id=su.id))
-            db.commit()
-
-        today = get_ist_today()
-        for su in seeded_users:
-            da = db.query(DailyActivity).filter(DailyActivity.user_id == su.id, DailyActivity.date == today).first()
-            if not da:
-                db.add(DailyActivity(user_id=su.id, date=today, problems_solved=2))
+            db.query(GroupMember).filter(GroupMember.group_id == demo_group.id).delete(synchronize_session=False)
+            db.delete(demo_group)
         db.commit()
     except Exception as e:
         logger.warning("Startup activity cleanup failed: %s", e)
