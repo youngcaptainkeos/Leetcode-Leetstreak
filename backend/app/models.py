@@ -25,6 +25,7 @@ class User(Base):
     official_streak = Column(Integer, default=0)
     points = Column(Float, default=0.0)
     last_notified_commit = Column(String(40), default="legacy")
+    global_leaderboard_enabled = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 
     daily_activity = relationship("DailyActivity", back_populates="user", cascade="all, delete-orphan")

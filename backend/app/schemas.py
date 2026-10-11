@@ -34,6 +34,7 @@ class RegisterRequest(BaseModel):
     leetcode_username: str = Field(min_length=1, max_length=80)
     email: str = Field(min_length=3, max_length=120)
     password: str = Field(min_length=4, max_length=100)
+    global_leaderboard_enabled: bool = True
 
 
 class LoginRequest(BaseModel):
@@ -55,6 +56,10 @@ class UpdateUsernameRequest(BaseModel):
     leetcode_username: str = Field(min_length=1, max_length=80)
 
 
+class UpdateSettingsRequest(BaseModel):
+    global_leaderboard_enabled: bool
+
+
 class DeleteAccountRequest(BaseModel):
     password: str = Field(min_length=1, max_length=100)
 
@@ -67,6 +72,7 @@ class RegisterResponse(BaseModel):
     access_token: Optional[str] = None
     token_type: str = "bearer"
     created_at: Optional[datetime] = None
+    global_leaderboard_enabled: bool = True
 
 
 class DayCount(BaseModel):
@@ -88,6 +94,7 @@ class DashboardResponse(BaseModel):
     monthly_total: int
     created_at: Optional[datetime] = None
     last_7_days: List[DayCount]
+    global_leaderboard_enabled: bool = True
 
 
 class LeaderboardEntry(BaseModel):

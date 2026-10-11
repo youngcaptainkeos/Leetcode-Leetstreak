@@ -8,6 +8,7 @@ export interface RegisterResponse {
   access_token?: string;
   token_type?: string;
   created_at?: string;
+  global_leaderboard_enabled?: boolean;
 }
 
 export interface DayCount {
@@ -55,6 +56,7 @@ export interface DashboardResponse {
   monthly_total: number;
   created_at?: string;
   last_7_days: DayCount[];
+  global_leaderboard_enabled?: boolean;
 }
 
 export interface LeaderboardEntry {
@@ -161,10 +163,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  register: (name: string, leetcode_username: string, email: string, password: string) =>
+  register: (name: string, leetcode_username: string, email: string, password: string, global_leaderboard_enabled: boolean = true) =>
     request<RegisterResponse>("/users/register", {
       method: "POST",
-      body: JSON.stringify({ name, leetcode_username, email, password }),
+      body: JSON.stringify({ name, leetcode_username, email, password, global_leaderboard_enabled }),
     }),
   login: (leetcode_username: string, password: string) =>
     request<RegisterResponse>("/users/login", {
@@ -191,6 +193,14 @@ export const api = {
       {
         method: "PUT",
         body: JSON.stringify({ leetcode_username }),
+      }
+    ),
+  updateSettings: (userId: number, settings: { global_leaderboard_enabled: boolean }) =>
+    request<{ status: string; user_id: number; global_leaderboard_enabled: boolean }>(
+      `/users/${userId}/settings`,
+      {
+        method: "PUT",
+        body: JSON.stringify(settings),
       }
     ),
   deleteAccount: (userId: number, password: string) =>

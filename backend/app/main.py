@@ -1,6 +1,8 @@
 import os
 import logging
 import secrets
+
+logger = logging.getLogger("codestreak.main")
 import string
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
@@ -23,7 +25,7 @@ from .schemas import (
     LeaderboardResponse, LeaderboardEntry, GroupCreateRequest, GroupJoinRequest,
     GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema, PointBreakdownSchema,
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
-    KudosToggleRequest, KudosAllRequest, UpdateUsernameRequest, ActivityFeedItemSchema,
+    KudosToggleRequest, KudosAllRequest, UpdateUsernameRequest, UpdateSettingsRequest, ActivityFeedItemSchema,
     DynamicMenuItem, AppConfigResponse, DeleteAccountRequest, SyncRequest,
 )
 from .streak import current_streak
@@ -53,6 +55,7 @@ try:
         conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20);"))
         conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS ac_rate DOUBLE PRECISION;"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_notified_commit VARCHAR(40) DEFAULT 'legacy';"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS global_leaderboard_enabled BOOLEAN DEFAULT TRUE;"))
         # Drop unique constraint on leetcode_username if present
         conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_leetcode_username_key;"))
         conn.execute(text("DROP INDEX IF EXISTS ix_users_leetcode_username;"))
@@ -84,6 +87,7 @@ async def on_startup():
             conn.execute(text("CREATE TABLE IF NOT EXISTS kudos (id SERIAL PRIMARY KEY, from_user_id INTEGER NOT NULL, to_user_id INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"))
             conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS is_daily BOOLEAN DEFAULT FALSE;"))
             conn.execute(text("CREATE TABLE IF NOT EXISTS daily_challenges (date DATE PRIMARY KEY, title_slug VARCHAR(200) NOT NULL);"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS global_leaderboard_enabled BOOLEAN DEFAULT TRUE;"))
             conn.execute(text("UPDATE solves SET is_daily = TRUE WHERE LOWER(title_slug) = 'image-overlap';"))
             conn.execute(text("INSERT INTO daily_challenges (date, title_slug) VALUES ('2026-09-13', 'image-overlap') ON CONFLICT DO NOTHING;"))
     except Exception as e:
@@ -95,6 +99,11 @@ async def on_startup():
         existing_users_without_date = db.query(User).filter(User.created_at.is_(None)).all()
         for u in existing_users_without_date:
             u.created_at = datetime.now()
+
+        # Ensure global_leaderboard_enabled is not null for any existing users
+        null_gl_users = db.query(User).filter(User.global_leaderboard_enabled.is_(None)).all()
+        for u in null_gl_users:
+            u.global_leaderboard_enabled = True
 
         bloated_rows = db.query(DailyActivity).filter(DailyActivity.problems_solved > 1).all()
         for r in bloated_rows:
@@ -111,6 +120,86 @@ async def on_startup():
         # Recalculate points for all existing users with new scoring rules
         from .point_calculator import recalculate_all_users_points
         await recalculate_all_users_points(db)
+
+        # Provision 2 tester accounts for login & leaderboard visibility testing
+        tester_configs = [
+            {
+                "name": "Alex (Friends Only)",
+                "leetcode_username": "tester_friends",
+                "email": "tester_friends@leetstreak.test",
+                "password": "password123",
+                "global_leaderboard_enabled": False,
+                "easy_count": 25,
+                "medium_count": 15,
+                "hard_count": 4,
+                "official_streak": 8,
+                "points": 180.0,
+            },
+            {
+                "name": "Sam (Global Enabled)",
+                "leetcode_username": "tester_global",
+                "email": "tester_global@leetstreak.test",
+                "password": "password123",
+                "global_leaderboard_enabled": True,
+                "easy_count": 40,
+                "medium_count": 25,
+                "hard_count": 9,
+                "official_streak": 14,
+                "points": 320.0,
+            },
+        ]
+        seeded_users = []
+        for tc in tester_configs:
+            tu = db.query(User).filter(
+                (func.lower(User.email) == tc["email"].lower()) |
+                (func.lower(User.leetcode_username) == tc["leetcode_username"].lower())
+            ).first()
+            if not tu:
+                tu = User(
+                    name=tc["name"],
+                    leetcode_username=tc["leetcode_username"],
+                    email=tc["email"].lower(),
+                    password_hash=hash_password(tc["password"]),
+                    global_leaderboard_enabled=tc["global_leaderboard_enabled"],
+                    easy_count=tc["easy_count"],
+                    medium_count=tc["medium_count"],
+                    hard_count=tc["hard_count"],
+                    official_streak=tc["official_streak"],
+                    points=tc["points"],
+                    created_at=datetime.now(),
+                )
+                db.add(tu)
+                db.commit()
+                db.refresh(tu)
+            else:
+                tu.global_leaderboard_enabled = tc["global_leaderboard_enabled"]
+                tu.password_hash = hash_password(tc["password"])
+                db.commit()
+            seeded_users.append(tu)
+
+        # Seed shared squad "Squad Alpha" (code: STREAK-DEMO)
+        demo_group = db.query(Group).filter(Group.code == "STREAK-DEMO").first()
+        if not demo_group and seeded_users:
+            demo_group = Group(name="Squad Alpha", code="STREAK-DEMO", creator_id=seeded_users[0].id)
+            db.add(demo_group)
+            db.commit()
+            db.refresh(demo_group)
+
+        if demo_group:
+            for su in seeded_users:
+                gm = db.query(GroupMember).filter(
+                    GroupMember.group_id == demo_group.id,
+                    GroupMember.user_id == su.id
+                ).first()
+                if not gm:
+                    db.add(GroupMember(group_id=demo_group.id, user_id=su.id))
+            db.commit()
+
+        today = get_ist_today()
+        for su in seeded_users:
+            da = db.query(DailyActivity).filter(DailyActivity.user_id == su.id, DailyActivity.date == today).first()
+            if not da:
+                db.add(DailyActivity(user_id=su.id, date=today, problems_solved=2))
         db.commit()
     except Exception as e:
         logger.warning("Startup activity cleanup failed: %s", e)
@@ -157,6 +246,7 @@ async def register_user(payload: RegisterRequest, db: Session = Depends(get_db))
         email=clean_email,
         password_hash=hash_password(payload.password),
         avatar_url=data.get("avatar_url"),
+        global_leaderboard_enabled=payload.global_leaderboard_enabled,
         created_at=datetime.now(),
     )
     db.add(user)
@@ -179,6 +269,7 @@ async def register_user(payload: RegisterRequest, db: Session = Depends(get_db))
         access_token=token,
         token_type="bearer",
         created_at=user.created_at,
+        global_leaderboard_enabled=user.global_leaderboard_enabled if user.global_leaderboard_enabled is not None else True,
     )
 
 
@@ -209,6 +300,7 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
         access_token=token,
         token_type="bearer",
         created_at=matched_user.created_at,
+        global_leaderboard_enabled=matched_user.global_leaderboard_enabled if matched_user.global_leaderboard_enabled is not None else True,
     )
 
 
@@ -292,6 +384,23 @@ async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest,
         "user_id": user_id,
         "leetcode_username": user.leetcode_username,
         "avatar_url": user.avatar_url,
+    }
+
+
+@app.put("/api/users/{user_id}/settings")
+def update_user_settings(user_id: int, payload: UpdateSettingsRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.global_leaderboard_enabled = payload.global_leaderboard_enabled
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "status": "settings_updated",
+        "user_id": user_id,
+        "global_leaderboard_enabled": user.global_leaderboard_enabled,
     }
 
 
@@ -399,6 +508,7 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
         monthly_total=total_since_date(month_start),
         created_at=user.created_at,
         last_7_days=last_7,
+        global_leaderboard_enabled=user.global_leaderboard_enabled if user.global_leaderboard_enabled is not None else True,
     )
 
 
@@ -527,8 +637,12 @@ def get_global_leaderboard(
     limit: Optional[int] = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    # Global Leaderboard includes all registered users on the platform
-    users = db.query(User).all()
+    # Global Leaderboard includes users who have global leaderboard enabled
+    users = (
+        db.query(User)
+        .filter((User.global_leaderboard_enabled == True) | (User.global_leaderboard_enabled.is_(None)))
+        .all()
+    )
     return _compute_leaderboard(db, users, requester_id=user_id, sort_by=sort_by, limit=limit)
 
 

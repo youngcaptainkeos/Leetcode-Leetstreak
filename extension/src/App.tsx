@@ -183,6 +183,7 @@ function Onboarding({
   const [busy, setBusy] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [draftsLoaded, setDraftsLoaded] = useState(false);
+  const [enableGlobalLeaderboard, setEnableGlobalLeaderboard] = useState(true);
 
   const AUTH_STORAGE_KEYS = [
     "codestreak_auth_mode",
@@ -265,7 +266,7 @@ function Onboarding({
     setBusy(true);
     onError(null);
     try {
-      const res = await api.register(name.trim(), username.trim(), email.trim(), password);
+      const res = await api.register(name.trim(), username.trim(), email.trim(), password, enableGlobalLeaderboard);
       await clearStored(AUTH_STORAGE_KEYS);
       onRegistered(res.id);
     } catch (err) {
@@ -429,6 +430,22 @@ function Onboarding({
               />
             </label>
 
+            <div className="auth-preference-box">
+              <label className="auth-checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={enableGlobalLeaderboard}
+                  onChange={(e) => setEnableGlobalLeaderboard(e.target.checked)}
+                />
+                <div className="auth-checkbox-desc">
+                  <span className="auth-checkbox-title">🌐 Enable Global Leaderboard</span>
+                  <span className="auth-checkbox-subtitle">
+                    Participate in the public platform leaderboard. Uncheck to only compare with friends and private squads.
+                  </span>
+                </div>
+              </label>
+            </div>
+
             <button type="submit" className="primary-btn" disabled={busy}>
               {busy ? "Creating Account…" : "Create Account"}
             </button>
@@ -572,8 +589,20 @@ function Dashboard({
   useEffect(() => {
     (async () => {
       const storedTab = await getStored("codestreak_active_tab");
+      const cachedDash = await getStored("codestreak_cached_dash");
+      let cachedDashObj: DashboardResponse | null = null;
+      if (cachedDash) {
+        try {
+          cachedDashObj = JSON.parse(cachedDash);
+          setDash(cachedDashObj);
+        } catch (e) {}
+      }
+
       let activeTabKey = "global";
-      if (storedTab) {
+      if (cachedDashObj && cachedDashObj.global_leaderboard_enabled === false) {
+        activeTabKey = "friends";
+        setSelectedTab("friends");
+      } else if (storedTab) {
         if (storedTab === "global" || storedTab === "friends") {
           setSelectedTab(storedTab);
           activeTabKey = storedTab;
@@ -583,11 +612,7 @@ function Dashboard({
         }
       }
       // Instant 0ms stale-while-revalidate cached rendering
-      const cachedDash = await getStored("codestreak_cached_dash");
       const cachedBoard = await getStored(`codestreak_cached_board_${activeTabKey}`) || await getStored("codestreak_cached_board");
-      if (cachedDash) {
-        try { setDash(JSON.parse(cachedDash)); } catch (e) {}
-      }
       if (cachedBoard) {
         try {
           const parsed = JSON.parse(cachedBoard);
@@ -624,6 +649,7 @@ function Dashboard({
   const [showCoffeeModal, setShowCoffeeModal] = useState(false);
   const [newLeetcodeUsername, setNewLeetcodeUsername] = useState("");
   const [updatingUsername, setUpdatingUsername] = useState(false);
+  const [togglingLeaderboard, setTogglingLeaderboard] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
 
   // Delete Account States
@@ -700,6 +726,35 @@ function Dashboard({
     }
   }
 
+  async function handleToggleGlobalLeaderboard() {
+    if (!dash) return;
+    const currentEnabled = dash.global_leaderboard_enabled !== false;
+    const nextState = !currentEnabled;
+    setTogglingLeaderboard(true);
+    setSettingsMsg(null);
+    try {
+      await api.updateSettings(userId, { global_leaderboard_enabled: nextState });
+      const updatedDash = { ...dash, global_leaderboard_enabled: nextState };
+      setDash(updatedDash);
+      setStored("codestreak_cached_dash", JSON.stringify(updatedDash));
+      setSettingsMsg(
+        nextState
+          ? "Global Leaderboard enabled! 🌐"
+          : "Global Leaderboard disabled! In friends-only mode. 👥"
+      );
+      setTimeout(() => setSettingsMsg(null), 3000);
+
+      // If user disabled global leaderboard and is currently on global tab, redirect to friends
+      if (!nextState && selectedTab === "global") {
+        changeTab("friends");
+      }
+    } catch (err) {
+      setSettingsMsg(err instanceof Error ? err.message : "Failed to update settings.");
+    } finally {
+      setTogglingLeaderboard(false);
+    }
+  }
+
   async function handleDeleteAccount(e: React.FormEvent) {
     e.preventDefault();
     if (!deletePassword) return;
@@ -751,6 +806,10 @@ function Dashboard({
       }
 
       setDash(dashRes);
+      if (dashRes.global_leaderboard_enabled === false && tab === "global") {
+        changeTab("friends");
+        return;
+      }
       if (myGroupsRes?.groups) setGroups(myGroupsRes.groups);
       if (boardRes) {
         setBoard(boardRes);
@@ -1257,13 +1316,15 @@ function Dashboard({
 
         {/* Board Switcher Tabs */}
         <div className="tab-bar-container">
-          <button
-            className={`tab-btn ${selectedTab === "global" ? "active" : ""}`}
-            onClick={() => changeTab("global")}
-            title="Global Leaderboard (All platform users)"
-          >
-            🌐 Global
-          </button>
+          {dash?.global_leaderboard_enabled !== false && (
+            <button
+              className={`tab-btn ${selectedTab === "global" ? "active" : ""}`}
+              onClick={() => changeTab("global")}
+              title="Global Leaderboard (All platform users)"
+            >
+              🌐 Global
+            </button>
+          )}
           <button
             className={`tab-btn ${selectedTab === "friends" ? "active" : ""}`}
             onClick={() => changeTab("friends")}
@@ -1737,6 +1798,30 @@ function Dashboard({
                 }}
               >
                 🚪 Log Out
+              </button>
+            </div>
+
+            {/* Global Leaderboard Preference Card */}
+            <div className="settings-preference-card">
+              <div className="settings-pref-info">
+                <div className="settings-pref-title">🌐 Global Leaderboard</div>
+                <div className="settings-pref-desc">
+                  {dash?.global_leaderboard_enabled !== false
+                    ? "Enabled: Your profile is ranked globally and the Global tab is visible."
+                    : "Disabled: Global tab is hidden. You only compare streaks & points with friends."}
+                </div>
+              </div>
+              <button
+                type="button"
+                className={`settings-toggle-btn ${dash?.global_leaderboard_enabled !== false ? "active" : ""}`}
+                onClick={handleToggleGlobalLeaderboard}
+                disabled={togglingLeaderboard}
+              >
+                {togglingLeaderboard
+                  ? "Saving…"
+                  : dash?.global_leaderboard_enabled !== false
+                  ? "Disable Global Leaderboard"
+                  : "Enable Global Leaderboard"}
               </button>
             </div>
 

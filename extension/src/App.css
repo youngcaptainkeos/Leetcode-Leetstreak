@@ -2274,5 +2274,120 @@ input:focus, form input:focus {
   cursor: not-allowed;
 }
 
+/* Registration Preference Box */
+.auth-preference-box {
+  background-color: var(--surface-high);
+  border: 1px solid var(--border);
+  border-radius: var(--md-shape-corner-medium);
+  padding: 10px 12px;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+
+.auth-checkbox-label {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  cursor: pointer;
+  text-align: left !important;
+}
+
+.auth-checkbox-label input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  margin-top: 2px !important;
+  accent-color: var(--primary) !important;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.auth-checkbox-desc {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.auth-checkbox-title {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.auth-checkbox-subtitle {
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  color: var(--text-secondary) !important;
+  line-height: 1.35;
+  text-transform: none !important;
+}
+
+/* Settings Leaderboard Preference Card */
+.settings-preference-card {
+  background-color: var(--surface-high);
+  border: 1px solid var(--border);
+  border-radius: var(--md-shape-corner-medium);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.settings-pref-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-pref-title {
+  font-family: var(--md-ref-typeface-brand);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.settings-pref-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.settings-toggle-btn {
+  background-color: var(--surface-highest);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--md-shape-corner-full);
+  padding: 7px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settings-toggle-btn:hover:not(:disabled) {
+  background-color: var(--surface-low);
+  color: var(--text-primary);
+  border-color: var(--primary-border);
+}
+
+.settings-toggle-btn.active {
+  background-color: var(--primary-container) !important;
+  color: #DDD6FE !important;
+  border-color: var(--primary-border) !important;
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.2);
+}
+
+.settings-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 
 
