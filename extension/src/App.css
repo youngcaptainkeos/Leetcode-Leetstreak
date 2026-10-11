@@ -2387,10 +2387,22 @@ input:focus, form input:focus {
 .settings-modal {
   width: 350px !important;
   max-width: 95vw !important;
-  max-height: 88vh !important;
+  max-height: calc(100vh - 20px) !important;
   overflow-y: auto !important;
-  padding: 16px 16px 18px 16px !important;
-  gap: 14px !important;
+  overflow-x: hidden !important;
+  padding: 13px 14px 14px 14px !important;
+  gap: 9px !important;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.settings-modal::-webkit-scrollbar {
+  width: 4px;
+}
+
+.settings-modal::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
 }
 
 .settings-msg-banner {
@@ -2410,7 +2422,7 @@ input:focus, form input:focus {
   background-color: var(--surface-high);
   border: 1px solid var(--border);
   border-radius: var(--md-shape-corner-medium);
-  padding: 10px 12px;
+  padding: 8px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2501,11 +2513,11 @@ input:focus, form input:focus {
 .settings-section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
 }
 
 .settings-section-title {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   color: var(--text-muted);
   letter-spacing: 0.8px;
@@ -2517,10 +2529,10 @@ input:focus, form input:focus {
   background-color: var(--surface-high);
   border: 1px solid var(--border);
   border-radius: var(--md-shape-corner-medium);
-  padding: 12px 14px;
+  padding: 9px 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 /* Rows with Switch / Actions */
@@ -2716,6 +2728,50 @@ input:focus, form input:focus {
   background-color: #EF4444;
   color: #FFFFFF;
   border-color: #EF4444;
+}
+
+/* 3. Sleek Legal Footer */
+.settings-legal-footer {
+  padding-top: 6px;
+  margin-top: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.settings-legal-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.settings-legal-links a {
+  color: #38bdf8;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.settings-legal-links a:hover {
+  text-decoration: underline;
+  opacity: 0.85;
+}
+
+.settings-legal-links span {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.settings-legal-disclaimer {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  opacity: 0.75;
+  line-height: 1.35;
+  margin: 0;
 }
 
 

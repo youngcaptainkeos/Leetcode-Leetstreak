@@ -1793,7 +1793,7 @@ function Dashboard({
       {/* Account Settings Modal */}
       {showSettings && (
         <div className="modal-overlay" onClick={() => setShowSettings(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content settings-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>⚙️ Account Settings</h3>
               <button
@@ -1937,41 +1937,35 @@ function Dashboard({
             </div>
 
             {/* Section: ABOUT & LEGAL */}
-            <div className="settings-section">
-              <div className="settings-section-title">ABOUT &amp; LEGAL</div>
-              <div className="settings-card" style={{ padding: "12px 14px", fontSize: "11px", color: "var(--text-muted, #94a3b8)", lineHeight: "1.5" }}>
-                <div style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px", fontWeight: 600, flexWrap: "wrap" }}>
-                  <a
-                    href="https://codestreak-api.onrender.com/privacy"
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: "#38bdf8", textDecoration: "none" }}
-                  >
-                    Privacy Policy ↗
-                  </a>
-                  <span>•</span>
-                  <a
-                    href="https://codestreak-api.onrender.com/terms"
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: "#38bdf8", textDecoration: "none" }}
-                  >
-                    Terms &amp; EULA ↗
-                  </a>
-                  <span>•</span>
-                  <a
-                    href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak"
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: "#38bdf8", textDecoration: "none" }}
-                  >
-                    GitHub (MIT) ↗
-                  </a>
-                </div>
-                <div style={{ fontSize: "10px", opacity: 0.8, lineHeight: "1.4" }}>
-                  LeetStreak is an independent open-source project and is not affiliated, associated, authorized, endorsed by, or in any way officially connected with LeetCode LLC.
-                </div>
+            <div className="settings-legal-footer">
+              <div className="settings-legal-links">
+                <a
+                  href="https://codestreak-api.onrender.com/privacy"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Privacy Policy ↗
+                </a>
+                <span>•</span>
+                <a
+                  href="https://codestreak-api.onrender.com/terms"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Terms &amp; EULA ↗
+                </a>
+                <span>•</span>
+                <a
+                  href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  GitHub ↗
+                </a>
               </div>
+              <p className="settings-legal-disclaimer">
+                Independent open-source project. Not affiliated with LeetCode LLC.
+              </p>
             </div>
           </div>
         </div>
