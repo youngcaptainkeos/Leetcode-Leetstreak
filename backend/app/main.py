@@ -1140,7 +1140,7 @@ async def send_and_update_user_commit(
 @app.post("/api/admin/broadcast-update-email")
 async def broadcast_update_email(
     background_tasks: BackgroundTasks,
-    commit_id: str = "e7d6e17",
+    commit_id: str = "5671788",
     release_notes: str = "Clean redesigned settings panel, Global Leaderboard privacy toggle, custom high-res flame logos, and animated quick sync icon!",
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
     subject: Optional[str] = None,
@@ -1178,8 +1178,8 @@ async def broadcast_update_email(
 @app.post("/api/admin/test-update-email")
 async def test_update_email(
     to_email: str,
-    username: str = "Developer",
-    commit_id: str = "e7d6e17",
+    username: str = "Shashank",
+    commit_id: str = "5671788",
     release_notes: str = "Clean redesigned settings panel, Global Leaderboard privacy toggle, custom high-res flame logos, and animated quick sync icon!",
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
     subject: Optional[str] = None
