@@ -165,15 +165,19 @@ async def send_update_notification_email(
     """Sends professional update notification email with download package link and setup guide."""
     subject = "LeetStreak Update Available"
     
-    if not release_notes or "ZeroTrac" in release_notes or "Sunday 12am" in release_notes:
+    if not release_notes or "ZeroTrac" in release_notes or "Sunday 12am" in release_notes or "Redesign" in release_notes or "40c6882" in release_notes:
         release_notes_html = """
         <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #cbd5e1; font-size: 14px; line-height: 1.6;">
-          <li style="margin-bottom: 6px;"><strong>ZeroTrac Elo Contest Ratings</strong>: Contest problems now use official Elo ratings for accurate problem point distribution.</li>
-          <li style="margin-bottom: 6px;"><strong>Detailed Points Breakdown</strong>: Click any recent solve in your dashboard to view exact base points, contest ratings, acceptance deltas, and streak multipliers.</li>
-          <li style="margin-bottom: 6px;"><strong>Sunday Midnight Resets</strong>: Weekly leaderboards now reset reliably every Sunday at 12:00 AM.</li>
-          <li style="margin-bottom: 6px;"><strong>In-App Update Notifications</strong>: Automatic update banner in the extension popup when new versions are released.</li>
+          <li style="margin-bottom: 8px;"><strong>Brand New Clean Settings Panel</strong>: Redesigned with organized sections for preferences, LeetCode account handle, danger zone, and viewport-optimized layout with smooth scrolling.</li>
+          <li style="margin-bottom: 8px;"><strong>Global Leaderboard Privacy Toggle</strong>: Easily switch between participating in the platform-wide public Global Leaderboard and private friends-only squad mode at any time.</li>
+          <li style="margin-bottom: 8px;"><strong>High-Res Custom Branding &amp; Flame Icons</strong>: Upgraded with new custom flame artwork for the streak hero card, dedicated streak fire badges across leaderboards, and clean monochrome WhatsApp icon.</li>
+          <li style="margin-bottom: 8px;"><strong>Animated Quick Sync Button</strong>: Added a dedicated cyan sync icon in the header that spins dynamically while fetching your latest LeetCode submissions.</li>
+          <li style="margin-bottom: 8px;"><strong>One-Click &ldquo;Kudos All&rdquo;</strong>: Hype up your entire squad's problem solves with a single tap, with celebratory toasts.</li>
+          <li style="margin-bottom: 8px;"><strong>Official Legal &amp; Chrome Web Store Compliance</strong>: Full privacy policy, terms of service, and direct in-app account deletion controls.</li>
         </ul>
         """
+    elif "<" in release_notes:
+        release_notes_html = release_notes
     else:
         release_notes_html = f'<p style="margin: 8px 0 0 0; color: #cbd5e1; font-size: 14px; line-height: 1.6;">{release_notes}</p>'
 

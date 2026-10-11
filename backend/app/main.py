@@ -1081,9 +1081,9 @@ def get_extension_version():
     """Serves latest extension version info for in-app update notification banner."""
     return {
         "latest_version": "1.0.0",
-        "latest_commit": "65c6d9c",
+        "latest_commit": "40c6882",
         "min_supported_version": "1.0.0",
-        "release_notes": "Added Sunday 12am reset, Elo Ratings, and dynamic update notifications!",
+        "release_notes": "Clean redesigned settings panel, Global Leaderboard privacy toggle, custom high-res flame logos, and animated quick sync icon!",
         "download_url": "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
         "crx_url": "https://codestreak-api.onrender.com/downloads/leetstreak.crx"
     }
@@ -1138,8 +1138,8 @@ async def send_and_update_user_commit(
 @app.post("/api/admin/broadcast-update-email")
 async def broadcast_update_email(
     background_tasks: BackgroundTasks,
-    commit_id: str = "65c6d9c",
-    release_notes: str = "ZeroTrac Elo Contest Ratings, detailed points breakdown modal, Sunday 12am reset, and in-app update notifications!",
+    commit_id: str = "40c6882",
+    release_notes: str = "Clean redesigned settings panel, Global Leaderboard privacy toggle, custom high-res flame logos, and animated quick sync icon!",
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
     db: Session = Depends(get_db)
 ):
@@ -1175,8 +1175,8 @@ async def broadcast_update_email(
 async def test_update_email(
     to_email: str,
     username: str = "Developer",
-    commit_id: str = "65c6d9c",
-    release_notes: str = "ZeroTrac Elo Contest Ratings, detailed points breakdown modal, Sunday 12am reset, and in-app update notifications!",
+    commit_id: str = "40c6882",
+    release_notes: str = "Clean redesigned settings panel, Global Leaderboard privacy toggle, custom high-res flame logos, and animated quick sync icon!",
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip"
 ):
     """
