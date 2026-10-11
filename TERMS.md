@@ -56,5 +56,5 @@ These Terms shall be interpreted in accordance with applicable laws without rega
 ## 8. Contact & Inquiries
 For questions regarding these Terms or the EULA, please reach out to:
 * **Maintainer:** Shashank
-* **Email:** [support@leetstreak.com](mailto:support@leetstreak.com) / [shashu2804@gmail.com](mailto:shashu2804@gmail.com)
+* **Email:** [shashu2804@gmail.com](mailto:shashu2804@gmail.com)
 * **GitHub Repository:** [https://github.com/youngcaptainkeos/Leetcode-Leetstreak](https://github.com/youngcaptainkeos/Leetcode-Leetstreak)

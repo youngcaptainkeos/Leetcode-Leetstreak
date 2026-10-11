@@ -333,7 +333,7 @@ PRIVACY_HTML = f"""<!DOCTYPE html>
       </p>
       <ul>
         <li><strong>Project Maintainer:</strong> Shashank</li>
-        <li><strong>Email:</strong> <a href="mailto:support@leetstreak.com">support@leetstreak.com</a> / <a href="mailto:shashu2804@gmail.com">shashu2804@gmail.com</a></li>
+        <li><strong>Email:</strong> <a href="mailto:shashu2804@gmail.com">shashu2804@gmail.com</a></li>
         <li><strong>GitHub Repository:</strong> <a href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak" target="_blank" rel="noreferrer">github.com/youngcaptainkeos/Leetcode-Leetstreak</a></li>
       </ul>
 
@@ -438,7 +438,7 @@ TERMS_HTML = f"""<!DOCTYPE html>
       <p>For questions regarding these Terms or the EULA, please reach out to:</p>
       <ul>
         <li><strong>Maintainer:</strong> Shashank</li>
-        <li><strong>Email:</strong> <a href="mailto:support@leetstreak.com">support@leetstreak.com</a> / <a href="mailto:shashu2804@gmail.com">shashu2804@gmail.com</a></li>
+        <li><strong>Email:</strong> <a href="mailto:shashu2804@gmail.com">shashu2804@gmail.com</a></li>
         <li><strong>GitHub Repository:</strong> <a href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak" target="_blank" rel="noreferrer">github.com/youngcaptainkeos/Leetcode-Leetstreak</a></li>
       </ul>
 
