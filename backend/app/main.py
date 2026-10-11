@@ -1138,7 +1138,7 @@ async def send_and_update_user_commit(
 @app.post("/api/admin/broadcast-update-email")
 async def broadcast_update_email(
     background_tasks: BackgroundTasks,
-    commit_id: str = "fe74ddc",
+    commit_id: str = "a277789",
     release_notes: str = "Revamped UI & Settings, Revamped Dynamic Point System, and Global Leaderboard privacy toggle!",
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
     db: Session = Depends(get_db)
@@ -1175,7 +1175,7 @@ async def broadcast_update_email(
 async def test_update_email(
     to_email: str,
     username: str = "Developer",
-    commit_id: str = "fe74ddc",
+    commit_id: str = "a277789",
     release_notes: str = "Revamped UI & Settings, Revamped Dynamic Point System, and Global Leaderboard privacy toggle!",
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip"
 ):
