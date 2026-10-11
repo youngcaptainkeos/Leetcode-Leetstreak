@@ -144,7 +144,7 @@ export default function App() {
           <div>
             🚀 <strong>Update v{updateInfo.latest_version} Available!</strong>
             <div style={{ fontSize: "10px", opacity: 0.85, marginTop: "2px" }}>
-              {updateInfo.release_notes || "Performance fixes and new features available."}
+              {updateInfo.release_notes || "Performance fixes and new features available."} (Reinstall/Reload unpacked folder to apply)
             </div>
           </div>
           <a

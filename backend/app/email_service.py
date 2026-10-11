@@ -202,21 +202,36 @@ async def send_update_notification_email(
         <!-- Greeting -->
         <p style="font-size: 15px; margin-top: 0; margin-bottom: 14px; color: #f8fafc;">Hi <strong>{username}</strong>,</p>
         
-        <p style="font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 24px;">
-          A new update for the <strong>LeetStreak</strong> extension is now available. Here is a summary of what has been updated:
+        <p style="font-size: 14px; line-height: 1.6; color: #94a3b8; margin-bottom: 20px;">
+          A new update for the <strong>LeetStreak</strong> extension is now available! Since LeetStreak runs as an unpacked extension, <strong>you need to reinstall it to apply the update</strong>. Here is a summary of what has been updated:
         </p>
 
         <!-- What's New Section -->
-        <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 20px; margin-bottom: 28px;">
+        <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
           <h2 style="margin: 0 0 10px 0; font-size: 12px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.8px;">What's New</h2>
           {release_notes_html}
         </div>
 
         <!-- Action Button -->
-        <div style="text-align: center; margin-bottom: 28px;">
+        <div style="text-align: center; margin-bottom: 16px;">
           <a href="{download_url}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 13px 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);">
             Download Extension Package (leetstreak.zip)
           </a>
+        </div>
+
+        <!-- How to Update Notice -->
+        <div style="background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 16px 18px; margin-bottom: 24px; text-align: left;">
+          <div style="font-size: 13px; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">
+            ⚠️ How to Apply This Update (Reinstallation Required):
+          </div>
+          <p style="margin: 0 0 8px 0; font-size: 13px; color: #cbd5e1; line-height: 1.5;">
+            Because LeetStreak is installed in developer mode, it does not update in the background. <strong>To get these updates, you must reinstall / reload it:</strong>
+          </p>
+          <ol style="margin: 0; padding-left: 20px; font-size: 12.5px; color: #94a3b8; line-height: 1.6;">
+            <li>Download the new <strong>leetstreak.zip</strong> using the button above and unzip it.</li>
+            <li>Open <code>chrome://extensions</code> in your browser (make sure <strong>Developer mode</strong> is toggled ON).</li>
+            <li>Click the <strong>Reload (🔄)</strong> icon on your existing LeetStreak extension card, or remove the old one and click <strong>Load unpacked</strong> to select the new folder.</li>
+          </ol>
         </div>
 
         <!-- Installation Instructions Link -->
