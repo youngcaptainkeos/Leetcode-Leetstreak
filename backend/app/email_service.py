@@ -163,12 +163,13 @@ async def send_update_notification_email(
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip"
 ) -> bool:
     """Sends professional update notification email with download package link and setup guide."""
-    subject = "LeetStreak Update Available"
+    subject = "LeetStreak Update: Revamped UI, Dynamic Points Engine & Global Leaderboard 🔥"
     
-    if not release_notes or "ZeroTrac" in release_notes or "Sunday 12am" in release_notes or "Redesign" in release_notes or "40c6882" in release_notes:
+    if not release_notes or "ZeroTrac" in release_notes or "Sunday 12am" in release_notes or "Redesign" in release_notes or "40c6882" in release_notes or "fe74ddc" in release_notes or "Revamped" in release_notes:
         release_notes_html = """
         <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #cbd5e1; font-size: 14px; line-height: 1.6;">
-          <li style="margin-bottom: 8px;"><strong>Brand New Clean Settings Panel</strong>: Redesigned with organized sections for preferences, LeetCode account handle, danger zone, and viewport-optimized layout with smooth scrolling.</li>
+          <li style="margin-bottom: 8px;"><strong>Revamped Modern UI &amp; Settings</strong>: Redesigned with organized sections for preferences, LeetCode account handle, danger zone, and viewport-optimized layout with smooth scrolling.</li>
+          <li style="margin-bottom: 8px;"><strong>Revamped Dynamic Point System</strong>: Scoring is now fairer and smarter—contest ratings determine problem value, acceptance rates scale difficulty dynamically, official Daily Challenges award <strong>+5.0 bonus points</strong>, and active streaks provide up to a <strong>1.10x multiplier boost</strong>!</li>
           <li style="margin-bottom: 8px;"><strong>Global Leaderboard Privacy Toggle</strong>: Easily switch between participating in the platform-wide public Global Leaderboard and private friends-only squad mode at any time.</li>
           <li style="margin-bottom: 8px;"><strong>High-Res Custom Branding &amp; Flame Icons</strong>: Upgraded with new custom flame artwork for the streak hero card, dedicated streak fire badges across leaderboards, and clean monochrome WhatsApp icon.</li>
           <li style="margin-bottom: 8px;"><strong>Animated Quick Sync Button</strong>: Added a dedicated cyan sync icon in the header that spins dynamically while fetching your latest LeetCode submissions.</li>
