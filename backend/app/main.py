@@ -1177,7 +1177,8 @@ async def test_update_email(
     username: str = "Developer",
     commit_id: str = "40c6882",
     release_notes: str = "Clean redesigned settings panel, Global Leaderboard privacy toggle, custom high-res flame logos, and animated quick sync icon!",
-    download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip"
+    download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
+    subject: Optional[str] = None
 ):
     """
     Sends a test update notification email with 'Download Update Package' CTA button to a specific email address.
@@ -1187,7 +1188,8 @@ async def test_update_email(
         username=username,
         commit_id=commit_id,
         release_notes=release_notes,
-        download_url=download_url
+        download_url=download_url,
+        subject=subject
     )
     return {
         "status": "sent" if success else "failed",

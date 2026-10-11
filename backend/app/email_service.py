@@ -1,5 +1,6 @@
 import os
 import logging
+import secrets
 import socket
 import smtplib
 from email.mime.text import MIMEText
@@ -158,12 +159,16 @@ async def send_otp_email(to_email: str, username: str, otp_code: str) -> bool:
 async def send_update_notification_email(
     to_email: str,
     username: str,
-    commit_id: str = "26e30e6",
+    commit_id: str = "40c6882",
     release_notes: str = None,
-    download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip"
+    download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
+    subject: str = None,
 ) -> bool:
     """Sends professional update notification email with download package link and setup guide."""
-    subject = "LeetStreak Update Available"
+    if not subject:
+        subject = "LeetStreak v1.0.0 is Live 🔥"
+    
+    unique_nonce = secrets.token_hex(4)
     
     if not release_notes or "ZeroTrac" in release_notes or "Sunday 12am" in release_notes or "Redesign" in release_notes or "40c6882" in release_notes:
         release_notes_html = """
@@ -210,20 +215,20 @@ async def send_update_notification_email(
         </p>
 
         <!-- What's New Card -->
-        <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px 14px; margin-bottom: 18px;">
+        <div style="background-color: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
           <div style="font-size: 10.5px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px;">What's New</div>
           {release_notes_html}
         </div>
 
         <!-- Action Button -->
-        <div style="text-align: center; margin-bottom: 18px;">
+        <div style="text-align: center; margin-bottom: 16px;">
           <a href="{download_url}" target="_blank" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 11px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);">
             ⚡ Download Update Package
           </a>
         </div>
 
         <!-- Links -->
-        <div style="border-top: 1px solid #1e293b; padding-top: 12px; font-size: 12px; color: #94a3b8; text-align: center; line-height: 1.8;">
+        <div style="padding: 10px 0 4px 0; font-size: 12px; color: #94a3b8; text-align: center; line-height: 1.8;">
           <a href="https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme" target="_blank" style="color: #818cf8; text-decoration: none; font-weight: 600;">Setup Guide</a>
           &nbsp;&bull;&nbsp;
           <a href="https://api.whatsapp.com/send?text=Check%20out%20LeetStreak%20to%20track%20your%20LeetCode%20daily%20streak%20and%20compete%20on%20leaderboards%20with%20friends!%20https://codestreak-api.onrender.com/downloads/leetstreak.zip" target="_blank" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Share with Friends</a>
@@ -232,8 +237,11 @@ async def send_update_notification_email(
         </div>
 
         <!-- Footer -->
-        <div style="margin-top: 12px; text-align: center; font-size: 11px; color: #64748b;">
+        <div style="margin-top: 10px; text-align: center; font-size: 11px; color: #64748b;">
           LeetStreak &bull; Keep your streak alive 🔥
+          <div style="color: transparent; font-size: 1px; line-height: 1px; max-height: 1px; overflow: hidden; opacity: 0.01;">
+            ref-{unique_nonce}
+          </div>
         </div>
       </div>
     </body>
