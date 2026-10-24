@@ -450,44 +450,41 @@ function Onboarding({
 
             <div
               className={`auth-leaderboard-card ${enableGlobalLeaderboard ? "active" : ""}`}
-              onClick={() => setEnableGlobalLeaderboard(!enableGlobalLeaderboard)}
+              onClick={() => setEnableGlobalLeaderboard((prev) => !prev)}
               role="button"
               tabIndex={0}
+              title={
+                enableGlobalLeaderboard
+                  ? "Click to disable global leaderboard participation"
+                  : "Click to enable global leaderboard participation"
+              }
               onKeyDown={(e) => {
                 if (e.key === " " || e.key === "Enter") {
                   e.preventDefault();
-                  setEnableGlobalLeaderboard(!enableGlobalLeaderboard);
+                  setEnableGlobalLeaderboard((prev) => !prev);
                 }
               }}
             >
-              <div className="auth-leaderboard-text">
-                <span className="auth-leaderboard-label">
-                  <span className="auth-leaderboard-icon">🌐</span>
-                  <span>Participate in Global Leaderboard</span>
-                </span>
-                <span className="auth-leaderboard-caption">
-                  {enableGlobalLeaderboard
-                    ? "Compete publicly on global rankings"
-                    : "Compete with friends & squads only"}
-                </span>
+              <div className="auth-leaderboard-left">
+                <span className="auth-leaderboard-icon">🌐</span>
+                <div className="auth-leaderboard-text">
+                  <span className="auth-leaderboard-title">
+                    Participate in Global Leaderboard
+                  </span>
+                  <span className="auth-leaderboard-desc">
+                    {enableGlobalLeaderboard
+                      ? "Public leaderboard enabled"
+                      : "Off (friends & squads only)"}
+                  </span>
+                </div>
               </div>
 
-              <label
-                className="auth-switch"
-                onClick={(e) => e.stopPropagation()}
-                title={
-                  enableGlobalLeaderboard
-                    ? "Disable Global Leaderboard"
-                    : "Enable Global Leaderboard"
-                }
+              <div
+                className={`auth-toggle-track ${enableGlobalLeaderboard ? "on" : "off"}`}
+                aria-hidden="true"
               >
-                <input
-                  type="checkbox"
-                  checked={enableGlobalLeaderboard}
-                  onChange={(e) => setEnableGlobalLeaderboard(e.target.checked)}
-                />
-                <span className="auth-slider" />
-              </label>
+                <div className="auth-toggle-thumb" />
+              </div>
             </div>
 
             <button type="submit" className="primary-btn" disabled={busy}>
