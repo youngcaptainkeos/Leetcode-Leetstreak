@@ -1081,9 +1081,9 @@ def get_extension_version():
     """Serves latest extension version info for in-app update notification banner."""
     return {
         "latest_version": "1.0.0",
-        "latest_commit": "40c6882",
+        "latest_commit": "2270cc4",
         "min_supported_version": "1.0.0",
-        "release_notes": "Clean redesigned settings panel, Global Leaderboard privacy toggle, custom high-res flame logos, and animated quick sync icon!",
+        "release_notes": "Added clean popup guide to easily locate your LeetCode username and streamlined sign-up layout.",
         "download_url": "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
         "crx_url": "https://codestreak-api.onrender.com/downloads/leetstreak.crx"
     }
@@ -1138,8 +1138,8 @@ async def send_and_update_user_commit(
 @app.post("/api/admin/broadcast-update-email")
 async def broadcast_update_email(
     background_tasks: BackgroundTasks,
-    commit_id: str = "a277789",
-    release_notes: str = "Revamped UI & Settings, Revamped Dynamic Point System, and Global Leaderboard privacy toggle!",
+    commit_id: str = "2270cc4",
+    release_notes: str = "Added clean popup guide to easily locate your LeetCode username and streamlined sign-up layout.",
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
     db: Session = Depends(get_db)
 ):
@@ -1175,8 +1175,8 @@ async def broadcast_update_email(
 async def test_update_email(
     to_email: str,
     username: str = "Developer",
-    commit_id: str = "a277789",
-    release_notes: str = "Revamped UI & Settings, Revamped Dynamic Point System, and Global Leaderboard privacy toggle!",
+    commit_id: str = "2270cc4",
+    release_notes: str = "Added clean popup guide to easily locate your LeetCode username and streamlined sign-up layout.",
     download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip"
 ):
     """
