@@ -448,19 +448,47 @@ function Onboarding({
               />
             </label>
 
-            <label className="auth-checkbox-row">
-              <input
-                type="checkbox"
-                checked={enableGlobalLeaderboard}
-                onChange={(e) => setEnableGlobalLeaderboard(e.target.checked)}
-              />
-              <span className="auth-checkbox-label-text">
-                Participate in Global Leaderboard
-                <span className="auth-checkbox-subtext">
-                  Uncheck to only compete with friends and private squads
+            <div
+              className={`auth-leaderboard-card ${enableGlobalLeaderboard ? "active" : ""}`}
+              onClick={() => setEnableGlobalLeaderboard(!enableGlobalLeaderboard)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === " " || e.key === "Enter") {
+                  e.preventDefault();
+                  setEnableGlobalLeaderboard(!enableGlobalLeaderboard);
+                }
+              }}
+            >
+              <div className="auth-leaderboard-text">
+                <span className="auth-leaderboard-label">
+                  <span className="auth-leaderboard-icon">🌐</span>
+                  <span>Participate in Global Leaderboard</span>
                 </span>
-              </span>
-            </label>
+                <span className="auth-leaderboard-caption">
+                  {enableGlobalLeaderboard
+                    ? "Compete publicly on global rankings"
+                    : "Compete with friends & squads only"}
+                </span>
+              </div>
+
+              <label
+                className="auth-switch"
+                onClick={(e) => e.stopPropagation()}
+                title={
+                  enableGlobalLeaderboard
+                    ? "Disable Global Leaderboard"
+                    : "Enable Global Leaderboard"
+                }
+              >
+                <input
+                  type="checkbox"
+                  checked={enableGlobalLeaderboard}
+                  onChange={(e) => setEnableGlobalLeaderboard(e.target.checked)}
+                />
+                <span className="auth-slider" />
+              </label>
+            </div>
 
             <button type="submit" className="primary-btn" disabled={busy}>
               {busy ? "Creating Account…" : "Create Account"}
