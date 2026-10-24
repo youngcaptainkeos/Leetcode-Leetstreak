@@ -1,217 +1,40 @@
 """HTML templates for public Legal and Compliance pages (Privacy Policy, Terms of Service/EULA)."""
 
 BASE_CSS = """
-:root {
-  --bg: #0b0f19;
-  --card-bg: #131b2e;
-  --card-border: #1e293b;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
-  --accent: #f97316;
-  --accent-glow: rgba(249, 115, 22, 0.15);
-  --accent-light: #fb923c;
-  --link: #38bdf8;
-  --code-bg: #1e293b;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  background-color: var(--bg);
-  color: var(--text-main);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  line-height: 1.65;
-  font-size: 15px;
-  -webkit-font-smoothing: antialiased;
-}
-
-.header-nav {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: rgba(11, 15, 25, 0.85);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--card-border);
-  padding: 14px 24px;
-}
-
-.nav-container {
-  max-width: 860px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.brand-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: var(--text-main);
-  font-weight: 700;
-  font-size: 17px;
-  letter-spacing: -0.3px;
-}
-
-.brand-flame {
-  font-size: 20px;
-  filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.5));
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.nav-link {
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 500;
-  transition: color 0.15s;
-}
-
-.nav-link:hover, .nav-link.active {
-  color: var(--accent-light);
-}
-
-.content-container {
-  max-width: 860px;
-  margin: 40px auto 60px auto;
-  padding: 0 20px;
-}
-
-.legal-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 14px;
-  padding: 40px 36px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-}
-
-@media (max-width: 640px) {
-  .legal-card {
-    padding: 24px 18px;
-  }
-}
-
-.badge-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 9999px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  background: var(--accent-glow);
-  color: var(--accent-light);
-  border: 1px solid rgba(249, 115, 22, 0.3);
-}
-
-.effective-date {
-  color: var(--text-dim);
-  font-size: 12px;
-}
-
-h1 {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  margin-bottom: 12px;
-  color: #ffffff;
-}
-
-.lead-p {
-  color: var(--text-muted);
-  font-size: 15px;
-  margin-bottom: 28px;
-  line-height: 1.6;
-}
-
-hr {
-  border: 0;
-  height: 1px;
-  background: var(--card-border);
-  margin: 32px 0;
-}
-
-h2 {
-  font-size: 19px;
-  font-weight: 700;
-  color: #f1f5f9;
-  margin-top: 30px;
-  margin-bottom: 14px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-h3 {
-  font-size: 15px;
-  font-weight: 600;
-  color: #e2e8f0;
-  margin-top: 20px;
-  margin-bottom: 8px;
-}
-
-p, ul, ol {
-  color: var(--text-muted);
-  margin-bottom: 16px;
-}
-
-ul, ol {
-  padding-left: 24px;
-}
-
-li {
-  margin-bottom: 8px;
-}
-
-strong {
-  color: #f8fafc;
-}
-
-a {
-  color: var(--link);
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-.highlight-box {
-  background: rgba(30, 41, 59, 0.7);
-  border-left: 4px solid var(--accent);
-  border-radius: 0 8px 8px 0;
-  padding: 14px 18px;
-  margin: 20px 0;
-  color: #cbd5e1;
-  font-size: 14px;
-}
-
-.footer {
-  margin-top: 48px;
-  padding-top: 24px;
-  border-top: 1px solid var(--card-border);
-  color: var(--text-dim);
-  font-size: 12px;
-  text-align: center;
-  line-height: 1.6;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+:root { --bg:#111318; --card-bg:#181b22; --card-border:#363b47; --text-main:#f1f5f9; --text-muted:#9ca3af; --text-dim:#6b7280; --accent:#a78bfa; --accent-glow:rgba(167,139,250,.12); --accent-light:#c4b5fd; --link:#c4b5fd; --code-bg:#252934; }
+* { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; }
+body { background:var(--bg); color:var(--text-main); font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.7; font-size:14px; -webkit-font-smoothing:antialiased; }
+.header-nav { position:sticky; top:0; z-index:50; background:rgba(17,19,24,.9); backdrop-filter:blur(12px); border-bottom:1px solid rgba(255,255,255,.07); padding:24px 40px; }
+.nav-container { max-width:1104px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.brand-link { display:flex; align-items:center; gap:9px; text-decoration:none; color:var(--text-main); font-family:Outfit,Inter,sans-serif; font-weight:700; font-size:24px; letter-spacing:-1px; white-space:nowrap; }
+.brand-flame { display:block; width:34px; height:38px; object-fit:contain; }
+.nav-links { display:flex; align-items:center; gap:28px; }
+.nav-link { position:relative; color:var(--text-muted); text-decoration:none; font-size:12px; font-weight:500; transition:color .15s; }
+.nav-link:hover,.nav-link.active { color:var(--text-main); }
+.nav-link.active::after { content:""; position:absolute; left:0; right:0; bottom:-12px; height:2px; border-radius:2px; background:var(--accent); }
+.content-container { max-width:1104px; margin:56px auto 80px; padding:0 40px; }
+.legal-card { background:radial-gradient(ellipse at 10% 0,rgba(167,139,250,.08),transparent 34%),var(--card-bg); border:1px solid var(--card-border); border-radius:20px; padding:48px 52px; box-shadow:0 28px 80px rgba(0,0,0,.22); }
+.badge-row { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+.badge { display:inline-block; padding:5px 11px; border-radius:9999px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; background:var(--accent-glow); color:var(--accent-light); border:1px solid rgba(167,139,250,.25); }
+.effective-date { color:var(--text-dim); font-size:11px; }
+h1 { font-family:Outfit,Inter,sans-serif; font-size:36px; font-weight:600; letter-spacing:-1px; line-height:1.2; margin-bottom:16px; color:var(--text-main); }
+.lead-p { color:var(--text-muted); font-size:14px; margin-bottom:18px; line-height:1.85; }
+hr { border:0; height:1px; background:var(--card-border); margin:34px 0; }
+h2 { font-family:Outfit,Inter,sans-serif; font-size:20px; font-weight:600; color:var(--text-main); margin-top:32px; margin-bottom:14px; padding-bottom:9px; border-bottom:1px solid rgba(255,255,255,.07); }
+h3 { font-size:15px; font-weight:600; color:var(--text-main); margin-top:22px; margin-bottom:9px; }
+p,ul,ol { color:var(--text-muted); margin-bottom:16px; }
+ul,ol { padding-left:24px; }
+li { margin-bottom:8px; }
+strong { color:var(--text-main); }
+a { color:var(--link); text-decoration:none; transition:color .15s; }
+a:hover { color:var(--text-main); text-decoration:underline; }
+code { border-radius:5px; padding:2px 5px; background:var(--code-bg); color:var(--accent-light); font-size:.9em; }
+.highlight-box { background:var(--accent-glow); border:1px solid rgba(167,139,250,.2); border-left:3px solid var(--accent); border-radius:12px; padding:16px 20px; margin:20px 0; color:#d6d0e6; font-size:13px; }
+.footer { margin-top:48px; padding-top:24px; border-top:1px solid var(--card-border); color:var(--text-dim); font-size:11px; text-align:center; line-height:1.8; }
+::selection { color:#201732; background:var(--accent); }
+@media(max-width:700px) { .header-nav { padding:20px 18px; } .nav-container { align-items:flex-start; gap:18px; flex-direction:column; } .nav-links { gap:18px; flex-wrap:wrap; } .content-container { margin:30px auto 48px; padding:0 18px; } .legal-card { padding:26px 20px; border-radius:16px; } .badge-row { align-items:flex-start; flex-direction:column; gap:8px; } h1 { font-size:28px; } h2 { font-size:18px; } }
 """
 
 PRIVACY_HTML = f"""<!DOCTYPE html>
@@ -227,7 +50,7 @@ PRIVACY_HTML = f"""<!DOCTYPE html>
   <header class="header-nav">
     <div class="nav-container">
       <a href="/" class="brand-link">
-        <span class="brand-flame">🔥</span>
+        <img class="brand-flame" src="/web-assets/just_logo.png" alt="">
         <span>LeetStreak</span>
       </a>
       <nav class="nav-links">
@@ -360,7 +183,7 @@ TERMS_HTML = f"""<!DOCTYPE html>
   <header class="header-nav">
     <div class="nav-container">
       <a href="/" class="brand-link">
-        <span class="brand-flame">🔥</span>
+        <img class="brand-flame" src="/web-assets/just_logo.png" alt="">
         <span>LeetStreak</span>
       </a>
       <nav class="nav-links">

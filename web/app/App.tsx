@@ -1281,14 +1281,8 @@ function Dashboard({
           </form>
         )}
 
-        <div className="workspace-groups" id="groups">
-          <h3>Your groups <span>{groups.length}</span></h3>
-          {groups.length ? <div className="workspace-group-cards">{groups.map(group => <button key={group.id} className={selectedTab === group.id ? "is-selected" : ""} onClick={() => changeTab(group.id)}>
-            <span aria-hidden="true">◎</span><strong>{group.name}</strong><small>{group.member_count} members</small>
-          </button>)}</div> : <p className="workspace-section-note">Practice together. Create a group or join one with an invite code.</p>}
-        </div>
         {/* Board Switcher Tabs */}
-        <div className="tab-bar-container">
+        <div className="tab-bar-container" id="groups">
           {dash?.global_leaderboard_enabled !== false && (
             <button
               className={`tab-btn ${selectedTab === "global" ? "active" : ""}`}
