@@ -194,3 +194,7 @@ files, deploy hooks, or access tokens to source, artifacts, logs, or commits.
 Runtime secrets belong in the hosting provider's environment settings. Browser
 password and reset-code form values must remain in memory rather than persisted
 as drafts.
+
+For website releases, commit and push to trigger Render auto-deploy. Verify via
+deployment status and public HTTP checks. Do not open the Render dashboard or
+debugger as part of routine deployment verification.

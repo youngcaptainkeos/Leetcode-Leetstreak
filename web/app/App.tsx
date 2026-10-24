@@ -7,183 +7,48 @@ import {
   LeaderboardEntry,
   GroupResponse,
   RecentSolve,
-  VersionCheckResponse,
   AppConfigResponse,
   DynamicMenuItem,
-  checkExtensionVersion,
 } from "./lib/api";
-import { getStored, setStored, clearStored } from "./storage";
+import { getStored, setStored, clearStored, getAccountStored, setAccountStored } from "./storage";
+import { navigate } from "./session";
 import { IS_WEBSITE, assetUrl } from "./lib/runtime";
 
-type View = "loading" | "onboarding" | "dashboard";
-type BoardTab = "global" | "friends" | number; // "global", "friends", or groupId
+type BoardTab = "global" | "friends" | number;
+export type AuthMode = "login" | "register" | "forgot";
 
-export default function App() {
-  const [view, setView] = useState<View>("loading");
-  const [userId, setUserId] = useState<number | null>(null);
+export default function App({ userId, onRegistered, onLogout, authMode = "login" }: {
+  userId: number | null;
+  onRegistered: (id: number) => void;
+  onLogout: () => void;
+  authMode?: AuthMode;
+}) {
   const [error, setError] = useState<string | null>(null);
   const [showPointsHelp, setShowPointsHelp] = useState(false);
-  const [updateInfo, setUpdateInfo] = useState<VersionCheckResponse | null>(null);
-
-  const [appConfig, setAppConfig] = useState<AppConfigResponse | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      const stored = await getStored("codestreak_user_id");
-      if (stored) {
-        setUserId(Number(stored));
-        setView("dashboard");
-      } else {
-        setView("onboarding");
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const cfg = await api.getAppConfig();
-        if (cfg) setAppConfig(cfg);
-      } catch (err) {
-        console.warn("App config fetch error:", err);
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        if (IS_WEBSITE) return;
-        const info = await checkExtensionVersion();
-        if (info && info.latest_version) {
-          const currentVer =
-            (typeof chrome !== "undefined" && chrome.runtime?.getManifest?.()?.version) ||
-            "1.0.0";
-          const cParts = currentVer.split(".").map(Number);
-          const lParts = info.latest_version.split(".").map(Number);
-          let isNewer = false;
-          for (let i = 0; i < Math.max(cParts.length, lParts.length); i++) {
-            const c = cParts[i] || 0;
-            const l = lParts[i] || 0;
-            if (l > c) {
-              isNewer = true;
-              break;
-            }
-            if (l < c) {
-              isNewer = false;
-              break;
-            }
-          }
-          if (isNewer) {
-            setUpdateInfo(info);
-          }
-        }
-      } catch (err) {
-        console.warn("Update check error:", err);
-      }
-    })();
-  }, []);
-
-  async function handleRegistered(id: number) {
-    await setStored("codestreak_user_id", String(id));
-    setUserId(id);
-    setView("dashboard");
-    if (IS_WEBSITE) window.history.replaceState(null, "", "/dashboard");
-  }
-
-  async function handleLogout() {
-    await clearStored(["codestreak_user_id"]);
-    setUserId(null);
-    setView("onboarding");
-    if (IS_WEBSITE) window.history.replaceState(null, "", "/login");
-  }
-
   return (
-    <div className="app">
-      <header className="header">
-        <div className="logo-group">
-          <img src={assetUrl("just_logo.png")} alt="LeetStreak Logo" className="header-logo-img" />
-          <img src={assetUrl("just_text.png")} alt="LeetStreak" className="header-logo-text-img" />
-        </div>
-        {view === "dashboard" && (
-          <div className="header-actions">
-            <a
-              href={
-                appConfig?.whatsapp_share_url ||
-                "https://api.whatsapp.com/send?text=" +
-                  encodeURIComponent(
-                    "Check out LeetStreak to track your LeetCode daily streak and compete on leaderboards with friends! 🔥\n\n" +
-                      "📥 Download Extension (.zip):\n" +
-                      "https://codestreak-api.onrender.com/downloads/leetstreak.zip\n\n" +
-                      "🛠️ Quick 30-Sec Install:\n" +
-                      "1. Unzip leetstreak.zip\n" +
-                      "2. Open chrome://extensions & enable Developer mode\n" +
-                      "3. Click \"Load unpacked\" and select the unzipped folder\n\n" +
-                      "📖 Full Setup Guide:\n" +
-                      "https://github.com/youngcaptainkeos/Leetcode-Leetstreak#readme\n"
-                  )
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              className="whatsapp-icon-btn"
-              title="Share LeetStreak on WhatsApp"
-            >
-              <svg className="whatsapp-icon-svg" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-              </svg>
-            </a>
-            <button
-              className="help-btn"
-              onClick={() => setShowPointsHelp(true)}
-              title="How Points Work ❓"
-            >
-              ❓ Help
-            </button>
-          </div>
-        )}
-      </header>
-
-      {updateInfo && (
-        <div className="update-ota-banner">
-          <div>
-            🚀 <strong>Update v{updateInfo.latest_version} Available!</strong>
-            <div style={{ fontSize: "10px", opacity: 0.85, marginTop: "2px" }}>
-              {updateInfo.release_notes || "Performance fixes and new features available."} (Reinstall/Reload unpacked folder to apply)
-            </div>
-          </div>
-          <a
-            href={updateInfo.download_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="update-ota-btn"
-          >
-            Update Now
-          </a>
-        </div>
-      )}
-
+    <div className={`app ${userId ? "workspace-app" : "auth-app"}`}>
+      {userId && <div className="workspace-heading">
+        <div><span className="web-eyebrow">YOUR DAILY PRACTICE</span><h1>Your coding workspace</h1><p>A little progress today. A stronger habit tomorrow.</p></div>
+        <button className="help-btn" onClick={() => setShowPointsHelp(true)}>How points work ↗</button>
+      </div>}
       {showPointsHelp && <PointsHelpModal onClose={() => setShowPointsHelp(false)} />}
-
-      {view === "loading" && <div className="centered muted">Loading profile…</div>}
-      {view === "onboarding" && (
-        <Onboarding onRegistered={handleRegistered} onError={setError} />
-      )}
-      {view === "dashboard" && userId && (
-        <Dashboard userId={userId} onResetUser={handleLogout} appConfigProp={appConfig} />
-      )}
-      {error && <div className="error-banner">{error}</div>}
+      {userId ? <Dashboard key={userId} userId={userId} onResetUser={onLogout} /> :
+        <Onboarding initialMode={authMode} onRegistered={onRegistered} onError={setError} />}
+      {error && <div className="error-banner" role="alert">{error}</div>}
     </div>
   );
 }
 
 function Onboarding({
+  initialMode,
   onRegistered,
   onError,
 }: {
+  initialMode: AuthMode;
   onRegistered: (id: number) => void;
   onError: (e: string | null) => void;
 }) {
-  const [authMode, setAuthMode] = useState<"login" | "register" | "forgot">("login");
+  const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -197,6 +62,8 @@ function Onboarding({
   const [draftsLoaded, setDraftsLoaded] = useState(false);
   const [enableGlobalLeaderboard, setEnableGlobalLeaderboard] = useState(true);
   const [showUsernameHelpModal, setShowUsernameHelpModal] = useState(false);
+
+  useEffect(() => { setAuthMode(initialMode); onError(null); }, [initialMode]);
 
   const AUTH_STORAGE_KEYS = [
     "codestreak_auth_mode",
@@ -256,7 +123,7 @@ function Onboarding({
 
   const switchAuthMode = async (mode: "login" | "register" | "forgot") => {
     setAuthMode(mode);
-    if (IS_WEBSITE) window.history.replaceState(null, "", mode === "forgot" ? "/forgot-password" : `/${mode}`);
+    navigate(mode === "forgot" ? "/forgot-password" : `/${mode}`, true);
     onError(null);
     setSuccessMsg(null);
     await setStored("codestreak_auth_mode", mode);
@@ -630,6 +497,23 @@ function Dashboard({
   onResetUser: () => void;
   appConfigProp?: AppConfigResponse | null;
 }) {
+  const getStored = (key: string) => getAccountStored(userId, key);
+  const setStored = (key: string, value: string) => setAccountStored(userId, key, value);
+  const [ownSolves, setOwnSolves] = useState<RecentSolve[]>([]);
+  const [ownSolvesError, setOwnSolvesError] = useState(false);
+  const [ownSolvesLoading, setOwnSolvesLoading] = useState(true);
+  async function loadOwnSolves() {
+    setOwnSolvesLoading(true);
+    try {
+      setOwnSolves(await api.recentSolves(userId, 8));
+      setOwnSolvesError(false);
+    } catch {
+      setOwnSolvesError(true);
+    } finally {
+      setOwnSolvesLoading(false);
+    }
+  }
+  useEffect(() => { void loadOwnSolves(); }, [userId]);
   const [dash, setDash] = useState<DashboardResponse | null>(null);
   const [board, setBoard] = useState<LeaderboardResponse | null>(null);
   const [groups, setGroups] = useState<GroupResponse[]>([]);
@@ -716,6 +600,15 @@ function Dashboard({
   // Settings & Coffee Modal States
   const [showSettings, setShowSettings] = useState(false);
   const [showCoffeeModal, setShowCoffeeModal] = useState(false);
+  useEffect(() => {
+    const openSettings = () => {
+      setNewLeetcodeUsername(dash?.leetcode_username || "");
+      setSettingsMsg(null);
+      setShowSettings(true);
+    };
+    window.addEventListener("leetstreak:settings", openSettings);
+    return () => window.removeEventListener("leetstreak:settings", openSettings);
+  }, [dash?.leetcode_username]);
   const [showUsernameHelpModal, setShowUsernameHelpModal] = useState(false);
   const [newLeetcodeUsername, setNewLeetcodeUsername] = useState("");
   const [updatingUsername, setUpdatingUsername] = useState(false);
@@ -894,12 +787,6 @@ function Dashboard({
       // Save stale-while-revalidate cache for instant 0ms load next time!
       setStored("codestreak_cached_dash", JSON.stringify(dashRes));
 
-      // Update Chrome Extension Action Badge
-      if (typeof chrome !== "undefined" && chrome.action && chrome.action.setBadgeText) {
-        const badgeText = dashRes.today_count > 0 ? `🔥${dashRes.current_streak}` : `${dashRes.current_streak}`;
-        chrome.action.setBadgeText({ text: badgeText });
-        chrome.action.setBadgeBackgroundColor({ color: dashRes.today_count > 0 ? "#10b981" : "#6366f1" });
-      }
     } catch (err) {
       setBoardLoading(false);
       const errMsg = err instanceof Error ? err.message : "";
@@ -1083,7 +970,7 @@ function Dashboard({
     setError(null);
     try {
       const res = await api.syncUser(userId);
-      await loadData();
+      await Promise.all([loadData(), loadOwnSolves()]);
       setSyncMsg(
         res.new_solves > 0
           ? `Synced! ${res.new_solves} new solve(s) added.`
@@ -1205,7 +1092,7 @@ function Dashboard({
   }
 
   if (error && !dash) return <div className="error-banner">{error}</div>;
-  if (!dash || !board) return <div className="centered muted">Loading data…</div>;
+  if (!dash) return <div className="centered muted" role="status">Loading your workspace…</div>;
 
   const maxDay = Math.max(1, ...dash.last_7_days.map((d) => d.problems_solved));
   const dayLabels = dash.last_7_days.map((d) =>
@@ -1224,7 +1111,7 @@ function Dashboard({
   return (
     <div className="dashboard">
       {/* Profile Bar */}
-      <div className="profile-bar">
+      <div className="profile-bar" id="overview">
         <div className="profile-info">
           {dash.avatar_url ? (
             <img src={dash.avatar_url} alt={dash.name} className="avatar" />
@@ -1316,7 +1203,7 @@ function Dashboard({
       )}
 
       {/* Unified M3 Hero Container Card */}
-      <div className="hero-card">
+      <div className="hero-card workspace-summary">
         <div className="streak-hero">
           <img src={assetUrl("main_fire.png")} alt="🔥" className="hero-flame-img" />
           <span className="streak-count">{dash.current_streak}</span>
@@ -1339,8 +1226,13 @@ function Dashboard({
 
 
 
-      {/* Groups & Leaderboard Navigation */}
-      <div className="section">
+      <section className="workspace-week" aria-labelledby="week-title">
+        <div className="section-header"><h2 id="week-title">Your last seven days</h2><span className="muted small">{dash.last_7_days.reduce((total, d) => total + d.problems_solved, 0)} solves</span></div>
+        <div className="workspace-week-chart">{dash.last_7_days.map((day, index) => <div key={day.date} title={`${day.date}: ${day.problems_solved} solves`}>
+          <span>{day.problems_solved}</span><div className="workspace-bar-track"><div style={{height: `${Math.max(3, day.problems_solved / maxDay * 100)}%`}} className={day.problems_solved ? "is-active" : ""} /></div>
+          <span>{dayLabels[index]}</span></div>)}</div>
+      </section>
+      <section className="section workspace-leaderboard" id="leaderboards" aria-label="Leaderboards and groups">
         <div className="section-header">
           <div className="section-title">Leaderboard</div>
           <div className="group-btn-group">
@@ -1389,6 +1281,12 @@ function Dashboard({
           </form>
         )}
 
+        <div className="workspace-groups" id="groups">
+          <h3>Your groups <span>{groups.length}</span></h3>
+          {groups.length ? <div className="workspace-group-cards">{groups.map(group => <button key={group.id} className={selectedTab === group.id ? "is-selected" : ""} onClick={() => changeTab(group.id)}>
+            <span aria-hidden="true">◎</span><strong>{group.name}</strong><small>{group.member_count} members</small>
+          </button>)}</div> : <p className="workspace-section-note">Practice together. Create a group or join one with an invite code.</p>}
+        </div>
         {/* Board Switcher Tabs */}
         <div className="tab-bar-container">
           {dash?.global_leaderboard_enabled !== false && (
@@ -1600,6 +1498,8 @@ function Dashboard({
               );
             })
           )}
+          {!board && !boardLoading && <li className="workspace-board-empty">Leaderboard is temporarily unavailable. Use Sync to retry.</li>}
+          {board && board.entries.length === 0 && <li className="workspace-board-empty">No members to show yet. Create or join a group to get started.</li>}
           {board && (
             <>
               {(board.total_users ?? 0) > (board.entries[board.entries.length - 1]?.rank ?? 0) && (
@@ -1619,7 +1519,20 @@ function Dashboard({
             </>
           )}
         </ul>
-      </div>
+      </section>
+      <section className="workspace-solves" id="activity" aria-labelledby="solves-title">
+        <div className="section-header"><h2 id="solves-title">Your recent solves</h2><span className="web-feature-tag">Points breakdown</span></div>
+        <p className="workspace-section-note">Select a solve to see how its points add up.</p>
+        {ownSolvesLoading ? <p className="muted" role="status">Loading recent solves…</p> : ownSolvesError ? <p className="muted">Recent solves couldn't load. Use Sync to try again.</p> : ownSolves.length ? <ul className="workspace-solve-list">{ownSolves.map(solve => <li key={solve.title_slug}>
+          <button onClick={() => setSelectedSolveBreakdown(solve)}><span><strong>{solve.title}</strong><small>{solve.relative_time}</small></span><span className="workspace-solve-score">+{Math.round(solve.points_earned || 0)} pts <span aria-hidden="true">↗</span></span></button>
+        </li>)}</ul> : <p className="muted">Your synced solves will appear here. Solve a problem on LeetCode, then select Sync.</p>}
+      </section>
+      <section className="workspace-community" aria-labelledby="community-title">
+        <div className="section-header"><h2 id="community-title">Around the community</h2><span className="web-live-dot" /></div>
+        {activityFeed.length ? <ul className="workspace-community-list">{activityFeed.slice(0, 5).map(item => <li key={`${item.user_id}-${item.title_slug}-${item.solved_at}`}>
+          <a href={item.leetcode_url} target="_blank" rel="noreferrer"><strong>{item.user_name}</strong><span>solved {item.title}</span><small>{item.relative_time} ↗</small></a>
+        </li>)}</ul> : <p className="muted">New community solves will show up here.</p>}
+      </section>
 
       {/* Inspect Friend Modal */}
       {inspectedFriend && (
@@ -2431,5 +2344,3 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
-
-
