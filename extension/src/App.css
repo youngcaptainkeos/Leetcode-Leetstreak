@@ -2797,6 +2797,260 @@ input:focus, form input:focus {
   margin: 0;
 }
 
+/* ==========================================================================
+   💡 LEETCODE USERNAME HELP MENU
+   ========================================================================== */
+.username-help-menu-container {
+  width: 100%;
+  margin-top: -2px;
+  margin-bottom: 2px;
+  display: flex;
+  flex-direction: column;
+}
+
+.username-help-toggle-btn {
+  background: rgba(167, 139, 250, 0.08) !important;
+  border: 1px solid rgba(167, 139, 250, 0.22) !important;
+  border-radius: var(--md-shape-corner-medium) !important;
+  padding: 8px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  cursor: pointer !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  transition: all 0.2s ease !important;
+  color: #c4b5fd !important;
+  text-align: left !important;
+  box-shadow: none !important;
+}
+
+.username-help-toggle-btn:hover {
+  background: rgba(167, 139, 250, 0.15) !important;
+  border-color: rgba(167, 139, 250, 0.45) !important;
+  color: #ede9fe !important;
+}
+
+.username-help-toggle-btn.open {
+  background: rgba(167, 139, 250, 0.16) !important;
+  border-color: rgba(167, 139, 250, 0.5) !important;
+  border-bottom-left-radius: 4px !important;
+  border-bottom-right-radius: 4px !important;
+}
+
+.username-help-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.username-help-icon {
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.username-help-label {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1px;
+}
+
+.username-help-chevron {
+  font-size: 9px;
+  opacity: 0.7;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.username-help-chevron.open {
+  opacity: 1;
+}
+
+.username-help-dropdown {
+  background: var(--surface-high);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-top: none;
+  border-bottom-left-radius: var(--md-shape-corner-medium);
+  border-bottom-right-radius: var(--md-shape-corner-medium);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  animation: usernameHelpSlideDown 0.2s ease-out;
+}
+
+@keyframes usernameHelpSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.username-help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.username-help-badge {
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.3);
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.username-help-link {
+  color: #38bdf8;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.username-help-link:hover {
+  color: #7dd3fc;
+  text-decoration: underline;
+}
+
+.username-help-intro {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.username-help-intro strong {
+  color: var(--text-primary);
+}
+
+.username-help-steps {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.username-help-steps li strong {
+  color: var(--text-primary);
+}
+
+.username-help-steps li code {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fde047;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.username-help-steps a {
+  color: #38bdf8;
+  text-decoration: none;
+}
+
+.username-help-steps a:hover {
+  text-decoration: underline;
+}
+
+.username-help-img-container {
+  position: relative;
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: #000;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.username-help-img-container:hover {
+  border-color: var(--primary);
+  transform: scale(1.01);
+}
+
+.username-help-guide-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.username-help-img-overlay {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  background: rgba(17, 24, 39, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+/* Modal lightbox for enlarged guide */
+.username-guide-modal {
+  width: 360px !important;
+  max-width: 95vw !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  padding: 16px !important;
+}
+
+.username-guide-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.username-guide-modal-img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
+}
+
+.username-guide-modal-hint {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid #fbbf24;
+  padding: 8px 10px;
+  border-radius: 4px;
+}
+
+.username-guide-modal-hint strong {
+  color: var(--text-primary);
+}
+
+.username-guide-modal-hint code {
+  color: #fde047;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+
 
 
 
