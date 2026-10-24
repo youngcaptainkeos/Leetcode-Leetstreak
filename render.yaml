@@ -2,7 +2,7 @@ services:
   - type: web
     name: leetstreak-api
     env: docker
-    dockerContext: ./backend
+    dockerContext: .
     dockerfilePath: ./backend/Dockerfile
     plan: free
     healthCheckPath: /api/health

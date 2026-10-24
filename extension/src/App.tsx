@@ -13,6 +13,7 @@ import {
   checkExtensionVersion,
 } from "./lib/api";
 import { getStored, setStored, clearStored } from "./storage";
+import { IS_WEBSITE, assetUrl } from "./lib/runtime";
 
 type View = "loading" | "onboarding" | "dashboard";
 type BoardTab = "global" | "friends" | number; // "global", "friends", or groupId
@@ -52,6 +53,7 @@ export default function App() {
   useEffect(() => {
     (async () => {
       try {
+        if (IS_WEBSITE) return;
         const info = await checkExtensionVersion();
         if (info && info.latest_version) {
           const currentVer =
@@ -86,20 +88,22 @@ export default function App() {
     await setStored("codestreak_user_id", String(id));
     setUserId(id);
     setView("dashboard");
+    if (IS_WEBSITE) window.history.replaceState(null, "", "/dashboard");
   }
 
   async function handleLogout() {
     await clearStored(["codestreak_user_id"]);
     setUserId(null);
     setView("onboarding");
+    if (IS_WEBSITE) window.history.replaceState(null, "", "/login");
   }
 
   return (
     <div className="app">
       <header className="header">
         <div className="logo-group">
-          <img src="/just_logo.png" alt="LeetStreak Logo" className="header-logo-img" />
-          <img src="/just_text.png" alt="LeetStreak" className="header-logo-text-img" />
+          <img src={assetUrl("just_logo.png")} alt="LeetStreak Logo" className="header-logo-img" />
+          <img src={assetUrl("just_text.png")} alt="LeetStreak" className="header-logo-text-img" />
         </div>
         {view === "dashboard" && (
           <div className="header-actions">
@@ -234,6 +238,10 @@ function Onboarding({
       } else if (storedMode === "login" || storedMode === "register" || storedMode === "forgot") {
         setAuthMode(storedMode as any);
       }
+      if (IS_WEBSITE) {
+        const path = window.location.pathname;
+        setAuthMode(path === "/register" ? "register" : path === "/forgot-password" ? "forgot" : "login");
+      }
       setDraftsLoaded(true);
     })();
   }, []);
@@ -248,6 +256,7 @@ function Onboarding({
 
   const switchAuthMode = async (mode: "login" | "register" | "forgot") => {
     setAuthMode(mode);
+    if (IS_WEBSITE) window.history.replaceState(null, "", mode === "forgot" ? "/forgot-password" : `/${mode}`);
     onError(null);
     setSuccessMsg(null);
     await setStored("codestreak_auth_mode", mode);
@@ -326,7 +335,7 @@ function Onboarding({
   return (
     <div className="onboarding">
       <div className="onboarding-welcome">
-        <img src="/logo_with_text.png" alt="LeetStreak" className="onboarding-logo-img" />
+        <img src={assetUrl("logo_with_text.png")} alt="LeetStreak" className="onboarding-logo-img" />
         <h2>Welcome to LeetStreak</h2>
         <p className="muted small">
           Track LeetCode consistency with friends, form private groups, and build your daily streak.
@@ -1261,7 +1270,7 @@ function Dashboard({
             title="Force sync latest LeetCode activity"
           >
             <img
-              src="/sync.png"
+              src={assetUrl("sync.png")}
               alt=""
               className={`sync-btn-icon ${syncing ? "spinning" : ""}`}
             />
@@ -1287,7 +1296,7 @@ function Dashboard({
       {toastSolve && (
         <div className="solve-toast-popup">
           <div className="toast-content">
-            <img src="/streak_fire.png" alt="🔥" className="toast-flame-img" />
+            <img src={assetUrl("streak_fire.png")} alt="🔥" className="toast-flame-img" />
             <div className="toast-text">
               <strong>{toastSolve.user_name}</strong> just solved <strong>"{toastSolve.title}"</strong> on LeetCode!
             </div>
@@ -1309,7 +1318,7 @@ function Dashboard({
       {/* Unified M3 Hero Container Card */}
       <div className="hero-card">
         <div className="streak-hero">
-          <img src="/main_fire.png" alt="🔥" className="hero-flame-img" />
+          <img src={assetUrl("main_fire.png")} alt="🔥" className="hero-flame-img" />
           <span className="streak-count">{dash.current_streak}</span>
         </div>
         <div className="streak-label">DAY STREAK</div>
@@ -1428,7 +1437,7 @@ function Dashboard({
                 onClick={() => setSortBy("streak")}
                 title="Sort leaderboard by active daily streak"
               >
-                <img src="/streak_fire.png" alt="🔥" className="sort-fire-icon" /> Streak
+                <img src={assetUrl("streak_fire.png")} alt="🔥" className="sort-fire-icon" /> Streak
               </button>
             </div>
           </div>
@@ -1542,7 +1551,7 @@ function Dashboard({
                         <span className="handle-mini">@{e.leetcode_username}</span>
                       </div>
                       <span className="streak-mini">
-                        <img src="/streak_fire.png" alt="🔥" className="streak-mini-fire" />
+                        <img src={assetUrl("streak_fire.png")} alt="🔥" className="streak-mini-fire" />
                         {e.current_streak}d
                       </span>
                       <span className="solves-badge" title="Questions solved this week">
@@ -1650,7 +1659,7 @@ function Dashboard({
             </div>
 
             <div className="modal-streak-box">
-              <img src="/main_fire.png" alt="🔥" className="modal-flame-img" />
+              <img src={assetUrl("main_fire.png")} alt="🔥" className="modal-flame-img" />
               <span className="modal-streak-count">
                 {inspectedFriend.current_streak} Day Streak
               </span>
@@ -2142,7 +2151,7 @@ function Dashboard({
 
             <div className="coffee-modal-body">
               <div className="qr-container">
-                <img src="upi_qr.png" alt="UPI QR Code" className="upi-qr-img" />
+                <img src={assetUrl("upi_qr.png")} alt="UPI QR Code" className="upi-qr-img" />
               </div>
 
               <div className="coffee-text-box">
@@ -2326,7 +2335,7 @@ function LeetcodeUsernameHelpModal({ onClose }: { onClose: () => void }) {
 
           <div className="username-guide-modal-img-wrapper">
             <img
-              src="/leetcode_username_guide.png"
+              src={assetUrl("leetcode_username_guide.png")}
               alt="LeetCode Username Location Guide"
               className="username-guide-modal-img"
             />

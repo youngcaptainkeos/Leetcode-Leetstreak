@@ -16,3 +16,6 @@ dist/
 .vscode/
 .idea/
 Thumbs.db
+
+# Generated website bundle (built in Docker for deployment)
+backend/web/

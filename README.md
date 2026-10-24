@@ -171,3 +171,32 @@ LeetStreak is an independent open-source project and is **not affiliated, associ
 <p align="center">
   Built with ❤️ for coders keeping their streak alive! 🔥
 </p>
+
+
+## Website development and hosting
+
+The responsive website reuses the extension's React components, theme, and API.
+FastAPI serves its home page at `/`, with `/login`, `/register`, `/forgot-password`,
+and `/dashboard` for account access. Website requests use the same origin's `/api`.
+Existing extension accounts work on the website; sign in separately in each client.
+
+Build and run locally with PostgreSQL available:
+
+```bash
+npm --prefix extension ci
+npm --prefix extension run build:web
+# Run from backend/ with its Python dependencies installed and DATABASE_URL set:
+uvicorn app.main:app --reload --port 8000
+```
+
+Open `http://localhost:8000`. Rebuild after frontend edits. Generated website files
+live in `backend/web/` and are ignored by Git. The Render Docker build creates
+these assets automatically using Node 22, then includes them in the Python image.
+The Docker build context must be the repository root:
+
+```bash
+docker build -f backend/Dockerfile .
+```
+
+A deployment of this revision serves both the website and API from the existing
+Render service. Publishing still follows the repository's usual push/deploy flow.

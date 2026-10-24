@@ -12,6 +12,8 @@ from fastapi import FastAPI, HTTPException, Depends, Query, Header, BackgroundTa
 from fastapi.responses import Response, FileResponse, HTMLResponse
 from .legal_pages import PRIVACY_HTML, TERMS_HTML
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from sqlalchemy import text, func
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -1224,3 +1226,22 @@ def get_app_config():
     )
 
 
+
+
+# The website is built into backend/web locally and /app/web in the container.
+# Keep page routes explicit so unknown API endpoints still return their usual 404.
+WEB_DIRECTORY = Path(__file__).resolve().parent.parent / "web"
+app.mount("/web-assets", StaticFiles(directory=str(WEB_DIRECTORY / "assets"), check_dir=False), name="web-assets")
+
+
+@app.get("/", include_in_schema=False)
+@app.get("/home", include_in_schema=False)
+@app.get("/login", include_in_schema=False)
+@app.get("/register", include_in_schema=False)
+@app.get("/forgot-password", include_in_schema=False)
+@app.get("/dashboard", include_in_schema=False)
+def website_page():
+    index = WEB_DIRECTORY / "index.html"
+    if not index.is_file():
+        raise HTTPException(status_code=503, detail="Website assets are not built. Run npm --prefix extension run build:web.")
+    return FileResponse(index, media_type="text/html", headers={"Cache-Control": "no-cache"})

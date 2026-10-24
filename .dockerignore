@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/venv
+test_env
+**/__pycache__
+**/.env
+**/.env.*
+**/*.db
+**/*.sqlite3
+extension/dist
+backend/web
+scratch

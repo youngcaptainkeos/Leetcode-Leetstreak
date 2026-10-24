@@ -1,3 +1,11 @@
+FROM node:22-alpine AS website
+WORKDIR /web-build/extension
+COPY extension/package.json extension/package-lock.json ./
+RUN npm ci
+COPY extension/ ./
+COPY web/ ../web/
+RUN npm run build:web
+
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -12,10 +20,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY backend/ .
+COPY --from=website /web-build/backend/web /app/web
 
 EXPOSE 8000
 
