@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npx esbuild src/main.tsx --bundle --outfile=public/index-main.js --loader:.tsx=tsx --loader:.ts=ts --loader:.css=css --jsx=automatic --minify && cp public/index-main.js index-main.js && cp public/index-main.css index-main.css && cp manifest.json index.html public/ && mkdir -p dist && cp -r public/* dist/",
-    "build:web": "node scripts/build-web.mjs"
+    "build": "npx esbuild src/main.tsx --bundle --outfile=public/index-main.js --loader:.tsx=tsx --loader:.ts=ts --loader:.css=css --jsx=automatic --minify && cp public/index-main.js index-main.js && cp public/index-main.css index-main.css && cp manifest.json index.html public/ && mkdir -p dist && cp -r public/* dist/"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -17,7 +16,6 @@
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^6.0.5",
-    "esbuild": "^0.28.2",
     "typescript": "^5.5.4",
     "vite": "^8.2.1"
   }

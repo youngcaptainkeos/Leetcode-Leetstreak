@@ -1243,5 +1243,5 @@ app.mount("/web-assets", StaticFiles(directory=str(WEB_DIRECTORY / "assets"), ch
 def website_page():
     index = WEB_DIRECTORY / "index.html"
     if not index.is_file():
-        raise HTTPException(status_code=503, detail="Website assets are not built. Run npm --prefix extension run build:web.")
+        raise HTTPException(status_code=503, detail="Website assets are not built. Run npm --prefix web run build.")
     return FileResponse(index, media_type="text/html", headers={"Cache-Control": "no-cache"})

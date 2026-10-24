@@ -1,6 +1,4 @@
-import { IS_WEBSITE } from "./runtime";
-
-export const API_BASE = IS_WEBSITE ? "/api" : "https://codestreak-api.onrender.com/api";
+export const API_BASE = "https://codestreak-api.onrender.com/api";
 
 export interface RegisterResponse {
   id: number;

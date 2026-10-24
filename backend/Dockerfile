@@ -1,10 +1,9 @@
 FROM node:22-alpine AS website
-WORKDIR /web-build/extension
-COPY extension/package.json extension/package-lock.json ./
+WORKDIR /web-build/web
+COPY web/package.json web/package-lock.json ./
 RUN npm ci
-COPY extension/ ./
-COPY web/ ../web/
-RUN npm run build:web
+COPY web/ ./
+RUN npm run build
 
 FROM python:3.11-slim
 

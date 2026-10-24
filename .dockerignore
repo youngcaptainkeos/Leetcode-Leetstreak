@@ -7,6 +7,6 @@ test_env
 **/.env.*
 **/*.db
 **/*.sqlite3
-extension/dist
+extension/
 backend/web
 scratch

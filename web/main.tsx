@@ -1,7 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import App from "../extension/src/App";
-import "../extension/src/App.css";
+import App from "./app/App";
+import "./app/App.css";
 import "./web.css";
 
 const isHome = window.location.pathname === "/" || window.location.pathname === "/home";

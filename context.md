@@ -170,3 +170,27 @@ git push origin main
    - Respect the 380px extension popup width. Test spacing and text wrapping to ensure elements do not overflow or cause unwanted horizontal scrollbars.
 4. **Git Branching**:
    - The primary branch is `main`. All live production deployments deploy automatically from `origin/main`.
+
+## 7. Website isolation and public repository rules
+
+The website lives in `web/`, with its own React components, copied public brand
+assets, package lock, TypeScript configuration, and build script. Website work
+must not change `extension/`, its build configuration, or the extension ZIP files.
+Keep the extension and website independently buildable. Both clients use the
+existing FastAPI API and database.
+
+```bash
+npm --prefix web ci
+npm --prefix web run check
+npm --prefix web run build
+```
+
+The generated output is ignored at `backend/web/`. The Docker build uses the
+repository root as its context and builds only `web/` for website assets.
+
+This repository is public. Never add credentials, real account passwords,
+production database connection strings, private contact information, `.env`
+files, deploy hooks, or access tokens to source, artifacts, logs, or commits.
+Runtime secrets belong in the hosting provider's environment settings. Browser
+password and reset-code form values must remain in memory rather than persisted
+as drafts.

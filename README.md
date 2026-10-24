@@ -175,7 +175,9 @@ LeetStreak is an independent open-source project and is **not affiliated, associ
 
 ## Website development and hosting
 
-The responsive website reuses the extension's React components, theme, and API.
+The responsive website has its own React components, assets, dependencies, and build
+in `web/`. It uses the existing API and follows the extension's visual style.
+Website changes do not rebuild or modify the extension or its download archives.
 FastAPI serves its home page at `/`, with `/login`, `/register`, `/forgot-password`,
 and `/dashboard` for account access. Website requests use the same origin's `/api`.
 Existing extension accounts work on the website; sign in separately in each client.
@@ -183,8 +185,8 @@ Existing extension accounts work on the website; sign in separately in each clie
 Build and run locally with PostgreSQL available:
 
 ```bash
-npm --prefix extension ci
-npm --prefix extension run build:web
+npm --prefix web ci
+npm --prefix web run build
 # Run from backend/ with its Python dependencies installed and DATABASE_URL set:
 uvicorn app.main:app --reload --port 8000
 ```
