@@ -2284,21 +2284,20 @@ function LeetcodeUsernameHelpModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="username-guide-modal-body">
-          <p className="username-guide-modal-intro">
-            Many users enter their <strong>display nickname</strong> by mistake. LeetCode requires your unique <strong>handle / username</strong>:
-          </p>
-
-          <ol className="username-guide-steps">
-            <li>
-              Go to your profile on <strong>leetcode.com</strong> (click your profile icon).
-            </li>
-            <li>
-              Look directly <strong>below your display name</strong> for your unique handle (marked in yellow below).
-            </li>
-            <li>
-              Enter that handle (e.g. <code>leetcode_learner7</code>), <strong>not</strong> your display name (e.g. <code>CodeNinja42</code>).
-            </li>
-          </ol>
+          <div className="guide-steps-list">
+            <div className="guide-step-row">
+              <span className="guide-step-badge">1</span>
+              <span className="guide-step-text">
+                Go to your profile on <strong>leetcode.com</strong> (click your avatar).
+              </span>
+            </div>
+            <div className="guide-step-row">
+              <span className="guide-step-badge">2</span>
+              <span className="guide-step-text">
+                Look directly <strong>below your display name</strong> for your unique handle:
+              </span>
+            </div>
+          </div>
 
           <div className="username-guide-modal-img-wrapper">
             <img
@@ -2308,8 +2307,21 @@ function LeetcodeUsernameHelpModal({ onClose }: { onClose: () => void }) {
             />
           </div>
 
-          <div className="username-guide-modal-hint">
-            👉 Enter the <strong>highlighted handle</strong> (e.g. <code>leetcode_learner7</code>), <em>not</em> the display name above it!
+          <div className="guide-dos-donts-card">
+            <div className="guide-check-item correct">
+              <span className="guide-check-icon">✓</span>
+              <div className="guide-check-content">
+                <span className="guide-check-label">Enter Handle:</span>
+                <code className="guide-code-highlight">leetcode_learner7</code>
+              </div>
+            </div>
+            <div className="guide-check-item wrong">
+              <span className="guide-check-icon">✕</span>
+              <div className="guide-check-content">
+                <span className="guide-check-label">Not Display Name:</span>
+                <span className="guide-wrong-name">CodeNinja42</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2318,7 +2330,7 @@ function LeetcodeUsernameHelpModal({ onClose }: { onClose: () => void }) {
             type="button"
             className="primary-btn center-btn"
             onClick={onClose}
-            style={{ width: "auto", minWidth: "120px", padding: "8px 24px" }}
+            style={{ width: "auto", minWidth: "130px", padding: "8px 28px" }}
           >
             Got it 👍
           </button>
