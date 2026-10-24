@@ -2355,26 +2355,26 @@ input:focus, form input:focus {
 
 /* Registration Preference Box */
 .auth-preference-box {
-  background-color: var(--surface-high);
-  border: 1px solid var(--border);
-  border-radius: var(--md-shape-corner-medium);
-  padding: 10px 12px;
-  margin-top: 2px;
-  margin-bottom: 4px;
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: var(--md-shape-corner-small, 6px);
+  padding: 6px 10px;
+  margin-top: 0px;
+  margin-bottom: 2px;
 }
 
 .auth-checkbox-label {
   display: flex !important;
   flex-direction: row !important;
   align-items: flex-start !important;
-  gap: 10px !important;
+  gap: 8px !important;
   cursor: pointer;
   text-align: left !important;
 }
 
 .auth-checkbox-label input[type="checkbox"] {
-  width: 16px !important;
-  height: 16px !important;
+  width: 14px !important;
+  height: 14px !important;
   margin-top: 2px !important;
   accent-color: var(--primary) !important;
   cursor: pointer;
@@ -2384,22 +2384,23 @@ input:focus, form input:focus {
 .auth-checkbox-desc {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 1px;
 }
 
 .auth-checkbox-title {
-  font-size: 12px !important;
-  font-weight: 700 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
   color: var(--text-primary) !important;
   text-transform: none !important;
   letter-spacing: normal !important;
+  line-height: 1.3 !important;
 }
 
 .auth-checkbox-subtitle {
-  font-size: 11px !important;
+  font-size: 10px !important;
   font-weight: 400 !important;
-  color: var(--text-secondary) !important;
-  line-height: 1.35;
+  color: var(--text-muted) !important;
+  line-height: 1.3;
   text-transform: none !important;
 }
 
@@ -2802,38 +2803,38 @@ input:focus, form input:focus {
    ========================================================================== */
 .username-help-menu-container {
   width: 100%;
-  margin-top: -2px;
+  margin-top: -6px;
   margin-bottom: 2px;
   display: flex;
   flex-direction: column;
 }
 
 .username-help-toggle-btn {
-  background: rgba(167, 139, 250, 0.08) !important;
-  border: 1px solid rgba(167, 139, 250, 0.22) !important;
-  border-radius: var(--md-shape-corner-medium) !important;
-  padding: 8px 12px !important;
+  background: rgba(167, 139, 250, 0.05) !important;
+  border: 1px solid rgba(167, 139, 250, 0.18) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
   cursor: pointer !important;
   width: 100% !important;
   box-sizing: border-box !important;
-  transition: all 0.2s ease !important;
+  transition: all 0.15s ease !important;
   color: #c4b5fd !important;
   text-align: left !important;
   box-shadow: none !important;
 }
 
 .username-help-toggle-btn:hover {
-  background: rgba(167, 139, 250, 0.15) !important;
-  border-color: rgba(167, 139, 250, 0.45) !important;
+  background: rgba(167, 139, 250, 0.12) !important;
+  border-color: rgba(167, 139, 250, 0.35) !important;
   color: #ede9fe !important;
 }
 
 .username-help-toggle-btn.open {
-  background: rgba(167, 139, 250, 0.16) !important;
-  border-color: rgba(167, 139, 250, 0.5) !important;
+  background: rgba(167, 139, 250, 0.14) !important;
+  border-color: rgba(167, 139, 250, 0.4) !important;
   border-bottom-left-radius: 4px !important;
   border-bottom-right-radius: 4px !important;
 }
@@ -2841,24 +2842,24 @@ input:focus, form input:focus {
 .username-help-toggle-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
 }
 
 .username-help-icon {
-  font-size: 13px;
+  font-size: 11px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
 .username-help-label {
-  font-size: 11.5px !important;
-  font-weight: 600 !important;
+  font-size: 10.5px !important;
+  font-weight: 500 !important;
   letter-spacing: 0.1px;
 }
 
 .username-help-chevron {
-  font-size: 9px;
+  font-size: 8px;
   opacity: 0.7;
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
@@ -2869,14 +2870,14 @@ input:focus, form input:focus {
 
 .username-help-dropdown {
   background: var(--surface-high);
-  border: 1px solid rgba(167, 139, 250, 0.3);
+  border: 1px solid rgba(167, 139, 250, 0.25);
   border-top: none;
-  border-bottom-left-radius: var(--md-shape-corner-medium);
-  border-bottom-right-radius: var(--md-shape-corner-medium);
-  padding: 12px;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   box-sizing: border-box;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
   animation: usernameHelpSlideDown 0.2s ease-out;

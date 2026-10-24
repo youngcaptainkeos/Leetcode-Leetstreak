@@ -449,9 +449,9 @@ function Onboarding({
                   onChange={(e) => setEnableGlobalLeaderboard(e.target.checked)}
                 />
                 <div className="auth-checkbox-desc">
-                  <span className="auth-checkbox-title">🌐 Enable Global Leaderboard</span>
+                  <span className="auth-checkbox-title">Participate in Global Leaderboard</span>
                   <span className="auth-checkbox-subtitle">
-                    Participate in the public platform leaderboard. Uncheck to only compare with friends and private squads.
+                    Uncheck to only compete with friends and private squads.
                   </span>
                 </div>
               </label>
@@ -2261,7 +2261,7 @@ function LeetcodeUsernameHelp() {
       >
         <span className="username-help-toggle-left">
           <span className="username-help-icon">💡</span>
-          <span className="username-help-label">Help finding your LeetCode username</span>
+          <span className="username-help-label">Need help finding your LeetCode username?</span>
         </span>
         <span className={`username-help-chevron ${isOpen ? "open" : ""}`}>
           {isOpen ? "▲" : "▼"}
@@ -2272,14 +2272,6 @@ function LeetcodeUsernameHelp() {
         <div className="username-help-dropdown">
           <div className="username-help-header">
             <span className="username-help-badge">Profile Guide</span>
-            <a
-              href="https://leetcode.com/profile"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="username-help-link"
-            >
-              Open LeetCode Profile ↗
-            </a>
           </div>
 
           <div className="username-help-intro">
@@ -2288,7 +2280,7 @@ function LeetcodeUsernameHelp() {
 
           <ol className="username-help-steps">
             <li>
-              Go to your profile on <a href="https://leetcode.com/profile" target="_blank" rel="noopener noreferrer">leetcode.com</a> (or click your profile icon).
+              Go to your profile on leetcode.com (or click your profile icon).
             </li>
             <li>
               Look directly <strong>below your display name</strong> for your unique handle (marked in yellow in the image below).
