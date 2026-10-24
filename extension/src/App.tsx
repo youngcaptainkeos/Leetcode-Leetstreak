@@ -192,6 +192,7 @@ function Onboarding({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [draftsLoaded, setDraftsLoaded] = useState(false);
   const [enableGlobalLeaderboard, setEnableGlobalLeaderboard] = useState(true);
+  const [showUsernameHelpModal, setShowUsernameHelpModal] = useState(false);
 
   const AUTH_STORAGE_KEYS = [
     "codestreak_auth_mode",
@@ -417,7 +418,13 @@ function Onboarding({
               />
             </label>
 
-            <LeetcodeUsernameHelp />
+            <button
+              type="button"
+              className="username-help-link-btn"
+              onClick={() => setShowUsernameHelpModal(true)}
+            >
+              💡 Need help finding your LeetCode username?
+            </button>
 
             <label>
               <span>Email Address</span>
@@ -441,21 +448,19 @@ function Onboarding({
               />
             </label>
 
-            <div className="auth-preference-box">
-              <label className="auth-checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={enableGlobalLeaderboard}
-                  onChange={(e) => setEnableGlobalLeaderboard(e.target.checked)}
-                />
-                <div className="auth-checkbox-desc">
-                  <span className="auth-checkbox-title">Participate in Global Leaderboard</span>
-                  <span className="auth-checkbox-subtitle">
-                    Uncheck to only compete with friends and private squads.
-                  </span>
-                </div>
-              </label>
-            </div>
+            <label className="auth-checkbox-row">
+              <input
+                type="checkbox"
+                checked={enableGlobalLeaderboard}
+                onChange={(e) => setEnableGlobalLeaderboard(e.target.checked)}
+              />
+              <span className="auth-checkbox-label-text">
+                Participate in Global Leaderboard
+                <span className="auth-checkbox-subtext">
+                  Uncheck to only compete with friends and private squads
+                </span>
+              </span>
+            </label>
 
             <button type="submit" className="primary-btn" disabled={busy}>
               {busy ? "Creating Account…" : "Create Account"}
@@ -563,6 +568,10 @@ function Onboarding({
           Independent project. Not affiliated with LeetCode LLC.
         </span>
       </div>
+
+      {showUsernameHelpModal && (
+        <LeetcodeUsernameHelpModal onClose={() => setShowUsernameHelpModal(false)} />
+      )}
     </div>
   );
 }
@@ -673,6 +682,7 @@ function Dashboard({
   // Settings & Coffee Modal States
   const [showSettings, setShowSettings] = useState(false);
   const [showCoffeeModal, setShowCoffeeModal] = useState(false);
+  const [showUsernameHelpModal, setShowUsernameHelpModal] = useState(false);
   const [newLeetcodeUsername, setNewLeetcodeUsername] = useState("");
   const [updatingUsername, setUpdatingUsername] = useState(false);
   const [togglingLeaderboard, setTogglingLeaderboard] = useState(false);
@@ -1921,9 +1931,14 @@ function Dashboard({
                     Syncs solves, contest rating, and streak from this LeetCode handle.
                   </span>
                 </form>
-                <div style={{ marginTop: "10px" }}>
-                  <LeetcodeUsernameHelp />
-                </div>
+                <button
+                  type="button"
+                  className="username-help-link-btn"
+                  onClick={() => setShowUsernameHelpModal(true)}
+                  style={{ marginTop: "6px" }}
+                >
+                  💡 Need help finding your LeetCode username?
+                </button>
               </div>
             </div>
 
@@ -2121,6 +2136,11 @@ function Dashboard({
         </div>
       )}
 
+      {/* LeetCode Username Guide Modal */}
+      {showUsernameHelpModal && (
+        <LeetcodeUsernameHelpModal onClose={() => setShowUsernameHelpModal(false)} />
+      )}
+
       {/* Solve Points Breakdown Modal */}
       {selectedSolveBreakdown && (
         <div className="modal-overlay" onClick={() => setSelectedSolveBreakdown(null)}>
@@ -2247,103 +2267,63 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function LeetcodeUsernameHelp() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isEnlarged, setIsEnlarged] = useState(false);
-
+function LeetcodeUsernameHelpModal({ onClose }: { onClose: () => void }) {
   return (
-    <div className="username-help-menu-container">
-      <button
-        type="button"
-        className={`username-help-toggle-btn ${isOpen ? "open" : ""}`}
-        onClick={() => setIsOpen(!isOpen)}
-        aria-expanded={isOpen}
-      >
-        <span className="username-help-toggle-left">
-          <span className="username-help-icon">💡</span>
-          <span className="username-help-label">Need help finding your LeetCode username?</span>
-        </span>
-        <span className={`username-help-chevron ${isOpen ? "open" : ""}`}>
-          {isOpen ? "▲" : "▼"}
-        </span>
-      </button>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content username-guide-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-heading">Finding Your LeetCode Username</h3>
+          <button
+            type="button"
+            className="modal-close"
+            onClick={onClose}
+            title="Close"
+          >
+            ✕
+          </button>
+        </div>
 
-      {isOpen && (
-        <div className="username-help-dropdown">
-          <div className="username-help-header">
-            <span className="username-help-badge">Profile Guide</span>
-          </div>
+        <div className="username-guide-modal-body">
+          <p className="username-guide-modal-intro">
+            Many users enter their <strong>display nickname</strong> by mistake. LeetCode requires your unique <strong>handle / username</strong>:
+          </p>
 
-          <div className="username-help-intro">
-            Many users enter their <strong>display name</strong> by mistake. LeetCode requires your unique <strong>handle / username</strong>:
-          </div>
-
-          <ol className="username-help-steps">
+          <ol className="username-guide-steps">
             <li>
-              Go to your profile on leetcode.com (or click your profile icon).
+              Go to your profile on <strong>leetcode.com</strong> (click your profile icon).
             </li>
             <li>
-              Look directly <strong>below your display name</strong> for your unique handle (marked in yellow in the image below).
+              Look directly <strong>below your display name</strong> for your unique handle (marked in yellow below).
             </li>
             <li>
               Enter that handle (e.g. <code>leetcode_learner7</code>), <strong>not</strong> your display name (e.g. <code>CodeNinja42</code>).
             </li>
           </ol>
 
-          <div
-            className="username-help-img-container"
-            onClick={() => setIsEnlarged(true)}
-            title="Click image to enlarge"
-          >
+          <div className="username-guide-modal-img-wrapper">
             <img
               src="/leetcode_username_guide.png"
               alt="LeetCode Username Location Guide"
-              className="username-help-guide-img"
+              className="username-guide-modal-img"
             />
-            <div className="username-help-img-overlay">
-              <span>🔍 Click image to enlarge</span>
-            </div>
           </div>
-        </div>
-      )}
 
-      {isEnlarged && (
-        <div className="modal-overlay" onClick={() => setIsEnlarged(false)}>
-          <div className="modal-content username-guide-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-heading">Finding Your LeetCode Username</h3>
-              <button
-                type="button"
-                className="modal-close"
-                onClick={() => setIsEnlarged(false)}
-                title="Close"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="username-guide-modal-body">
-              <img
-                src="/leetcode_username_guide.png"
-                alt="LeetCode Username Location Guide"
-                className="username-guide-modal-img"
-              />
-              <div className="username-guide-modal-hint">
-                👉 Enter the <strong>highlighted handle</strong> (e.g. <code>leetcode_learner7</code>), <em>not</em> the display name above it!
-              </div>
-            </div>
-            <div className="modal-footer centered-footer">
-              <button
-                type="button"
-                className="primary-btn center-btn"
-                onClick={() => setIsEnlarged(false)}
-                style={{ width: "auto", minWidth: "100px", padding: "8px 24px" }}
-              >
-                Got it
-              </button>
-            </div>
+          <div className="username-guide-modal-hint">
+            👉 Enter the <strong>highlighted handle</strong> (e.g. <code>leetcode_learner7</code>), <em>not</em> the display name above it!
           </div>
         </div>
-      )}
+
+        <div className="modal-footer centered-footer">
+          <button
+            type="button"
+            className="primary-btn center-btn"
+            onClick={onClose}
+            style={{ width: "auto", minWidth: "120px", padding: "8px 24px" }}
+          >
+            Got it 👍
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
