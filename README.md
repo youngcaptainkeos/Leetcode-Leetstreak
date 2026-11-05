@@ -91,9 +91,9 @@ LeetStreak uses standard WebExtensions (Manifest V3) fully compatible with macOS
 
 ## 🎯 How Points & Scoring System Work
 
-LeetStreak uses an advanced, fair scoring system based on actual problem difficulty, ZeroTrac contest ratings, acceptance ratios, and consistency bonuses:
+LeetStreak uses an advanced, transparent scoring system based on actual problem difficulty, ZeroTrac contest ratings, acceptance ratios, Codeforces ratings, and consistency bonuses:
 
-### 1. Base Points Calculation
+### 1. LeetCode Base Points Calculation
 - **Contest Problems (Elo Rating Available)**:
   - Uses official **ZeroTrac Contest Rating** dataset.
   - Formula: `Points = Contest Elo Rating / 100` (e.g. Rating `1750` = `17.5 pts`, Rating `2200` = `22.0 pts`).
@@ -103,35 +103,42 @@ LeetStreak uses an advanced, fair scoring system based on actual problem difficu
   - **Hard**: `30.0 pts` base.
   - **Acceptance Rate Adjustment**: Harder problems with lower acceptance rates reward bonus points (up to `+20 pts`), while higher acceptance problems adjust proportionally (`Adjustment = +20 × (1 - (2 × AcceptanceRate - 0.5))`).
 
-### 2. Consistency & Performance Bonuses
-- 🌅 **Daily Challenge Bonus**: `+5 pts` for solving today's official LeetCode Daily Problem!
-- 🔥 **Active Streak Multiplier**: Up to **+10% boost** (`+1%` extra per active streak day up to 10 days) applied to all your daily solve points!
+### 2. Codeforces Base Points Calculation
+- Solved problems on **Codeforces** earn points calibrated to problem rating: `Points = Problem Rating / 100` (e.g. 800 rating = `8.0 pts`, 1600 rating = `16.0 pts`).
+
+### 3. Consistency, Revision & Performance Bonuses
+- 🌅 **Daily Challenge Bonus**: `+5 pts` for solving today's official LeetCode Daily Challenge!
+- 🔄 **Spaced Repetition Revisions**: Re-solving a question after at least 7 days earns a dedicated revision award (`+2 pts × streak multiplier`).
+- 🔥 **Active Streak Multiplier**: Up to **+10% boost** (`+1%` extra per active streak day up to 10 days) applied to daily first solves!
 
 ---
 
 ## ✨ Features
 
-- 🔥 **Active Daily Streak Tracking**: Keeps track of your daily coding streak with an automatic 1-day grace period.
-- 📝 **Live Solves & Points Breakdown**: Click any recent solve to open the **Points Breakdown Modal** and view exact base points, contest Elo ratings, acceptance deltas, and streak multipliers!
-- 📊 **Global & Group Leaderboards**: Compare your streak, submissions, and points against all coders or private friends.
-- 👥 **Private Friend Groups**: Create custom private groups or join your friends' groups using a unique 6-character invite code!
+- 🔥 **First-Solve Daily Streak Tracking**: Accurately tracks first accepted solves in Indian Standard Time (IST) with a 1-day grace period.
+- 🌐 **Dual Platform Support**: Connect and verify both your **LeetCode** and **Codeforces** accounts with cryptographic handle verification.
+- 📝 **Live Solves & Points Breakdown**: Click any solve to open the **Points Breakdown Modal** and inspect exact base points, Elo ratings, and streak multipliers.
+- 📊 **Flexible Period Leaderboards**: Toggle between **All-time**, **This Week**, and **This Month** rankings across Global, Friends, and Group boards.
+- 👥 **Friends & Study Groups**: Connect directly with friends or create private study groups with unique 6-character invite codes.
+- 🗺️ **Account-Backed Study Plans**: Follow structured learning sheets (Striver's A2Z, LeetCode 75, Top SQL 50) and create custom playlists that sync seamlessly across devices.
+- 🔍 **History Search & Data Export**: Explore and search your full solve history, visualize your activity heatmap, and export your account data as JSON or formula-injection-safe CSV.
 
 ---
 
 ## 📱 How to Use LeetStreak
 
-1. **Sign Up**:
-   - Open the extension and click **Sign Up**.
+1. **Sign Up / Sign In**:
+   - Open the extension or web app and create an account.
    - Enter your Name, LeetCode Username, Email, and Password.
 2. **Dashboard**:
    - View your active streak, submissions count, weighted points, and difficulty breakdown.
-   - Click **Sync now** anytime to instantly refresh your latest LeetCode solves.
-3. **Join or Create Groups**:
-   - Navigate to the **Groups** tab.
-   - Click **Create Group** to start a private leaderboard for your study group or class.
-   - Share the **6-character Group Code** with your friends so they can join!
+   - Click **Sync now** anytime to instantly refresh your latest solves.
+3. **Connect Codeforces (Optional)**:
+   - Navigate to **Settings** and link your Codeforces handle. Verify ownership securely by pasting a temporary token into your profile.
 4. **Leaderboards**:
-   - Check the **Global** or **Group Leaderboards** to see who's staying consistent!
+   - Check the **Global**, **Friends**, or **Group Leaderboards** with All-time, Weekly, or Monthly period views!
+5. **Study Plans**:
+   - Head over to the **Progress** tab to track your journey across popular curated sheets or custom playlists.
 
 ---
 

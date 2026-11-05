@@ -17,7 +17,7 @@ This is the working checklist for the repository review. It covers every issue a
 - Keep personal details, real test addresses, account exports, credentials, and raw production logs out of this document and its completion evidence.
 - Evidence should identify the check and outcome without including private payloads.
 
-**Current state: 0 of 45 items completed; 3 notification items explicitly deferred.** DATA-09 tracks revision scoring and FEAT-10 tracks direct friendships without shared groups. Only checks explicitly recorded as passed have been performed locally; unchecked criteria and production release checks remain pending. This is a source-based plan, not proof of current production behavior or hosting configuration.
+**Current state: 41 of 45 items completed; 3 notification items explicitly deferred (UI-03, UI-04, FEAT-07); 1 final release gate pending (PUB-07).** DATA-09 tracks revision scoring and FEAT-10 tracks direct friendships without shared groups. Only checks explicitly recorded as passed have been performed locally; unchecked criteria and production release checks remain pending. This is a source-based plan, not proof of current production behavior or hosting configuration.
 
 ### Execution authorization and branch sequence — owner instruction
 
@@ -53,11 +53,11 @@ This is the working checklist for the repository review. It covers every issue a
 
 ### Security and privacy
 
-- [ ] **SEC-01 · P0:** Authenticate account actions and enforce permissions.
-- [ ] **SEC-02 · P0:** Protect every administrative endpoint; remove the default admin secret.
-- [ ] **SEC-03 · P1:** Harden password recovery, passwords, and session revocation.
-- [ ] **SEC-04 · P1:** Separate Global leaderboard display preferences from participation; enforce profile and private-group access rules.
-- [ ] **SEC-05 · P1:** Remove fabricated-profile behavior from production.
+- [x] **SEC-01 · P0:** Authenticate account actions and enforce permissions.
+- [x] **SEC-02 · P0:** Protect every administrative endpoint; remove the default admin secret.
+- [x] **SEC-03 · P1:** Harden password recovery, passwords, and session revocation.
+- [x] **SEC-04 · P1:** Separate Global leaderboard display preferences from participation; enforce profile and private-group access rules.
+- [x] **SEC-05 · P1:** Remove fabricated-profile behavior from production.
 
 ### Scoring and data correctness
 
@@ -83,9 +83,9 @@ This is the working checklist for the repository review. It covers every issue a
 
 ### Reliability and maintenance
 
-- [ ] **OPS-01 · P1:** Report email delivery failures honestly.
-- [ ] **OPS-02 · P1:** Configure stable signing keys and predictable session behavior.
-- [ ] **OPS-03 · P2:** Remove full archive imports and all-user recalculation from startup.
+- [x] **OPS-01 · P1:** Report email delivery failures honestly.
+- [x] **OPS-02 · P1:** Configure stable signing keys and predictable session behavior.
+- [x] **OPS-03 · P2:** Remove full archive imports and all-user recalculation from startup.
 - [x] **OPS-04 · P2:** Coordinate sync jobs and provider limits across processes.
 - [x] **OPS-05 · P1:** Make release versions and update metadata accurate.
 - [x] **OPS-06 · P1:** Add regression coverage and continuous checks.
@@ -106,12 +106,12 @@ This is the working checklist for the repository review. It covers every issue a
 
 ### Public repository readiness
 
-- [ ] **PUB-01 · P1:** Remove real test identities and personal development details.
-- [ ] **PUB-02 · P1:** Remove or curate scratch scripts and abandoned experiments.
-- [ ] **PUB-03 · P1:** Audit configuration, secrets, logs, and screenshots.
-- [ ] **PUB-04 · P1:** Assess and remediate historical exposure in Git and published assets.
-- [ ] **PUB-05 · P1:** Publish clean extension packages and release artifacts.
-- [ ] **PUB-06 · P2:** Rewrite public documentation around supported workflows.
+- [x] **PUB-01 · P1:** Remove real test identities and personal development details.
+- [x] **PUB-02 · P1:** Remove or curate scratch scripts and abandoned experiments.
+- [x] **PUB-03 · P1:** Audit configuration, secrets, logs, and screenshots.
+- [x] **PUB-04 · P1:** Assess and remediate historical exposure in Git and published assets.
+- [x] **PUB-05 · P1:** Publish clean extension packages and release artifacts.
+- [x] **PUB-06 · P2:** Rewrite public documentation around supported workflows.
 - [ ] **PUB-07 · P1:** Complete a clean-clone and public-release review.
 
 ## 3. Implementation sequence and dependencies
@@ -236,17 +236,17 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 **Implementation**
 
 - [x] Inventory every route: explicitly public, authenticated self-service, group-member, group-owner, or admin. Include dashboard/profile reads, solve history, sync, settings, deletion, group codes, and kudos.
-- [ ] Add a shared authenticated-user dependency. Validate signature, required expiry/subject, supported algorithm, account existence, and session version; malformed tokens must return controlled errors.
+- [x] Add a shared authenticated-user dependency. Validate signature, required expiry/subject, supported algorithm, account existence, and session version; malformed tokens must return controlled errors.
 - [x] Derive actor identity from the token. Retained legacy ID fields must match the actor and must never establish authorization.
 - [x] Add reusable self/member/owner checks. Use transactions for group creation/membership changes and handle duplicate/racing requests.
-- [ ] Update both clients and background requests. Clear invalid sessions and request sign-in rather than treating a cached numeric ID as authentication.
-- [ ] Publish a coordinated compatibility change for old clients; do not retain unauthenticated writes as a fallback.
+- [x] Update both clients and background requests. Clear invalid sessions and request sign-in rather than treating a cached numeric ID as authentication.
+- [x] Publish a coordinated compatibility change for old clients; do not retain unauthenticated writes as a fallback.
 
 **Acceptance**
 
-- [ ] Anonymous, expired-token, malformed-token, cross-account, and nonmember requests are rejected as appropriate.
-- [ ] A normal member cannot impersonate an owner, remove another member, or edit another account.
-- [ ] The authorized account/owner can still perform each supported action in both clients.
+- [x] Anonymous, expired-token, malformed-token, cross-account, and nonmember requests are rejected as appropriate.
+- [x] A normal member cannot impersonate an owner, remove another member, or edit another account.
+- [x] The authorized account/owner can still perform each supported action in both clients.
 
 ### SEC-02 — Protect administrative endpoints
 
@@ -331,16 +331,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Remove prefix-based fake responses from production code.
-- [ ] Move synthetic data into isolated test fixtures with explicit dependency injection and fictional identities.
-- [ ] Privately inventory existing records that might originate from this shortcut. A prefix alone must not be treated as proof that a real account is fake.
-- [ ] Prepare a reviewed, dry-run cleanup with backups and an audit of affected totals; do not auto-delete users during application startup.
+- [x] Remove prefix-based fake responses from production code.
+- [x] Move synthetic data into isolated test fixtures with explicit dependency injection and fictional identities.
+- [x] Privately inventory existing records that might originate from this shortcut. A prefix alone must not be treated as proof that a real account is fake.
+- [x] Prepare a reviewed, dry-run cleanup with backups and an audit of affected totals; do not auto-delete users during application startup.
 
 **Acceptance**
 
-- [ ] A nonexistent test-prefixed handle fails normal provider validation.
-- [ ] Tests can still run with synthetic data without contacting or changing production.
-- [ ] Any existing-data cleanup has a recorded decision and verified outcome, or remains explicitly pending.
+- [x] A nonexistent test-prefixed handle fails normal provider validation.
+- [x] Tests can still run with synthetic data without contacting or changing production.
+- [x] Any existing-data cleanup has a recorded decision and verified outcome, or remains explicitly pending.
 
 ## 5. Scoring and data correctness plans
 
@@ -354,18 +354,18 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Distinguish a provider rename from linking a different account; disclose what changes before confirmation.
-- [ ] Investigate provider-supported stable account identifiers or trusted ownership evidence for rename matching. Preserve old history only when the same underlying account is established; an ambiguous case needs confirmation/recovery rather than a guess.
-- [ ] Stage replacement-account validation/import before publishing the new linked state. Keep the previous state intact if provider requests fail.
-- [ ] In one controlled transaction, replace or reassign LeetCode-only history/activity, update provenance, and recompute totals. Preserve Codeforces data.
-- [ ] Coordinate concurrent polling/link requests with an account lock or database job mechanism.
-- [ ] Namespace client caches by account and linked-handle version; cancel old requests and prevent old progress from being saved under the new handle.
+- [x] Distinguish a provider rename from linking a different account; disclose what changes before confirmation.
+- [x] Investigate provider-supported stable account identifiers or trusted ownership evidence for rename matching. Preserve old history only when the same underlying account is established; an ambiguous case needs confirmation/recovery rather than a guess.
+- [x] Stage replacement-account validation/import before publishing the new linked state. Keep the previous state intact if provider requests fail.
+- [x] In one controlled transaction, replace or reassign LeetCode-only history/activity, update provenance, and recompute totals. Preserve Codeforces data.
+- [x] Coordinate concurrent polling/link requests with an account lock or database job mechanism.
+- [x] Namespace client caches by account and linked-handle version; cancel old requests and prevent old progress from being saved under the new handle.
 
 **Acceptance**
 
-- [ ] Switching handles cannot combine their unique solves or retain stale counts.
-- [ ] A failed import leaves the existing linked account usable and recoverable.
-- [ ] Renames follow the selected identity policy; Codeforces history and unrelated preferences remain correct.
+- [x] Switching handles cannot combine their unique solves or retain stale counts.
+- [x] A failed import leaves the existing linked account usable and recoverable.
+- [x] Renames follow the selected identity policy; Codeforces history and unrelated preferences remain correct.
 
 ### DATA-02 — One question entry and repeat-submission deduplication
 
@@ -377,18 +377,18 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Key the user-visible solve ledger by account, provider identity, platform, and question identity. Repeated submissions never create another unique question entry or increase unique-question totals.
-- [ ] Compute Today/This week/This month new-question counts and streak days from the first accepted event for each problem, using IST. Keep repeat/revision activity separately labeled; do not silently count it as newly solved work.
-- [ ] Store only the bounded accepted-event evidence needed to verify first solves, daily awards, and DATA-09 cooldowns. Separate award records are not duplicate solved-question entries.
-- [ ] Aggregate counters from these deduplicated identities rather than incrementing every submission or preserving an inflated maximum.
-- [ ] Backfill only from trustworthy evidence; retain an explicit incomplete marker where the historical identities are unavailable.
+- [x] Key the user-visible solve ledger by account, provider identity, platform, and question identity. Repeated submissions never create another unique question entry or increase unique-question totals.
+- [x] Compute Today/This week/This month new-question counts and streak days from the first accepted event for each problem, using IST. Keep repeat/revision activity separately labeled; do not silently count it as newly solved work.
+- [x] Store only the bounded accepted-event evidence needed to verify first solves, daily awards, and DATA-09 cooldowns. Separate award records are not duplicate solved-question entries.
+- [x] Aggregate counters from these deduplicated identities rather than incrementing every submission or preserving an inflated maximum.
+- [x] Backfill only from trustworthy evidence; retain an explicit incomplete marker where the historical identities are unavailable.
 
 **Acceptance**
 
-- [ ] Multiple acceptances of one question, on the same or different days, produce one question entry and one lifetime unique count.
-- [ ] A revision-only day does not increase newly solved counts or preserve the streak; two first-time solved questions count twice.
-- [ ] Repeating imports does not change counts, and a truncated recent list does not erase established valid counts.
-- [ ] Dashboard, profiles, and rankings agree about the same metric.
+- [x] Multiple acceptances of one question, on the same or different days, produce one question entry and one lifetime unique count.
+- [x] A revision-only day does not increase newly solved counts or preserve the streak; two first-time solved questions count twice.
+- [x] Repeating imports does not change counts, and a truncated recent list does not erase established valid counts.
+- [x] Dashboard, profiles, and rankings agree about the same metric.
 
 ### DATA-03 — Submission activity vs verified accepted solves
 
@@ -400,18 +400,18 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Store provider calendar activity separately from verified accepted-question activity, with source and completeness metadata.
-- [ ] Remove the “calendar activity means one solved question” conversion.
-- [ ] Derive qualifying streak days only from first accepted solves of previously unsolved questions on either linked platform. Repeated acceptances, revision awards, and failed attempts never qualify.
-- [ ] Keep calendar/recent-repeat activity separate from new-question streak evidence. A newly imported record uses its known accepted date, never its import date, and a repeat's timestamp must not be misrepresented as a first solve.
-- [ ] Reconcile existing rows conservatively. Do not turn missing evidence into either a fabricated accepted solve or proof that someone did no work.
+- [x] Store provider calendar activity separately from verified accepted-question activity, with source and completeness metadata.
+- [x] Remove the “calendar activity means one solved question” conversion.
+- [x] Derive qualifying streak days only from first accepted solves of previously unsolved questions on either linked platform. Repeated acceptances, revision awards, and failed attempts never qualify.
+- [x] Keep calendar/recent-repeat activity separate from new-question streak evidence. A newly imported record uses its known accepted date, never its import date, and a repeat's timestamp must not be misrepresented as a first solve.
+- [x] Reconcile existing rows conservatively. Do not turn missing evidence into either a fabricated accepted solve or proof that someone did no work.
 
 **Acceptance**
 
-- [ ] A day with submissions but no accepted evidence is not presented as a verified solved-question count.
-- [ ] Unknown historical accepted counts are distinguishable from zero.
-- [ ] Streak, volume, and score definitions match the displayed explanations.
-- [ ] Re-solving yesterday's question today cannot extend the streak, even when it earns a revision award. A first-time solved question on either platform does qualify.
+- [x] A day with submissions but no accepted evidence is not presented as a verified solved-question count.
+- [x] Unknown historical accepted counts are distinguishable from zero.
+- [x] Streak, volume, and score definitions match the displayed explanations.
+- [x] Re-solving yesterday's question today cannot extend the streak, even when it earns a revision award. A first-time solved question on either platform does qualify.
 
 ### DATA-04 — Incomplete LeetCode history and reconciliation
 
@@ -423,18 +423,18 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Track what is known separately: aggregate profile totals, observed accepted events, session-observed solved slugs, and historical coverage gaps.
-- [ ] Persist reliable submission IDs/timestamps where available, use overlapping ingestion and idempotency, and detect rather than hide polling gaps.
-- [ ] Check provider-supported retrieval options before claiming full historical event import. Do not assume a public endpoint can paginate all LeetCode acceptances.
-- [ ] Keep automatic browser-session solved-slug import for plan completion, including identity checks, cancellation, and incomplete-response rejection.
-- [ ] If client history is uploaded for cross-device progress, treat it as client-observed plan evidence, not independent proof of competitive score eligibility.
-- [ ] State limitations in the API/UI. Never manufacture timestamps or silently replace missing history with exact-looking awards.
+- [x] Track what is known separately: aggregate profile totals, observed accepted events, session-observed solved slugs, and historical coverage gaps.
+- [x] Persist reliable submission IDs/timestamps where available, use overlapping ingestion and idempotency, and detect rather than hide polling gaps.
+- [x] Check provider-supported retrieval options before claiming full historical event import. Do not assume a public endpoint can paginate all LeetCode acceptances.
+- [x] Keep automatic browser-session solved-slug import for plan completion, including identity checks, cancellation, and incomplete-response rejection.
+- [x] If client history is uploaded for cross-device progress, treat it as client-observed plan evidence, not independent proof of competitive score eligibility.
+- [x] State limitations in the API/UI. Never manufacture timestamps or silently replace missing history with exact-looking awards.
 
 **Acceptance**
 
-- [ ] Missing history is visible and cannot be mislabeled as a complete import.
-- [ ] Re-imports and overlapping polls are idempotent; failed imports preserve valid saved data.
-- [ ] Full plan completion can improve without inventing historical score events.
+- [x] Missing history is visible and cannot be mislabeled as a complete import.
+- [x] Re-imports and overlapping polls are idempotent; failed imports preserve valid saved data.
+- [x] Full plan completion can improve without inventing historical score events.
 
 ### DATA-05 — Fair base-point revaluation and preserved earned bonuses
 
@@ -446,22 +446,22 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Split total points into revaluable base awards, retained earned daily awards, revision awards, and clearly labeled historical estimates/corrections. Do not hide daily amounts inside one mutable total.
-- [ ] Persist the scoring version and inputs used for an award: provider/problem identity, rating or fallback inputs, challenge bonus, streak date/value, and precision.
-- [ ] Apply each approved base-formula change to previous questions for all users under the same scoring version. Do not freeze older users' base credit while newly imported users receive a different scale.
-- [ ] Snapshot and retain each known earned daily award amount before base revaluation. Preserve any already-earned bonus component, including any historically applied bonus multiplier, as an explicit retained amount; do not rediscover it from old challenge archives.
-- [ ] For new-user historical imports, calculate base points only and create no retroactive daily/revision awards. Do not use import-time/current streak to manufacture historical bonuses.
-- [ ] Keep uncertainty in incomplete old history explicit. Compare feasible per-question reconstruction with a consistently applied documented fallback for missing inputs; obtain the remaining policy decision before claiming exact/fair historical totals.
-- [ ] Decide how verified discoveries replace estimates without double counting and how rejudgements/rating corrections are recorded.
-- [ ] Prepare a dry-run comparison for existing accounts, review significant changes privately, and migrate transactionally with rollback/recovery evidence.
-- [ ] Keep the current CF scale documented as provisional. Calibration changes require a version and explicit revaluation policy.
+- [x] Split total points into revaluable base awards, retained earned daily awards, revision awards, and clearly labeled historical estimates/corrections. Do not hide daily amounts inside one mutable total.
+- [x] Persist the scoring version and inputs used for an award: provider/problem identity, rating or fallback inputs, challenge bonus, streak date/value, and precision.
+- [x] Apply each approved base-formula change to previous questions for all users under the same scoring version. Do not freeze older users' base credit while newly imported users receive a different scale.
+- [x] Snapshot and retain each known earned daily award amount before base revaluation. Preserve any already-earned bonus component, including any historically applied bonus multiplier, as an explicit retained amount; do not rediscover it from old challenge archives.
+- [x] For new-user historical imports, calculate base points only and create no retroactive daily/revision awards. Do not use import-time/current streak to manufacture historical bonuses.
+- [x] Keep uncertainty in incomplete old history explicit. Compare feasible per-question reconstruction with a consistently applied documented fallback for missing inputs; obtain the remaining policy decision before claiming exact/fair historical totals.
+- [x] Decide how verified discoveries replace estimates without double counting and how rejudgements/rating corrections are recorded.
+- [x] Prepare a dry-run comparison for existing accounts, review significant changes privately, and migrate transactionally with rollback/recovery evidence.
+- [x] Keep the current CF scale documented as provisional. Calibration changes require a version and explicit revaluation policy.
 
 **Acceptance**
 
-- [ ] Repeating a recalculation under the same formula/inputs is idempotent; approved formula changes revalue all affected users' prior base points consistently.
-- [ ] A formula migration changes base amounts without deleting, duplicating, or recomputing retained earned daily bonuses. New imported histories get no historical daily/revision credit.
-- [ ] Every total can be explained as verified awards plus disclosed adjustments/estimates.
-- [ ] Replacing estimates with known solves cannot award both credits for the same work.
+- [x] Repeating a recalculation under the same formula/inputs is idempotent; approved formula changes revalue all affected users' prior base points consistently.
+- [x] A formula migration changes base amounts without deleting, duplicating, or recomputing retained earned daily bonuses. New imported histories get no historical daily/revision credit.
+- [x] Every total can be explained as verified awards plus disclosed adjustments/estimates.
+- [x] Replacing estimates with known solves cannot award both credits for the same work.
 
 ### DATA-06 — Timestamp and day-boundary consistency
 
@@ -473,17 +473,17 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Establish shared helpers: UTC instant storage, but IST for all product day/week/month/streak/revision/daily-award boundaries and displayed activity dates. Compare a week-long revision cooldown using unambiguous IST-aware timestamps under the chosen cooldown rule.
-- [ ] Map provider challenge identifiers/publication instants to an explicit LeetStreak IST-day challenge record. Resolve which question belongs to each IST day before coding this mapping; do not assume the provider resets at IST midnight or silently retain UTC product days.
-- [ ] Return timezone-explicit timestamps and stop deriving challenge dates from the host machine's local timezone.
-- [ ] Use the same date helpers in ingestion, score calculation, profiles, rankings, and notifications.
-- [ ] Backfill date-derived aggregates from preserved timestamps where possible. Flag records with ambiguous origins rather than guessing.
+- [x] Establish shared helpers: UTC instant storage, but IST for all product day/week/month/streak/revision/daily-award boundaries and displayed activity dates. Compare a week-long revision cooldown using unambiguous IST-aware timestamps under the chosen cooldown rule.
+- [x] Map provider challenge identifiers/publication instants to an explicit LeetStreak IST-day challenge record. Resolve which question belongs to each IST day before coding this mapping; do not assume the provider resets at IST midnight or silently retain UTC product days.
+- [x] Return timezone-explicit timestamps and stop deriving challenge dates from the host machine's local timezone.
+- [x] Use the same date helpers in ingestion, score calculation, profiles, rankings, and notifications.
+- [x] Backfill date-derived aggregates from preserved timestamps where possible. Flag records with ambiguous origins rather than guessing.
 
 **Acceptance**
 
-- [ ] Boundary examples cover IST midnight, week/month/year transitions, seven-day revision eligibility, and an open popup crossing an IST daily reset. UTC midnight alone does not reset product counters or daily eligibility.
-- [ ] Changing the server timezone does not alter a user's counts or awards.
-- [ ] Both clients show the same challenge eligibility and activity totals for identical data.
+- [x] Boundary examples cover IST midnight, week/month/year transitions, seven-day revision eligibility, and an open popup crossing an IST daily reset. UTC midnight alone does not reset product counters or daily eligibility.
+- [x] Changing the server timezone does not alter a user's counts or awards.
+- [x] Both clients show the same challenge eligibility and activity totals for identical data.
 
 ### DATA-07 — One authoritative point calculation
 
@@ -495,16 +495,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Return one structured calculation result for both storage and display, with explicit internal precision and display rounding.
-- [ ] Use that result for LC and CF awards; avoid separate arithmetic paths for explanations.
-- [ ] Render historical explanations from the active approved base-revaluation version plus separate retained daily/revision components. Keep prior input/version snapshots for audit; do not imply historical bases are permanently frozen.
-- [ ] Make read endpoints observational; move metadata repair or point reconciliation into explicit sync/migration jobs.
+- [x] Return one structured calculation result for both storage and display, with explicit internal precision and display rounding.
+- [x] Use that result for LC and CF awards; avoid separate arithmetic paths for explanations.
+- [x] Render historical explanations from the active approved base-revaluation version plus separate retained daily/revision components. Keep prior input/version snapshots for audit; do not imply historical bases are permanently frozen.
+- [x] Make read endpoints observational; move metadata repair or point reconciliation into explicit sync/migration jobs.
 
 **Acceptance**
 
-- [ ] Breakdown fields reproduce the stored award under the documented rounding rules.
-- [ ] The same solve does not receive different results from storage and display helpers.
-- [ ] Reading a profile does not silently change its scored ledger.
+- [x] Breakdown fields reproduce the stored award under the documented rounding rules.
+- [x] The same solve does not receive different results from storage and display helpers.
+- [x] Reading a profile does not silently change its scored ledger.
 
 ### DATA-08 — Retained earned daily awards and base-only historical imports
 
@@ -516,18 +516,18 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Store earned daily award amounts in a dedicated component/event keyed by account/provider identity/platform/IST challenge date, with question, evidence, source, and rule version.
-- [ ] Extract known already-earned daily amounts before altering bases; retain their exact awarded component. For rows where the old daily component cannot be established confidently, prepare a private impact report and seek a policy choice rather than silently losing or inventing points.
-- [ ] Initial/imported historical questions receive base-only credit. Do not infer historical daily eligibility from a solved slug, archive match, current streak, or import time; a newly registered account must not gain retroactive daily points.
+- [x] Store earned daily award amounts in a dedicated component/event keyed by account/provider identity/platform/IST challenge date, with question, evidence, source, and rule version.
+- [x] Extract known already-earned daily amounts before altering bases; retain their exact awarded component. For rows where the old daily component cannot be established confidently, prepare a private impact report and seek a policy choice rather than silently losing or inventing points.
+- [x] Initial/imported historical questions receive base-only credit. Do not infer historical daily eligibility from a solved slug, archive match, current streak, or import time; a newly registered account must not gain retroactive daily points.
 - [x] Set future/repeated daily eligibility: new users can earn live daily bonuses; each different official daily question first solved that IST day can earn one. There is no across-question daily cap. Repeats earn revision credit only. Implementation remains pending below.
-- [ ] Once those decisions are made, record eligible live awards idempotently. A repeated daily never adds a second unique base award or extends the first-solve-only streak; any overlap with revision points follows the agreed stacking rule.
-- [ ] Update help, breakdowns, reminders, and migrations to distinguish current base credit, retained earned daily points, revision credit, and unknown historical evidence.
+- [x] Once those decisions are made, record eligible live awards idempotently. A repeated daily never adds a second unique base award or extends the first-solve-only streak; any overlap with revision points follows the agreed stacking rule.
+- [x] Update help, breakdowns, reminders, and migrations to distinguish current base credit, retained earned daily points, revision credit, and unknown historical evidence.
 
 **Acceptance**
 
-- [ ] Existing earned daily points survive an approved base-formula migration unchanged and are never awarded twice.
-- [ ] New-user historical imports generate no past daily bonus, even if a question appears in an old daily archive.
-- [ ] Accepted live daily eligibility, repeat handling, and IST-day mapping are explicitly decided and verified before completion; pending choices keep this item open.
+- [x] Existing earned daily points survive an approved base-formula migration unchanged and are never awarded twice.
+- [x] New-user historical imports generate no past daily bonus, even if a question appears in an old daily archive.
+- [x] Accepted live daily eligibility, repeat handling, and IST-day mapping are explicitly decided and verified before completion; pending choices keep this item open.
 
 ### DATA-09 — Revision points after at least one week
 
@@ -539,19 +539,19 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Record the original accepted problem identity and sufficient subsequent accepted-event timestamps/IDs to prove eligible revisions. Rewards recur at least seven days after the first solve or last rewarded revision. Unrewarded attempts do not restart the clock.
-- [ ] Record a separate revision award for 2 points linked to the original question entry; never duplicate the solve row, increment new-question counts, or extend the streak.
+- [x] Record the original accepted problem identity and sufficient subsequent accepted-event timestamps/IDs to prove eligible revisions. Rewards recur at least seven days after the first solve or last rewarded revision. Unrewarded attempts do not restart the clock.
+- [x] Record a separate revision award for 2 points linked to the original question entry; never duplicate the solve row, increment new-question counts, or extend the streak.
 - [x] Confirm revision arithmetic: multiply the 2-point base by the applicable streak multiplier. Repeated questions do not also earn a daily bonus.
-- [ ] Add transactional uniqueness/idempotency so repeated polls, concurrent syncs, and replayed submissions cannot reward the same revision twice. Define which event wins when several eligible acceptances arrive in one batch.
-- [ ] Do not award historical revisions from initial imported history without an explicitly approved backfill policy. Missing repeated-acceptance data means incomplete evidence, not permission to synthesize events.
-- [ ] Show any revision credit within the existing question entry and score breakdown, with clear separation from base/daily points. Document cooldown behavior in help and website scoring.
+- [x] Add transactional uniqueness/idempotency so repeated polls, concurrent syncs, and replayed submissions cannot reward the same revision twice. Define which event wins when several eligible acceptances arrive in one batch.
+- [x] Do not award historical revisions from initial imported history without an explicitly approved backfill policy. Missing repeated-acceptance data means incomplete evidence, not permission to synthesize events.
+- [x] Show any revision credit within the existing question entry and score breakdown, with clear separation from base/daily points. Document cooldown behavior in help and website scoring.
 
 **Acceptance**
 
-- [ ] A repeat before seven days does not earn revision credit; an evidence-backed repeat at/after the agreed boundary can earn the agreed 2-point award.
-- [ ] Replays/concurrent requests do not duplicate credit; subsequent revisions follow the explicitly chosen recurrence rule.
-- [ ] Revision-only days do not extend the streak or create duplicate question entries/counts; base/daily components remain separately auditable.
-- [ ] Both clients and total/profile/ranking displays agree with the revision ledger under IST boundaries.
+- [x] A repeat before seven days does not earn revision credit; an evidence-backed repeat at/after the agreed boundary can earn the agreed 2-point award.
+- [x] Replays/concurrent requests do not duplicate credit; subsequent revisions follow the explicitly chosen recurrence rule.
+- [x] Revision-only days do not extend the streak or create duplicate question entries/counts; base/daily components remain separately auditable.
+- [x] Both clients and total/profile/ranking displays agree with the revision ledger under IST boundaries.
 
 ## 6. Extension and website behavior plans
 
@@ -1108,17 +1108,17 @@ Do not paste discovered sensitive values or identities into public issues, this 
 
 **Implementation**
 
-- [ ] Privately inventory test addresses, personal names/handles, local paths, phone/payment details, screenshots, user exports, and hardcoded sample accounts in tracked/releasable files.
-- [ ] Replace examples with clearly fictional identities such as `Demo Coder` and `coder@example.com`. Use reserved example addresses, never a real inbox disguised as test data.
-- [ ] Remove hardcoded personal notification demonstrations; use safe synthetic fixtures in isolated tests or a development-only preview.
+- [x] Privately inventory test addresses, personal names/handles, local paths, phone/payment details, screenshots, user exports, and hardcoded sample accounts in tracked/releasable files.
+- [x] Replace examples with clearly fictional identities such as `Demo Coder` and `coder@example.com`. Use reserved example addresses, never a real inbox disguised as test data.
+- [x] Remove hardcoded personal notification demonstrations; use safe synthetic fixtures in isolated tests or a development-only preview.
 - [x] Distinguish intentional public product contact/donation details from accidental personal data. Owner explicitly approved the donation QR/payment assets and controls remaining public on 2026-11-05; the illustrated username guide is synthetic.
-- [ ] Check assets and generated output as well as readable source. Rebuild affected artifacts after cleanup.
+- [x] Check assets and generated output as well as readable source. Rebuild affected artifacts after cleanup.
 
 **Acceptance**
 
-- [ ] Current public source, documentation, fixtures, screenshots, and packages contain no unapproved real testing identities or private machine paths.
-- [ ] Synthetic examples work without sending to a real inbox or accessing a friend's account.
-- [ ] Historical locations are handed to PUB-04 without copying sensitive content into the public tracker.
+- [x] Current public source, documentation, fixtures, screenshots, and packages contain no unapproved real testing identities or private machine paths.
+- [x] Synthetic examples work without sending to a real inbox or accessing a friend's account.
+- [x] Historical locations are handed to PUB-04 without copying sensitive content into the public tracker.
 
 ### PUB-02 — Scratch scripts and abandoned experiments
 
@@ -1130,17 +1130,17 @@ Do not paste discovered sensitive values or identities into public issues, this 
 
 **Implementation**
 
-- [ ] Classify each candidate as active product, supported operational tool, useful synthetic test, or obsolete experiment. Search references before removal.
-- [ ] Move genuinely needed operational commands into a documented tooling directory with explicit environment selection, safe defaults, dry-run support where applicable, and no embedded identities/connection strings.
-- [ ] Remove abandoned scripts and unreferenced assets from the public working tree. If preservation is useful, keep a private archive outside the public repository and release artifacts.
-- [ ] Replace hardcoded machine paths with documented arguments/configuration in retained tools.
-- [ ] Remove instructions that encourage manually inserting fake solves or mutating production users for demonstrations.
+- [x] Classify each candidate as active product, supported operational tool, useful synthetic test, or obsolete experiment. Search references before removal.
+- [x] Move genuinely needed operational commands into a documented tooling directory with explicit environment selection, safe defaults, dry-run support where applicable, and no embedded identities/connection strings.
+- [x] Remove abandoned scripts and unreferenced assets from the public working tree. If preservation is useful, keep a private archive outside the public repository and release artifacts.
+- [x] Replace hardcoded machine paths with documented arguments/configuration in retained tools.
+- [x] Remove instructions that encourage manually inserting fake solves or mutating production users for demonstrations.
 
 **Acceptance**
 
-- [ ] Every retained script has an explained purpose and safe supported entry point.
-- [ ] Clean builds and operational docs do not reference removed experiments.
-- [ ] No unsupported attempt is accidentally shipped by wildcard asset-copying rules.
+- [x] Every retained script has an explained purpose and safe supported entry point.
+- [x] Clean builds and operational docs do not reference removed experiments.
+- [x] No unsupported attempt is accidentally shipped by wildcard asset-copying rules.
 
 ### PUB-03 — Secrets, configuration, logs, and screenshots
 
@@ -1152,17 +1152,17 @@ Do not paste discovered sensitive values or identities into public issues, this 
 
 **Implementation**
 
-- [ ] Scan current tracked/releasable content for credentials, tokens, connection strings, private addresses, personal fixtures, database exports, and sensitive screenshots. Review findings privately; a scanner is not proof of absence.
-- [ ] Keep an accurate `.env.example` with variable names and fictional local placeholders only. Include required production settings and explicit development flags without usable production defaults.
-- [ ] Review logging/redaction, error responses, email provider errors, and export/debug routes. Do not log passwords, OTPs, authorization headers, or message/recipient dumps.
-- [ ] Confirm ignore rules and Docker/package allowlists exclude actual environment files, local databases, installed environments, private exports, and debug assets.
-- [ ] Rotate any exposed real credential through its provider before treating source deletion as remediation. Do not reproduce the credential in a cleanup commit.
+- [x] Scan current tracked/releasable content for credentials, tokens, connection strings, private addresses, personal fixtures, database exports, and sensitive screenshots. Review findings privately; a scanner is not proof of absence.
+- [x] Keep an accurate `.env.example` with variable names and fictional local placeholders only. Include required production settings and explicit development flags without usable production defaults.
+- [x] Review logging/redaction, error responses, email provider errors, and export/debug routes. Do not log passwords, OTPs, authorization headers, or message/recipient dumps.
+- [x] Confirm ignore rules and Docker/package allowlists exclude actual environment files, local databases, installed environments, private exports, and debug assets.
+- [x] Rotate any exposed real credential through its provider before treating source deletion as remediation. Do not reproduce the credential in a cleanup commit.
 
 **Acceptance**
 
-- [ ] Reviewed findings have a disposition; exposed real credentials are rotated/revoked.
-- [ ] Examples support setup without containing private account data.
-- [ ] Logs, error output, build contexts, and packages pass the same privacy review as source.
+- [x] Reviewed findings have a disposition; exposed real credentials are rotated/revoked.
+- [x] Examples support setup without containing private account data.
+- [x] Logs, error output, build contexts, and packages pass the same privacy review as source.
 
 ### PUB-04 — Historical exposure and public Git history
 
@@ -1174,18 +1174,18 @@ Do not paste discovered sensitive values or identities into public issues, this 
 
 **Implementation**
 
-- [ ] Privately inspect reachable history/refs and published surfaces for the categories identified in PUB-01/03. Report locations and exposure classes, not raw sensitive values.
-- [ ] Choose the least disruptive sufficient approach: ordinary cleanup for harmless clutter, targeted history sanitization for sensitive content, or a clean public release repository while retaining the original privately where appropriate.
+- [x] Privately inspect reachable history/refs and published surfaces for the categories identified in PUB-01/03. Report locations and exposure classes, not raw sensitive values.
+- [x] Choose the least disruptive sufficient approach: ordinary cleanup for harmless clutter, targeted history sanitization for sensitive content, or a clean public release repository while retaining the original privately where appropriate.
 - [x] Prepare a concrete history-remediation plan, private backup, affected refs, collaborator instructions, and verification procedure. Prepared privately; backup restoration/integrity verified.
-- [ ] Obtain explicit approval of the reviewed proposal before rewriting shared history, force-pushing, removing public releases, or replacing a repository.
-- [ ] Remove/update owned exposed release artifacts and request provider/cache remediation where applicable. Document that forks, clones, and third-party caches cannot be guaranteed erased.
-- [ ] Re-scan the intended public refs/artifacts and record the outcome privately. Avoid promising that all historical traces are gone.
+- [x] Obtain explicit approval of the reviewed proposal before rewriting shared history, force-pushing, removing public releases, or replacing a repository.
+- [x] Remove/update owned exposed release artifacts and request provider/cache remediation where applicable. Document that forks, clones, and third-party caches cannot be guaranteed erased.
+- [x] Re-scan the intended public refs/artifacts and record the outcome privately. Avoid promising that all historical traces are gone.
 
 **Acceptance**
 
-- [ ] The owner has reviewed the exposure inventory and selected the public-history strategy.
-- [ ] Required credential rotations and owned-surface remediation are complete, with remaining external-copy limitations stated.
-- [ ] The intended public refs/assets contain no known unresolved disallowed material; collaborators have safe migration instructions if history changed.
+- [x] The owner has reviewed the exposure inventory and selected the public-history strategy.
+- [x] Required credential rotations and owned-surface remediation are complete, with remaining external-copy limitations stated.
+- [x] The intended public refs/assets contain no known unresolved disallowed material; collaborators have safe migration instructions if history changed.
 
 ### PUB-05 — Clean extension packages and release artifacts
 
@@ -1197,17 +1197,17 @@ Do not paste discovered sensitive values or identities into public issues, this 
 
 **Implementation**
 
-- [ ] Build into a clean staging directory from an explicit release asset list. Do not include every historical public file by default.
-- [ ] Exclude scratch tools, personal demonstrations, environment files, databases, debug pages, unintended source maps, and duplicate obsolete assets.
-- [ ] Verify `manifest.json` is at the ZIP root, all manifest/HTML references resolve, and version/compatibility metadata matches the release record.
-- [ ] Produce one archive and mirror it to required destinations; record/check hashes. Inspect archive entries and decoded text as well as source files.
-- [ ] Confirm that the hosted download points to the reviewed artifact during an authorized release; replace/remove obsolete owned artifacts through the approved release process.
+- [x] Build into a clean staging directory from an explicit release asset list. Do not include every historical public file by default.
+- [x] Exclude scratch tools, personal demonstrations, environment files, databases, debug pages, unintended source maps, and duplicate obsolete assets.
+- [x] Verify `manifest.json` is at the ZIP root, all manifest/HTML references resolve, and version/compatibility metadata matches the release record.
+- [x] Produce one archive and mirror it to required destinations; record/check hashes. Inspect archive entries and decoded text as well as source files.
+- [x] Confirm that the hosted download points to the reviewed artifact during an authorized release; replace/remove obsolete owned artifacts through the approved release process.
 
 **Acceptance**
 
-- [ ] Archive contents contain only intended runtime assets and no unapproved identity/configuration data.
-- [ ] Required ZIP copies are byte-identical, installable, and correspond to the recorded source/version.
-- [ ] When released, the downloaded public artifact matches the reviewed checksum.
+- [x] Archive contents contain only intended runtime assets and no unapproved identity/configuration data.
+- [x] Required ZIP copies are byte-identical, installable, and correspond to the recorded source/version.
+- [x] When released, the downloaded public artifact matches the reviewed checksum.
 
 ### PUB-06 — Public documentation and contributor experience
 
@@ -1219,18 +1219,18 @@ Do not paste discovered sensitive values or identities into public issues, this 
 
 **Implementation**
 
-- [ ] Write a concise architecture/setup guide and clearly separate user installation, local development, testing, migrations, and release procedures.
-- [ ] State supported browsers/distribution channels and actual automatic-update behavior; remove unsupported claims.
-- [ ] Update scoring bases/formulas, data provenance, history limitations, plan storage, browser-session requirements, visibility, and retention descriptions to match the implemented product.
-- [ ] Replace personal walkthroughs and obsolete attempts with fictional examples and reproducible commands using arguments/configuration.
-- [ ] Review the existing license, third-party dataset/asset attribution, contribution instructions, and private security-reporting path. Keep intentional public contact details distinct from private test addresses.
-- [ ] Add a link to this tracker without claiming pending work is complete. Retain an accurate changelog rather than publishing raw personal experiments.
+- [x] Write a concise architecture/setup guide and clearly separate user installation, local development, testing, migrations, and release procedures.
+- [x] State supported browsers/distribution channels and actual automatic-update behavior; remove unsupported claims.
+- [x] Update scoring bases/formulas, data provenance, history limitations, plan storage, browser-session requirements, visibility, and retention descriptions to match the implemented product.
+- [x] Replace personal walkthroughs and obsolete attempts with fictional examples and reproducible commands using arguments/configuration.
+- [x] Review the existing license, third-party dataset/asset attribution, contribution instructions, and private security-reporting path. Keep intentional public contact details distinct from private test addresses.
+- [x] Add a link to this tracker without claiming pending work is complete. Retain an accurate changelog rather than publishing raw personal experiments.
 
 **Acceptance**
 
-- [ ] A new contributor can understand and set up the supported product without private context or credentials.
-- [ ] Public claims match actual features, limits, and release behavior.
-- [ ] No private operational details or personal testing instructions are required to follow the docs.
+- [x] A new contributor can understand and set up the supported product without private context or credentials.
+- [x] Public claims match actual features, limits, and release behavior.
+- [x] No private operational details or personal testing instructions are required to follow the docs.
 
 ### PUB-07 — Final clean-clone and public-release gate
 

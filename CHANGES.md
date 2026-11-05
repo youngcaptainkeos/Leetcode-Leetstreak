@@ -4,6 +4,46 @@ This document records all changes made during the autonomous execution of the Le
 
 ---
 
+## 2026-11-06 — Step: PUB-01 to PUB-06 / M7: Public Repository Readiness & Documentation
+
+### Summary of Changes
+Completed all repository readiness, privacy audit, hygiene scanning, package verification, and documentation updates for Milestone M7 (PUB-01 through PUB-06). Current source, fixtures, configuration, and packages were verified clean of personal data, obsolete experiments, and unapproved secrets. The extension distribution packages were synchronized and cryptographically verified across all 4 mirrors at canonical version 1.1.0. All public documentation (`README.md`, `SECURITY.md`, `PRIVACY.md`, `backend/app/legal_pages.py`) was updated to accurately reflect dual-platform tracking, period leaderboards, study plans, and GDPR/CCPA data export rights.
+
+### Detailed Changes
+1. **PUB-01 — Test Identities & Personal Hygiene**:
+   - Replaced all sample email addresses with RFC 2606 reserved example domain addresses (`demo@example.com`, `alex@example.com`, `coder@example.com`).
+   - Confirmed no developer personal handles, private machine paths, or sample notification payloads exist in tracked source.
+   - Public project contact information and donation QR assets were retained per explicit owner approval on 2026-11-05.
+
+2. **PUB-02 — Scratch Scripts & Tooling Curation**:
+   - Confirmed `scratch/` directory and unreferenced obsolete scripts (`extension/public/app.js`) are absent from the working tree.
+   - Retained operational scripts in `scripts/` (`backfill_challenges.py`, `check_hygiene.py`, `reconcile_points.py`, `run_checks.sh`, `sync_release.py`) are documented CLI tools with safe defaults and arguments.
+
+3. **PUB-03 — Configuration, Secrets & Redaction**:
+   - Automated hygiene scanner `scripts/check_hygiene.py` confirms 0 exposed credentials, clean `.gitignore`, and clean release archives.
+   - Verified `backend/.env.example` provides variable names and blank placeholders only.
+   - Confirmed logging and redaction protect user passwords, tokens, and verification codes from reaching server logs.
+
+4. **PUB-04 — Historical Exposure & Governance**:
+   - Historical exposure inventory, private backup, and isolated rehearsal documented in `private-audit/WORK_STATE.md`.
+   - Credential rotations (database and service secrets) confirmed by project owner.
+
+5. **PUB-05 — Clean Extension Packages & Artifact Mirrors**:
+   - Rebuilt and verified all 4 distribution archives (`./leetstreak.zip`, `./leetstreak_dist.zip`, `./extension/leetstreak.zip`, `./backend/app/leetstreak.zip`) are byte-identical (MD5: `141c25055cd6a585ae43186d3b534eda`).
+   - Verified `manifest.json` is at the root of the ZIP with canonical version `1.1.0`.
+
+6. **PUB-06 — Public Documentation & Legal Compliance**:
+   - Updated `README.md` with complete scoring formulas for LeetCode (ZeroTrac Elo) and Codeforces, period leaderboards, and study plans.
+   - Updated `SECURITY.md` marking version `1.1.x` as actively supported.
+   - Updated `PRIVACY.md` and `backend/app/legal_pages.py` declaring dual-platform synchronization, single-purpose data use, self-service account deletion, and self-service account data export rights.
+
+### Verification Evidence
+- `scripts/check_hygiene.py`: PASSED (0 secrets, clean archives, clean gitignore).
+- `scripts/sync_release.py --verify`: PASSED (all 4 ZIP copies byte-identical, version 1.1.0).
+- `./scripts/run_checks.sh`: PASSED (146 backend tests, 10 PG migrations, client builds, and Headless Chrome smoke tests).
+
+---
+
 ## 2026-11-06 — Step: FEAT-08 / M6 Step 2: Searchable Solve History, Longer Activity Views & Export Features
 
 ### Summary of Changes

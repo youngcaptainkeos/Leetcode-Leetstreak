@@ -10,7 +10,7 @@ This Privacy Policy explains how we collect, use, store, and protect your inform
 ---
 
 ## 1. Single Purpose Statement
-LeetStreak exists solely to track public LeetCode problem-solving activity, calculate streaks and weighted skill points, and display comparative leaderboards for friends and public participants. We collect only the minimum data strictly required to achieve this core functionality.
+LeetStreak exists solely to track public LeetCode and Codeforces problem-solving activity, calculate streaks and weighted skill points, and display comparative leaderboards for friends and public participants. We collect only the minimum data strictly required to achieve this core functionality.
 
 ---
 
@@ -20,10 +20,10 @@ LeetStreak exists solely to track public LeetCode problem-solving activity, calc
 * **Display Name:** Used to identify your profile within groups and leaderboard rankings.
 * **Email Address:** Used for account authentication, password recovery (via 6-digit verification codes), and optional critical update notices.
 * **Account Password:** Stored exclusively in irreversibly hashed form using strong cryptographic hashing (PBKDF2/Bcrypt). We cannot read your plaintext password.
-* **LeetCode Public Username:** Used to query public problem submission histories from LeetCode. **We never ask for, collect, or store your LeetCode password or session cookies.**
+* **LeetCode & Codeforces Public Usernames:** Used to query public problem submission histories. **We never ask for, collect, or store your passwords or session cookies.**
 
 ### B. Information Synchronized Automatically
-* **Public Solve Records:** Problem titles, difficulty levels (Easy, Medium, Hard), acceptance rates, and submission timestamps retrieved from LeetCode’s public GraphQL endpoints.
+* **Public Solve Records:** Problem titles, difficulty levels (Easy, Medium, Hard), ratings, acceptance rates, and submission timestamps retrieved from public LeetCode and Codeforces endpoints.
 * **Leaderboard Display Preference:** Whether the Global leaderboard is shown on your own home page. All registered users participate in Global rankings regardless of this preference. Other signed-in users can view coding profiles and statistics; private group membership and invite codes require appropriate group access.
 * **Social Interactions:** Kudos counts sent and received across 24-hour cycles.
 
@@ -49,7 +49,8 @@ LeetStreak exists solely to track public LeetCode problem-solving activity, calc
 
 ---
 
-## 5. Data Retention & Your Right to Deletion
+## 5. Data Retention, Portability & Your Right to Deletion
+* **Data Portability & Export:** You can export all your verified account data (including solve records, study plan playlists, and score breakdowns) at any time as JSON or formula-injection-safe CSV directly from **Settings (⚙️) &rarr; Data & Privacy &rarr; Export Account Data**.
 * **Account Deletion:** You have complete autonomy over your data. You can permanently delete your account, solve history, squad memberships, and points at any time directly inside the extension by going to **Settings (⚙️) &rarr; Danger Zone &rarr; Delete Account**.
 * **Immediate Purge:** Upon deletion, your account and all associated records are permanently erased from our active database.
 

@@ -81,7 +81,7 @@ PRIVACY_HTML = f"""<!DOCTYPE html>
 
       <h2>1. Single Purpose Statement</h2>
       <p>
-        LeetStreak exists solely to track public LeetCode problem-solving activity, calculate consistency streaks and weighted skill points, and display comparative leaderboards for friends and public participants. We collect only the minimum data strictly required to achieve this core functionality.
+        LeetStreak exists solely to track public LeetCode and Codeforces problem-solving activity, calculate consistency streaks and weighted skill points, and display comparative leaderboards for friends and public participants. We collect only the minimum data strictly required to achieve this core functionality.
       </p>
 
       <h2>2. Information We Collect</h2>
@@ -91,12 +91,12 @@ PRIVACY_HTML = f"""<!DOCTYPE html>
         <li><strong>Display Name:</strong> Used to identify your profile within groups and leaderboard rankings.</li>
         <li><strong>Email Address:</strong> Used for account authentication, password recovery (via 6-digit verification codes), and optional critical update notices.</li>
         <li><strong>Account Password:</strong> Stored exclusively in irreversibly hashed form using strong cryptographic hashing (PBKDF2/Bcrypt). We cannot read your plaintext password.</li>
-        <li><strong>LeetCode Public Username:</strong> Used to query public problem submission histories from LeetCode. <strong>We never ask for, collect, or store your LeetCode password or session cookies.</strong></li>
+        <li><strong>LeetCode &amp; Codeforces Public Usernames:</strong> Used to query public problem submission histories. <strong>We never ask for, collect, or store your passwords or session cookies.</strong></li>
       </ul>
 
       <h3>B. Information Synchronized Automatically</h3>
       <ul>
-        <li><strong>Public Solve Records:</strong> Problem titles, difficulty levels (Easy, Medium, Hard), acceptance rates, and submission timestamps retrieved from LeetCode's public GraphQL endpoints.</li>
+        <li><strong>Public Solve Records:</strong> Problem titles, difficulty levels (Easy, Medium, Hard), ratings, acceptance rates, and submission timestamps retrieved from public LeetCode and Codeforces endpoints.</li>
         <li><strong>Leaderboard Display Preference:</strong> Whether Global rankings are shown on your own home page. All registered users participate regardless of this choice. Other signed-in users can view coding profiles and statistics; private group membership and invite codes require appropriate group access.</li>
         <li><strong>Social Interactions:</strong> Kudos counts sent and received across 24-hour cycles.</li>
       </ul>
@@ -105,7 +105,7 @@ PRIVACY_HTML = f"""<!DOCTYPE html>
       <ul>
         <li>We do <strong>not</strong> collect your browsing history, cookies, personal tabs, IP locations, device hardware IDs, or biometric data.</li>
         <li>We do <strong>not</strong> collect payment or financial information.</li>
-        <li>We do <strong>not</strong> monitor your activity on any website other than public LeetCode submission records requested explicitly for synchronization.</li>
+        <li>We do <strong>not</strong> monitor your activity on any website other than public LeetCode and Codeforces submission records requested explicitly for synchronization.</li>
       </ul>
 
       <hr>
@@ -127,8 +127,9 @@ PRIVACY_HTML = f"""<!DOCTYPE html>
         <li><strong>Infrastructure Service Providers:</strong> Your data is processed securely through standard cloud hosting providers (Render, PostgreSQL, transactional email delivery) strictly to operate the service.</li>
       </ul>
 
-      <h2>5. Data Retention &amp; Your Right to Deletion</h2>
+      <h2>5. Data Retention, Portability &amp; Your Right to Deletion</h2>
       <ul>
+        <li><strong>Data Portability &amp; Export:</strong> You can export all your verified account data (including solve records, study plan playlists, and score breakdowns) at any time as JSON or formula-injection-safe CSV directly from <strong>Settings (⚙️) &rarr; Data &amp; Privacy &rarr; Export Account Data</strong>.</li>
         <li><strong>Self-Service Account Deletion:</strong> You have complete autonomy over your data. You can permanently delete your account, solve history, squad memberships, and points at any time directly inside the extension by navigating to <strong>Settings (⚙️) &rarr; Danger Zone &rarr; Delete Account</strong>.</li>
         <li><strong>Immediate Purge:</strong> Upon deletion, your account and all associated records are permanently erased from our active database.</li>
       </ul>
