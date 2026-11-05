@@ -13,6 +13,7 @@ from .models import User, Solve, DailyActivity, DailyChallenge
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_monthly_daily_challenges, fetch_problem_info, LeetCodeError
 from .point_calculator import recalculate_user_points
 from .contest_ratings import refresh_zerotrac_dataset
+from .codeforces_sync import sync_codeforces_user
 
 logger = logging.getLogger("codestreak.scheduler")
 
@@ -38,13 +39,13 @@ async def backfill_daily_challenges_archive(db: Session):
     db.commit()
 
 
-async def poll_user(db: Session, user: User) -> int:
+async def poll_user(db: Session, user: User, sync_codeforces: bool = True) -> int:
     """Fetch complete LeetCode profile, calendar history, and recent AC submissions for one user."""
     try:
         data = await fetch_leetcode_user_data(user.leetcode_username)
     except LeetCodeError as e:
         logger.warning("LeetCode fetch failed for %s: %s", user.leetcode_username, e)
-        return 0
+        return await sync_codeforces_user(db, user) if sync_codeforces and user.codeforces_username else 0
 
     today_daily_slug = await fetch_today_daily_challenge_slug()
     if today_daily_slug:
@@ -53,6 +54,8 @@ async def poll_user(db: Session, user: User) -> int:
         if not existing_dc:
             db.add(DailyChallenge(date=today_date, title_slug=today_daily_slug))
             db.commit()
+
+    db.refresh(user, with_for_update=True)
 
     # 1. Update user metadata & difficulty totals
     if data.get("avatar_url"):
@@ -91,8 +94,8 @@ async def poll_user(db: Session, user: User) -> int:
 
     for sub in submissions:
         title_slug = sub["titleSlug"]
-        solved_at = datetime.fromtimestamp(int(sub["timestamp"]), tz=IST)
-        day = solved_at.date()
+        solved_at = datetime.fromtimestamp(int(sub["timestamp"]), tz=timezone.utc).replace(tzinfo=None)
+        day = datetime.fromtimestamp(int(sub["timestamp"]), tz=IST).date()
 
         if title_slug not in existing_solves:
             existing_solves.add(title_slug)
@@ -106,6 +109,8 @@ async def poll_user(db: Session, user: User) -> int:
 
             new_solve = Solve(
                 user_id=user.id,
+                platform="leetcode", source_handle=user.leetcode_username,
+                problem_url=f"https://leetcode.com/problems/{title_slug}/",
                 title_slug=title_slug,
                 title=sub.get("title"),
                 difficulty=prob_info.get("difficulty"),
@@ -128,6 +133,8 @@ async def poll_user(db: Session, user: User) -> int:
 
     recalculate_user_points(user, db, today_daily_slug=today_daily_slug)
     db.commit()
+    if sync_codeforces and user.codeforces_username:
+        new_count += await sync_codeforces_user(db, user)
     return new_count
 
 

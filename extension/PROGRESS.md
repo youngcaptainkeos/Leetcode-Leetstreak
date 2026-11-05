@@ -50,9 +50,10 @@ rather than quietly saving a partial hierarchy.
 Public Codeforces contest links and filtered problemset links use the public
 `problemset.problems` API. Tag and rating filters are applied; for example,
 `https://codeforces.com/problemset?tags=dp;binary%20search`. Lists over 1,000
-questions need narrower filters. Codeforces questions open on Codeforces and use
-saved external completion checkboxes. No Codeforces account linking or automatic
-Codeforces submission sync is included.
+questions need narrower filters. Codeforces questions open on Codeforces. Connect your Codeforces handle in
+Account Settings for automatic accepted-history completion and competitive
+points. Without a linked handle, external checkboxes remain available. See
+`backend/CODEFORCES.md` for scoring, provenance columns, and rollout details.
 
 Other public pages, including accessible Gym/group/EDU pages, are scanned for
 recognizable exercise links from LeetCode, Codeforces, AtCoder, CSES, CodeChef,

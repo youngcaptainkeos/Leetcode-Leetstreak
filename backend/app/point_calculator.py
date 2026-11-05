@@ -17,9 +17,9 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from .contest_ratings import get_contest_rating
-from datetime import date
+from datetime import date, timezone
 from .models import User, Solve, DailyActivity, DailyChallenge
-from .streak import current_streak
+from .streak import current_streak, IST
 
 logger = logging.getLogger("codestreak.points")
 
@@ -126,6 +126,8 @@ def recalculate_user_points(
     and total difficulty counts, accounting for daily challenge bonus.
     Uses the exact streak active on the date each problem was solved.
     """
+    db.flush()
+    db.query(User.id).filter(User.id == user.id).with_for_update().one()
     solves = db.query(Solve).filter(Solve.user_id == user.id).all()
     user_streak = user.official_streak or 0
 
@@ -141,10 +143,20 @@ def recalculate_user_points(
         ).all()
     }
 
+    from .platforms import daily_counts
+    combined_dates = set(daily_counts(db, [user.id])[user.id])
     total_points = 0.0
+    leetcode_solves = [s for s in solves if s.platform == "leetcode"]
     for solve in solves:
         slug = solve.title_slug or ""
         solve_date = solve.solved_at.date() if hasattr(solve.solved_at, "date") else solve.solved_at
+
+        if solve.platform == "codeforces":
+            streak_on_date = current_streak(combined_dates, solve.solved_at.replace(tzinfo=timezone.utc).astimezone(IST).date())
+            pts = compute_codeforces_points_breakdown(solve.problem_rating, streak_on_date)["points_earned"]
+            solve.points_earned = pts
+            total_points += pts
+            continue
 
         is_daily = (
             bool(getattr(solve, "is_daily", False))
@@ -155,7 +167,11 @@ def recalculate_user_points(
         if is_daily and not getattr(solve, "is_daily", False):
             solve.is_daily = True
 
-        streak_on_date = current_streak(active_dates, solve_date)
+        # Historical LC awards retain their LC-only streak. New solves after linking
+        # can use activity from either platform.
+        scoring_dates = combined_dates if user.codeforces_linked_at and solve.solved_at >= user.codeforces_linked_at else active_dates
+        streak_date = solve.solved_at.replace(tzinfo=timezone.utc).astimezone(IST).date() if scoring_dates is combined_dates else solve_date
+        streak_on_date = current_streak(scoring_dates, streak_date)
 
         pts = compute_solve_points(
             title_slug=slug,
@@ -167,7 +183,7 @@ def recalculate_user_points(
         solve.points_earned = pts
         total_points += pts
 
-    num_solves_logged = len(solves)
+    num_solves_logged = len(leetcode_solves)
     total_known_solves = (user.easy_count or 0) + (user.medium_count or 0) + (user.hard_count or 0)
 
     legacy_pts = 0.0
@@ -201,3 +217,19 @@ async def recalculate_all_users_points(db: Session) -> int:
     db.commit()
     logger.info("Recalculated points for %d users.", count)
     return count
+
+
+def compute_codeforces_points_breakdown(rating: Optional[float], streak_days: int = 0) -> dict:
+    """Version cf-linear-v1: calibrated base + existing capped streak multiplier.
+
+    Unrated problems count toward activity and plan completion but award no points.
+    """
+    base = round(8.0 + 0.012 * (rating - 800), 4) if rating is not None and rating >= 800 else 0.0
+    multiplier = 1.0 + 0.10 * min(30, max(0, streak_days)) / 30.0
+    return {
+        "difficulty": "Rated" if rating is not None else "Unrated", "raw_base_points": base,
+        "ac_rate": None, "ac_multiplier": 1.0, "ac_adjustment": 0.0,
+        "base_points": base, "contest_rating": rating, "is_daily": False,
+        "daily_bonus": 0.0, "subtotal": base, "streak_days": streak_days,
+        "streak_multiplier": multiplier, "points_earned": round(base * multiplier, 4),
+    }

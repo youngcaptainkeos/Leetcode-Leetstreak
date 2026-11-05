@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { GroupResponse, GroupMember } from "../lib/api";
+import { api, GroupResponse, GroupMember } from "../lib/api";
 import { getStored, setStored } from "../storage";
-import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, ProgressState, StudyPlan, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, readProgress, parsePlanInput, fetchStudyPlan, addStudyPlan, removeStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, mergeSolvedHistory, visiblePlans, restoreStarterPlans } from "./data";
+import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, ProgressState, StudyPlan, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, readProgress, parsePlanInput, fetchStudyPlan, addStudyPlan, removeStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, questionCodeforcesSlug, automaticQuestion, mergeSolvedHistory, visiblePlans, restoreStarterPlans } from "./data";
 import { fetchSolvedHistory, SolvedHistory } from "./history";
 import { planFromLinks, requestImportAccess } from "./importer";
 import "./Progress.css";
@@ -148,6 +148,18 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
     setState(prev => prev ? { ...prev, observed: [...new Set([...prev.observed, ...snapshot.submissions.map(s => s.titleSlug)])] } : prev);
   }, [loaded, snapshot]);
 
+  useEffect(() => {
+    if (!loaded) return;
+    let cancelled = false;
+    const update = () => { void api.codeforcesSolves(userId).then(data => {
+      if (!cancelled) setState(previous => previous ? { ...previous, codeforcesHandle: data.handle, codeforcesObserved: data.slugs, codeforcesSyncedAt: data.synced_at } : previous);
+    }).catch(() => { /* Preserve saved completion while offline. */ }); };
+    update();
+    const interval = setInterval(update, 30000);
+    window.addEventListener(PRACTICE_REFRESH, update);
+    return () => { cancelled = true; clearInterval(interval); window.removeEventListener(PRACTICE_REFRESH, update); };
+  }, [loaded, userId]);
+
   if (!state) return <div className="centered muted">Loading your progress…</div>;
   const library = visiblePlans(state);
   const plan = library.find(p => p.slug === selected) || library[0] || null;
@@ -212,16 +224,16 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   }
   function toggleExternalItem(slug: string) {
     const question = plan?.planSubGroups.flatMap(group => group.questions).find(q => q.titleSlug === slug);
-    if (!question || questionLeetcodeSlug(question)) return;
+    if (!question || automaticQuestion(question, state!)) return;
     setState(previous => previous ? { ...previous, manual: previous.manual.includes(slug) ? previous.manual.filter(s => s !== slug) : [...previous.manual, slug] } : previous);
     setNotice("External-item completion saved.");
   }
   const visibleGroups = plan?.planSubGroups.map(g => ({ ...g, questions: g.questions.filter(q =>
-    q.title.toLowerCase().includes(search.toLowerCase()) && (filter === "all" || (filter === "external" ? !questionLeetcodeSlug(q) : filter === "done" ? questionSolved(q, state) : !questionSolved(q, state)))) })).filter(g => g.questions.length) || [];
+    q.title.toLowerCase().includes(search.toLowerCase()) && (filter === "all" || (filter === "external" ? !automaticQuestion(q, state) : filter === "done" ? questionSolved(q, state) : !questionSolved(q, state)))) })).filter(g => g.questions.length) || [];
   return <div className="progress-panel" id="progress-panel" role="tabpanel" aria-labelledby="progress-menu">
     {active && <FriendsActivity key={`${userId}-${username}`} userId={userId} groups={groups} />}
     <div className="section-header study-plans-heading"><h2 className="section-title">Study plans</h2><button className="chip-btn" aria-expanded={addOpen} aria-controls="add-study-plan" onClick={() => { if (addOpen) closeImporter(); else { setAddOpen(true); setPlanError(""); } }}>{addOpen ? "Close" : "+ Add plan"}</button></div>
-    <div className="history-sync-row"><span role="status">{historySyncing ? historyMessage : state.lastFullSyncAt ? `History saved · ${new Date(state.lastFullSyncAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : "Solved history syncs automatically"}</span></div>
+    <div className="history-sync-row"><span role="status">{historySyncing ? historyMessage : state.lastFullSyncAt ? `LeetCode history saved · ${new Date(state.lastFullSyncAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : "LeetCode history syncs automatically"}</span></div>
     {historyError && <p className="progress-error" role="status">{historyError} <a href="https://leetcode.com/" target="_blank" rel="noreferrer">Open LeetCode ↗</a></p>}
     {addOpen && <form className="plan-import-form" id="add-study-plan" onSubmit={handleAddPlan}>
       <div className="plan-import-modes" role="group" aria-label="Import method">
@@ -242,7 +254,7 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
       {importPreview && <section className="plan-import-preview" aria-label="Review imported plan">
         <strong>{importPreview.name}</strong>
         <p className="progress-note">{importPreview.planSubGroups.reduce((n, group) => n + group.questions.length, 0)} questions · {importPreview.planSubGroups.length} sections. Review before adding: a page scan may find only the questions that page makes public.</p>
-        <ul>{importPreview.planSubGroups.map(group => <li key={group.name}><b>{group.name}</b><ul>{group.questions.map(q => <li key={q.titleSlug}><a href={questionUrl(q)} target="_blank" rel="noreferrer">{q.title} ↗</a><small>{questionLeetcodeSlug(q) ? "LeetCode · automatic" : "External · checkbox"}</small></li>)}</ul></li>)}</ul>
+        <ul>{importPreview.planSubGroups.map(group => <li key={group.name}><b>{group.name}</b><ul>{group.questions.map(q => <li key={q.titleSlug}><a href={questionUrl(q)} target="_blank" rel="noreferrer">{q.title} ↗</a><small>{automaticQuestion(q, state) ? questionCodeforcesSlug(q) ? "Codeforces · automatic" : "LeetCode · automatic" : "External · checkbox"}</small></li>)}</ul></li>)}</ul>
       </section>}
       <div className="plan-import-actions"><button className="chip-btn" type="submit" disabled={addingPlan || (importMode === "link" ? !planInput.trim() : !pastedLinks.trim())}>{addingPlan ? importPreview ? "Adding & syncing…" : "Reading questions…" : importPreview ? "Add & follow" : importMode === "link" ? "Scan link" : "Review questions"}</button><button className="chip-btn" type="button" onClick={closeImporter}>Cancel</button></div>
       {planError && <p className="progress-error" role="alert">{planError}</p>}
@@ -256,26 +268,26 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
       <div className="study-plan-top"><div><h3>{plan.name}</h3><a href={plan.sourceUrl || (plan.source === "external" ? questionUrl(plan.planSubGroups[0].questions[0]) : `https://leetcode.com/studyplan/${plan.slug}/`)} target="_blank" rel="noreferrer">View on {plan.source === "takeuforward" ? "takeUforward" : plan.source === "codeforces" ? "Codeforces" : plan.source === "external" ? "source site" : "LeetCode"} ↗</a></div><button className={`chip-btn ${following ? "is-following" : ""}`} aria-pressed={following} disabled={historySyncing && !following} onClick={toggleFollow}>{following ? "✓ Following" : "+ Follow plan"}</button></div>
       <div className="plan-progress-label"><strong>{count.done}<span> / {count.total} {plan.source && plan.source !== "leetcode" ? "completed" : "solved"}</span></strong><b>{count.percent}%</b></div>
       <div className="plan-progress-track" role="progressbar" aria-label={`${plan.name} completion`} aria-valuenow={count.done} aria-valuemin={0} aria-valuemax={count.total}><div style={{ width: `${count.percent}%` }} /></div>
-      {count.next ? <a className="plan-continue" href={questionUrl(count.next)} target="_blank" rel="noreferrer"><span>{state.lastFullSyncAt || !questionLeetcodeSlug(count.next) ? "UP NEXT" : "NOT YET VERIFIED"}<strong>{count.next.title}</strong></span><span aria-hidden="true">↗</span></a> : <p className="plan-complete">{count.total ? "✦ Plan complete. Enjoy that milestone!" : "This plan has no items to track."}</p>}
-      <p className="progress-note">{plan.source && plan.source !== "leetcode" ? `${plan.snapshotDate ? `Public list snapshot: ${plan.snapshotDate}. ` : ""}${count.automatic} linked LeetCode problems sync automatically. The ${count.external} other items have external links and completion checkboxes.` : "Progress comes from your synced LeetCode solved history."} Progress is saved for this account and applied when you add a plan.</p>
+      {count.next ? <a className="plan-continue" href={questionUrl(count.next)} target="_blank" rel="noreferrer"><span>{(automaticQuestion(count.next, state) ? questionCodeforcesSlug(count.next) ? state.codeforcesSyncedAt : state.lastFullSyncAt : true) ? "UP NEXT" : "NOT YET VERIFIED"}<strong>{count.next.title}</strong></span><span aria-hidden="true">↗</span></a> : <p className="plan-complete">{count.total ? "✦ Plan complete. Enjoy that milestone!" : "This plan has no items to track."}</p>}
+      <p className="progress-note">{plan.source && plan.source !== "leetcode" ? `${plan.snapshotDate ? `Public list snapshot: ${plan.snapshotDate}. ` : ""}${count.automatic} linked problems sync automatically. The ${count.external} other items have external links and completion checkboxes.` : "Progress comes from your synced LeetCode solved history."} Progress is saved for this account and applied when you add a plan.</p>
       {error && <p className="progress-error" role="status">Automatic checking is unavailable. Your saved progress is still here.</p>}
       <div className="plan-question-controls"><button className="chip-btn" aria-expanded={showQuestions} aria-controls="plan-question-list" onClick={() => setShowQuestions(value => !value)}>{showQuestions ? "Hide questions ↑" : "Show questions ↓"}</button>{showQuestions && <button className="chip-btn" onClick={() => { const allOpen = visibleGroups.every(g => expandedGroups.includes(g.name)); setExpandedGroups(allOpen ? [] : visibleGroups.map(g => g.name)); }}>{visibleGroups.length > 0 && visibleGroups.every(g => expandedGroups.includes(g.name)) ? "Collapse all" : "Expand all"}</button>}<button className="chip-btn plan-remove" aria-label={`Remove ${plan.name} from your plans`} title="Remove plan; keep solved history" onClick={handleRemovePlan}>Remove plan</button></div>
       {showQuestions && <div id="plan-question-list"><div className="plan-tools"><input type="search" aria-label="Search plan questions" placeholder="Find a question…" value={search} onChange={e => { setSearch(e.target.value); if (e.target.value) setExpandedGroups(plan.planSubGroups.map(g => g.name)); }} /><select aria-label="Filter plan questions" value={filter} onChange={e => setFilter(e.target.value)}><option value="all">All questions</option><option value="todo">To do</option><option value="done">Completed</option>{count.external > 0 && <option value="external">External items</option>}</select></div>
       <div className="plan-question-groups">{visibleGroups.length ? visibleGroups.map(group => <details key={`${plan.slug}-${group.name}`} open={expandedGroups.includes(group.name)} onToggle={e => { const open = e.currentTarget.open; setExpandedGroups(previous => open ? previous.includes(group.name) ? previous : [...previous, group.name] : previous.includes(group.name) ? previous.filter(name => name !== group.name) : previous); }}>
         <summary>{group.name}<span>{group.questions.filter(q => questionSolved(q, state)).length}/{group.questions.length}</span></summary>
         <ul>{group.questions.map(q => <li key={q.titleSlug} className={questionSolved(q, state) ? "question-done" : ""}>
-          {questionLeetcodeSlug(q) ? <span className={`question-sync-status ${questionSolved(q, state) ? "is-solved" : ""}`} role="img" aria-label={`${q.title}: ${questionSolved(q, state) ? "solved on LeetCode" : "not found in synced solves"}`}>{questionSolved(q, state) ? "✓" : "○"}</span> : <input type="checkbox" checked={questionSolved(q, state)} aria-label={`${q.title}: completed externally`} onChange={() => toggleExternalItem(q.titleSlug)} />}
-          <a href={questionUrl(q)} target="_blank" rel="noreferrer">{q.title}<small className={`question-difficulty ${q.difficulty.toLowerCase()}`}>{q.difficulty.toLowerCase()} · {questionLeetcodeSlug(q) ? questionSolved(q, state) ? "synced" : state.lastFullSyncAt ? "not solved" : "not verified" : "external item"}</small></a><span aria-hidden="true">↗</span>
+          {automaticQuestion(q, state) ? <span className={`question-sync-status ${questionSolved(q, state) ? "is-solved" : ""}`} role="img" aria-label={`${q.title}: ${questionSolved(q, state) ? questionCodeforcesSlug(q) ? "solved on Codeforces" : "solved on LeetCode" : "not found in synced solves"}`}>{questionSolved(q, state) ? "✓" : "○"}</span> : <input type="checkbox" checked={questionSolved(q, state)} aria-label={`${q.title}: completed externally`} onChange={() => toggleExternalItem(q.titleSlug)} />}
+          <a href={questionUrl(q)} target="_blank" rel="noreferrer">{q.title}<small className={`question-difficulty ${q.difficulty.toLowerCase()}`}>{q.difficulty.toLowerCase()} · {automaticQuestion(q, state) ? questionSolved(q, state) ? "synced" : (questionCodeforcesSlug(q) ? state.codeforcesSyncedAt : state.lastFullSyncAt) ? "not solved" : "not verified" : "external item"}</small></a><span aria-hidden="true">↗</span>
         </li>)}</ul>
       </details>) : <p className="progress-note">No questions match this filter.</p>}</div></div>}
     </section>}
   </div>;
 }
 
-interface FriendSolve extends Submission { friend: GroupMember }
+interface FriendSolve extends Submission { friend: GroupMember; platform?: string; problemUrl?: string }
 function FriendsActivity({ userId, groups }: { userId: number; groups: GroupResponse[] }) {
   const friends = [...new Map(groups.flatMap(g => g.members).filter(m => m.id !== userId).map(m => [m.id, m])).values()];
-  const signature = JSON.stringify(friends.map(f => [f.id, f.leetcode_username]).sort());
+  const signature = JSON.stringify(friends.map(f => [f.id, f.leetcode_username, f.codeforces_username]).sort());
   const [items, setItems] = useState<FriendSolve[]>([]);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(0);
@@ -299,9 +311,14 @@ function FriendsActivity({ userId, groups }: { userId: number; groups: GroupResp
       while (queue.length && active) {
         const friend = queue.shift()!;
         try {
-          const solves = await fetchFriendSubmissions(friend.leetcode_username);
-          const unique = [...new Map(solves.map(s => [s.titleSlug, s])).values()];
-          results.push(...unique.map(s => ({ ...s, friend })));
+          const publicSolves = await fetchFriendSubmissions(friend.leetcode_username).catch(() => []);
+          const ledger = friend.codeforces_username ? await api.recentSolves(friend.id, 10) : [];
+          const combined: FriendSolve[] = [
+            ...publicSolves.map(s => ({ ...s, friend, platform: "leetcode", problemUrl: `https://leetcode.com/problems/${s.titleSlug}/` })),
+            ...ledger.map(s => ({ title: s.title, titleSlug: s.title_slug, timestamp: String(new Date(s.solved_at).getTime() / 1000), friend, platform: s.platform || "leetcode", problemUrl: s.problem_url || s.leetcode_url })),
+          ];
+          const unique = [...new Map(combined.map(s => [`${s.platform}-${s.titleSlug}`, s])).values()];
+          results.push(...unique);
           if (active) setItems([...results].sort((a, b) => Number(b.timestamp) - Number(a.timestamp)));
         } catch { failures++; if (active) setFailed(failures); }
       }
@@ -322,6 +339,6 @@ function FriendsActivity({ userId, groups }: { userId: number; groups: GroupResp
     {!friends.length && <p className="progress-note">Join or create a group in Leaderboards to see your friends here.</p>}
     {failed > 0 && <p className="progress-error" role="status">Couldn't check {failed} public profile{failed === 1 ? "" : "s"}. Refresh to try again.</p>}
     {!busy && friends.length > 0 && !visible.length && !failed && <p className="progress-note">No recent public solves yet. Your friends' next accepted question will appear here.</p>}
-    <ul>{visible.map(s => <li key={`${s.friend.id}-${s.titleSlug}`}><div className="friend-practice-avatar" aria-hidden="true">{s.friend.name.slice(0, 1).toUpperCase()}</div><div><strong>{s.friend.name}</strong><a href={`https://leetcode.com/problems/${s.titleSlug}/`} target="_blank" rel="noreferrer">{s.title} ↗</a><time dateTime={new Date(Number(s.timestamp) * 1000).toISOString()}>{new Date(Number(s.timestamp) * 1000).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</time></div></li>)}</ul>
+    <ul>{visible.map(s => <li key={`${s.friend.id}-${s.platform}-${s.titleSlug}`}><div className="friend-practice-avatar" aria-hidden="true">{s.friend.name.slice(0, 1).toUpperCase()}</div><div><strong>{s.friend.name}</strong><a href={s.problemUrl || `https://leetcode.com/problems/${s.titleSlug}/`} target="_blank" rel="noreferrer">{s.title} ↗</a><small className="solve-platform">{s.platform === "codeforces" ? "Codeforces" : "LeetCode"}</small><time dateTime={new Date(Number(s.timestamp) * 1000).toISOString()}>{new Date(Number(s.timestamp) * 1000).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</time></div></li>)}</ul>
   </section>;
 }

@@ -3079,3 +3079,5 @@ input:focus, form input:focus {
 
 
 
+
+.solve-platform { display:block; font-size:9px; color:var(--text-secondary); margin-top:3px; font-weight:500; }

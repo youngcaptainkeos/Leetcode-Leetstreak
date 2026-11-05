@@ -51,6 +51,7 @@ function Onboarding({
   const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
+  const [signupCodeforces, setSignupCodeforces] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -138,6 +139,7 @@ function Onboarding({
       const res = await api.login(username.trim(), password);
       await clearStored(AUTH_STORAGE_KEYS);
       onRegistered(res.id);
+      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Login failed.");
     } finally {
@@ -151,9 +153,10 @@ function Onboarding({
     setBusy(true);
     onError(null);
     try {
-      const res = await api.register(name.trim(), username.trim(), email.trim(), password, enableGlobalLeaderboard);
+      const res = await api.register(name.trim(), username.trim(), email.trim(), password, enableGlobalLeaderboard, signupCodeforces);
       await clearStored(AUTH_STORAGE_KEYS);
       onRegistered(res.id);
+      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Registration failed.");
     } finally {
@@ -192,6 +195,7 @@ function Onboarding({
       const res = await api.login(username.trim(), newPassword);
       await clearStored(AUTH_STORAGE_KEYS);
       onRegistered(res.id);
+      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Verification failed.");
     } finally {
@@ -301,6 +305,12 @@ function Onboarding({
             >
               💡 Need help finding your LeetCode username?
             </button>
+
+            <label>
+              <span>Codeforces username · optional</span>
+              <input aria-label="Codeforces username (optional)" value={signupCodeforces} onChange={e => setSignupCodeforces(e.target.value)} placeholder="Leave blank or enter your handle" minLength={3} maxLength={24} />
+            </label>
+            <p className="tiny muted">Optional: include Codeforces solves in your points and streak. You can also connect it later in Settings.</p>
 
             <label>
               <span>Email Address</span>
@@ -478,6 +488,8 @@ function Onboarding({
 }
 
 interface ActivityFeedItem {
+  platform?: "leetcode" | "codeforces";
+  problem_url?: string;
   user_id: number;
   user_name: string;
   user_handle: string;
@@ -611,6 +623,8 @@ function Dashboard({
   }, [dash?.leetcode_username]);
   const [showUsernameHelpModal, setShowUsernameHelpModal] = useState(false);
   const [newLeetcodeUsername, setNewLeetcodeUsername] = useState("");
+  const [newCodeforcesUsername, setNewCodeforcesUsername] = useState("");
+  const [updatingCodeforces, setUpdatingCodeforces] = useState(false);
   const [updatingUsername, setUpdatingUsername] = useState(false);
   const [togglingLeaderboard, setTogglingLeaderboard] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
@@ -688,6 +702,26 @@ function Dashboard({
       setUpdatingUsername(false);
     }
   }
+
+  async function handleUpdateCodeforces(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newCodeforcesUsername.trim()) return;
+    setUpdatingCodeforces(true); setSettingsMsg(null);
+    try {
+      const result = await api.updateCodeforcesUsername(userId, newCodeforcesUsername.trim());
+      setSettingsMsg(`Connected @${result.codeforces_username}. Public solves and points are syncing automatically.`);
+      setNewCodeforcesUsername("");
+      await loadData(selectedTab);
+    } catch (err) {
+      setSettingsMsg(err instanceof Error ? err.message : "Could not connect Codeforces.");
+    } finally { setUpdatingCodeforces(false); }
+  }
+
+  useEffect(() => {
+    if (!dash?.codeforces_username || dash.codeforces_last_sync || dash.codeforces_sync_error) return;
+    const interval = setInterval(() => { void loadData(selectedTab); }, 5000);
+    return () => clearInterval(interval);
+  }, [dash?.codeforces_username, dash?.codeforces_last_sync, dash?.codeforces_sync_error, selectedTab]);
 
   async function handleToggleGlobalLeaderboard() {
     if (!dash) return;
@@ -1220,7 +1254,8 @@ function Dashboard({
           <span className="diff-pill easy">Easy {dash.easy_count}</span>
           <span className="diff-pill medium">Med {dash.medium_count}</span>
           <span className="diff-pill hard">Hard {dash.hard_count}</span>
-          <span className="diff-pill total">Total {dash.easy_count + dash.medium_count + dash.hard_count}</span>
+          <span className="diff-pill total">CF {dash.codeforces_count || 0}</span>
+          <span className="diff-pill total">Total {dash.easy_count + dash.medium_count + dash.hard_count + (dash.codeforces_count || 0)}</span>
         </div>
       </div>
 
@@ -1524,7 +1559,7 @@ function Dashboard({
       <section className="workspace-community" aria-labelledby="community-title">
         <div className="section-header"><h2 id="community-title">Around the community</h2><span className="web-live-dot" /></div>
         {activityFeed.length ? <ul className="workspace-community-list">{activityFeed.slice(0, 5).map(item => <li key={`${item.user_id}-${item.title_slug}-${item.solved_at}`}>
-          <a href={item.leetcode_url} target="_blank" rel="noreferrer"><strong>{item.user_name}</strong><span>solved {item.title}</span><small>{item.relative_time} ↗</small></a>
+          <a href={item.problem_url || item.leetcode_url} target="_blank" rel="noreferrer"><strong>{item.user_name}</strong><span>solved {item.title}</span><small>{item.platform === "codeforces" ? "Codeforces" : "LeetCode"} · {item.relative_time} ↗</small></a>
         </li>)}</ul> : <p className="muted">New community solves will show up here.</p>}
       </section>
 
@@ -1622,7 +1657,7 @@ function Dashboard({
                     Hard {inspectedFriend.hard_count}
                   </span>
                   <span className="diff-pill total">
-                    Total {inspectedFriend.easy_count + inspectedFriend.medium_count + inspectedFriend.hard_count}
+                    Total {inspectedFriend.easy_count + inspectedFriend.medium_count + inspectedFriend.hard_count + (inspectedFriend.codeforces_count || 0)}
                   </span>
                 </div>
 
@@ -1669,7 +1704,7 @@ function Dashboard({
                 ) : (
                   <ul className="recent-solves-list">
                     {recentSolvesList.map((s, idx) => {
-                      const problemUrl = s.leetcode_url || `https://leetcode.com/problems/${s.title_slug}`;
+                      const problemUrl = s.problem_url || s.leetcode_url || `https://leetcode.com/problems/${s.title_slug}`;
                       return (
                         <li
                           key={idx}
@@ -1681,6 +1716,7 @@ function Dashboard({
                           <div className="solve-info">
                             <span className="solve-title">
                               {s.title}
+                              <small className="solve-platform">{s.platform === "codeforces" ? "Codeforces" : "LeetCode"}</small>
                             </span>
                           </div>
                           <a
@@ -1689,7 +1725,7 @@ function Dashboard({
                             rel="noreferrer"
                             className="solve-external-link"
                             onClick={(e) => e.stopPropagation()}
-                            title="Open on LeetCode"
+                            title={`Open on ${s.platform === "codeforces" ? "Codeforces" : "LeetCode"}`}
                           >
                             ↗
                           </a>
@@ -1850,6 +1886,7 @@ function Dashboard({
                   <div className="settings-input-wrapper">
                     <span className="settings-input-prefix">@</span>
                     <input
+                      aria-label="LeetCode username"
                       value={newLeetcodeUsername}
                       onChange={(e) => setNewLeetcodeUsername(e.target.value)}
                       placeholder="Username"
@@ -1880,6 +1917,22 @@ function Dashboard({
                 >
                   💡 Need help finding your LeetCode username?
                 </button>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <div className="settings-section-title">CODEFORCES ACCOUNT</div>
+              <div className="settings-card">
+                <form onSubmit={handleUpdateCodeforces} className="settings-username-form">
+                  <div className="settings-input-wrapper">
+                    <span className="settings-input-prefix">@</span>
+                    <input aria-label="Codeforces username" value={newCodeforcesUsername} onChange={e => setNewCodeforcesUsername(e.target.value)} placeholder={dash.codeforces_username || "Codeforces handle"} className="settings-text-input" maxLength={24} required />
+                    <button type="submit" className="settings-action-btn" disabled={updatingCodeforces || !newCodeforcesUsername.trim()}>{updatingCodeforces ? "Connecting…" : dash.codeforces_username ? "Update" : "Connect"}</button>
+                  </div>
+                  <span className="settings-input-hint">{dash.codeforces_username ? `Connected: @${dash.codeforces_username}. ` : ""}Accepted public solves sync automatically and contribute to your points and streak. Enter the handle from codeforces.com/profile/your-handle.</span>
+                  {dash.codeforces_username && <span className="settings-input-hint" role="status">{dash.codeforces_sync_error || (dash.codeforces_last_sync ? `Last synced ${new Date(dash.codeforces_last_sync + (/Z|[+-]\d\d:\d\d$/.test(dash.codeforces_last_sync) ? "" : "+05:30")).toLocaleString()}` : "Importing public history… Scores will update automatically.")}</span>}
+                </form>
+                <a className="username-help-link-btn" href="https://codeforces.com/" target="_blank" rel="noreferrer">Open Codeforces ↗</a>
               </div>
             </div>
 
@@ -2101,7 +2154,7 @@ function Dashboard({
               <span className="tiny muted">QUESTION</span>
               <a
                 href={
-                  selectedSolveBreakdown.leetcode_url ||
+                  selectedSolveBreakdown.problem_url || selectedSolveBreakdown.leetcode_url ||
                   `https://leetcode.com/problems/${selectedSolveBreakdown.title_slug}`
                 }
                 target="_blank"
@@ -2113,21 +2166,22 @@ function Dashboard({
               </a>
             </div>
 
+            <p className="tiny muted">Source: {selectedSolveBreakdown.platform === "codeforces" ? "Codeforces" : "LeetCode"}{selectedSolveBreakdown.source_handle ? ` · @${selectedSolveBreakdown.source_handle}` : ""}{selectedSolveBreakdown.source_submission_id ? ` · submission ${selectedSolveBreakdown.source_submission_id}` : ""}</p>
             {/* Base Problem Score Card */}
             <div className="breakdown-card">
               <div className="breakdown-card-header">
                 <span className="card-label">1. Base Problem Score</span>
-                {selectedSolveBreakdown.breakdown?.contest_rating ? (
-                  <span className="badge-contest">ZeroTrac Elo {Math.round(selectedSolveBreakdown.breakdown.contest_rating)}</span>
+                {selectedSolveBreakdown.platform === "codeforces" || selectedSolveBreakdown.breakdown?.contest_rating ? (
+                  <span className="badge-contest">{selectedSolveBreakdown.platform === "codeforces" ? selectedSolveBreakdown.breakdown?.contest_rating ? `Codeforces rating ${Math.round(selectedSolveBreakdown.breakdown.contest_rating)}` : "Codeforces · Unrated" : `ZeroTrac Elo ${Math.round(selectedSolveBreakdown.breakdown?.contest_rating || 0)}`}</span>
                 ) : (
                   <span className="badge-diff">{selectedSolveBreakdown.breakdown?.difficulty || "Medium"} Category</span>
                 )}
               </div>
 
-              {selectedSolveBreakdown.breakdown?.contest_rating ? (
+              {selectedSolveBreakdown.platform === "codeforces" || selectedSolveBreakdown.breakdown?.contest_rating ? (
                 <div className="breakdown-row">
-                  <span className="row-label">Contest Base Points (Elo / 100):</span>
-                  <span className="row-val main-val">{selectedSolveBreakdown.breakdown.base_points} pts</span>
+                  <span className="row-label">{selectedSolveBreakdown.platform === "codeforces" ? "Base: 8 + 0.012 × (rating − 800)" : "Contest Base Points (Elo / 100):"}</span>
+                  <span className="row-val main-val">{selectedSolveBreakdown.breakdown?.base_points} pts</span>
                 </div>
               ) : (
                 <>
@@ -2176,7 +2230,7 @@ function Dashboard({
             <div className="breakdown-total-card">
               <div className="total-title-group">
                 <div className="total-title">Total Points Earned</div>
-                <div className="tiny muted">Base + Bonuses × Streak</div>
+                <div className="tiny muted">(Base + Bonuses) × Streak</div>
               </div>
               <div className="total-score-badge">
                 ⭐ {selectedSolveBreakdown.points_earned ?? selectedSolveBreakdown.breakdown?.points_earned ?? 0} pts
@@ -2293,6 +2347,12 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="help-section-list">
+          <div className="help-section">
+            <h4 className="help-section-title">Codeforces scoring</h4>
+            <p className="help-text">For a rated Codeforces problem: <code>8 + 0.012 × (rating − 800)</code> base points. Examples: 800 → 8 pts, 1400 → 15.2 pts, 1800 → 20 pts, 2200 → 24.8 pts.</p>
+            <p className="help-text">The existing streak multiplier adds up to 10%. Only the first final accepted solve of each problem earns points. Unrated problems count toward activity but earn 0 points. Codeforces has no daily-challenge bonus. This provisional scale was calibrated against similar LeetCode problems with ZeroTrac ratings.</p>
+          </div>
+
           {/* Section 1: Base Points */}
           <div className="help-section">
             <h4 className="help-section-title">1. Base Problem Points</h4>

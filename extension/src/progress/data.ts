@@ -20,8 +20,8 @@ export interface PracticeSnapshot {
   submissions: Submission[];
   checkedAt: number;
 }
-export interface ProgressState { followed: string[]; manual: string[]; observed: string[]; customPlans: StudyPlan[]; hiddenPlans: string[]; defaultsVersion: number; lastFullSyncAt: number | null }
-export const emptyProgress = (): ProgressState => ({ followed: [], manual: [], observed: [], customPlans: [], hiddenPlans: [], defaultsVersion: DEFAULTS_VERSION, lastFullSyncAt: null });
+export interface ProgressState { followed: string[]; manual: string[]; observed: string[]; customPlans: StudyPlan[]; hiddenPlans: string[]; defaultsVersion: number; lastFullSyncAt: number | null; codeforcesObserved: string[]; codeforcesHandle: string | null; codeforcesSyncedAt: string | null }
+export const emptyProgress = (): ProgressState => ({ followed: [], manual: [], observed: [], customPlans: [], hiddenPlans: [], defaultsVersion: DEFAULTS_VERSION, lastFullSyncAt: null, codeforcesObserved: [], codeforcesHandle: null, codeforcesSyncedAt: null });
 
 export function parsePlanSlug(input: string): string {
   let slug = input.trim();
@@ -78,9 +78,25 @@ export function questionLeetcodeSlug(question: StudyQuestion): string | null {
   return question.titleSlug.startsWith("tuf-") ? null : question.titleSlug;
 }
 
-export function questionSolved(question: StudyQuestion, state: Pick<ProgressState, "manual" | "observed">): boolean {
+export function questionCodeforcesSlug(question: StudyQuestion): string | null {
+  if (!question.url) return null;
+  try {
+    const url = new URL(question.url);
+    if (!/^(www\.)?codeforces\.com$/.test(url.hostname)) return null;
+    const match = url.pathname.match(/^\/problemset\/problem\/(\d+)\/([A-Za-z0-9]+)\/?$/) || url.pathname.match(/\/(?:contest|gym)\/(\d+)\/problem\/([A-Za-z0-9]+)\/?$/);
+    return match ? `cf-${match[1]}-${match[2].toLowerCase()}` : null;
+  } catch { return null; }
+}
+export function automaticQuestion(question: StudyQuestion, state: Pick<ProgressState, "codeforcesHandle">): boolean {
+  return Boolean(questionLeetcodeSlug(question) || state.codeforcesHandle && questionCodeforcesSlug(question));
+}
+
+export function questionSolved(question: StudyQuestion, state: Pick<ProgressState, "manual" | "observed"> & Partial<Pick<ProgressState, "codeforcesHandle" | "codeforcesObserved">>): boolean {
   const slug = questionLeetcodeSlug(question);
-  return slug !== null ? state.observed.includes(slug) : state.manual.includes(question.titleSlug);
+  if (slug !== null) return state.observed.includes(slug);
+  const cf = questionCodeforcesSlug(question);
+  if (cf && state.codeforcesHandle) return Boolean(state.codeforcesObserved?.includes(cf));
+  return state.manual.includes(question.titleSlug);
 }
 
 export function mergeSolvedHistory(state: ProgressState, slugs: string[], syncedAt: number): ProgressState {
@@ -141,7 +157,7 @@ export function readProgress(raw: string | null): ProgressState {
     const available = new Set([...STUDY_PLANS, ...customPlans].map(p => p.slug));
     const hiddenPlans = strings(parsed.hiddenPlans).filter(slug => available.has(slug) &&
       !(migrateDefaults && STUDY_PLANS.some(p => p.slug === slug)));
-    return { followed: strings(parsed.followed).filter(slug => available.has(slug) && !hiddenPlans.includes(slug)), manual: strings(parsed.manual), observed: strings(parsed.observed), customPlans, hiddenPlans, defaultsVersion: migrateDefaults ? DEFAULTS_VERSION : parsed.defaultsVersion, lastFullSyncAt: Number.isFinite(parsed.lastFullSyncAt) && parsed.lastFullSyncAt > 0 && parsed.lastFullSyncAt <= Date.now() + 300000 ? parsed.lastFullSyncAt : null };
+    return { followed: strings(parsed.followed).filter(slug => available.has(slug) && !hiddenPlans.includes(slug)), manual: strings(parsed.manual), observed: strings(parsed.observed), customPlans, hiddenPlans, codeforcesObserved: strings(parsed.codeforcesObserved), codeforcesHandle: typeof parsed.codeforcesHandle === "string" ? parsed.codeforcesHandle : null, codeforcesSyncedAt: typeof parsed.codeforcesSyncedAt === "string" ? parsed.codeforcesSyncedAt : null, defaultsVersion: migrateDefaults ? DEFAULTS_VERSION : parsed.defaultsVersion, lastFullSyncAt: Number.isFinite(parsed.lastFullSyncAt) && parsed.lastFullSyncAt > 0 && parsed.lastFullSyncAt <= Date.now() + 300000 ? parsed.lastFullSyncAt : null };
   } catch { return emptyProgress(); }
 }
 
@@ -189,9 +205,9 @@ function validSubmissions(rows: Submission[]): Submission[] {
     Number(s.timestamp) > 0 && Number(s.timestamp) * 1000 < 8640000000000000);
 }
 
-export function planCounts(plan: StudyPlan, state: Pick<ProgressState, "manual" | "observed">) {
+export function planCounts(plan: StudyPlan, state: Pick<ProgressState, "manual" | "observed"> & Partial<Pick<ProgressState, "codeforcesHandle" | "codeforcesObserved">>) {
   const questions = [...new Map(plan.planSubGroups.flatMap(g => g.questions).map(q => [q.titleSlug, q])).values()];
-  const tracked = questions.filter(q => questionLeetcodeSlug(q) !== null);
+  const tracked = questions.filter(q => questionLeetcodeSlug(q) !== null || state.codeforcesHandle && questionCodeforcesSlug(q));
   const done = questions.filter(q => questionSolved(q, state)).length;
   return { done, total: questions.length, automatic: tracked.length, external: questions.length - tracked.length, percent: questions.length ? Math.round(done / questions.length * 1000) / 10 : 0, next: questions.find(q => !questionSolved(q, state)) };
 }
