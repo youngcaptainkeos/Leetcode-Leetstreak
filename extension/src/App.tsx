@@ -13,7 +13,14 @@ import {
   checkExtensionVersion,
   AUTH_EXPIRED,
 } from "./lib/api";
-import { getStored, setStored, clearStored } from "./storage";
+import {
+  getStored,
+  setStored,
+  clearStored,
+  getStoredSession,
+  setStoredSession,
+  clearStoredSession,
+} from "./storage";
 import { DailyReminder, ProgressPanel, usePractice } from "./progress/Progress";
 import { PRACTICE_REFRESH } from "./progress/data";
 import { StartupTab, readStartupTab, resolveStartupTab, startupTabKey } from "./progress/preferences";
@@ -32,10 +39,9 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      const stored = await getStored("codestreak_user_id");
-      const token = await getStored("codestreak_access_token");
-      if (stored && token && Number.isSafeInteger(Number(stored)) && Number(stored) > 0) {
-        setUserId(Number(stored));
+      const session = await getStoredSession();
+      if (session?.userId && session.accessToken) {
+        setUserId(session.userId);
         setView("dashboard");
       } else {
         setView("onboarding");
@@ -93,14 +99,18 @@ export default function App() {
     return () => window.removeEventListener(AUTH_EXPIRED, expired);
   }, []);
 
-  async function handleRegistered(id: number) {
-    await setStored("codestreak_user_id", String(id));
+  async function handleRegistered(id: number, token?: string) {
+    if (token) {
+      await setStoredSession({ version: 2, userId: id, accessToken: token });
+    } else {
+      await setStored("codestreak_user_id", String(id));
+    }
     setUserId(id);
     setView("dashboard");
   }
 
   async function handleLogout() {
-    await clearStored(["codestreak_user_id", "codestreak_access_token"]);
+    await clearStoredSession();
     setUserId(null);
     setView("onboarding");
   }
@@ -188,7 +198,7 @@ function Onboarding({
   onRegistered,
   onError,
 }: {
-  onRegistered: (id: number) => void;
+  onRegistered: (id: number, token?: string) => void;
   onError: (e: string | null) => void;
 }) {
   const [authMode, setAuthMode] = useState<"login" | "register" | "forgot">("login");
@@ -275,8 +285,8 @@ function Onboarding({
       const res = await api.login(username.trim(), password);
       await clearStored(AUTH_STORAGE_KEYS);
       if (!res.access_token) throw new Error("Please update the app and sign in again.");
-      await setStored("codestreak_access_token", res.access_token);
-      onRegistered(res.id);
+      await setStoredSession({ version: 2, userId: res.id, accessToken: res.access_token });
+      onRegistered(res.id, res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Login failed.");
     } finally {
@@ -293,8 +303,8 @@ function Onboarding({
       const res = await api.register(name.trim(), username.trim(), email.trim(), password, enableGlobalLeaderboard, signupCodeforces);
       await clearStored(AUTH_STORAGE_KEYS);
       if (!res.access_token) throw new Error("Please update the app and sign in again.");
-      await setStored("codestreak_access_token", res.access_token);
-      onRegistered(res.id);
+      await setStoredSession({ version: 2, userId: res.id, accessToken: res.access_token });
+      onRegistered(res.id, res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Registration failed.");
     } finally {
@@ -333,8 +343,8 @@ function Onboarding({
       const res = await api.login(username.trim(), newPassword);
       await clearStored(AUTH_STORAGE_KEYS);
       if (!res.access_token) throw new Error("Please update the app and sign in again.");
-      await setStored("codestreak_access_token", res.access_token);
-      onRegistered(res.id);
+      await setStoredSession({ version: 2, userId: res.id, accessToken: res.access_token });
+      onRegistered(res.id, res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Verification failed.");
     } finally {
@@ -859,12 +869,24 @@ function Dashboard({
     return () => clearInterval(interval);
   }, [dash?.codeforces_username, dash?.codeforces_last_sync, dash?.codeforces_sync_error, selectedTab]);
 
+  useEffect(() => {
+    if (typeof chrome !== "undefined" && chrome.runtime?.onMessage) {
+      const handler = (msg: any) => {
+        if (msg?.type === "LEETSTREAK_SYNC_COMPLETED" && msg.userId === userId) {
+          void loadData(selectedTab);
+        }
+      };
+      chrome.runtime.onMessage.addListener(handler);
+      return () => chrome.runtime.onMessage.removeListener(handler);
+    }
+  }, [userId, selectedTab]);
+
   async function handleChangePassword(event: React.FormEvent) {
     event.preventDefault();
     setSecurityBusy(true); setSettingsMsg(null);
     try {
       const result = await api.changePassword(userId, currentPassword, changedPassword);
-      await setStored("codestreak_access_token", result.access_token);
+      await setStoredSession({ version: 2, userId, accessToken: result.access_token });
       setCurrentPassword(""); setChangedPassword("");
       setSettingsMsg("Password changed. Your other sessions have been signed out.");
     } catch (error) { setSettingsMsg(error instanceof Error ? error.message : "Could not change password."); }

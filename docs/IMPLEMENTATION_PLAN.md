@@ -61,20 +61,20 @@ This is the working checklist for the repository review. It covers every issue a
 
 ### Scoring and data correctness
 
-- [ ] **DATA-01 · P1:** Reconcile history when a LeetCode handle changes.
-- [ ] **DATA-02 · P1:** Keep one unique question entry and deduplicate all repeated submissions.
-- [ ] **DATA-03 · P1:** Separate submission activity from verified accepted solves.
-- [ ] **DATA-04 · P1:** Represent and reconcile incomplete LeetCode history.
-- [ ] **DATA-05 · P1:** Revalue historical base points fairly for all users while retaining earned daily bonuses.
-- [ ] **DATA-06 · P1:** Use IST for all product day/week/month/challenge boundaries; retain UTC timestamp storage.
-- [ ] **DATA-07 · P1:** Use one calculation for stored points and score breakdowns.
-- [ ] **DATA-08 · P2:** Retain earned daily awards separately and prevent retrospective daily bonuses on imported history.
-- [ ] **DATA-09 · P2:** Award 2 revision points for an accepted repeat after at least one week, without extending the streak or adding another question entry.
+- [x] **DATA-01 · P1:** Reconcile history when a LeetCode handle changes.
+- [x] **DATA-02 · P1:** Keep one unique question entry and deduplicate all repeated submissions.
+- [x] **DATA-03 · P1:** Separate submission activity from verified accepted solves.
+- [x] **DATA-04 · P1:** Represent and reconcile incomplete LeetCode history.
+- [x] **DATA-05 · P1:** Revalue historical base points fairly for all users while retaining earned daily bonuses.
+- [x] **DATA-06 · P1:** Use IST for all product day/week/month/challenge boundaries; retain UTC timestamp storage.
+- [x] **DATA-07 · P1:** Use one calculation for stored points and score breakdowns.
+- [x] **DATA-08 · P2:** Retain earned daily awards separately and prevent retrospective daily bonuses on imported history.
+- [x] **DATA-09 · P2:** Award 2 revision points for an accepted repeat after at least one week, without extending the streak or adding another question entry.
 
 ### Extension and website behavior
 
-- [ ] **UI-01 · P1:** Unify background/content-script account storage.
-- [ ] **UI-02 · P1:** Repair immediate accepted-submission detection.
+- [x] **UI-01 · P1:** Unify background/content-script account storage.
+- [x] **UI-02 · P1:** Repair immediate accepted-submission detection.
 - [ ] **UI-03 · P1 · Deferred:** Repair the friend notification page under Manifest V3 when the owner resumes that feature.
 - [ ] **UI-04 · P2 · Deferred:** Correct friend notification selection, deduplication, and platform labels later.
 - [ ] **UI-05 · P1:** Prevent stale leaderboard responses and incorrect sorted caches.
@@ -204,6 +204,12 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 | M2-04 | DATA-02/03/04/09 runtime evidence ingestion, repeat deduplication & revision awards | Passed locally: 86 backend tests including 5 sync/deduplication/revision/streak tests. Ingests LeetCode and Codeforces AC submissions into AcceptedSubmission via record_acceptance. Dedupes repeated submissions to single Solve row, eliminates calendar-to-solve conversion, updates DailyActivity strictly from verified first solves, enforces first-solve streak qualification, and awards 2 * streak multiplier for revisions after 7 elapsed days without resetting cooldown on unrewarded attempts. Commit labeled 'M2 DATA-02/03/04/09 step 4: ingest accepted evidence, deduplicate repeat solves, and award revisions'. |
 | M2-05 | DATA-01/05/07/08/09 score ledger reconciliation, point awards persistence & handle change recovery | Passed locally: 91 backend tests including 5 reconciliation and handle change tests. Captures protected ScoreSnapshot baseline before recalculation. Unifies point calculations and breakdowns with scoring.py Decimal engine, persisting exact PointAward rows (base, daily, revision) under version points-components-v2. Preserves earned daily bonuses, awards base-only credit for unlogged historical solves without streak inflation, and handles LeetCode handle change by resetting LeetCode solves while strictly preserving Codeforces history and tracking. Commit labeled 'M2 DATA-01/05/07/08/09 step 5: reconcile score ledger, persist point awards, and handle account changes'. |
 | M2-06 | FEAT-03 provider sync status and history completeness across clients | Passed locally: 91 backend tests, 11 progress tests, 6 auth/session tests, web check/build and extension tsc/build. Returned leetcode_last_sync, leetcode_history_state, and leetcode_history_gap from backend get_dashboard API, updated web/app and extension App.tsx settings view with sync timestamps and history completeness indicators, and synchronized all 4 ZIP distribution packages. Commit labeled 'M2 FEAT-03 step 6: provide provider sync status and history completeness across clients'. |
+
+### M3 execution steps
+
+| Step | Scope | State / evidence |
+|---|---|---|
+| M3-01 | UI-01 shared account storage contract & UI-02 immediate accepted submission detection | Passed locally: 91 backend tests, 23 extension tests (6 auth, 6 storage, 11 progress), web check/build and extension tsc/build. Established versioned session storage contract (v2) with automatic legacy migration in extension/src/storage.ts. Added main-world submission bridge (leetcode-page-bridge.js) intercepting fetch/XHR LeetCode submission checks and isolated content-script listener relaying unprivileged hints to background.js. Background service worker handles authenticated sync debouncing and broadcasts sync completions to refresh UI. Rebuilt extension and synchronized all 4 ZIP archives. Commit labeled 'M3 UI-01 UI-02 step 1: shared account storage contract and immediate submission detection'. |
 
 
 ## 4. Security and privacy plans
@@ -548,16 +554,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Define one versioned session storage contract and an explicit migration from legacy keys.
-- [ ] Let the background worker handle authenticated backend requests; content scripts should send narrow messages rather than read credentials.
-- [ ] Observe storage changes for login/logout/account switching. Clear account-specific pending alerts and invalidate stale caches.
-- [ ] Handle storage failures and expired sessions explicitly; retain only intentionally persistent preferences.
+- [x] Define one versioned session storage contract and an explicit migration from legacy keys.
+- [x] Let the background worker handle authenticated backend requests; content scripts should send narrow messages rather than read credentials.
+- [x] Observe storage changes for login/logout/account switching. Clear account-specific pending alerts and invalidate stale caches.
+- [x] Handle storage failures and expired sessions explicitly; retain only intentionally persistent preferences.
 
 **Acceptance**
 
-- [ ] Fresh login, existing installation migration, restart, logout, and account switching work across popup/background paths.
-- [ ] Logout stops account-scoped background actions and clears credentials.
-- [ ] No content script needs access to the backend bearer token.
+- [x] Fresh login, existing installation migration, restart, logout, and account switching work across popup/background paths.
+- [x] Logout stops account-scoped background actions and clears credentials.
+- [x] No content script needs access to the backend bearer token.
 
 ### UI-02 — Immediate accepted-submission detection
 
@@ -569,16 +575,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Choose a narrow supported detection mechanism: a validated page-world bridge or a robust provider-specific observer. Keep extension credentials outside page context.
-- [ ] If using a page bridge, package it locally and validate message origin, shape, sender, and expected event type. Treat page messages as hints only.
-- [ ] Debounce accepted hints in the worker; fetch trusted provider data before awarding points. A forged hint may request a bounded sync, not create a solve.
-- [ ] Cover fetch/XHR differences and SPA navigation where applicable. Preserve scheduled sync as the fallback.
+- [x] Choose a narrow supported detection mechanism: a validated page-world bridge or a robust provider-specific observer. Keep extension credentials outside page context.
+- [x] If using a page bridge, package it locally and validate message origin, shape, sender, and expected event type. Treat page messages as hints only.
+- [x] Debounce accepted hints in the worker; fetch trusted provider data before awarding points. A forged hint may request a bounded sync, not create a solve.
+- [x] Cover fetch/XHR differences and SPA navigation where applicable. Preserve scheduled sync as the fallback.
 
 **Acceptance**
 
-- [ ] An actual accepted result triggers one bounded authenticated sync and refreshes open UI.
-- [ ] Failed/pending submissions and duplicate events do not create awards or repeated jobs.
-- [ ] Untrusted page messages cannot claim another user's identity or arbitrary points.
+- [x] An actual accepted result triggers one bounded authenticated sync and refreshes open UI.
+- [x] Failed/pending submissions and duplicate events do not create awards or repeated jobs.
+- [x] Untrusted page messages cannot claim another user's identity or arbitrary points.
 
 ### UI-03 — Manifest V3 notification page
 

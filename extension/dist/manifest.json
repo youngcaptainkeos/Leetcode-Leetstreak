@@ -27,10 +27,30 @@
         "https://leetcode.com/*"
       ],
       "js": [
+        "leetcode-page-bridge.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://leetcode.com/*"
+      ],
+      "js": [
         "leetcode-listener.js",
         "history-bridge.js"
       ],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "leetcode-page-bridge.js"
+      ],
+      "matches": [
+        "https://leetcode.com/*"
+      ]
     }
   ],
   "background": {

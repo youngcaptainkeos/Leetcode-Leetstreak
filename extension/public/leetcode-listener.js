@@ -1,40 +1,49 @@
-// LeetStreak Content Script: Live LeetCode Submission Listener
+// LeetStreak Content Script: Listens for page bridge events and forwards unprivileged hints to background
 (function () {
-  console.log("[LeetStreak] Live LeetCode submission attempt listener active.");
+  // Inject page bridge into the main world if not already present
+  try {
+    const s = document.createElement("script");
+    s.src = chrome.runtime.getURL("leetcode-page-bridge.js");
+    s.onload = () => s.remove();
+    (document.head || document.documentElement).appendChild(s);
+  } catch (_) {}
 
-  const origFetch = window.fetch;
-  if (origFetch) {
-    window.fetch = async function (...args) {
-      const response = await origFetch.apply(this, args);
-      try {
-        const url = typeof args[0] === "string" ? args[0] : (args[0] && args[0].url) || "";
-        if (url.includes("/submissions/detail/") && url.includes("/check/")) {
-          const clone = response.clone();
-          clone.json().then((data) => {
-            handleSubmissionCheck(data);
-          }).catch(() => {});
-        }
-      } catch (e) {
-        console.warn("[LeetStreak] Error parsing fetch response", e);
-      }
-      return response;
-    };
-  }
+  // Listen for validated messages from the page bridge
+  window.addEventListener("message", (event) => {
+    if (event.origin !== "https://leetcode.com") return;
+    if (event.data?.source !== "leetstreak-page-bridge") return;
+    if (event.data?.type !== "LEETSTREAK_SUBMISSION_ACCEPTED") return;
 
-  function handleSubmissionCheck(data) {
-    if (!data || !data.state) return;
-    if (data.state === "SUCCESS" && data.status_code === 10) {
-      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.get(["codestreak_user"], (res) => {
-          const user = res.codestreak_user;
-          if (user && user.id) {
-            const fetchFn = origFetch || window.fetch;
-            fetchFn(`https://codestreak-api.onrender.com/api/users/${user.id}/sync`, {
-              method: "POST"
-            }).catch(() => {});
-          }
-        });
+    // Send a narrow, unprivileged hint message to background.js
+    if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({
+        type: "LEETSTREAK_SUBMISSION_HINT",
+        platform: "leetcode"
+      }).catch(() => {});
+    }
+  });
+
+  // DOM observer fallback for SPA / submission result modals
+  let lastObservedSolve = 0;
+  const observer = new MutationObserver(() => {
+    const now = Date.now();
+    if (now - lastObservedSolve < 15000) return; // 15s throttle
+    const resultElem = document.querySelector('[data-e2e-locator="submission-result"]');
+    if (resultElem && resultElem.textContent && resultElem.textContent.includes("Accepted")) {
+      lastObservedSolve = now;
+      if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
+        chrome.runtime.sendMessage({
+          type: "LEETSTREAK_SUBMISSION_HINT",
+          platform: "leetcode"
+        }).catch(() => {});
       }
     }
-  }
+  });
+
+  try {
+    observer.observe(document.body || document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+  } catch (_) {}
 })();

@@ -148,3 +148,55 @@ Exposed authenticated provider sync status and history completeness across the b
 - Ran backend test suite: 91/91 tests passed (`backend/tests`).
 - Built web application cleanly (`npm run build` -> `backend/web`).
 
+---
+
+## 2026-11-06 — Step: M3-01 / UI-01 & UI-02: Shared Account Storage Contract and Immediate Accepted-Submission Detection
+
+### Summary of Changes
+Unified the extension session storage contract under version 2 (`codestreak_session_v2`), providing seamless fallback and automatic migration from legacy storage keys (`codestreak_user_id`, `codestreak_access_token`, and `codestreak_user`). Implemented a main-world page bridge script (`extension/public/leetcode-page-bridge.js`) that monitors fetch and XMLHttpRequest responses for LeetCode submission checks. Rewrote `leetcode-listener.js` to run in the isolated world, inject the bridge into LeetCode pages, validate origin and message payloads, and relay unprivileged hint messages to `background.js` without accessing user tokens or credentials. Updated `background.js` to debounce incoming hints (10-second window), load the authenticated session, trigger an authorized backend sync, and broadcast `LEETSTREAK_SYNC_COMPLETED` to refresh open extension views immediately.
+
+### Detailed Changes
+1. **`extension/src/storage.ts`**:
+   - Defined `SESSION_STORAGE_KEY = "codestreak_session_v2"` and `StoredSession` interface (`{ version: 2, userId: number, accessToken: string }`).
+   - Implemented `getStoredSession()`: reads `SESSION_STORAGE_KEY` and falls back to validating and migrating legacy `codestreak_user_id` / `codestreak_access_token` or `codestreak_user`.
+   - Implemented `setStoredSession(session)`: persists the versioned session and synchronizes individual keys for backward compatibility.
+   - Implemented `clearStoredSession()`: cleanly invalidates the session, individual keys, legacy user objects, and all account-scoped cache keys (`cached_dash`, `cached_board`, `active_tab`, menu and startup tab keys).
+
+2. **`extension/public/leetcode-page-bridge.js`**:
+   - Created a main-world script intercepting both `window.fetch` and `XMLHttpRequest.prototype.open/send`.
+   - Detects LeetCode submission checks matching `/submissions/detail/.../check/` that succeed with status code 10 or "Accepted".
+   - Dispatches a validated `window.postMessage` with source `"leetstreak-page-bridge"` and type `"LEETSTREAK_SUBMISSION_ACCEPTED"`.
+
+3. **`extension/public/leetcode-listener.js`**:
+   - Injects `leetcode-page-bridge.js` into LeetCode pages.
+   - Listens for `window.onmessage`, verifying origin `https://leetcode.com` and matching bridge signatures.
+   - Includes a fallback `MutationObserver` on the page DOM for `"Accepted"` submission result modals.
+   - Dispatches narrow, unprivileged `{ type: "LEETSTREAK_SUBMISSION_HINT", platform: "leetcode" }` hints to `background.js` via `chrome.runtime.sendMessage`.
+   - Removed all token access from content scripts.
+
+4. **`extension/manifest.json`**:
+   - Registered `leetcode-page-bridge.js` under `content_scripts` with `"world": "MAIN"` and `"run_at": "document_start"`.
+   - Added `leetcode-page-bridge.js` to `web_accessible_resources`.
+
+5. **`extension/public/background.js`**:
+   - Added `chrome.storage.onChanged` listener to invalidate worker sync timestamps on logout.
+   - Added message handler for `LEETSTREAK_SUBMISSION_HINT`: validates sender runtime ID, debounces sync requests (10s cooldown), fetches the active session from storage, issues an authorized `POST /api/users/{userId}/sync` request, and broadcasts `LEETSTREAK_SYNC_COMPLETED` to active extension popups.
+
+6. **`extension/src/App.tsx`**:
+   - Switched initialization, login, registration, password reset, and password change to use `getStoredSession` and `setStoredSession`.
+   - Added listener for `LEETSTREAK_SYNC_COMPLETED` to refresh dashboard and practice data in real time when a solve is detected.
+
+7. **`extension/tests/storage.test.mjs`**:
+   - Added 6 unit tests verifying versioned session contract, legacy key migration, legacy user object migration, synchronized setting, cache invalidation on logout, and sensitive draft clearing.
+
+8. **Distribution Packages**:
+   - Built the extension bundle via `npm run build`.
+   - Synchronized all 4 ZIP copies (`./leetstreak.zip`, `./leetstreak_dist.zip`, `./extension/leetstreak.zip`, `./backend/app/leetstreak.zip`).
+
+### Verification Evidence
+- Ran `tsc --noEmit` on `extension` with 0 errors.
+- Ran all 23 extension unit tests (6 auth tests, 6 storage tests, 11 progress tests) — 23 passed, 0 failed.
+- Ran backend test suite: 91/91 tests passed (`backend/tests`).
+- Built web application cleanly (`npm run build` -> `backend/web`).
+
+
