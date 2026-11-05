@@ -104,9 +104,7 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
     q.title.toLowerCase().includes(search.toLowerCase()) && (filter === "all" || (filter === "done" ? solved.has(q.titleSlug) : !solved.has(q.titleSlug)))) })).filter(g => g.questions.length);
   return <div className="progress-panel" id="progress-panel" role="tabpanel" aria-labelledby="progress-menu">
     {active && <FriendsActivity key={`${userId}-${username}`} userId={userId} groups={groups} />}
-    <div className="progress-heading"><div><span className="progress-eyebrow">ONE QUESTION CLOSER</span><h2>Your practice, with a plan.</h2></div><button className="chip-btn" onClick={() => window.dispatchEvent(new Event(PRACTICE_REFRESH))}>Refresh</button></div>
-    <p className="progress-note">Follow a LeetCode study plan and watch every solve add up.</p>
-    <nav className="progress-jump-links" aria-label="Progress sections"><a href="#study-plans">Study plans ↓</a><a href="#friends-practice-title">Friends activity ↑</a></nav>
+    <div className="section-header study-plans-heading"><h2 className="section-title">Study plans</h2></div>
     <div className="study-plan-list" id="study-plans" aria-label="Study plans">{STUDY_PLANS.map(p => { const c = planCounts(p, state); return <button key={p.slug} className={`study-plan-option ${p.slug === plan.slug ? "selected" : ""}`} aria-pressed={p.slug === plan.slug} onClick={() => { setSelected(p.slug); setSearch(""); setFilter("all"); setNotice(""); setShowQuestions(false); setExpandedGroups([]); }}>
       <span><strong>{p.name}</strong><small>{state.followed.includes(p.slug) ? "Following · " : ""}{c.done}/{c.total} solved</small></span><span className="plan-mini-meter" aria-hidden="true"><i style={{ width: `${c.percent}%` }} /></span><b>{c.percent}%</b>
     </button>; })}</div>
@@ -174,7 +172,7 @@ function FriendsActivity({ userId, groups }: { userId: number; groups: GroupResp
   }, [signature, refresh]);
   const visible = items.filter(s => filter === "all" || String(s.friend.id) === filter).slice(0, 15);
   return <section className="friends-practice" aria-labelledby="friends-practice-title">
-    <div className="study-plan-top"><div><span className="progress-eyebrow">YOUR CODING CIRCLE</span><h3 id="friends-practice-title">What are my friends up to?</h3></div><button className="chip-btn" disabled={busy || !friends.length} onClick={() => setRefresh(n => n + 1)}>{busy ? "Checking…" : "Refresh"}</button></div>
+    <div className="section-header study-plan-top"><h3 className="section-title" id="friends-practice-title">What are my friends up to?</h3><button className="chip-btn" disabled={busy || !friends.length} onClick={() => setRefresh(n => n + 1)}>{busy ? "Checking…" : "Refresh"}</button></div>
     <p className="progress-note">Latest public accepted questions from people in your groups.</p>
     {friends.length > 1 && <select aria-label="Filter activity by friend" value={filter} onChange={e => setFilter(e.target.value)}><option value="all">All friends</option>{friends.map(f => <option value={f.id} key={f.id}>{f.name}</option>)}</select>}
     {busy && <p className="progress-note" role="status">Catching up with your friends…</p>}
