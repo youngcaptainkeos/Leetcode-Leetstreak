@@ -1605,7 +1605,7 @@ function Dashboard({
             <div className="modal-streak-box">
               <img src="/main_fire.png" alt="🔥" className="modal-flame-img" />
               <span className="modal-streak-count">{friendDash ? `${friendDash.current_streak} Day Streak` : "…"}</span>
-              <span className="modal-points-tag">⭐ {friendDash?.points !== undefined ? friendDash.points.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "…"} pts</span>
+              <span className="modal-points-tag">⭐ {(friendDash?.points ?? inspectedFriend.points)?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? "—"} pts</span>
             </div>
             {profileError && <p className="tiny error-banner" role="alert">{profileError}</p>}
 
