@@ -1,17 +1,23 @@
 from datetime import datetime, date as date_type
 
 from sqlalchemy import (
-    Column, Integer, BigInteger, Float, String, Date, DateTime, ForeignKey, UniqueConstraint, func, Boolean
+    Column, Integer, BigInteger, Float, String, Date, DateTime, ForeignKey, UniqueConstraint, func, Boolean, JSON, Numeric, Index
 )
 from sqlalchemy.orm import relationship
 
 from .database import Base
+from .timekeeping import utc_now
 
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
+    leetcode_account_version = Column(Integer, nullable=False, default=0, server_default="0")
+    codeforces_account_version = Column(Integer, nullable=False, default=0, server_default="0")
+    leetcode_last_sync = Column(DateTime, nullable=True)
+    leetcode_history_state = Column(String(30), nullable=False, default="partial", server_default="partial")
+    leetcode_history_gap = Column(Boolean, nullable=False, default=True, server_default="true")
     name = Column(String(80), nullable=False)
     leetcode_username = Column(String(80), nullable=False, index=True)
     email = Column(String(120), nullable=False, unique=True, index=True)
@@ -67,6 +73,10 @@ class Solve(Base):
     __tablename__ = "solves"
 
     id = Column(Integer, primary_key=True, index=True)
+    account_version = Column(Integer, nullable=False, default=0, server_default="0")
+    first_solve_at = Column(DateTime, nullable=True, index=True)
+    first_solve_verified = Column(Boolean, nullable=False, default=False, server_default="false")
+    score_components_state = Column(String(30), nullable=False, default="legacy", server_default="legacy")
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     platform = Column(String(20), nullable=False, default="leetcode", server_default="leetcode", index=True)
     source_handle = Column(String(80), nullable=True)
@@ -154,7 +164,7 @@ class AdminOperation(Base):
     __tablename__ = "admin_operations"
     operation_key = Column(String(120), primary_key=True)
     state = Column(String(20), nullable=False)
-    started_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    started_at = Column(DateTime, nullable=False, default=utc_now)
     finished_at = Column(DateTime, nullable=True)
 
 
@@ -164,3 +174,50 @@ class AuthLimit(Base):
     bucket_key = Column(String(64), primary_key=True)
     window_started_at = Column(DateTime, nullable=False, index=True)
     attempts = Column(Integer, nullable=False, default=0)
+
+
+class AcceptedSubmission(Base):
+    """Accepted-event evidence, separate from the one-question solve ledger."""
+    __tablename__ = "accepted_submissions"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    solve_id = Column(Integer, ForeignKey("solves.id", ondelete="CASCADE"), nullable=True, index=True)
+    platform = Column(String(20), nullable=False)
+    account_version = Column(Integer, nullable=False, default=0)
+    submission_id = Column(String(80), nullable=False)
+    title_slug = Column(String(200), nullable=False)
+    accepted_at = Column(DateTime, nullable=False)
+    observed_at = Column(DateTime, nullable=False, default=utc_now)
+    evidence_kind = Column(String(30), nullable=False)
+    first_solve_verified = Column(Boolean, nullable=False, default=False)
+    __table_args__ = (
+        UniqueConstraint("user_id", "platform", "account_version", "submission_id", name="uq_accepted_submission"),
+        Index("ix_accepted_problem_time", "user_id", "platform", "account_version", "title_slug", "accepted_at"),
+    )
+
+
+class PointAward(Base):
+    """Explicit base/daily/revision components with replay-safe award identities."""
+    __tablename__ = "point_awards"
+    id = Column(Integer, primary_key=True)
+    award_key = Column(String(200), nullable=False, unique=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    solve_id = Column(Integer, ForeignKey("solves.id", ondelete="CASCADE"), nullable=False, index=True)
+    submission_id = Column(Integer, ForeignKey("accepted_submissions.id", ondelete="SET NULL"), nullable=True, index=True)
+    kind = Column(String(20), nullable=False)
+    points = Column(Numeric(18, 4), nullable=False)
+    earned_at = Column(DateTime, nullable=True)
+    scoring_version = Column(String(40), nullable=False)
+    input_snapshot = Column(JSON, nullable=False, default=dict)
+    __table_args__ = (Index("ix_award_user_kind_time", "user_id", "kind", "earned_at"),)
+
+
+class ScoreSnapshot(Base):
+    """Private pre-reconciliation recovery evidence; never returned as a profile."""
+    __tablename__ = "score_snapshots"
+    id = Column(Integer, primary_key=True)
+    snapshot_key = Column(String(200), nullable=False, unique=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    captured_at = Column(DateTime, nullable=False, default=utc_now)
+    reason = Column(String(40), nullable=False)
+    payload = Column(JSON, nullable=False)

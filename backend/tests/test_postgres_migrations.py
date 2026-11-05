@@ -7,11 +7,12 @@ from concurrent.futures import ThreadPoolExecutor
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError
+from sqlalchemy.orm import sessionmaker
 
-from app.migrations import migrate_auth, migrate_display_preference
+from app.migrations import migrate_auth, migrate_display_preference, migrate_tracking
 
 
-class PostgresMigrationTests(unittest.TestCase):
+class LocalPostgresTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         value = os.environ.get("LEETSTREAK_TEST_POSTGRES_URL")
@@ -26,6 +27,8 @@ class PostgresMigrationTests(unittest.TestCase):
     def tearDownClass(cls):
         cls.root_engine.dispose()
 
+
+class PostgresMigrationTests(LocalPostgresTests):
     def setUp(self):
         self.schema = "migration_test_" + uuid.uuid4().hex
         with self.root_engine.begin() as connection:
@@ -82,3 +85,60 @@ class PostgresMigrationTests(unittest.TestCase):
         with self.engine.begin() as connection:
             connection.execute(text("ALTER TABLE users RENAME COLUMN previous_reset_otp TO reset_otp"))
         migrate_auth(self.engine)
+
+    def test_tracking_storage_does_not_reconstruct_or_revalue_legacy_data(self):
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            list(pool.map(lambda _: migrate_tracking(self.engine), range(3)))
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.execute(text("SELECT points_earned FROM solves")).scalar_one(), 17.5)
+            self.assertEqual(connection.execute(text("SELECT points FROM users WHERE id=1")).scalar_one(), 17.5)
+            row = connection.execute(text("SELECT first_solve_at, first_solve_verified, score_components_state FROM solves")).one()
+            self.assertEqual(row, (None, False, "legacy"))
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM point_awards")).scalar_one(), 0)
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM accepted_submissions")).scalar_one(), 0)
+
+
+class PostgresTrackingTests(LocalPostgresTests):
+    def setUp(self):
+        from app.database import Base
+        from app.models import User
+        self.schema = "tracking_test_" + uuid.uuid4().hex
+        with self.root_engine.begin() as connection:
+            connection.execute(text(f"CREATE SCHEMA {self.schema}"))
+        self.engine = create_engine(self.root_engine.url, connect_args={"options": f"-csearch_path={self.schema}"})
+        Base.metadata.create_all(self.engine)
+        self.sessions = sessionmaker(bind=self.engine)
+        with self.sessions.begin() as session:
+            session.add(User(id=1, name="Demo Coder", email="coder@example.com", leetcode_username="demo_coder", points=17.5))
+
+    def tearDown(self):
+        self.engine.dispose()
+        with self.root_engine.begin() as connection:
+            connection.execute(text(f"DROP SCHEMA {self.schema} CASCADE"))
+
+    def test_concurrent_acceptance_replay_creates_one_event(self):
+        from app.tracking import record_acceptance
+        from app.models import AcceptedSubmission
+        from datetime import datetime
+        def record(_):
+            with self.sessions.begin() as session:
+                return record_acceptance(session, 1, platform="leetcode", account_version=0,
+                    submission_id="100", title_slug="synthetic-question", accepted_at=datetime(2026, 1, 1),
+                    evidence_kind="public_recent").id
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            ids = list(pool.map(record, range(4)))
+        self.assertEqual(len(set(ids)), 1)
+        with self.sessions() as session:
+            self.assertEqual(session.query(AcceptedSubmission).count(), 1)
+
+    def test_concurrent_baselines_preserve_one_original_snapshot(self):
+        from app.tracking import capture_score_baseline
+        from app.models import ScoreSnapshot
+        def capture(_):
+            with self.sessions.begin() as session:
+                return capture_score_baseline(session, 1).id
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            ids = list(pool.map(capture, range(4)))
+        self.assertEqual(len(set(ids)), 1)
+        with self.sessions() as session:
+            self.assertEqual(session.query(ScoreSnapshot).one().payload["points"], 17.5)

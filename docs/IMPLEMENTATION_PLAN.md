@@ -149,7 +149,7 @@ The earlier proposal to treat the signup toggle as a privacy opt-out is supersed
 |---|---|
 | Streak | Only the first accepted solve of a previously unsolved platform problem contributes to the streak. Repeats, revisions, failed attempts, sync/import time, and manual checkboxes do not extend it. A failed attempt followed by the first acceptance is still a first solve; “first” does not require acceptance on the first submission attempt. |
 | Unique questions | Multiple submissions of the same platform question always produce one question entry and one lifetime unique-solve count. Repeat-event evidence may exist privately for award eligibility, not as duplicate solved-question entries. |
-| Revision | An accepted repeat after at least one week can earn 2 extra revision points. It never adds another question entry or extends the streak. Record it as a separate award component. Owner confirmed recurring eligibility seven days after the first solve or last rewarded revision; unrewarded attempts do not restart the clock. Revision awards apply the streak multiplier to the 2-point base; daily stacking remains to settle. |
+| Revision | An accepted repeat after at least one week can earn 2 extra revision points. It never adds another question entry or extends the streak. Record it as a separate award component. Owner confirmed recurring eligibility seven days after the first solve or last rewarded revision; unrewarded attempts do not restart the clock. Revision awards apply the streak multiplier to the 2-point base. A daily bonus can be earned on each different official daily question first solved that IST day; repeats receive revision awards only. |
 | Time | All product boundaries and displayed activity dates follow IST, including daily, weekly, monthly, streak, revision eligibility, and LeetStreak daily awards. Timestamp storage can remain UTC. Do not silently retain a UTC-reset exception in product behavior. |
 | Formula changes | Recalculate previous questions for all users under the same new base-point formula/version, rather than leaving older users on a frozen base scale. Preserve source inputs and revaluation history for audit/recovery. |
 | Earned daily points | Retain existing earned daily award amounts separately from the base points being revalued. Do not try to reconstruct or overwrite earned bonuses from incomplete old challenge archives. |
@@ -166,9 +166,9 @@ These are proposed defaults, not changes already made to user data or decisions 
 
 | Decision | Proposed default | Affected items |
 |---|---|---|
-| Revision arithmetic | Cooldown is confirmed: recurring seven days since first solve/last rewarded revision; unrewarded acceptances do not restart it. Owner confirmed the streak multiplier applies to the 2-point revision base. Daily stacking remains to settle. | DATA-09 |
-| Revision arithmetic and display | Revision awards use 2 × the applicable streak multiplier. Clarify whether revisions stack with a daily bonus; display the revision component inside the existing question entry. Repeats never count as new questions or streak days. | DATA-02, DATA-07–09 |
-| Daily eligibility for new users | Accepted: imported history gets base points only; future live solves can earn daily bonuses. Repeated-daily eligibility remains to settle. | DATA-08 |
+| Revision arithmetic | Cooldown is confirmed: recurring seven days since first solve/last rewarded revision; unrewarded acceptances do not restart it. Owner confirmed the streak multiplier applies to the 2-point revision base. Repeated questions are revision-only; different first-time daily questions can each earn a daily bonus within one IST day. | DATA-09 |
+| Revision arithmetic and display | Revision awards use 2 × the applicable streak multiplier. Repeated questions receive revision credit only, without a daily award; display the revision component inside the existing question entry. Repeats never count as new questions or streak days. | DATA-02, DATA-07–09 |
+| Daily eligibility for new users | Accepted: imported history gets base points only; future live solves can earn daily bonuses. Daily bonuses apply to each different official daily question first solved that IST day; no retroactive daily or repeat-daily awards. | DATA-08 |
 | IST daily question selection | Accepted: follow the current official challenge even if it changes within the IST day. Product day boundaries remain IST. Record challenge changes with observation timestamps rather than pinning one slug per day. | DATA-06, DATA-08 |
 | Incomplete historical bases | Apply formula changes equally to all known questions. Where exact historical identities/inputs are unavailable, report coverage and agree a consistent estimate/fallback rather than silently freezing old base credit or inventing exact scores. | DATA-04–05 |
 | Unlinking | Remove the disconnected platform's active contribution to scores/activity after explicit confirmation; preserve only the minimal private audit/recovery data allowed by the chosen retention policy. | FEAT-05 |
@@ -198,6 +198,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 | Step | Scope | State / evidence |
 |---|---|---|
 | M2-01 | DATA-06 shared clock and period boundaries | Passed locally: 54 backend tests including six new boundary/cooldown checks and four PostgreSQL migration checks. Dashboard and streak helpers use one IST clock; shared UTC storage conversion, Sunday-start weeks, exclusive period ends and seven-day elapsed cooldown helpers added. Ingestion, award migration and client date conversion remain later steps; DATA-06 is not yet complete. |
+| M2-02 | DATA-02/04/05/08 evidence and award storage | Passed locally: 63 backend tests, including concurrent PostgreSQL migration/event replay/baseline capture, old-point preservation, repeat-event idempotency, stale-account rejection, unique precise award identities and immutable baseline capture. Added account generations, explicit unknown first-solve state, accepted-event/award tables and private score snapshots. Migration does not revalue or reconstruct legacy daily awards. Account deletion/reset also clear private evidence. Runtime ingestion, scoring and UI integration remain later steps. |
 
 
 ## 4. Security and privacy plans
@@ -496,7 +497,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 - [ ] Store earned daily award amounts in a dedicated component/event keyed by account/provider identity/platform/IST challenge date, with question, evidence, source, and rule version.
 - [ ] Extract known already-earned daily amounts before altering bases; retain their exact awarded component. For rows where the old daily component cannot be established confidently, prepare a private impact report and seek a policy choice rather than silently losing or inventing points.
 - [ ] Initial/imported historical questions receive base-only credit. Do not infer historical daily eligibility from a solved slug, archive match, current streak, or import time; a newly registered account must not gain retroactive daily points.
-- [ ] Preserve future daily eligibility and repeated-daily handling as explicit open decisions. Do not turn the historical-import rule into an unapproved lifetime ban for new users, or assume the earlier repeat-daily proposal is accepted.
+- [x] Set future/repeated daily eligibility: new users can earn live daily bonuses; each different official daily question first solved that IST day can earn one. There is no across-question daily cap. Repeats earn revision credit only. Implementation remains pending below.
 - [ ] Once those decisions are made, record eligible live awards idempotently. A repeated daily never adds a second unique base award or extends the first-solve-only streak; any overlap with revision points follows the agreed stacking rule.
 - [ ] Update help, breakdowns, reminders, and migrations to distinguish current base credit, retained earned daily points, revision credit, and unknown historical evidence.
 
@@ -512,13 +513,13 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Files:** `backend/app/models.py`, provider ingestion/sync clients, `point_calculator.py`, score schemas; question/profile/help displays in both clients.
 
-**Depends on:** DATA-02–04, DATA-06–07, OPS-03 migration infrastructure. Use the confirmed recurring seven-day first-solve/last-reward anchor; settle multiplier and daily-bonus stacking before implementation.
+**Depends on:** DATA-02–04, DATA-06–07, OPS-03 migration infrastructure. Use the confirmed recurring seven-day first-solve/last-reward anchor; owner confirmed the streak multiplier applies and repeats do not earn daily bonuses.
 
 **Implementation**
 
 - [ ] Record the original accepted problem identity and sufficient subsequent accepted-event timestamps/IDs to prove eligible revisions. Rewards recur at least seven days after the first solve or last rewarded revision. Unrewarded attempts do not restart the clock.
 - [ ] Record a separate revision award for 2 points linked to the original question entry; never duplicate the solve row, increment new-question counts, or extend the streak.
-- [ ] Confirm whether 2 is an exact flat amount or subject to any multiplier and whether a revision may also earn a daily bonus. Do not silently apply existing base/streak arithmetic to it.
+- [x] Confirm revision arithmetic: multiply the 2-point base by the applicable streak multiplier. Repeated questions do not also earn a daily bonus.
 - [ ] Add transactional uniqueness/idempotency so repeated polls, concurrent syncs, and replayed submissions cannot reward the same revision twice. Define which event wins when several eligible acceptances arrive in one batch.
 - [ ] Do not award historical revisions from initial imported history without an explicitly approved backfill policy. Missing repeated-acceptance data means incomplete evidence, not permission to synthesize events.
 - [ ] Show any revision credit within the existing question entry and score breakdown, with clear separation from base/daily points. Document cooldown behavior in help and website scoring.

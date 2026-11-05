@@ -43,8 +43,9 @@ from .codeforces_sync import background_codeforces_sync, user_sync_lock
 from .platform_migration import migrate_platforms
 from .security import current_user, require_self, member_group, owned_group
 from .releases import RELEASE_NOTICES
-from .migrations import migrate_auth, migrate_display_preference
+from .migrations import migrate_auth, migrate_display_preference, migrate_tracking
 from .recovery import consume_limit, recovery_account, otp_verifier, clear_reset, utcnow
+from .tracking import clear_tracking
 
 
 def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Secret")):
@@ -80,6 +81,7 @@ except Exception as migration_err:
 migrate_platforms(engine)
 migrate_auth(engine)
 migrate_display_preference(engine)
+migrate_tracking(engine)
 
 app = FastAPI(title="LeetStreak API")
 
@@ -421,6 +423,7 @@ async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequ
     async with user_sync_lock(user_id):
         db.refresh(user, with_for_update=True)
         if not user.codeforces_username or user.codeforces_username.lower() != handle.lower():
+            clear_tracking(db, user_id, "codeforces")
             db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").delete()
             db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id, PlatformActivity.platform == "codeforces").delete()
             user.codeforces_last_sync = None
@@ -471,6 +474,7 @@ def delete_user_account(user_id: int, payload: DeleteAccountRequest, db: Session
     if db.query(Group.id).filter(Group.creator_id == actor.id).first():
         raise HTTPException(409, "Transfer ownership or delete your groups before deleting your account.")
 
+    clear_tracking(db, user_id)
     db.query(GroupMember).filter(GroupMember.user_id == user_id).delete()
     db.query(DailyActivity).filter(DailyActivity.user_id == user_id).delete()
     db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id).delete()
@@ -1191,6 +1195,7 @@ async def poll_now(db: Session = Depends(get_db)):
 @app.post("/api/admin/reset-db", dependencies=[Depends(verify_admin_secret)])
 def reset_db(db: Session = Depends(get_db)):
     """Clears all database records for fresh user registrations."""
+    clear_tracking(db)
     db.query(Kudos).delete()
     db.query(PlatformActivity).delete()
     db.query(Solve).delete()
@@ -1241,6 +1246,7 @@ def delete_user_by_id(user_id: int, db: Session = Depends(get_db)):
 
     if db.query(Group.id).filter(Group.creator_id == user_id).first():
         raise HTTPException(409, "Resolve owned groups before deleting this account.")
+    clear_tracking(db, user_id)
     db.query(Kudos).filter((Kudos.from_user_id == user_id) | (Kudos.to_user_id == user_id)).delete()
     db.query(Solve).filter(Solve.user_id == user_id).delete()
     db.query(DailyActivity).filter(DailyActivity.user_id == user_id).delete()

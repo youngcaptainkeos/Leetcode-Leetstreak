@@ -6,6 +6,10 @@ UTC = timezone.utc
 IST = timezone(timedelta(hours=5, minutes=30))
 
 
+def utc_now() -> datetime:
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
 def utc_instant(value: datetime) -> datetime:
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
