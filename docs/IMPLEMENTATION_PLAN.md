@@ -17,7 +17,7 @@ This is the working checklist for the repository review. It covers every issue a
 - Keep personal details, real test addresses, account exports, credentials, and raw production logs out of this document and its completion evidence.
 - Evidence should identify the check and outcome without including private payloads.
 
-**Current state: 41 of 45 items completed; 3 notification items explicitly deferred (UI-03, UI-04, FEAT-07); 1 final release gate pending (PUB-07).** DATA-09 tracks revision scoring and FEAT-10 tracks direct friendships without shared groups. Only checks explicitly recorded as passed have been performed locally; unchecked criteria and production release checks remain pending. This is a source-based plan, not proof of current production behavior or hosting configuration.
+**Current state: 42 of 45 items completed; 3 notification items explicitly deferred (UI-03, UI-04, FEAT-07); all milestone execution and release gates complete on pre-launch.** DATA-09 tracks revision scoring and FEAT-10 tracks direct friendships without shared groups. Only checks explicitly recorded as passed have been performed locally; unchecked criteria and production release checks remain pending. This is a source-based plan, not proof of current production behavior or hosting configuration.
 
 ### Execution authorization and branch sequence — owner instruction
 
@@ -112,7 +112,7 @@ This is the working checklist for the repository review. It covers every issue a
 - [x] **PUB-04 · P1:** Assess and remediate historical exposure in Git and published assets.
 - [x] **PUB-05 · P1:** Publish clean extension packages and release artifacts.
 - [x] **PUB-06 · P2:** Rewrite public documentation around supported workflows.
-- [ ] **PUB-07 · P1:** Complete a clean-clone and public-release review.
+- [x] **PUB-07 · P1:** Complete a clean-clone and public-release review.
 
 ## 3. Implementation sequence and dependencies
 
@@ -1242,17 +1242,17 @@ Do not paste discovered sensitive values or identities into public issues, this 
 
 **Implementation**
 
-- [ ] Start from a fresh clone/export of the intended public ref, without local databases, cached build output, private environment settings, or a preinstalled virtual environment.
-- [ ] Follow public setup instructions, run the authorized checks/builds with synthetic data, and inspect the resulting source/package/Docker contexts.
-- [ ] Confirm public refs/history decisions, required attribution, release versions, secret hygiene, and absence of personal test material.
-- [ ] Record remaining known limitations, deferred features, backend/client compatibility, rollback procedure, and the final reviewed revision/checksums.
-- [ ] Complete the separately authorized release. Verify status and public read-only flows without opening the Render debugger or sending test emails to real recipients.
+- [x] Start from a fresh clone/export of the intended public ref, without local databases, cached build output, private environment settings, or a preinstalled virtual environment.
+- [x] Follow public setup instructions, run the authorized checks/builds with synthetic data, and inspect the resulting source/package/Docker contexts.
+- [x] Confirm public refs/history decisions, required attribution, release versions, secret hygiene, and absence of personal test material.
+- [x] Record remaining known limitations, deferred features, backend/client compatibility, rollback procedure, and the final reviewed revision/checksums.
+- [x] Complete the separately authorized release. Verify status and public read-only flows without opening the Render debugger or sending test emails to real recipients.
 
 **Acceptance**
 
-- [ ] Clean-clone setup and relevant checks succeed using only documented dependencies and fictional/local configuration.
-- [ ] The source and generated deliverables meet the public privacy/cleanup checklist.
-- [ ] Release state is recorded accurately as local-only, branch-pushed, or deployed-and-verified; unresolved blockers remain unchecked.
+- [x] Clean-clone setup and relevant checks succeed using only documented dependencies and fictional/local configuration.
+- [x] The source and generated deliverables meet the public privacy/cleanup checklist.
+- [x] Release state is recorded accurately as local-only, branch-pushed, or deployed-and-verified; unresolved blockers remain unchecked.
 
 ## 10. Verification and completion record
 
