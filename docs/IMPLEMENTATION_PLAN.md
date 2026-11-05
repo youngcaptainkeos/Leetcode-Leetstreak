@@ -27,6 +27,7 @@ This is the working checklist for the repository review. It covers every issue a
 - On `pre-launch`, make a separate clearly labeled commit after each completed implementation step, not just one commit per milestone. Include milestone/task/step identifiers, for example `M2 DATA-09 step 1: add revision award ledger`. Notify the owner after each successful step through the agreed private notification destination; never record that destination or credentials in this public repository.
 - Push each completed step's commit to `origin/pre-launch` and record the revision, checks, and status here. Follow dependencies when a step spans multiple tasks; do not label unfinished/unverified work as fixed.
 - A push to `pre-launch` is not a production release. Production merges/deployments remain explicit release checkpoints.
+- Chrome Web Store upload is deferred until all planned fixes and release checks are complete, as requested on 2026-11-05. Prepare the final reviewed ZIP, listing assets and privacy/permission disclosures at that checkpoint; do not upload the current development build.
 
 ### Priorities
 
@@ -188,7 +189,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 | M1-05 | SEC-03 recovery abuse limits, password policy, session revocation | Backend/local checks passed: 37 tests including recovery, revocation, and additive SQLite migration. Password/reset UI copy and client types updated; password-management settings UI follows M1-06. 3 client session checks, both type checks/builds passed; archives synchronized. Commit labeled `M1 SEC-03 step 5`. Production PostgreSQL migration/release remains pending. |
 | M1-06 | SEC-04 Global display-only preference and group/profile behavior | Passed locally: 42 backend + 5 client session/preference tests, both type checks/builds; packages synchronized. Global preference migration, profile field restrictions, transfer/password/session controls implemented. Commit labeled `M1 SEC-04 step 6`; not deployed; full browser visual/release verification remains pending. |
 | M1-07 | SEC-05 synthetic fixture isolation + PUB-01–03 current-source cleanup | Passed locally: 44 backend tests, extension build and package inspection. Removed fabricated provider responses, obsolete notification demonstrations/pages, five scratch scripts and tracked installed environment (local environment retained). Current-source scan reviewed reserved example addresses/provider sender and route-path false positives; packages synchronized and obsolete assets absent. Donation QR/controls explicitly approved public on 2026-11-05. Historical exposure and production fixture records remain separate pending work; not deployed. |
-| M1-08 | PUB-04 private exposure inventory and concrete remediation proposal | Not started; shared-history rewriting requires approval of the resulting proposal. |
+| M1-08 | PUB-04 private exposure inventory and concrete remediation proposal | Inventory/proposal prepared for owner review: 662 historical text blobs, 145 ZIP versions, five remote branches plus one tag, GitHub published collections and primary hosted artifact reviewed; private backup restored and integrity checked. Expanded scan found historical database credentials: rotation/revocation and concrete shared-history rewrite approval remain open. Secondary host timed out; wiki inaccessible; coverage limits recorded privately. No history rewrite or production change. |
 
 ## 4. Security and privacy plans
 
@@ -1142,7 +1143,8 @@ Do not paste discovered sensitive values or identities into public issues, this 
 
 - [ ] Privately inspect reachable history/refs and published surfaces for the categories identified in PUB-01/03. Report locations and exposure classes, not raw sensitive values.
 - [ ] Choose the least disruptive sufficient approach: ordinary cleanup for harmless clutter, targeted history sanitization for sensitive content, or a clean public release repository while retaining the original privately where appropriate.
-- [ ] Prepare a concrete history-remediation plan, private backup, affected refs, collaborator instructions, and verification procedure. Obtain explicit approval before rewriting shared history, force-pushing, removing public releases, or replacing a repository.
+- [x] Prepare a concrete history-remediation plan, private backup, affected refs, collaborator instructions, and verification procedure. Prepared privately; backup restoration/integrity verified.
+- [ ] Obtain explicit approval of the reviewed proposal before rewriting shared history, force-pushing, removing public releases, or replacing a repository.
 - [ ] Remove/update owned exposed release artifacts and request provider/cache remediation where applicable. Document that forks, clones, and third-party caches cannot be guaranteed erased.
 - [ ] Re-scan the intended public refs/artifacts and record the outcome privately. Avoid promising that all historical traces are gone.
 
