@@ -19,12 +19,12 @@ This is the working checklist for the repository review. It covers every issue a
 
 **Current state: 0 of 45 items completed; 3 notification items explicitly deferred.** DATA-09 tracks revision scoring and FEAT-10 tracks direct friendships without shared groups. All acceptance checks below are planned, not already performed. This is a source-based plan, not proof of current production behavior or hosting configuration.
 
-### Execution hold and branch sequence — owner instruction
+### Execution authorization and branch sequence — owner instruction
 
-- Milestone implementation remains on hold. The owner's subsequent instruction authorizes merging the current `progress-bar` integration into `main` and testing Codeforces, including its normal auto-deployment. That integration release does not authorize starting the planned pre-launch fixes or implementing direct friendships now.
-- Finish the existing Codeforces/plan integration on `progress-bar` first. The currently reported account-connection problem is deliberately excluded from this tracker; the owner will request that work separately.
-- When the owner proceeds with release work, merge the completed integration into `main` first. Then create a new branch named exactly `pre-launch` from that updated `main`, and perform the milestone fixes there.
-- On `pre-launch`, make a separate clearly labeled commit after each completed implementation step, not just one commit per milestone. Include milestone/task/step identifiers, for example `M2 DATA-09 step 1: add revision award ledger`.
+- The owner has authorized implementation on `pre-launch` with a clearly labeled commit/push and progress notification after every successful step. The integration merge/deployment to `main` completed at `269e06f`; production releases of milestone fixes remain separate checkpoints.
+- The existing Codeforces/plan integration was merged and checked separately; it is not counted as completing any pre-launch checklist item.
+- Branch `pre-launch` was created from updated `origin/main` (`269e06f`) for milestone work. Do not merge fixes into production without the agreed release checkpoint.
+- On `pre-launch`, make a separate clearly labeled commit after each completed implementation step, not just one commit per milestone. Include milestone/task/step identifiers, for example `M2 DATA-09 step 1: add revision award ledger`. Notify the owner after each successful step through the agreed private notification destination; never record that destination or credentials in this public repository.
 - Push each completed step's commit to `origin/pre-launch` and record the revision, checks, and status here. Follow dependencies when a step spans multiple tasks; do not label unfinished/unverified work as fixed.
 - A push to `pre-launch` is not a production release. Production merges/deployments remain explicit release checkpoints.
 
@@ -175,6 +175,21 @@ These are proposed defaults, not changes already made to user data or decisions 
 | Plan conflicts | Merge unique plans and solve identities; resolve external check/uncheck conflicts through explicit revision/version rules. | FEAT-01 |
 | Public history cleanup | Rotate exposed credentials first. Choose targeted history cleanup or a clean public release repository only after a private exposure inventory. | PUB-04 |
 
+### M1 execution steps
+
+Each row is a separate commit/push checkpoint. Local/branch completion is not production completion.
+
+| Step | Scope | State / evidence |
+|---|---|---|
+| M1-01 | SEC-01 route inventory + OPS-02 key configuration/JWT validation foundation | Passed locally: 7 synthetic token/configuration tests; route map in `backend/ACCESS_CONTROL.md`. Branch commit: `M1 SEC-01 OPS-02 step 1: require stable keys and validate tokens`. Hosting configuration/release still pending. |
+| M1-02 | SEC-01 account/group permissions + client session compatibility | Not started |
+| M1-03 | SEC-02 fail-closed administration | Not started |
+| M1-04 | OPS-01 honest email outcomes | Not started |
+| M1-05 | SEC-03 recovery abuse limits, password policy, session revocation | Not started |
+| M1-06 | SEC-04 Global display-only preference and group/profile behavior | Not started |
+| M1-07 | SEC-05 synthetic fixture isolation + PUB-01–03 current-source cleanup | Not started |
+| M1-08 | PUB-04 private exposure inventory and concrete remediation proposal | Not started; shared-history rewriting requires approval of the resulting proposal. |
+
 ## 4. Security and privacy plans
 
 ### SEC-01 — Authenticate account actions and enforce permissions
@@ -187,7 +202,7 @@ These are proposed defaults, not changes already made to user data or decisions 
 
 **Implementation**
 
-- [ ] Inventory every route: explicitly public, authenticated self-service, group-member, group-owner, or admin. Include dashboard/profile reads, solve history, sync, settings, deletion, group codes, and kudos.
+- [x] Inventory every route: explicitly public, authenticated self-service, group-member, group-owner, or admin. Include dashboard/profile reads, solve history, sync, settings, deletion, group codes, and kudos.
 - [ ] Add a shared authenticated-user dependency. Validate signature, required expiry/subject, supported algorithm, account existence, and session version; malformed tokens must return controlled errors.
 - [ ] Derive actor identity from the token. Retained legacy ID fields must match the actor and must never establish authorization.
 - [ ] Add reusable self/member/owner checks. Use transactions for group creation/membership changes and handle duplicate/racing requests.
