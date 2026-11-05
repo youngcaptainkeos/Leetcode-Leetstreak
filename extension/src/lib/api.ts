@@ -205,7 +205,7 @@ export const api = {
       body: JSON.stringify({ leetcode_username, password }),
     }),
   initiateForgotPassword: (email_or_username: string) =>
-    request<{ status: string; email: string }>("/users/forgot-password/initiate", {
+    request<{ status: string; message: string }>("/users/forgot-password/initiate", {
       method: "POST",
       body: JSON.stringify({ email_or_username }),
     }),
@@ -238,6 +238,9 @@ export const api = {
         body: JSON.stringify(settings),
       }
     ),
+  changePassword: (userId: number, current_password: string, new_password: string) =>
+    request<{ status: string; access_token: string }>(`/users/${userId}/change-password`, { method: "POST", body: JSON.stringify({ current_password, new_password }) }),
+  revokeSessions: (userId: number) => request<{ status: string }>(`/users/${userId}/revoke-sessions`, { method: "POST" }),
   deleteAccount: (userId: number, password: string) =>
     request<{ status: string; message: string }>(`/users/${userId}/delete-account`, {
       method: "POST",

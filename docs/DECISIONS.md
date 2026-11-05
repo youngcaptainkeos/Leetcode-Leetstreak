@@ -40,7 +40,7 @@ The purpose is to settle product behavior and execution constraints across all m
 
 | ID | Clarification | Known rule | Remaining choices | Related tasks |
 |---|---|---|---|---|
-| D30 | Revision reward details | Accepted repeat after at least one week can earn 2 extra points; one question entry; no streak extension. | Is this recurring every week or once? Is the clock anchored to first solve, last accepted attempt, or last rewarded revision? Are the 2 points flat, and can they stack with a daily bonus? No implicit answer is recorded. | DATA-09 |
+| D30 | Revision reward details | Accepted repeat after at least one week can earn 2 extra points; one question entry; no streak extension. | Confirmed: recurring cooldown of seven days since first solve or last rewarded revision; unrewarded attempts do not reset it. Pending: whether 2 points are flat and whether a revision can stack with a daily bonus. | DATA-09 |
 
 ## M3 — Notifications and everyday extension behavior
 
@@ -129,7 +129,7 @@ Approval shorthand is fine: “Approve the recommendations except Dxx: …”. I
 | D13 | Deferred | Friend notifications and their preferences are retained as backlog, not current implementation. | 2026-11-05 |
 | D16 | Accepted backend requirement | Persist/sync user plans in the backend; local-only storage is insufficient. Related optional view/preference details remain pending. | 2026-11-05 |
 | D23 | Accepted workflow; not executed | Current integration to main first, then pre-launch; labeled commit/push after each completed step when implementation starts. | 2026-11-05 |
-| D30 | Pending clarification | Revision recurrence, seven-day anchor, multiplier, and daily stacking are not yet decided. | 2026-11-05 |
+| D30 | Cooldown accepted; arithmetic clarification pending | Recurring seven-day first-solve/last-reward cooldown; unrewarded attempts do not reset it. Multiplier and daily stacking remain open. | 2026-11-05 |
 | Other recommendations | Pending unless previously accepted in M1 | No blanket approval inferred; retain the earlier accepted M1 rules. | 2026-11-05 |
 | D31 | Requirement accepted; flow pending | Direct friends must not require a shared group. Detailed relationship/discovery workflow remains a proposal. | 2026-11-05 |
 
@@ -142,3 +142,5 @@ Approval shorthand is fine: “Approve the recommendations except Dxx: …”. I
 | 2026-11-05 | Added FEAT-10/D31 for group-independent direct friendships. Recorded new authorization to merge current integration into main and test Codeforces; later pre-launch fixes remain on hold. |
 
 | 2026-11-05 | Owner authorized milestone implementation on pre-launch with a labeled commit/push and notification after every successful step. M1-01 passed seven synthetic authentication/configuration checks; no production changes. |
+
+| 2026-11-05 | Owner confirmed recurring revision rewards seven days after first solve/last rewarded revision; unrewarded attempts do not restart the clock. No M2 scoring implementation performed yet. |

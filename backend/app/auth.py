@@ -56,7 +56,7 @@ def _base64url_decode(data_str: str) -> bytes:
     return base64.b64decode(data_str + padding, altchars=b'-_', validate=True)
 
 
-def create_access_token(user_id: int) -> str:
+def create_access_token(user_id: int, session_version: int = 0) -> str:
     """Create a signed JWT access token for user_id."""
     header = {"alg": "HS256", "typ": "JWT"}
     now = datetime.now(timezone.utc)
@@ -64,6 +64,7 @@ def create_access_token(user_id: int) -> str:
     payload = {
         "sub": str(user_id),
         "user_id": user_id,
+        "ver": session_version,
         "iat": int(now.timestamp()),
         "exp": int(exp.timestamp())
     }
@@ -103,6 +104,8 @@ def decode_access_token(token: str) -> dict:
             raise ValueError("Invalid token subject")
         if type(payload.get("user_id")) is not int or payload["user_id"] != int(subject):
             raise ValueError("Inconsistent token identity")
+        if type(payload.get("ver", 0)) is not int or payload.get("ver", 0) < 0:
+            raise ValueError("Invalid session version")
         if type(payload.get("exp")) is not int or type(payload.get("iat")) is not int:
             raise ValueError("Missing token timestamps")
         now = int(datetime.now(timezone.utc).timestamp())

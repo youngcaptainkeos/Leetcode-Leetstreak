@@ -9,7 +9,7 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional, Dict, Set
 
-from fastapi import FastAPI, HTTPException, Depends, Query, Header, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, Query, Header, BackgroundTasks, Request
 from fastapi.responses import Response, FileResponse, HTMLResponse
 from .legal_pages import PRIVACY_HTML, TERMS_HTML
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,7 +30,7 @@ from .schemas import (
     GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema, PointBreakdownSchema,
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
     KudosToggleRequest, KudosAllRequest, UpdateUsernameRequest, UpdateSettingsRequest, ActivityFeedItemSchema,
-    DynamicMenuItem, AppConfigResponse, DeleteAccountRequest, SyncRequest, UpdateCodeforcesRequest, GroupTransferRequest, ReleaseBroadcastRequest,
+    DynamicMenuItem, AppConfigResponse, DeleteAccountRequest, SyncRequest, UpdateCodeforcesRequest, GroupTransferRequest, ReleaseBroadcastRequest, ChangePasswordRequest,
 )
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
@@ -42,6 +42,8 @@ from .codeforces_sync import background_codeforces_sync, user_sync_lock
 from .platform_migration import migrate_platforms
 from .security import current_user, require_self, member_group, owned_group
 from .releases import RELEASE_NOTICES
+from .migrations import migrate_auth
+from .recovery import consume_limit, recovery_account, otp_verifier, clear_reset, utcnow
 
 
 def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Secret")):
@@ -75,6 +77,7 @@ except Exception as migration_err:
     logging.warning("Auto-migration executed with warning: %s", migration_err)
 
 migrate_platforms(engine)
+migrate_auth(engine)
 
 app = FastAPI(title="LeetStreak API")
 
@@ -163,7 +166,9 @@ def _generate_group_code(length: int = 6) -> str:
 
 
 @app.post("/api/users/register", response_model=RegisterResponse)
-async def register_user(payload: RegisterRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def register_user(payload: RegisterRequest, background_tasks: BackgroundTasks, request: Request, db: Session = Depends(get_db)):
+    consume_limit(db, "register-peer", request.client.host if request.client else "unknown", 20, 3600)
+    consume_limit(db, "register-address", payload.email, 5, 3600)
     try:
         data = await fetch_leetcode_user_data(payload.leetcode_username)
     except LeetCodeError as err:
@@ -217,7 +222,7 @@ async def register_user(payload: RegisterRequest, background_tasks: BackgroundTa
     if codeforces_handle:
         background_tasks.add_task(background_codeforces_sync, user.id)
 
-    token = create_access_token(user.id)
+    token = create_access_token(user.id, user.session_version)
     return RegisterResponse(
         id=user.id,
         name=user.name,
@@ -232,8 +237,10 @@ async def register_user(payload: RegisterRequest, background_tasks: BackgroundTa
 
 
 @app.post("/api/users/login", response_model=RegisterResponse)
-def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
+def login_user(payload: LoginRequest, request: Request, db: Session = Depends(get_db)):
     query_str = payload.leetcode_username.strip().lower()
+    consume_limit(db, "login-peer", request.client.host if request.client else "unknown", 60, 900)
+    consume_limit(db, "login-account", query_str, 10, 900)
     matching_users = (
         db.query(User)
         .filter((func.lower(User.email) == query_str) | (func.lower(User.leetcode_username) == query_str))
@@ -249,7 +256,7 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
     if not matched_user:
         raise HTTPException(status_code=400, detail="Invalid username/email or password.")
 
-    token = create_access_token(matched_user.id)
+    token = create_access_token(matched_user.id, matched_user.session_version)
     return RegisterResponse(
         id=matched_user.id,
         name=matched_user.name,
@@ -263,49 +270,90 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
     )
 
 
+async def deliver_reset(user_id: int, request_id: str, address: str, name: str, code: str):
+    result = await send_otp_email(address, name, code)
+    if not result:
+        with SessionLocal() as db:
+            user = db.query(User).filter_by(id=user_id).with_for_update().first()
+            if user and user.otp_request_id == request_id:
+                clear_reset(user)
+                db.commit()
+        logger.warning("Password reset delivery not accepted; code invalidated.")
+
+
 @app.post("/api/users/forgot-password/initiate")
-async def initiate_forgot_password(payload: ForgotPasswordInitiateRequest, db: Session = Depends(get_db)):
-    query_str = payload.email_or_username.strip().lower()
-    user = (
-        db.query(User)
-        .filter((func.lower(User.leetcode_username) == query_str) | (func.lower(User.email) == query_str))
-        .first()
-    )
+def initiate_forgot_password(payload: ForgotPasswordInitiateRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    identifier = payload.email_or_username.strip().lower()
+    consume_limit(db, "reset-request-peer", request.client.host if request.client else "unknown", 20, 900)
+    consume_limit(db, "reset-request-account", identifier, 3, 3600)
+    message = {"status": "request_received", "message": "If a unique matching account exists, a reset code will be sent to its registered email. If a username is shared, use your email address."}
+    user = recovery_account(db, identifier)
     if not user:
-        raise HTTPException(status_code=404, detail="No account found with that email or username.")
-
-    if not user.email:
-        raise HTTPException(status_code=400, detail="This account does not have an email address associated with it.")
-
-    otp_code = "".join(secrets.choice(string.digits) for _ in range(6))
-    user.reset_otp = otp_code
-    user.otp_expires_at = datetime.now() + timedelta(minutes=15)
+        return message
+    db.refresh(user, with_for_update=True)
+    now = utcnow()
+    if user.otp_last_requested_at and now - user.otp_last_requested_at < timedelta(seconds=60):
+        return message
+    clear_reset(user)
+    code = "".join(secrets.choice(string.digits) for _ in range(6))
+    user.otp_request_id = secrets.token_hex(24)
+    user.reset_otp_hash = otp_verifier(user.id, user.otp_request_id, code)
+    user.otp_expires_at = now + timedelta(minutes=15)
+    user.otp_last_requested_at = now
     db.commit()
-
-    await send_otp_email(user.email, user.leetcode_username, otp_code)
-    return {"status": "otp_sent", "email": user.email}
+    background_tasks.add_task(deliver_reset, user.id, user.otp_request_id, user.email, user.name, code)
+    return message
 
 
 @app.post("/api/users/forgot-password/verify")
-def verify_forgot_password(payload: ForgotPasswordVerifyRequest, db: Session = Depends(get_db)):
-    query_str = payload.email_or_username.strip().lower()
-    user = (
-        db.query(User)
-        .filter((func.lower(User.leetcode_username) == query_str) | (func.lower(User.email) == query_str))
-        .first()
-    )
-    if not user or user.reset_otp != payload.otp.strip():
-        raise HTTPException(status_code=400, detail="Invalid or incorrect 6-digit OTP code.")
-
-    if not user.otp_expires_at or user.otp_expires_at < datetime.now():
-        raise HTTPException(status_code=400, detail="OTP code has expired. Please request a new code.")
-
+def verify_forgot_password(payload: ForgotPasswordVerifyRequest, request: Request, db: Session = Depends(get_db)):
+    identifier = payload.email_or_username.strip().lower()
+    consume_limit(db, "reset-verify-peer", request.client.host if request.client else "unknown", 100, 900)
+    consume_limit(db, "reset-verify-account", identifier, 10, 900)
+    user = recovery_account(db, identifier)
+    denied = HTTPException(400, "Invalid or expired reset code. Request a new code if needed.")
+    if not user:
+        raise denied
+    db.refresh(user, with_for_update=True)
+    if not user.reset_otp_hash or not user.otp_request_id or not user.otp_expires_at or user.otp_expires_at <= utcnow() or user.otp_attempts >= 5:
+        clear_reset(user)
+        db.commit()
+        raise denied
+    user.otp_attempts += 1
+    expected = otp_verifier(user.id, user.otp_request_id, payload.otp)
+    if not secrets.compare_digest(user.reset_otp_hash, expected):
+        if user.otp_attempts >= 5:
+            clear_reset(user)
+        db.commit()
+        raise denied
     user.password_hash = hash_password(payload.new_password)
-    user.reset_otp = None
-    user.otp_expires_at = None
+    user.session_version += 1
+    clear_reset(user)
     db.commit()
-
     return {"status": "password_reset_success"}
+
+
+@app.post("/api/users/{user_id}/change-password")
+def change_password(user_id: int, payload: ChangePasswordRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
+    consume_limit(db, "change-password", str(actor.id), 5, 900)
+    db.refresh(actor, with_for_update=True)
+    if not verify_password(payload.current_password, actor.password_hash):
+        raise HTTPException(400, "Current password is incorrect.")
+    actor.password_hash = hash_password(payload.new_password)
+    actor.session_version += 1
+    clear_reset(actor)
+    db.commit()
+    return {"status": "password_changed", "access_token": create_access_token(actor.id, actor.session_version)}
+
+
+@app.post("/api/users/{user_id}/revoke-sessions")
+def revoke_sessions(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
+    db.refresh(actor, with_for_update=True)
+    actor.session_version += 1
+    db.commit()
+    return {"status": "sessions_revoked"}
 
 
 @app.post("/api/users/{user_id}/sync")

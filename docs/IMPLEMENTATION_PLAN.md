@@ -148,7 +148,7 @@ The earlier proposal to treat the signup toggle as a privacy opt-out is supersed
 |---|---|
 | Streak | Only the first accepted solve of a previously unsolved platform problem contributes to the streak. Repeats, revisions, failed attempts, sync/import time, and manual checkboxes do not extend it. A failed attempt followed by the first acceptance is still a first solve; “first” does not require acceptance on the first submission attempt. |
 | Unique questions | Multiple submissions of the same platform question always produce one question entry and one lifetime unique-solve count. Repeat-event evidence may exist privately for award eligibility, not as duplicate solved-question entries. |
-| Revision | An accepted repeat after at least one week can earn 2 extra revision points. It never adds another question entry or extends the streak. Record it as a separate award component. Cooldown recurrence/anchor and multiplier/stacking details remain open below. |
+| Revision | An accepted repeat after at least one week can earn 2 extra revision points. It never adds another question entry or extends the streak. Record it as a separate award component. Owner confirmed recurring eligibility seven days after the first solve or last rewarded revision; unrewarded attempts do not restart the clock. Multiplier/stacking details remain open below. |
 | Time | All product boundaries and displayed activity dates follow IST, including daily, weekly, monthly, streak, revision eligibility, and LeetStreak daily awards. Timestamp storage can remain UTC. Do not silently retain a UTC-reset exception in product behavior. |
 | Formula changes | Recalculate previous questions for all users under the same new base-point formula/version, rather than leaving older users on a frozen base scale. Preserve source inputs and revaluation history for audit/recovery. |
 | Earned daily points | Retain existing earned daily award amounts separately from the base points being revalued. Do not try to reconstruct or overwrite earned bonuses from incomplete old challenge archives. |
@@ -165,7 +165,7 @@ These are proposed defaults, not changes already made to user data or decisions 
 
 | Decision | Proposed default | Affected items |
 |---|---|---|
-| Revision cooldown | Decide whether revisions recur every week, and whether eligibility measures seven elapsed days since the first solve, last acceptance, or last rewarded revision. Do not assume these are equivalent. | DATA-09 |
+| Revision arithmetic | Cooldown is confirmed: recurring seven days since first solve/last rewarded revision; unrewarded acceptances do not restart it. Flat-vs-multiplied amount and daily stacking remain to settle. | DATA-09 |
 | Revision arithmetic and display | Clarify whether 2 is an exact unmultiplied award, whether it stacks with a daily bonus, and whether to show a separate revision subtotal inside the existing question entry. Repeats never count as new questions or streak days. | DATA-02, DATA-07–09 |
 | Daily eligibility for new users | Clarify whether “new users get base points only” applies to imported history only, or also excludes their future live daily solves; also settle repeated-daily eligibility. No retroactive imported daily bonuses either way. | DATA-08 |
 | IST daily question selection | Provider question publication may not align with IST midnight. Specify which question is pinned to each LeetStreak IST day before implementing challenge mapping/reminders; no silent UTC fallback. | DATA-06, DATA-08 |
@@ -185,7 +185,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 | M1-02 | SEC-01 account/group permissions + client session compatibility | Passed locally: 17 backend tests, 3 client session tests, 11 existing progress tests, both type checks/builds; archives synchronized. Owner transfer API added; UI work remains in M1-06. Branch commit: `M1 SEC-01 step 2: enforce account and group permissions`. Not deployed. |
 | M1-03 | SEC-02 fail-closed administration | Passed locally: 22 backend tests; every admin route guarded, production test-email route removed, reviewed release previews and durable duplicate-job guards. Commit labeled `M1 SEC-02 step 3`. Awaiting release; interrupted mail jobs require operator review. |
 | M1-04 | OPS-01 honest email outcomes | Passed locally: 28 backend tests, including mocked acceptance/rejection/failure/timeout, redacted logs, escaped templates, offloaded SMTP, and accepted-only release state updates. Commit labeled `M1 OPS-01 step 4`. No real messages sent; awaiting release. |
-| M1-05 | SEC-03 recovery abuse limits, password policy, session revocation | Not started |
+| M1-05 | SEC-03 recovery abuse limits, password policy, session revocation | Backend/local checks passed: 37 tests including recovery, revocation, and additive SQLite migration. Password/reset UI copy and client types updated; password-management settings UI follows M1-06. 3 client session checks, both type checks/builds passed; archives synchronized. Commit labeled `M1 SEC-03 step 5`. Production PostgreSQL migration/release remains pending. |
 | M1-06 | SEC-04 Global display-only preference and group/profile behavior | Not started |
 | M1-07 | SEC-05 synthetic fixture isolation + PUB-01–03 current-source cleanup | Not started |
 | M1-08 | PUB-04 private exposure inventory and concrete remediation proposal | Not started; shared-history rewriting requires approval of the resulting proposal. |
@@ -247,18 +247,18 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Return a generic initiation response and remove full-email disclosure. Make account lookup unambiguous; duplicate LeetCode handles must not reset an arbitrary account.
-- [ ] Add persisted request cooldowns, expiry, failed-attempt counters, and per-account/source abuse limits. Do not keep the only limiter in process memory.
-- [ ] Store an OTP verifier rather than plaintext; invalidate previous codes on resend and consume a valid code atomically once.
-- [ ] Define and enforce the same stronger password policy at registration and reset. Preserve existing users' login compatibility until they change passwords.
-- [ ] Add an account session version or equivalent revocation mechanism; password reset invalidates prior tokens.
+- [x] Return a generic initiation response and remove full-email disclosure. Make account lookup unambiguous; duplicate LeetCode handles must not reset an arbitrary account.
+- [x] Add persisted request cooldowns, expiry, failed-attempt counters, and per-account/source abuse limits. Do not keep the only limiter in process memory.
+- [x] Store an OTP verifier rather than plaintext; invalidate previous codes on resend and consume a valid code atomically once.
+- [x] Define and enforce the same stronger password policy at registration and reset. Preserve existing users' login compatibility until they change passwords.
+- [x] Add an account session version or equivalent revocation mechanism; password reset invalidates prior tokens.
 - [ ] Add authenticated password change and session-revocation UI where required to complete account management. Keep passwords/codes out of persisted drafts and logs.
 
 **Acceptance**
 
-- [ ] Existing/nonexistent-account reset requests do not disclose private identity data.
-- [ ] Cooldown, attempt exhaustion, expiry, resend, and concurrent reuse behave correctly.
-- [ ] Old tokens fail after a successful reset; new credentials work in both clients.
+- [x] Existing/nonexistent-account reset requests do not disclose private identity data.
+- [x] Cooldown, attempt exhaustion, expiry, resend, and concurrent reuse behave correctly.
+- [x] Old tokens fail after a successful reset; new credentials work in both clients.
 
 ### SEC-04 — Global display preference, profile access, and private groups
 
@@ -502,11 +502,11 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Files:** `backend/app/models.py`, provider ingestion/sync clients, `point_calculator.py`, score schemas; question/profile/help displays in both clients.
 
-**Depends on:** DATA-02–04, DATA-06–07, OPS-03 migration infrastructure. Settle cooldown anchor/recurrence and daily-bonus stacking before implementation.
+**Depends on:** DATA-02–04, DATA-06–07, OPS-03 migration infrastructure. Use the confirmed recurring seven-day first-solve/last-reward anchor; settle multiplier and daily-bonus stacking before implementation.
 
 **Implementation**
 
-- [ ] Record the original accepted problem identity and sufficient subsequent accepted-event timestamps/IDs to prove eligible revisions. Resolve whether rewards recur and whether the seven-day anchor is first solve, last acceptance, or last rewarded revision.
+- [ ] Record the original accepted problem identity and sufficient subsequent accepted-event timestamps/IDs to prove eligible revisions. Rewards recur at least seven days after the first solve or last rewarded revision. Unrewarded attempts do not restart the clock.
 - [ ] Record a separate revision award for 2 points linked to the original question entry; never duplicate the solve row, increment new-question counts, or extend the streak.
 - [ ] Confirm whether 2 is an exact flat amount or subject to any multiplier and whether a revision may also earn a daily bonus. Do not silently apply existing base/streak arithmetic to it.
 - [ ] Add transactional uniqueness/idempotency so repeated polls, concurrent syncs, and replayed submissions cannot reward the same revision twice. Define which event wins when several eligible acceptances arrive in one batch.

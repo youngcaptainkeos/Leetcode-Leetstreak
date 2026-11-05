@@ -39,6 +39,24 @@ identity, issued-at time, and unexpired expiry. Malformed input must be a contro
 authentication error, not a server error. Session revocation/account existence
 checks are added by the route/session implementation steps.
 
+Password recovery now returns the same generic response for a known, missing, or
+ambiguous handle, without exposing its email. Use the registered email when a
+LeetCode handle is shared. Codes expire after 15 minutes, allow five incorrect
+attempts, and are stored as account/request-bound keyed verifiers. A resend
+invalidates the old code; a 60-second resend cooldown prevents repeated sends.
+Persisted HMAC-keyed counters also limit per-account/per-peer requests and login
+attempts. They do not trust a raw client-supplied forwarding header.
+
+New/reset passwords allow 15–100 characters with no required symbol/capital
+recipe and reject a small baseline list of common values. This is not a claim of
+complete compromised-password screening. Existing short passwords remain usable
+until changed. Session versions revoke old tokens after reset/change or explicit
+sign-out-all. Authenticated password change issues a replacement current-session
+token; the other sessions are invalidated. Migration `20261105-auth-v1` adds only
+authentication fields and invalidates old plaintext reset codes; solve history
+and points are not changed. Local migration checks cover SQLite; production
+PostgreSQL migration validation remains a release prerequisite.
+
 ## Local verification
 
 Administrative requests require a separately generated `ADMIN_SECRET` of at least

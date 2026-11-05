@@ -1,6 +1,15 @@
 from datetime import date, datetime
 from typing import List, Optional, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+import re
+
+
+def validate_new_password(value: str) -> str:
+    if len(value) < 15 or len(value) > 100:
+        raise ValueError("Use a password or passphrase with 15 to 100 characters.")
+    if value.lower() in {"123456789012345", "passwordpassword", "qwertyqwertyqwerty"}:
+        raise ValueError("Choose a less common password or passphrase.")
+    return value
 
 
 class PointBreakdownSchema(BaseModel):
@@ -40,8 +49,18 @@ class RegisterRequest(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     leetcode_username: str = Field(min_length=1, max_length=80)
     email: str = Field(min_length=3, max_length=120)
-    password: str = Field(min_length=4, max_length=100)
+    password: str = Field(min_length=15, max_length=100)
     global_leaderboard_enabled: bool = True
+
+    _password_policy = field_validator("password")(validate_new_password)
+
+    @field_validator("email")
+    @classmethod
+    def email_format(cls, value):
+        value = value.strip().lower()
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", value):
+            raise ValueError("Enter a valid email address.")
+        return value
 
 
 class LoginRequest(BaseModel):
@@ -55,8 +74,15 @@ class ForgotPasswordInitiateRequest(BaseModel):
 
 class ForgotPasswordVerifyRequest(BaseModel):
     email_or_username: str = Field(min_length=1, max_length=120)
-    otp: str = Field(min_length=6, max_length=6)
-    new_password: str = Field(min_length=4, max_length=100)
+    otp: str = Field(pattern=r"^[0-9]{6}$")
+    new_password: str = Field(min_length=15, max_length=100)
+    _password_policy = field_validator("new_password")(validate_new_password)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=100)
+    new_password: str = Field(min_length=15, max_length=100)
+    _password_policy = field_validator("new_password")(validate_new_password)
 
 
 class UpdateUsernameRequest(BaseModel):

@@ -18,6 +18,11 @@ class User(Base):
     password_hash = Column(String(200), nullable=True)
     reset_otp = Column(String(6), nullable=True)
     otp_expires_at = Column(DateTime, nullable=True)
+    session_version = Column(Integer, nullable=False, default=0, server_default="0")
+    reset_otp_hash = Column(String(64), nullable=True)
+    otp_request_id = Column(String(64), nullable=True)
+    otp_attempts = Column(Integer, nullable=False, default=0, server_default="0")
+    otp_last_requested_at = Column(DateTime, nullable=True)
     avatar_url = Column(String(500), nullable=True)
     codeforces_username = Column(String(80), nullable=True)
     codeforces_linked_at = Column(DateTime, nullable=True)
@@ -150,3 +155,11 @@ class AdminOperation(Base):
     state = Column(String(20), nullable=False)
     started_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     finished_at = Column(DateTime, nullable=True)
+
+
+class AuthLimit(Base):
+    """Fixed-window attempt counter keyed by HMAC, never raw email/IP/username."""
+    __tablename__ = "auth_limits"
+    bucket_key = Column(String(64), primary_key=True)
+    window_started_at = Column(DateTime, nullable=False, index=True)
+    attempts = Column(Integer, nullable=False, default=0)

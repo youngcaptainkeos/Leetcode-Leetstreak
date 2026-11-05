@@ -171,12 +171,12 @@ function Onboarding({
     onError(null);
     try {
       const res = await api.initiateForgotPassword(username.trim());
-      setSentEmail(res.email);
+      setSentEmail("your registered email");
       setForgotStep(2);
-      setSuccessMsg(`Sent 6-digit code to ${res.email}`);
+      setSuccessMsg(res.message);
       await setStored("codestreak_auth_mode", "forgot");
       await setStored("codestreak_forgot_step", "2");
-      await setStored("codestreak_sent_email", res.email);
+      await clearStored(["codestreak_sent_email"]);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Could not send reset code.");
     } finally {
@@ -329,7 +329,9 @@ function Onboarding({
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 4 characters"
+                placeholder="At least 15 characters"
+                minLength={15}
+                maxLength={100}
                 required
               />
             </label>
@@ -434,7 +436,9 @@ function Onboarding({
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="New password"
+                    placeholder="At least 15 characters"
+                    minLength={15}
+                    maxLength={100}
                     required
                   />
                 </label>
