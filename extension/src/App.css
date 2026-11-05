@@ -2358,186 +2358,66 @@ input:focus, form input:focus {
    Clean Redesigned Settings Panel (Material 3 / Modern iOS Aesthetic)
    ========================================================================== */
 
-.settings-modal {
-  width: 350px !important;
-  max-width: 95vw !important;
-  max-height: calc(100vh - 20px) !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  padding: 13px 14px 14px 14px !important;
-  gap: 9px !important;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+/* Settings uses the extension's existing dark surfaces, chips, and tab menu. */
+.modal-content.settings-modal {
+  width:356px; max-width:100%; padding:16px; gap:12px;
+  max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px);
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  overflow:hidden !important;
 }
+.settings-modal > .modal-header { flex:none; display:flex; align-items:center; justify-content:space-between; margin:0; padding:0; gap:12px; }
+.settings-modal > .modal-header h3 { margin:0; font:600 17px/1.4 var(--md-ref-typeface-brand); }
+.settings-modal > .modal-header .modal-close { position:static; flex:none; width:28px; height:28px; padding:0; margin:0; display:grid; place-items:center; transform:none; }
+.settings-user-card { flex:none; display:flex; align-items:center; padding:12px; background:var(--surface-low); border:1px solid var(--border); border-radius:12px; }
+.settings-user-left { display:flex; align-items:center; gap:10px; min-width:0; width:100%; }
+.settings-avatar,.settings-avatar-placeholder { width:34px; height:34px; flex:none; border-radius:50%; object-fit:cover; border:1px solid var(--primary-border); }
+.settings-avatar-placeholder { display:grid; place-items:center; background:var(--primary-container); color:var(--primary); font-weight:600; }
+.settings-user-meta { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.settings-user-name { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:var(--text-primary); font:600 13px/1.4 var(--md-ref-typeface-brand); }
+.settings-user-handle { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:var(--text-secondary); font-size:10px; text-decoration:none; }
+.settings-user-handle:hover { color:var(--primary); }
+.settings-nav.practice-menu { flex:none; margin:0; border-radius:12px; }
+.settings-nav.practice-menu button { padding:9px 8px; }
+.settings-body { min-height:0; display:flex; flex-direction:column; gap:12px; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--border) transparent; padding-right:3px; }
+.settings-body > * { flex-shrink:0; }
+.settings-page:not([hidden]) { display:flex; flex-direction:column; gap:16px; }
+.settings-page[hidden] { display:none; }
+.settings-section { display:flex; flex-direction:column; gap:8px; margin:0; }
+.settings-section-title { color:var(--text-secondary); font:600 11px/1.4 var(--md-ref-typeface-brand); text-transform:uppercase; letter-spacing:.5px; padding-left:2px; }
+.settings-card { display:flex; flex-direction:column; gap:12px; padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--surface-low); }
+.settings-row { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:34px; }
+.settings-row + .settings-row { border-top:1px solid var(--border); padding-top:12px; }
+.settings-row-text { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.settings-row-label { color:var(--text-primary); font-size:11px; font-weight:600; line-height:1.5; }
+.settings-row-caption,.settings-input-hint { display:block; color:var(--text-secondary); font-size:10px; line-height:1.6; overflow-wrap:anywhere; }
+.settings-modal .startup-tab-select { width:112px; min-width:112px; max-width:112px; padding:7px 8px; border-radius:8px; background:var(--surface); color:var(--text-primary); border:1px solid var(--border); font-size:10px; }
+.settings-account-heading { display:flex; align-items:center; gap:9px; }
+.settings-site-icon { display:grid; place-items:center; width:28px; height:28px; flex:none; border:1px solid var(--border); border-radius:8px; font-size:10px; font-weight:700; }
+.settings-site-lc { color:var(--streak); background:var(--streak-container); }
+.settings-site-cf { color:var(--primary); background:var(--primary-container); }
+.settings-account-heading h4 { margin:0; color:var(--text-primary); font:600 13px/1.4 var(--md-ref-typeface-brand); }
+.settings-account-heading div > span { display:block; margin-top:2px; color:var(--text-muted); font-size:10px; }
+.settings-username-form { display:flex; flex-direction:column; gap:8px; margin:0; width:100%; }
+.settings-input-wrapper { display:flex; align-items:center; gap:6px; min-height:36px; padding:4px 4px 4px 10px; background:var(--surface); border:1px solid var(--border); border-radius:9px; }
+.settings-input-wrapper:focus-within { border-color:var(--primary); }
+.settings-input-prefix { color:var(--text-muted); font-size:11px; }
+.settings-modal .settings-text-input { flex:1; width:0; min-width:0; padding:5px 0 !important; background:transparent !important; border:0 !important; border-radius:0 !important; outline:none; color:var(--text-primary) !important; font-size:11px !important; }
+.settings-modal .settings-action-btn.chip-btn { flex:none; padding:5px 9px !important; background:var(--surface-high) !important; color:var(--text-primary) !important; border:1px solid var(--border) !important; font-size:10px !important; font-weight:600 !important; }
+.settings-action-btn:disabled { opacity:.45; cursor:default; }
+.settings-modal .username-help-link-btn { margin:0 !important; padding:0 !important; font:500 10px/1.6 var(--md-ref-typeface-plain) !important; color:var(--primary) !important; text-decoration:none; }
+.settings-delete-btn.chip-btn { flex:none; color:var(--hard); font-size:10px; }
+.settings-legal-footer { padding-top:2px; display:flex; flex-direction:column; gap:8px; text-align:center; }
+.settings-legal-links { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:7px; font-size:10px; }
+.settings-legal-links a { color:var(--text-secondary); text-decoration:none; }
+.settings-legal-links a:hover { color:var(--primary); }
+.settings-legal-links > span { color:var(--text-muted); }
+.settings-legal-disclaimer { margin:0; color:var(--text-muted); font-size:9px; line-height:1.5; }
+.settings-footer { flex:none; display:flex; align-items:center; justify-content:space-between; gap:8px; border-top:1px solid var(--border); padding-top:12px; }
+.settings-footer .chip-btn { padding:7px 13px; }
+.settings-done-btn.chip-btn { background:var(--primary-container); border-color:var(--primary-border); color:var(--primary); }
+.settings-msg-banner { border:1px solid var(--primary-border); border-radius:10px; background:var(--primary-container); padding:10px; color:var(--text-primary); font-size:10px; line-height:1.6; }
+.settings-modal :is(button,input,select,a):focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
 
-.settings-modal::-webkit-scrollbar {
-  width: 4px;
-}
-
-.settings-modal::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-}
-
-.settings-msg-banner {
-  background-color: var(--primary-container);
-  color: #DDD6FE;
-  border: 1px solid var(--primary-border);
-  padding: 8px 12px;
-  border-radius: var(--md-shape-corner-medium);
-  font-size: 11px;
-  font-weight: 600;
-  text-align: center;
-  animation: fadeIn 0.2s ease-out;
-}
-
-/* 1. User Profile Snippet */
-.settings-user-card {
-  background-color: var(--surface-high);
-  border: 1px solid var(--border);
-  border-radius: var(--md-shape-corner-medium);
-  padding: 8px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.settings-user-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.settings-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1.5px solid var(--primary);
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.settings-avatar-placeholder {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), #7C3AED);
-  color: #FFFFFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-.settings-user-meta {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.settings-user-name {
-  font-family: var(--md-ref-typeface-brand);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.settings-user-handle {
-  font-size: 11px;
-  color: var(--primary);
-  text-decoration: none;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.settings-user-handle:hover {
-  text-decoration: underline;
-}
-
-.settings-logout-btn {
-  background-color: var(--surface-highest);
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--md-shape-corner-full);
-  padding: 6px 12px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: all 0.15s ease;
-}
-
-.settings-logout-btn:hover {
-  background-color: var(--surface-low);
-  color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-/* 2. Semantic Settings Sections */
-.settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.settings-section-title {
-  font-size: 9.5px;
-  font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  padding-left: 2px;
-}
-
-.settings-card {
-  background-color: var(--surface-high);
-  border: 1px solid var(--border);
-  border-radius: var(--md-shape-corner-medium);
-  padding: 9px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Rows with Switch / Actions */
-.settings-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.settings-row-text {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.settings-row-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: 0.1px;
-}
-
-.settings-row-caption {
-  font-size: 11px;
-  color: var(--text-secondary);
-  line-height: 1.35;
-}
-
-/* iOS / Material 3 Switch */
 .settings-switch {
   position: relative;
   display: inline-block;
@@ -2548,6 +2428,8 @@ input:focus, form input:focus {
 }
 
 .settings-switch input {
+  padding: 0 !important;
+  border: 0 !important;
   opacity: 0;
   width: 0;
   height: 0;
@@ -2596,161 +2478,7 @@ input:focus, form input:focus {
   cursor: not-allowed;
 }
 
-/* Inline LeetCode Username Input Group */
-.settings-username-form {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
 
-.settings-input-wrapper {
-  display: flex;
-  align-items: center;
-  background-color: var(--surface-highest);
-  border: 1px solid var(--border);
-  border-radius: var(--md-shape-corner-medium);
-  padding: 3px 4px 3px 10px;
-  gap: 6px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.settings-input-wrapper:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.15);
-}
-
-.settings-input-prefix {
-  color: var(--text-muted);
-  font-weight: 700;
-  font-size: 13px;
-  user-select: none;
-}
-
-.settings-text-input {
-  flex: 1;
-  background: transparent !important;
-  border: none !important;
-  outline: none !important;
-  color: var(--text-primary) !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  padding: 6px 0 !important;
-  min-width: 0;
-}
-
-.settings-action-btn {
-  background-color: var(--primary);
-  color: #111318;
-  border: none;
-  border-radius: var(--md-shape-corner-full);
-  padding: 6px 14px;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.settings-action-btn:hover:not(:disabled) {
-  opacity: 0.92;
-  box-shadow: 0 2px 6px rgba(167, 139, 250, 0.3);
-}
-
-.settings-action-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  background-color: var(--surface-low);
-  color: var(--text-muted);
-}
-
-.settings-input-hint {
-  font-size: 10.5px;
-  color: var(--text-muted);
-  line-height: 1.35;
-  padding-left: 2px;
-}
-
-/* Danger Zone */
-.danger-section .danger-label {
-  color: #EF4444;
-}
-
-.danger-card {
-  border-color: rgba(239, 68, 68, 0.25);
-  background-color: rgba(239, 68, 68, 0.04);
-}
-
-.danger-text {
-  color: #F87171;
-}
-
-.settings-delete-btn {
-  background-color: rgba(239, 68, 68, 0.12);
-  color: #F87171;
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  border-radius: var(--md-shape-corner-full);
-  padding: 6px 12px;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-
-.settings-delete-btn:hover {
-  background-color: #EF4444;
-  color: #FFFFFF;
-  border-color: #EF4444;
-}
-
-/* 3. Sleek Legal Footer */
-.settings-legal-footer {
-  padding-top: 6px;
-  margin-top: 2px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.settings-legal-links {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 10.5px;
-  font-weight: 600;
-}
-
-.settings-legal-links a {
-  color: #38bdf8;
-  text-decoration: none;
-  transition: opacity 0.15s;
-}
-
-.settings-legal-links a:hover {
-  text-decoration: underline;
-  opacity: 0.85;
-}
-
-.settings-legal-links span {
-  color: var(--text-muted);
-  opacity: 0.5;
-}
-
-.settings-legal-disclaimer {
-  font-size: 9.5px;
-  color: var(--text-muted);
-  opacity: 0.75;
-  line-height: 1.35;
-  margin: 0;
-}
-
-/* ==========================================================================
-   💡 LEETCODE USERNAME HELP POPUP & MODAL
-   ========================================================================== */
 .username-help-link-btn {
   background: transparent !important;
   border: none !important;
@@ -3114,37 +2842,3 @@ input:focus, form input:focus {
 .diff-pills { grid-template-columns:repeat(5,minmax(0,1fr)); }
 .diff-pills .diff-pill { min-width:0; padding:6px 1px; font-size:9.5px; }
 .modal-content.profile-stats-modal { max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); overflow-y:auto !important; }
-
-/* Account settings: one spacing scale and an independent scrolling body. */
-.modal-content.settings-modal {
-  padding:16px !important;
-  gap:14px !important;
-  max-height:calc(100vh - 24px) !important;
-  max-height:calc(100dvh - 24px) !important;
-  overflow:hidden !important;
-}
-.settings-modal > .modal-header { flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0; padding:0 0 12px; border-bottom:1px solid var(--border); }
-.settings-modal > .modal-header h3 { margin:0; font:600 16px/1.3 var(--md-ref-typeface-brand); }
-.settings-modal > .modal-header .modal-close { position:static; display:grid; place-items:center; width:28px; height:28px; flex:0 0 28px; margin:0; padding:0; transform:none; }
-.settings-body { display:flex; flex-direction:column; gap:16px; min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--border) transparent; padding-right:4px; }
-.settings-body > * { flex-shrink:0; }
-.settings-modal .settings-section { gap:8px; margin:0; }
-.settings-modal .settings-section-title { padding:0 2px; font-size:10px; line-height:1.4; letter-spacing:.7px; }
-.settings-modal .settings-card,.settings-modal .settings-user-card { padding:12px; border-radius:12px; }
-.settings-modal .settings-card { gap:10px; }
-.settings-modal .settings-user-left { flex:1; gap:10px; }
-.settings-modal .settings-user-meta { gap:3px; }
-.settings-modal .settings-row { gap:12px; min-height:36px; }
-.settings-modal .settings-row + .settings-row { border-top:1px solid var(--border); padding-top:12px; margin-top:2px; }
-.settings-modal .settings-row-label { font-size:12px; line-height:1.4; }
-.settings-modal .settings-row-caption,.settings-modal .settings-input-hint { display:block; padding:0; font-size:11px; line-height:1.5; overflow-wrap:anywhere; }
-.settings-modal .settings-username-form { margin:0; gap:10px; }
-.settings-modal .settings-input-wrapper { min-height:40px; padding:4px 4px 4px 10px; gap:6px; border-radius:10px; }
-.settings-modal .settings-text-input { width:0; min-width:0; font-size:12px !important; font-family:var(--md-ref-typeface-plain); }
-.settings-modal .settings-action-btn,.settings-modal .settings-logout-btn,.settings-modal .settings-delete-btn { min-height:30px; padding:6px 10px; font:600 11px/1.3 var(--md-ref-typeface-plain); border-radius:8px; }
-.settings-modal .startup-tab-select { min-height:34px; padding:6px 8px; font:500 11px var(--md-ref-typeface-plain); }
-.settings-modal .username-help-link-btn { margin:0 !important; padding:2px 0 !important; font:500 11px/1.5 var(--md-ref-typeface-plain) !important; text-decoration:none; max-width:100%; }
-.settings-modal .settings-legal-footer { margin:0; padding-top:12px; gap:8px; }
-.settings-modal .settings-legal-links { flex-wrap:wrap; gap:6px; line-height:1.5; }
-.settings-modal .settings-legal-disclaimer { font-size:10px; line-height:1.5; }
-.settings-modal .settings-msg-banner { margin:0; padding:10px 12px; line-height:1.5; text-align:left; }

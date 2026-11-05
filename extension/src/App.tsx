@@ -733,6 +733,7 @@ function Dashboard({
 
   // Settings & Coffee Modal States
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsPage, setSettingsPage] = useState<"general" | "accounts">("general");
   const [showCoffeeModal, setShowCoffeeModal] = useState(false);
   const [showUsernameHelpModal, setShowUsernameHelpModal] = useState(false);
   const [newLeetcodeUsername, setNewLeetcodeUsername] = useState("");
@@ -1882,7 +1883,7 @@ function Dashboard({
         <div className="modal-overlay" onClick={() => setShowSettings(false)}>
           <div className="modal-content settings-modal" role="dialog" aria-modal="true" aria-labelledby="account-settings-title" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 id="account-settings-title">Account Settings</h3>
+              <h3 id="account-settings-title">Settings</h3>
               <button
                 className="modal-close"
                 onClick={() => setShowSettings(false)}
@@ -1891,9 +1892,6 @@ function Dashboard({
                 ✕
               </button>
             </div>
-
-            <div className="settings-body">
-            {settingsMsg && <div className="settings-msg-banner">{settingsMsg}</div>}
 
             {/* Profile Summary Card */}
             <div className="settings-user-card">
@@ -1918,22 +1916,18 @@ function Dashboard({
                   </a>
                 </div>
               </div>
-              <button
-                type="button"
-                className="settings-logout-btn"
-                onClick={() => {
-                  setShowSettings(false);
-                  onResetUser();
-                }}
-                title="Log Out of this device"
-              >
-                🚪 Log Out
-              </button>
+
             </div>
 
+            <div className="practice-menu settings-nav" role="tablist" aria-label="Settings sections">
+              {([['general', 'General'], ['accounts', 'Accounts']] as const).map(([id, label]) => <button type="button" key={id} id={`settings-tab-${id}`} role="tab" aria-selected={settingsPage === id} aria-controls={`settings-panel-${id}`} tabIndex={settingsPage === id ? 0 : -1} onClick={() => setSettingsPage(id)} onKeyDown={event => { if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); const next = id === "general" ? "accounts" : "general"; setSettingsPage(next); document.getElementById(`settings-tab-${next}`)?.focus(); } }}>{label}</button>)}
+            </div>
+            <div className="settings-body">
+              {settingsMsg && <div className="settings-msg-banner" role="status">{settingsMsg}</div>}
+              <div className="settings-page" id="settings-panel-general" role="tabpanel" aria-labelledby="settings-tab-general" hidden={settingsPage !== "general"}>
             {/* Section: PREFERENCES */}
             <div className="settings-section">
-              <div className="settings-section-title">PREFERENCES</div>
+              <div className="settings-section-title">Preferences</div>
               <div className="settings-card">
                 <div className="settings-row">
                   <div className="settings-row-text"><span className="settings-row-label">Startup tab</span><span className="settings-row-caption">Choose what opens with the extension</span></div>
@@ -1945,7 +1939,7 @@ function Dashboard({
                 </div>
                 <div className="settings-row">
                   <div className="settings-row-text">
-                    <span className="settings-row-label">🌐 Global Leaderboard</span>
+                    <span className="settings-row-label">Global leaderboard</span>
                     <span className="settings-row-caption">
                       {dash?.global_leaderboard_enabled !== false
                         ? "Visible publicly on global rankings"
@@ -1972,66 +1966,9 @@ function Dashboard({
               </div>
             </div>
 
-            {/* Section: LEETCODE ACCOUNT */}
-            <div className="settings-section">
-              <div className="settings-section-title">LEETCODE ACCOUNT</div>
-              <div className="settings-card">
-                <form onSubmit={handleUpdateUsername} className="settings-username-form">
-                  <div className="settings-input-wrapper">
-                    <span className="settings-input-prefix">@</span>
-                    <input
-                      aria-label="LeetCode username"
-                      value={newLeetcodeUsername}
-                      onChange={(e) => setNewLeetcodeUsername(e.target.value)}
-                      placeholder="Username"
-                      className="settings-text-input"
-                      required
-                    />
-                    <button
-                      type="submit"
-                      className="settings-action-btn"
-                      disabled={
-                        updatingUsername ||
-                        !newLeetcodeUsername.trim() ||
-                        newLeetcodeUsername.trim() === dash.leetcode_username
-                      }
-                    >
-                      {updatingUsername ? "Saving…" : "Update"}
-                    </button>
-                  </div>
-                  <span className="settings-input-hint">
-                    Syncs your public LeetCode solves and streak.
-                  </span>
-                </form>
-                <button
-                  type="button"
-                  className="username-help-link-btn"
-                  onClick={() => setShowUsernameHelpModal(true)}
-                >
-                  💡 Need help finding your LeetCode username?
-                </button>
-              </div>
-            </div>
-
-            <div className="settings-section">
-              <div className="settings-section-title">CODEFORCES ACCOUNT</div>
-              <div className="settings-card">
-                <form onSubmit={handleUpdateCodeforces} className="settings-username-form">
-                  <div className="settings-input-wrapper">
-                    <span className="settings-input-prefix">@</span>
-                    <input aria-label="Codeforces username" value={newCodeforcesUsername} onChange={e => setNewCodeforcesUsername(e.target.value)} placeholder={dash.codeforces_username || "Codeforces handle"} className="settings-text-input" maxLength={24} required />
-                    <button type="submit" className="settings-action-btn" disabled={updatingCodeforces || !newCodeforcesUsername.trim()}>{updatingCodeforces ? "Connecting…" : dash.codeforces_username ? "Update" : "Connect"}</button>
-                  </div>
-                  <span className="settings-input-hint">{dash.codeforces_username ? `Connected: @${dash.codeforces_username}. ` : ""}Public accepted solves sync automatically with your points and streak.</span>
-                  {dash.codeforces_username && <span className="settings-input-hint" role="status">{dash.codeforces_sync_error || (dash.codeforces_last_sync ? `Last synced ${new Date(dash.codeforces_last_sync + (/Z|[+-]\d\d:\d\d$/.test(dash.codeforces_last_sync) ? "" : "+05:30")).toLocaleString()}` : "Importing public history… Scores will update automatically.")}</span>}
-                </form>
-                <a className="username-help-link-btn" href="https://codeforces.com/" target="_blank" rel="noreferrer">Open Codeforces ↗</a>
-              </div>
-            </div>
-
             {/* Section: DANGER ZONE */}
             <div className="settings-section danger-section">
-              <div className="settings-section-title danger-label">DANGER ZONE</div>
+              <div className="settings-section-title danger-label">Account</div>
               <div className="settings-card danger-card">
                 <div className="settings-row">
                   <div className="settings-row-text">
@@ -2042,7 +1979,7 @@ function Dashboard({
                   </div>
                   <button
                     type="button"
-                    className="settings-delete-btn"
+                    className="chip-btn settings-delete-btn"
                     onClick={() => {
                       setShowSettings(false);
                       setDeletePassword("");
@@ -2087,6 +2024,78 @@ function Dashboard({
                 Independent open-source project. Not affiliated with LeetCode LLC.
               </p>
             </div>
+              </div>
+              <div className="settings-page" id="settings-panel-accounts" role="tabpanel" aria-labelledby="settings-tab-accounts" hidden={settingsPage !== "accounts"}>
+            {/* Section: LEETCODE ACCOUNT */}
+            <div className="settings-section">
+              <div className="settings-card settings-account-card"><div className="settings-account-heading"><span className="settings-site-icon settings-site-lc" aria-hidden="true">LC</span><div><h4>LeetCode</h4><span>Connected</span></div></div>
+                <form onSubmit={handleUpdateUsername} className="settings-username-form">
+                  <div className="settings-input-wrapper">
+                    <span className="settings-input-prefix">@</span>
+                    <input
+                      aria-label="LeetCode username"
+                      value={newLeetcodeUsername}
+                      onChange={(e) => setNewLeetcodeUsername(e.target.value)}
+                      placeholder="Username"
+                      className="settings-text-input"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      className="chip-btn settings-action-btn"
+                      disabled={
+                        updatingUsername ||
+                        !newLeetcodeUsername.trim() ||
+                        newLeetcodeUsername.trim() === dash.leetcode_username
+                      }
+                    >
+                      {updatingUsername ? "Saving…" : "Update"}
+                    </button>
+                  </div>
+                  <span className="settings-input-hint">
+                    Syncs your public LeetCode solves and streak.
+                  </span>
+                </form>
+                <button
+                  type="button"
+                  className="username-help-link-btn"
+                  onClick={() => setShowUsernameHelpModal(true)}
+                >
+                  💡 Need help finding your LeetCode username?
+                </button>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <div className="settings-card settings-account-card"><div className="settings-account-heading"><span className="settings-site-icon settings-site-cf" aria-hidden="true">CF</span><div><h4>Codeforces</h4><span>{dash.codeforces_username ? "Connected" : "Optional account"}</span></div></div>
+                <form onSubmit={handleUpdateCodeforces} className="settings-username-form">
+                  <div className="settings-input-wrapper">
+                    <span className="settings-input-prefix">@</span>
+                    <input aria-label="Codeforces username" value={newCodeforcesUsername} onChange={e => setNewCodeforcesUsername(e.target.value)} placeholder={dash.codeforces_username || "Codeforces handle"} className="settings-text-input" maxLength={24} required />
+                    <button type="submit" className="chip-btn settings-action-btn" disabled={updatingCodeforces || !newCodeforcesUsername.trim()}>{updatingCodeforces ? "Connecting…" : dash.codeforces_username ? "Update" : "Connect"}</button>
+                  </div>
+                  <span className="settings-input-hint">{dash.codeforces_username ? `Connected: @${dash.codeforces_username}. ` : ""}Public accepted solves sync automatically with your points and streak.</span>
+                  {dash.codeforces_username && <span className="settings-input-hint" role="status">{dash.codeforces_sync_error || (dash.codeforces_last_sync ? `Last synced ${new Date(dash.codeforces_last_sync + (/Z|[+-]\d\d:\d\d$/.test(dash.codeforces_last_sync) ? "" : "+05:30")).toLocaleString()}` : "Importing public history… Scores will update automatically.")}</span>}
+                </form>
+                <a className="username-help-link-btn" href="https://codeforces.com/" target="_blank" rel="noreferrer">Open Codeforces ↗</a>
+              </div>
+            </div>
+
+              </div>
+            </div>
+            <div className="settings-footer">
+              <button
+                type="button"
+                className="chip-btn settings-logout-btn"
+                onClick={() => {
+                  setShowSettings(false);
+                  onResetUser();
+                }}
+                title="Log Out of this device"
+              >
+                Log out
+              </button>
+              <button type="button" className="chip-btn settings-done-btn" onClick={() => setShowSettings(false)}>Done</button>
             </div>
           </div>
         </div>
