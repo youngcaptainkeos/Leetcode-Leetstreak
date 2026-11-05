@@ -231,6 +231,21 @@ def migrate_verification(target):
         connection.execute(versions.insert().values(version=version))
 
 
+def migrate_friendships(target):
+    """
+    Direct user-to-user friendships and pending requests.
+    Version: 20261106-friendships-v1
+    """
+    from .models import Friendship
+
+    with migration_connection(target) as connection:
+        version = "20261106-friendships-v1"
+        if connection.execute(versions.select().where(versions.c.version == version)).first():
+            return
+        Friendship.__table__.create(connection, checkfirst=True)
+        connection.execute(versions.insert().values(version=version))
+
+
 def run_all_migrations(target):
     """
     Run all pending migrations in an atomic transaction under advisory lock on PostgreSQL.
@@ -244,5 +259,6 @@ def run_all_migrations(target):
         migrate_tracking(connection)
         migrate_progress(connection)
         migrate_verification(connection)
+        migrate_friendships(connection)
 
 

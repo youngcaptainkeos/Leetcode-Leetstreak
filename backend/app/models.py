@@ -268,3 +268,23 @@ class UserCustomPlan(Base):
         Index("ix_user_custom_plans_user_slug", "user_id", "slug"),
     )
 
+
+class Friendship(Base):
+    """Direct user-to-user friendship and pending request state."""
+    __tablename__ = "friendships"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    friend_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    status = Column(String(20), nullable=False, default="pending", server_default="pending", index=True)
+    created_at = Column(DateTime, server_default=func.now(), default=utc_now)
+    updated_at = Column(DateTime, server_default=func.now(), default=utc_now, onupdate=utc_now)
+
+    user = relationship("User", foreign_keys=[user_id], backref="sent_friend_requests")
+    friend = relationship("User", foreign_keys=[friend_id], backref="received_friend_requests")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "friend_id", name="uq_friendship_user_friend"),
+        Index("ix_friendship_status_pair", "user_id", "friend_id", "status"),
+    )
+

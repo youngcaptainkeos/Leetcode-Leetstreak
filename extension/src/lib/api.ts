@@ -222,6 +222,41 @@ export interface GroupListResponse {
   groups: GroupResponse[];
 }
 
+export interface FriendSummary {
+  id: number;
+  name: string;
+  leetcode_username: string;
+  codeforces_username?: string;
+  avatar_url?: string;
+  leetcode_verified?: boolean;
+  codeforces_verified?: boolean;
+  points?: number;
+  current_streak?: number;
+}
+
+export interface FriendRequestItem {
+  id: number;
+  user: FriendSummary;
+  created_at: string;
+}
+
+export interface FriendsListResponse {
+  friends: FriendSummary[];
+  incoming_requests: FriendRequestItem[];
+  outgoing_requests: FriendRequestItem[];
+}
+
+export interface UserSearchResult {
+  id: number;
+  name: string;
+  leetcode_username: string;
+  codeforces_username?: string;
+  avatar_url?: string;
+  leetcode_verified: boolean;
+  codeforces_verified: boolean;
+  friendship_status?: "friends" | "pending_sent" | "pending_received" | null;
+}
+
 export const AUTH_EXPIRED = "leetstreak:auth-expired";
 
 export class ApiError extends Error {
@@ -393,6 +428,29 @@ export const api = {
     }),
   verificationStatus: (userId: number) =>
     request<VerificationStatusResponse>(`/users/${userId}/verify-handle/status`),
+  searchUsers: (query: string) => request<UserSearchResult[]>(`/users/search?q=${encodeURIComponent(query)}`),
+  getFriends: (userId: number) => request<FriendsListResponse>(`/users/${userId}/friends`),
+  sendFriendRequest: (userId: number, target: string) =>
+    request<{ status: string; message: string }>(`/users/${userId}/friends/request`, {
+      method: "POST",
+      body: JSON.stringify({ target }),
+    }),
+  acceptFriendRequest: (userId: number, requestId: number) =>
+    request<{ status: string; message: string }>(`/users/${userId}/friends/${requestId}/accept`, {
+      method: "POST",
+    }),
+  declineFriendRequest: (userId: number, requestId: number) =>
+    request<{ status: string; message: string }>(`/users/${userId}/friends/${requestId}/decline`, {
+      method: "POST",
+    }),
+  cancelFriendRequest: (userId: number, requestId: number) =>
+    request<{ status: string; message: string }>(`/users/${userId}/friends/${requestId}/cancel`, {
+      method: "POST",
+    }),
+  removeFriend: (userId: number, targetUserId: number) =>
+    request<{ status: string; message: string }>(`/users/${userId}/friends/${targetUserId}`, {
+      method: "DELETE",
+    }),
 };
 
 

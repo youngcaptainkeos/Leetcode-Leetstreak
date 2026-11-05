@@ -15,13 +15,13 @@ from .legal_pages import PRIVACY_HTML, TERMS_HTML
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from sqlalchemy import text, func
+from sqlalchemy import text, func, or_, and_
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from .config import CORS_ORIGINS, ADMIN_SECRET
 from .database import Base, engine, get_db, SessionLocal
-from .models import AdminOperation, User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge, UserProgress, UserCustomPlan
+from .models import AdminOperation, User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge, UserProgress, UserCustomPlan, Friendship
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
 from .email_service import send_otp_email, send_update_notification_email
 from .schemas import (
@@ -36,6 +36,7 @@ from .schemas import (
     ConfirmVerificationRequest, ConfirmVerificationResponse,
     VerificationStatusResponse, PlatformVerificationStatus,
     UnlinkCodeforcesResponse,
+    FriendSummary, FriendRequestItem, FriendsListResponse, SendFriendRequest, UserSearchResult, FriendshipActionResponse,
 )
 from .streak import current_streak
 from .timekeeping import IST, ist_today, week_start as product_week_start, month_start as product_month_start, period_bounds, utc_now
@@ -56,6 +57,7 @@ from .migrations import (
     migrate_tracking,
     migrate_progress,
     migrate_verification,
+    migrate_friendships,
 )
 from .recovery import consume_limit, recovery_account, otp_verifier, clear_reset, utcnow
 from .tracking import clear_tracking, capture_score_baseline
@@ -1130,19 +1132,335 @@ def get_friends_leaderboard(
 ):
     require_self(actor, user_id)
     user_id = actor.id
-    # Aggregated leaderboard of all unique friends who share at least one group with user_id
+    # Aggregated leaderboard of all unique friends who share at least one group with user_id or have direct accepted friendship
     my_group_ids = [
         m.group_id for m in db.query(GroupMember.group_id).filter(GroupMember.user_id == user_id).all()
     ]
-    if not my_group_ids:
-        friends = db.query(User).filter(User.id == user_id).all()
-    else:
-        friend_user_ids = [
+    shared_group_ids = []
+    if my_group_ids:
+        shared_group_ids = [
             m.user_id for m in db.query(GroupMember.user_id).filter(GroupMember.group_id.in_(my_group_ids)).all()
         ]
-        friends = db.query(User).filter(User.id.in_(set(friend_user_ids))).all()
+
+    direct_friend_ids = [
+        f.friend_id if f.user_id == user_id else f.user_id
+        for f in db.query(Friendship).filter(
+            or_(
+                and_(Friendship.user_id == user_id, Friendship.status == "accepted"),
+                and_(Friendship.friend_id == user_id, Friendship.status == "accepted"),
+            )
+        ).all()
+    ]
+
+    all_friend_user_ids = set(shared_group_ids) | set(direct_friend_ids) | {user_id}
+    friends = db.query(User).filter(User.id.in_(all_friend_user_ids)).all()
 
     return _compute_leaderboard(db, friends, requester_id=user_id, sort_by=sort_by, limit=limit)
+
+
+@app.get("/api/users/search", response_model=List[UserSearchResult])
+def search_users(
+    q: str = Query(..., min_length=1, max_length=80),
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    search_pattern = f"%{q.strip()}%"
+    candidates = (
+        db.query(User)
+        .filter(
+            User.id != actor.id,
+            or_(
+                User.name.ilike(search_pattern),
+                User.leetcode_username.ilike(search_pattern),
+                User.codeforces_username.ilike(search_pattern),
+            ),
+        )
+        .limit(20)
+        .all()
+    )
+
+    if not candidates:
+        return []
+
+    candidate_ids = [c.id for c in candidates]
+    friendships = (
+        db.query(Friendship)
+        .filter(
+            or_(
+                and_(Friendship.user_id == actor.id, Friendship.friend_id.in_(candidate_ids)),
+                and_(Friendship.friend_id == actor.id, Friendship.user_id.in_(candidate_ids)),
+            )
+        )
+        .all()
+    )
+    status_map = {}
+    for f in friendships:
+        other_id = f.friend_id if f.user_id == actor.id else f.user_id
+        if f.status == "accepted":
+            status_map[other_id] = "friends"
+        elif f.status == "pending":
+            status_map[other_id] = "pending_sent" if f.user_id == actor.id else "pending_received"
+
+    return [
+        UserSearchResult(
+            id=c.id,
+            name=c.name,
+            leetcode_username=c.leetcode_username,
+            codeforces_username=c.codeforces_username,
+            avatar_url=c.avatar_url,
+            leetcode_verified=c.leetcode_verified_at is not None,
+            codeforces_verified=c.codeforces_verified_at is not None,
+            friendship_status=status_map.get(c.id),
+        )
+        for c in candidates
+    ]
+
+
+@app.get("/api/users/{user_id}/friends", response_model=FriendsListResponse)
+def get_user_friends(
+    user_id: int,
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    require_self(actor, user_id)
+    friendships = (
+        db.query(Friendship)
+        .filter(
+            or_(Friendship.user_id == user_id, Friendship.friend_id == user_id)
+        )
+        .all()
+    )
+
+    accepted_friend_ids = []
+    incoming_items = []
+    outgoing_items = []
+
+    for f in friendships:
+        if f.status == "accepted":
+            accepted_friend_ids.append(f.friend_id if f.user_id == user_id else f.user_id)
+        elif f.status == "pending":
+            if f.friend_id == user_id:
+                incoming_items.append(f)
+            else:
+                outgoing_items.append(f)
+
+    accepted_users = db.query(User).filter(User.id.in_(accepted_friend_ids)).all() if accepted_friend_ids else []
+    today = ist_today()
+    friends_summary = []
+    for u in accepted_users:
+        active_dates = _active_dates(db, u.id)
+        streak = current_streak(active_dates, today)
+        friends_summary.append(
+            FriendSummary(
+                id=u.id,
+                name=u.name,
+                leetcode_username=u.leetcode_username,
+                codeforces_username=u.codeforces_username,
+                avatar_url=u.avatar_url,
+                leetcode_verified=u.leetcode_verified_at is not None,
+                codeforces_verified=u.codeforces_verified_at is not None,
+                points=u.points,
+                current_streak=streak,
+            )
+        )
+
+    req_user_ids = [f.user_id for f in incoming_items] + [f.friend_id for f in outgoing_items]
+    req_users_map = {u.id: u for u in db.query(User).filter(User.id.in_(req_user_ids)).all()} if req_user_ids else {}
+
+    incoming_resp = []
+    for f in incoming_items:
+        sender = req_users_map.get(f.user_id)
+        if sender:
+            incoming_resp.append(
+                FriendRequestItem(
+                    id=f.id,
+                    user=FriendSummary(
+                        id=sender.id,
+                        name=sender.name,
+                        leetcode_username=sender.leetcode_username,
+                        codeforces_username=sender.codeforces_username,
+                        avatar_url=sender.avatar_url,
+                        leetcode_verified=sender.leetcode_verified_at is not None,
+                        codeforces_verified=sender.codeforces_verified_at is not None,
+                    ),
+                    created_at=f.created_at.replace(tzinfo=timezone.utc) if f.created_at else datetime.now(timezone.utc),
+                )
+            )
+
+    outgoing_resp = []
+    for f in outgoing_items:
+        recipient = req_users_map.get(f.friend_id)
+        if recipient:
+            outgoing_resp.append(
+                FriendRequestItem(
+                    id=f.id,
+                    user=FriendSummary(
+                        id=recipient.id,
+                        name=recipient.name,
+                        leetcode_username=recipient.leetcode_username,
+                        codeforces_username=recipient.codeforces_username,
+                        avatar_url=recipient.avatar_url,
+                        leetcode_verified=recipient.leetcode_verified_at is not None,
+                        codeforces_verified=recipient.codeforces_verified_at is not None,
+                    ),
+                    created_at=f.created_at.replace(tzinfo=timezone.utc) if f.created_at else datetime.now(timezone.utc),
+                )
+            )
+
+    return FriendsListResponse(
+        friends=friends_summary,
+        incoming_requests=incoming_resp,
+        outgoing_requests=outgoing_resp,
+    )
+
+
+@app.post("/api/users/{user_id}/friends/request", response_model=FriendshipActionResponse)
+def send_friend_request(
+    user_id: int,
+    payload: SendFriendRequest,
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    require_self(actor, user_id)
+    target_str = payload.target.strip()
+    target_user = None
+    if target_str.isdigit():
+        target_user = db.query(User).filter(User.id == int(target_str)).first()
+    if not target_user:
+        target_user = db.query(User).filter(
+            or_(
+                func.lower(User.leetcode_username) == target_str.lower(),
+                func.lower(User.codeforces_username) == target_str.lower(),
+                func.lower(User.name) == target_str.lower(),
+            )
+        ).first()
+
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    if target_user.id == user_id:
+        raise HTTPException(status_code=400, detail="You cannot send a friend request to yourself.")
+
+    existing = (
+        db.query(Friendship)
+        .filter(
+            or_(
+                and_(Friendship.user_id == user_id, Friendship.friend_id == target_user.id),
+                and_(Friendship.user_id == target_user.id, Friendship.friend_id == user_id),
+            )
+        )
+        .first()
+    )
+
+    if existing:
+        if existing.status == "accepted":
+            raise HTTPException(status_code=409, detail=f"You are already friends with {target_user.name}.")
+        if existing.status == "pending":
+            if existing.user_id == user_id:
+                raise HTTPException(status_code=409, detail=f"Friend request to {target_user.name} is already pending.")
+            else:
+                existing.status = "accepted"
+                db.commit()
+                return FriendshipActionResponse(
+                    status="accepted",
+                    message=f"You and {target_user.name} are now friends!",
+                )
+        existing.user_id = user_id
+        existing.friend_id = target_user.id
+        existing.status = "pending"
+        db.commit()
+        return FriendshipActionResponse(
+            status="pending",
+            message=f"Friend request sent to {target_user.name}.",
+        )
+
+    new_rel = Friendship(
+        user_id=user_id,
+        friend_id=target_user.id,
+        status="pending",
+    )
+    db.add(new_rel)
+    db.commit()
+    return FriendshipActionResponse(
+        status="pending",
+        message=f"Friend request sent to {target_user.name}.",
+    )
+
+
+@app.post("/api/users/{user_id}/friends/{request_id}/accept", response_model=FriendshipActionResponse)
+def accept_friend_request(
+    user_id: int,
+    request_id: int,
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    require_self(actor, user_id)
+    req = db.query(Friendship).filter(Friendship.id == request_id).first()
+    if not req or req.friend_id != user_id:
+        raise HTTPException(status_code=404, detail="Friend request not found.")
+    if req.status == "accepted":
+        return FriendshipActionResponse(status="accepted", message="Already accepted.")
+    req.status = "accepted"
+    db.commit()
+    return FriendshipActionResponse(status="accepted", message="Friend request accepted.")
+
+
+@app.post("/api/users/{user_id}/friends/{request_id}/decline", response_model=FriendshipActionResponse)
+def decline_friend_request(
+    user_id: int,
+    request_id: int,
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    require_self(actor, user_id)
+    req = db.query(Friendship).filter(Friendship.id == request_id).first()
+    if not req or req.friend_id != user_id:
+        raise HTTPException(status_code=404, detail="Friend request not found.")
+    db.delete(req)
+    db.commit()
+    return FriendshipActionResponse(status="declined", message="Friend request declined.")
+
+
+@app.post("/api/users/{user_id}/friends/{request_id}/cancel", response_model=FriendshipActionResponse)
+def cancel_friend_request(
+    user_id: int,
+    request_id: int,
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    require_self(actor, user_id)
+    req = db.query(Friendship).filter(Friendship.id == request_id).first()
+    if not req or req.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Friend request not found.")
+    db.delete(req)
+    db.commit()
+    return FriendshipActionResponse(status="cancelled", message="Friend request cancelled.")
+
+
+@app.delete("/api/users/{user_id}/friends/{target_user_id}", response_model=FriendshipActionResponse)
+def remove_friend(
+    user_id: int,
+    target_user_id: int,
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    require_self(actor, user_id)
+    rel = (
+        db.query(Friendship)
+        .filter(
+            or_(
+                and_(Friendship.user_id == user_id, Friendship.friend_id == target_user_id),
+                and_(Friendship.user_id == target_user_id, Friendship.friend_id == user_id),
+            ),
+            Friendship.status == "accepted",
+        )
+        .first()
+    )
+    if not rel:
+        raise HTTPException(status_code=404, detail="Friendship not found.")
+    db.delete(rel)
+    db.commit()
+    return FriendshipActionResponse(status="removed", message="Friend removed.")
+
 
 
 # Group Endpoints

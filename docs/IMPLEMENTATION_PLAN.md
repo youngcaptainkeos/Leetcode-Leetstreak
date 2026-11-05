@@ -102,7 +102,7 @@ This is the working checklist for the repository review. It covers every issue a
 - [ ] **FEAT-07 · P2 · Deferred:** Add friend notification preferences and quiet hours when that feature is resumed.
 - [ ] **FEAT-08 · P3:** Add searchable history, longer activity views, and exports.
 - [x] **FEAT-09 · P2:** Explain the browser-session requirement for complete LeetCode plan sync.
-- [ ] **FEAT-10 · P2:** Add direct friendships independently of group membership.
+- [x] **FEAT-10 · P2:** Add direct friendships independently of group membership.
 
 ### Public repository readiness
 
@@ -1077,20 +1077,20 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Model direct friendship/request state with unique normalized account pairs, timestamps, actor identity, and transactional handling. Reject self-requests and handle duplicate/crossed requests idempotently.
-- [ ] Provide authenticated discovery by public display name/coding handle without exposing emails, credentials, reset data, or private group membership. Bound/paginate searches and prevent request spam.
-- [ ] Add the approved add/request, accept/decline, cancel, and remove flows in both clients, with pending/empty/error states and account-backed persistence. Do not require or silently create a group.
-- [ ] Update Friends rankings and “What are my friends up to?” to include accepted direct friends. During migration, retain existing shared-group friends as a separately identified source unless the owner chooses to replace that behavior. Deduplicate users who are both direct and group friends.
-- [ ] Keep direct friendship permissions separate from group membership: adding a friend never exposes a group's invite code, membership list, or private leaderboard. Profiles follow the accepted coding-profile rules; Global display preference does not alter friendship eligibility.
-- [ ] Handle removal/account deletion and refresh/invalidate caches in both clients. One relationship source disappearing must not accidentally remove a remaining direct/shared-group relationship.
-- [ ] Keep future alert eligibility hooks as backlog only; implementing friendship does not resume deferred friend notifications.
+- [x] Model direct friendship/request state with unique normalized account pairs, timestamps, actor identity, and transactional handling. Reject self-requests and handle duplicate/crossed requests idempotently.
+- [x] Provide authenticated discovery by public display name/coding handle without exposing emails, credentials, reset data, or private group membership. Bound/paginate searches and prevent request spam.
+- [x] Add the approved add/request, accept/decline, cancel, and remove flows in both clients, with pending/empty/error states and account-backed persistence. Do not require or silently create a group.
+- [x] Update Friends rankings and “What are my friends up to?” to include accepted direct friends. During migration, retain existing shared-group friends as a separately identified source unless the owner chooses to replace that behavior. Deduplicate users who are both direct and group friends.
+- [x] Keep direct friendship permissions separate from group membership: adding a friend never exposes a group's invite code, membership list, or private leaderboard. Profiles follow the accepted coding-profile rules; Global display preference does not alter friendship eligibility.
+- [x] Handle removal/account deletion and refresh/invalidate caches in both clients. One relationship source disappearing must not accidentally remove a remaining direct/shared-group relationship.
+- [x] Keep future alert eligibility hooks as backlog only; implementing friendship does not resume deferred friend notifications.
 
 **Acceptance**
 
-- [ ] Two registered users with no shared group can establish the approved direct relationship, then see each other in Friends rankings/activity.
-- [ ] Relationships and pending state survive cache clearing and another device's sign-in; another account cannot approve/remove a relationship on their behalf.
-- [ ] Shared-group plus direct friends appear once; removing a group membership leaves an independent direct friendship intact.
-- [ ] Duplicate/crossed/self requests, decline/cancel/remove, search failures, and account deletion follow the approved flow without leaking private information.
+- [x] Two registered users with no shared group can establish the approved direct relationship, then see each other in Friends rankings/activity.
+- [x] Relationships and pending state survive cache clearing and another device's sign-in; another account cannot approve/remove a relationship on their behalf.
+- [x] Shared-group plus direct friends appear once; removing a group membership leaves an independent direct friendship intact.
+- [x] Duplicate/crossed/self requests, decline/cancel/remove, search failures, and account deletion follow the approved flow without leaking private information.
 
 ## 9. Public repository cleanup and release plans
 

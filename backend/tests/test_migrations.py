@@ -49,6 +49,7 @@ class MigrationTests(unittest.TestCase):
                 "score_snapshots",
                 "user_progress",
                 "user_custom_plans",
+                "friendships",
             }
             self.assertTrue(expected_tables.issubset(tables))
 
@@ -64,6 +65,7 @@ class MigrationTests(unittest.TestCase):
                 "20261105-tracking-v1",
                 "20261106-progress-v1",
                 "20261106-verification-v1",
+                "20261106-friendships-v1",
             }
             self.assertEqual(recorded_versions, expected_versions)
 
@@ -75,7 +77,7 @@ class MigrationTests(unittest.TestCase):
             count = conn.execute(
                 text("SELECT COUNT(*) FROM schema_migrations")
             ).scalar_one()
-            self.assertEqual(count, 7)
+            self.assertEqual(count, 8)
 
 
     def test_migration_connection_accepts_connection_and_engine(self):
@@ -130,7 +132,7 @@ class MigrationTests(unittest.TestCase):
             count = conn.execute(
                 text("SELECT COUNT(*) FROM schema_migrations")
             ).scalar_one()
-            self.assertEqual(count, 7)
+            self.assertEqual(count, 8)
 
 
 class StartupShutdownTests(unittest.TestCase):

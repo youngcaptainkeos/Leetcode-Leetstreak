@@ -109,7 +109,7 @@ class PostgresMigrationTests(LocalPostgresTests):
             list(pool.map(lambda _: run_all_migrations(self.engine), range(4)))
         with self.engine.connect() as connection:
             version_count = connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one()
-            self.assertEqual(version_count, 7)
+            self.assertEqual(version_count, 8)
             user_cols = {c["name"] for c in inspect(self.engine).get_columns("users")}
             self.assertIn("session_version", user_cols)
             self.assertIn("show_global_leaderboard", user_cols)

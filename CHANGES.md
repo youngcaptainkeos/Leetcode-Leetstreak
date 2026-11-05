@@ -447,9 +447,57 @@ Disconnecting now cleanly and atomically detaches the handle, bumps `codeforces_
 - Browser smoke test (Playwright in headless Chrome) passed on both extension and website with 0 runtime errors.
 - Verified byte-identical ZIP copies across all 4 locations.
 
+---
 
+## 2026-11-06 — Step: M4-05 / FEAT-10: Direct Friendships Without Groups
 
+### Summary of Changes
+Implemented owner-requested backend-persisted direct friendships independently of groups. Previously, the friends leaderboard and "What are my friends up to?" activity feed strictly aggregated members of shared groups, meaning users could not connect as friends or follow each other's progress without first creating and joining a shared private group.
 
+Direct friendships are now first-class, account-backed relationships that persist across website and extension sessions. Users can search for peers by public name, LeetCode handle, or Codeforces handle without exposing private account details (emails, passwords, reset OTPs, or group codes). A full mutual friendship flow is provided (send request, crossed-request auto-acceptance, accept, decline, cancel outgoing, and remove friend). The friends leaderboard and activity feed merge and deduplicate connections from both direct friendships and shared groups.
 
+### Detailed Changes
+1. **`backend/app/models.py`**:
+   - Added `Friendship` model with `user_id`, `friend_id`, `status` ("pending" | "accepted"), `action_user_id`, `created_at`, `updated_at`.
+   - Includes unique constraint on `(user_id, friend_id)` ensuring normalized ordering (`user_id < friend_id`) and preventing duplicate relationship records.
 
+2. **`backend/app/migrations.py`**:
+   - Added `migrate_friendships(target)` (version `20261106-friendships-v1`): creates `friendships` table and indices (`idx_friendships_user`, `idx_friendships_friend`, `idx_friendships_status`).
+   - Integrated into `run_all_migrations` (now 8 atomic migrations).
+   - Updated migration count and version list in `test_migrations.py` and `test_postgres_migrations.py`.
 
+3. **`backend/app/schemas.py`**:
+   - Added `FriendSummary`, `FriendRequestItem`, `FriendsListResponse`, `SendFriendRequest`, `UserSearchResult`, and `FriendshipActionResponse`.
+
+4. **`backend/app/main.py`**:
+   - Added `GET /api/users/search`: safe public search filtering out the caller and returning relationship status (`friends`, `pending_sent`, `pending_received`, or `null`).
+   - Added `GET /api/users/{user_id}/friends`: returns direct friends with streak/points, incoming requests, and outgoing requests.
+   - Added `POST /api/users/{user_id}/friends/request`: creates pending request or auto-accepts crossed request.
+   - Added `POST /api/users/{user_id}/friends/{request_id}/accept`: accepts incoming request.
+   - Added `POST /api/users/{user_id}/friends/{request_id}/decline`: declines incoming request.
+   - Added `POST /api/users/{user_id}/friends/{request_id}/cancel`: cancels outgoing request.
+   - Added `DELETE /api/users/{user_id}/friends/{target_user_id}`: removes friendship.
+   - Updated `GET /api/friends/leaderboard` to combine shared-group members and direct accepted friends with deduplication.
+
+5. **`backend/tests/test_friendships.py`**:
+   - Added 8 unit tests covering user search, friend request creation, crossed-request promotion, request cancellation, request decline, friend removal, friends leaderboard inclusion without groups, and deduplication when a user is both a group member and a direct friend.
+
+6. **Web & Extension Frontend (`web` & `extension`)**:
+   - Added client methods in `web/app/lib/api.ts` and `extension/src/lib/api.ts`: `searchUsers`, `getFriends`, `sendFriendRequest`, `acceptFriendRequest`, `declineFriendRequest`, `cancelFriendRequest`, `removeFriend`.
+   - Updated `web/app/Progress.tsx` and `extension/src/progress/Progress.tsx` to include direct friends in "What are my friends up to?".
+   - Added `FriendsModal` with 3 tabs: "Friends", "Requests" (with incoming/outgoing subsections and pending badge count), and "Find Friends" (live search with status badges and action buttons).
+   - Added `👥 Friends` button in the leaderboard sort bar with pending request counter badge.
+   - Added direct friends summary banner when on the "My Friends" leaderboard tab.
+   - Added styling in `web/app/App.css` and `extension/src/App.css`.
+
+7. **Distribution Packages**:
+   - Built web application (`npm --prefix web run check && npm --prefix web run build`).
+   - Built extension (`npm --prefix extension run build`).
+   - Synchronized all 4 ZIP copies (`./leetstreak.zip`, `./leetstreak_dist.zip`, `./extension/leetstreak.zip`, `./backend/app/leetstreak.zip`).
+
+### Verification Evidence
+- 111 backend tests passed with zero failures (`backend/tests`), including all 8 friendship tests in `backend/tests/test_friendships.py`.
+- 8 native PostgreSQL tests passed in `test_postgres_migrations.py`.
+- 26 extension unit tests passed (`extension/tests/*.test.mjs`).
+- Browser smoke test (Playwright in headless Chrome) passed on both extension and website with 0 runtime errors, successfully fetching and verifying friends endpoints.
+- Verified byte-identical ZIP copies across all 4 locations.

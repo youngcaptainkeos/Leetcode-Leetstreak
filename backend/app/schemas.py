@@ -375,4 +375,48 @@ class UnlinkCodeforcesResponse(BaseModel):
     points: float
 
 
+class FriendSummary(BaseModel):
+    id: int
+    name: str
+    leetcode_username: str
+    codeforces_username: Optional[str] = None
+    avatar_url: Optional[str] = None
+    leetcode_verified: bool = False
+    codeforces_verified: bool = False
+    points: Optional[float] = None
+    current_streak: Optional[int] = None
+
+
+class FriendRequestItem(BaseModel):
+    id: int
+    user: FriendSummary
+    created_at: datetime
+
+
+class FriendsListResponse(BaseModel):
+    friends: List[FriendSummary]
+    incoming_requests: List[FriendRequestItem]
+    outgoing_requests: List[FriendRequestItem]
+
+
+class SendFriendRequest(BaseModel):
+    target: str = Field(min_length=1, max_length=100)
+
+
+class UserSearchResult(BaseModel):
+    id: int
+    name: str
+    leetcode_username: str
+    codeforces_username: Optional[str] = None
+    avatar_url: Optional[str] = None
+    leetcode_verified: bool = False
+    codeforces_verified: bool = False
+    friendship_status: Optional[str] = None
+
+
+class FriendshipActionResponse(BaseModel):
+    status: str
+    message: str
+
+
 

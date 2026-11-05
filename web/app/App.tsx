@@ -10,6 +10,8 @@ import {
   RecentSolve,
   AppConfigResponse,
   DynamicMenuItem,
+  FriendsListResponse,
+  UserSearchResult,
 } from "./lib/api";
 import { getStored, setStored, clearStored, getAccountStored, setAccountStored } from "./storage";
 import { navigate, setSessionUserId } from "./session";
@@ -722,8 +724,18 @@ function Dashboard({
   const [groupActionBusy, setGroupActionBusy] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
-  const [showPointsHelp, setShowPointsHelp] = useState(false);
   const [kudosAllBusy, setKudosAllBusy] = useState(false);
+
+  // Friends Modal States
+  const [friendsData, setFriendsData] = useState<FriendsListResponse | null>(null);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [friendsModalTab, setFriendsModalTab] = useState<"friends" | "requests" | "search">("friends");
+  const [loadingFriendsList, setLoadingFriendsList] = useState(false);
+  const [friendsSearchQuery, setFriendsSearchQuery] = useState("");
+  const [friendsSearchResults, setFriendsSearchResults] = useState<UserSearchResult[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [friendActionBusy, setFriendActionBusy] = useState(false);
+  const [friendsModalMsg, setFriendsModalMsg] = useState<{ text: string; isError?: boolean } | null>(null);
 
   // Network Offline Listener & Dynamic OTA Config States
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -888,6 +900,136 @@ function Dashboard({
     }
   }
 
+  async function loadFriendsList() {
+    if (!userId) return;
+    setLoadingFriendsList(true);
+    try {
+      const data = await api.getFriends(userId);
+      setFriendsData(data);
+    } catch (err) {
+      console.error("Failed to load friends:", err);
+    } finally {
+      setLoadingFriendsList(false);
+    }
+  }
+
+  async function handleSearchUsers(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    const q = friendsSearchQuery.trim();
+    if (!q) return;
+    setSearchingUsers(true);
+    setFriendsModalMsg(null);
+    try {
+      const results = await api.searchUsers(q);
+      setFriendsSearchResults(results);
+    } catch (err) {
+      setFriendsModalMsg({ text: err instanceof Error ? err.message : "Search failed.", isError: true });
+    } finally {
+      setSearchingUsers(false);
+    }
+  }
+
+  async function handleSendFriendRequest(target: string) {
+    if (!userId) return;
+    setFriendActionBusy(true);
+    setFriendsModalMsg(null);
+    try {
+      const res = await api.sendFriendRequest(userId, target);
+      setFriendsModalMsg({ text: res.message });
+      await loadFriendsList();
+      if (friendsSearchQuery.trim()) {
+        const results = await api.searchUsers(friendsSearchQuery.trim());
+        setFriendsSearchResults(results);
+      }
+      if (selectedTab === "friends") {
+        await loadData(selectedTab);
+      }
+    } catch (err) {
+      setFriendsModalMsg({ text: err instanceof Error ? err.message : "Could not send friend request.", isError: true });
+    } finally {
+      setFriendActionBusy(false);
+    }
+  }
+
+  async function handleAcceptFriendRequest(requestId: number) {
+    if (!userId) return;
+    setFriendActionBusy(true);
+    setFriendsModalMsg(null);
+    try {
+      const res = await api.acceptFriendRequest(userId, requestId);
+      setFriendsModalMsg({ text: res.message });
+      await loadFriendsList();
+      if (friendsSearchQuery.trim()) {
+        const results = await api.searchUsers(friendsSearchQuery.trim());
+        setFriendsSearchResults(results);
+      }
+      if (selectedTab === "friends") {
+        await loadData(selectedTab);
+      }
+    } catch (err) {
+      setFriendsModalMsg({ text: err instanceof Error ? err.message : "Could not accept request.", isError: true });
+    } finally {
+      setFriendActionBusy(false);
+    }
+  }
+
+  async function handleDeclineFriendRequest(requestId: number) {
+    if (!userId) return;
+    setFriendActionBusy(true);
+    setFriendsModalMsg(null);
+    try {
+      const res = await api.declineFriendRequest(userId, requestId);
+      setFriendsModalMsg({ text: res.message });
+      await loadFriendsList();
+    } catch (err) {
+      setFriendsModalMsg({ text: err instanceof Error ? err.message : "Could not decline request.", isError: true });
+    } finally {
+      setFriendActionBusy(false);
+    }
+  }
+
+  async function handleCancelFriendRequest(requestId: number) {
+    if (!userId) return;
+    setFriendActionBusy(true);
+    setFriendsModalMsg(null);
+    try {
+      const res = await api.cancelFriendRequest(userId, requestId);
+      setFriendsModalMsg({ text: res.message });
+      await loadFriendsList();
+      if (friendsSearchQuery.trim()) {
+        const results = await api.searchUsers(friendsSearchQuery.trim());
+        setFriendsSearchResults(results);
+      }
+    } catch (err) {
+      setFriendsModalMsg({ text: err instanceof Error ? err.message : "Could not cancel request.", isError: true });
+    } finally {
+      setFriendActionBusy(false);
+    }
+  }
+
+  async function handleRemoveFriend(targetUserId: number) {
+    if (!userId) return;
+    if (!window.confirm("Remove this user from your friends?")) return;
+    setFriendActionBusy(true);
+    setFriendsModalMsg(null);
+    try {
+      const res = await api.removeFriend(userId, targetUserId);
+      setFriendsModalMsg({ text: res.message });
+      await loadFriendsList();
+      if (friendsSearchQuery.trim()) {
+        const results = await api.searchUsers(friendsSearchQuery.trim());
+        setFriendsSearchResults(results);
+      }
+      if (selectedTab === "friends") {
+        await loadData(selectedTab);
+      }
+    } catch (err) {
+      setFriendsModalMsg({ text: err instanceof Error ? err.message : "Could not remove friend.", isError: true });
+    } finally {
+      setFriendActionBusy(false);
+    }
+  }
+
   async function loadData(
     tab: BoardTab = selectedTab,
     sortMode: "points" | "streak" = sortBy
@@ -903,7 +1045,7 @@ function Dashboard({
           ? api.friendsLeaderboard(userId, sortMode)
           : api.groupLeaderboard(tab, userId, sortMode);
 
-      const [dashRes, myGroupsRes, boardRes, feedData] = await Promise.all([
+      const [dashRes, myGroupsRes, boardRes, feedData, friendsRes] = await Promise.all([
         api.dashboard(userId).catch((err) => {
           if (err.message.includes("404") || err.message.includes("not found")) {
             onResetUser();
@@ -914,6 +1056,7 @@ function Dashboard({
         api.myGroups(userId).catch(() => ({ groups: [] })),
         boardPromise.catch(() => null),
         api.activityFeed().catch(() => []),
+        api.getFriends(userId).catch(() => null),
       ]);
 
       if (reqId !== fullLoadReqRef.current) return;
@@ -938,6 +1081,7 @@ function Dashboard({
       }
       setBoardLoading(false);
       if (Array.isArray(feedData)) setActivityFeed(feedData);
+      if (friendsRes) setFriendsData(friendsRes);
       setError(null);
 
       // Save stale-while-revalidate cache for instant 0ms load next time!
@@ -1507,6 +1651,17 @@ function Dashboard({
           </div>
 
           <div className="sort-right-group">
+            <button
+              type="button"
+              className="chip-btn friends-btn"
+              onClick={() => { setShowFriendsModal(true); void loadFriendsList(); }}
+              title="Manage Friends and Friend Requests"
+            >
+              👥 Friends
+              {friendsData && friendsData.incoming_requests.length > 0 && (
+                <span className="friends-badge-count">{friendsData.incoming_requests.length}</span>
+              )}
+            </button>
             {(() => {
               const otherMembers = board?.entries?.filter((e) => e.id !== userId) || [];
               const unKudosed = otherMembers.filter((e) => !e.has_kudosed);
@@ -1533,6 +1688,23 @@ function Dashboard({
             })()}
           </div>
         </div>
+
+        {selectedTab === "friends" && (
+          <div className="friends-summary-bar">
+            <span className="tiny muted">Showing direct friends & shared group members</span>
+            <button
+              type="button"
+              className="chip-btn sm"
+              onClick={() => {
+                setShowFriendsModal(true);
+                setFriendsModalTab("search");
+                void loadFriendsList();
+              }}
+            >
+              ➕ Add Friend
+            </button>
+          </div>
+        )}
 
         {/* Dedicated Group Management Bar */}
         {activeGroup && (
@@ -2517,6 +2689,280 @@ function Dashboard({
                 {verifyingHandle ? "Checking profile…" : "Confirm Verification"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showFriendsModal && (
+        <div className="modal-overlay" onClick={() => setShowFriendsModal(false)}>
+          <div className="modal-content friends-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Friends</h3>
+              <button className="modal-close" onClick={() => setShowFriendsModal(false)}>✕</button>
+            </div>
+
+            <div className="friends-tabs">
+              <button
+                type="button"
+                className={`friends-tab-btn ${friendsModalTab === "friends" ? "active" : ""}`}
+                onClick={() => { setFriendsModalTab("friends"); setFriendsModalMsg(null); }}
+              >
+                Friends ({friendsData?.friends?.length || 0})
+              </button>
+              <button
+                type="button"
+                className={`friends-tab-btn ${friendsModalTab === "requests" ? "active" : ""}`}
+                onClick={() => { setFriendsModalTab("requests"); setFriendsModalMsg(null); }}
+              >
+                Requests ({(friendsData?.incoming_requests?.length || 0) + (friendsData?.outgoing_requests?.length || 0)})
+                {friendsData && friendsData.incoming_requests.length > 0 && (
+                  <span className="friends-badge-count">{friendsData.incoming_requests.length}</span>
+                )}
+              </button>
+              <button
+                type="button"
+                className={`friends-tab-btn ${friendsModalTab === "search" ? "active" : ""}`}
+                onClick={() => { setFriendsModalTab("search"); setFriendsModalMsg(null); }}
+              >
+                Find Friends
+              </button>
+            </div>
+
+            {friendsModalMsg && (
+              <div className={friendsModalMsg.isError ? "error-banner" : "success-banner"} role="alert">
+                {friendsModalMsg.text}
+              </div>
+            )}
+
+            {friendsModalTab === "friends" && (
+              <div className="friends-tab-content">
+                {loadingFriendsList ? (
+                  <p className="tiny muted">Loading friends…</p>
+                ) : !friendsData?.friends || friendsData.friends.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "24px 0" }}>
+                    <p className="tiny muted">No direct friends yet.</p>
+                    <button
+                      type="button"
+                      className="primary-btn sm"
+                      style={{ marginTop: "12px", display: "inline-block" }}
+                      onClick={() => setFriendsModalTab("search")}
+                    >
+                      Find Friends
+                    </button>
+                  </div>
+                ) : (
+                  <ul className="friends-user-list">
+                    {friendsData.friends.map((friend) => (
+                      <li key={friend.id} className="friends-user-item">
+                        <div className="friends-user-info">
+                          {friend.avatar_url ? (
+                            <img src={friend.avatar_url} alt={friend.name} className="friends-user-avatar" />
+                          ) : (
+                            <div className="friends-user-avatar-placeholder">
+                              {friend.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="friends-user-names">
+                            <span className="friends-user-name">{friend.name}</span>
+                            <span className="friends-user-handle">
+                              @{friend.leetcode_username}
+                              {friend.codeforces_username ? ` · cf: @${friend.codeforces_username}` : ""}
+                            </span>
+                            <span className="tiny muted">
+                              {friend.points ?? 0} pts · {friend.current_streak ?? 0}d streak
+                            </span>
+                          </div>
+                        </div>
+                        <div className="friends-action-btns">
+                          <button
+                            type="button"
+                            className="secondary-btn sm"
+                            disabled={friendActionBusy}
+                            onClick={() => handleRemoveFriend(friend.id)}
+                            title="Remove friend"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {friendsModalTab === "requests" && (
+              <div className="friends-tab-content">
+                <div style={{ marginBottom: "16px" }}>
+                  <h4 style={{ fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>
+                    Incoming ({friendsData?.incoming_requests?.length || 0})
+                  </h4>
+                  {!friendsData?.incoming_requests || friendsData.incoming_requests.length === 0 ? (
+                    <p className="tiny muted">No incoming friend requests.</p>
+                  ) : (
+                    <ul className="friends-user-list">
+                      {friendsData.incoming_requests.map((req) => (
+                        <li key={req.id} className="friends-user-item">
+                          <div className="friends-user-info">
+                            {req.user.avatar_url ? (
+                              <img src={req.user.avatar_url} alt={req.user.name} className="friends-user-avatar" />
+                            ) : (
+                              <div className="friends-user-avatar-placeholder">
+                                {req.user.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="friends-user-names">
+                              <span className="friends-user-name">{req.user.name}</span>
+                              <span className="friends-user-handle">@{req.user.leetcode_username}</span>
+                            </div>
+                          </div>
+                          <div className="friends-action-btns">
+                            <button
+                              type="button"
+                              className="primary-btn sm"
+                              disabled={friendActionBusy}
+                              onClick={() => handleAcceptFriendRequest(req.id)}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary-btn sm"
+                              disabled={friendActionBusy}
+                              onClick={() => handleDeclineFriendRequest(req.id)}
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div>
+                  <h4 style={{ fontSize: "13px", fontWeight: "600", marginBottom: "8px" }}>
+                    Outgoing ({friendsData?.outgoing_requests?.length || 0})
+                  </h4>
+                  {!friendsData?.outgoing_requests || friendsData.outgoing_requests.length === 0 ? (
+                    <p className="tiny muted">No outgoing friend requests.</p>
+                  ) : (
+                    <ul className="friends-user-list">
+                      {friendsData.outgoing_requests.map((req) => (
+                        <li key={req.id} className="friends-user-item">
+                          <div className="friends-user-info">
+                            {req.user.avatar_url ? (
+                              <img src={req.user.avatar_url} alt={req.user.name} className="friends-user-avatar" />
+                            ) : (
+                              <div className="friends-user-avatar-placeholder">
+                                {req.user.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="friends-user-names">
+                              <span className="friends-user-name">{req.user.name}</span>
+                              <span className="friends-user-handle">@{req.user.leetcode_username}</span>
+                            </div>
+                          </div>
+                          <div className="friends-action-btns">
+                            <button
+                              type="button"
+                              className="secondary-btn sm"
+                              disabled={friendActionBusy}
+                              onClick={() => handleCancelFriendRequest(req.id)}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {friendsModalTab === "search" && (
+              <div className="friends-tab-content">
+                <form className="friends-search-row" onSubmit={handleSearchUsers}>
+                  <input
+                    type="text"
+                    className="friends-search-input"
+                    placeholder="Search by name or handle…"
+                    value={friendsSearchQuery}
+                    onChange={(e) => setFriendsSearchQuery(e.target.value)}
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    className="primary-btn sm"
+                    disabled={searchingUsers || !friendsSearchQuery.trim()}
+                  >
+                    {searchingUsers ? "…" : "Search"}
+                  </button>
+                </form>
+
+                {friendsSearchResults.length > 0 ? (
+                  <ul className="friends-user-list">
+                    {friendsSearchResults.map((userResult) => (
+                      <li key={userResult.id} className="friends-user-item">
+                        <div className="friends-user-info">
+                          {userResult.avatar_url ? (
+                            <img src={userResult.avatar_url} alt={userResult.name} className="friends-user-avatar" />
+                          ) : (
+                            <div className="friends-user-avatar-placeholder">
+                              {userResult.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="friends-user-names">
+                            <span className="friends-user-name">{userResult.name}</span>
+                            <span className="friends-user-handle">
+                              @{userResult.leetcode_username}
+                              {userResult.codeforces_username ? ` · cf: @${userResult.codeforces_username}` : ""}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="friends-action-btns">
+                          {userResult.friendship_status === "friends" ? (
+                            <span className="tiny muted">✓ Friends</span>
+                          ) : userResult.friendship_status === "pending_sent" ? (
+                            <span className="tiny muted">Pending</span>
+                          ) : userResult.friendship_status === "pending_received" ? (
+                            <button
+                              type="button"
+                              className="primary-btn sm"
+                              disabled={friendActionBusy}
+                              onClick={async () => {
+                                const req = friendsData?.incoming_requests.find(r => r.user.id === userResult.id);
+                                if (req) {
+                                  await handleAcceptFriendRequest(req.id);
+                                } else {
+                                  await handleSendFriendRequest(userResult.leetcode_username);
+                                }
+                              }}
+                            >
+                              Accept
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="primary-btn sm"
+                              disabled={friendActionBusy}
+                              onClick={() => handleSendFriendRequest(userResult.leetcode_username)}
+                            >
+                              ➕ Add
+                            </button>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : friendsSearchQuery.trim() && !searchingUsers ? (
+                  <p className="tiny muted" style={{ textAlign: "center", padding: "16px 0" }}>
+                    No users found matching "{friendsSearchQuery}".
+                  </p>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
       )}

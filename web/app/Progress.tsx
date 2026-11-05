@@ -109,45 +109,65 @@ export function WebsiteProgress({ userId, username, groups }: ProgressProps) {
     return () => { active = false; };
   }, [userId]);
 
-  // Load friends recent activity
+  // Load friends recent activity (shared groups + direct friends)
   useEffect(() => {
     let active = true;
-    const friendUsers: { id: number; name: string; username: string }[] = [];
-    for (const g of groups) {
-      for (const m of g.members) {
-        if (m.id !== userId && !friendUsers.some((u) => u.id === m.id)) {
-          friendUsers.push({ id: m.id, name: m.name, username: m.leetcode_username });
+
+    async function loadFriendsActivity() {
+      const friendUsers: { id: number; name: string; username: string }[] = [];
+      for (const g of groups) {
+        for (const m of g.members) {
+          if (m.id !== userId && !friendUsers.some((u) => u.id === m.id)) {
+            friendUsers.push({ id: m.id, name: m.name, username: m.leetcode_username });
+          }
         }
+      }
+
+      try {
+        const directResp = await api.getFriends(userId);
+        if (active && directResp?.friends) {
+          for (const df of directResp.friends) {
+            if (df.id !== userId && !friendUsers.some((u) => u.id === df.id)) {
+              friendUsers.push({ id: df.id, name: df.name, username: df.leetcode_username });
+            }
+          }
+        }
+      } catch {
+        // Fallback to groups only
+      }
+
+      if (!active) return;
+      if (friendUsers.length === 0) {
+        setFriendActivity([]);
+        return;
+      }
+
+      setLoadingFriends(true);
+      try {
+        const results = await Promise.all(
+          friendUsers.slice(0, 10).map((f) =>
+            api.recentSolves(f.id, 3).then((solves) =>
+              solves.map((s) => ({
+                id: `${f.id}-${s.title_slug}-${s.solved_at}`,
+                username: f.name || f.username,
+                title: s.title,
+                platform: s.platform || "leetcode",
+                timestamp: new Date(s.solved_at).getTime(),
+                relativeTime: s.relative_time,
+                url: s.problem_url || s.leetcode_url || `https://leetcode.com/problems/${s.title_slug}/`,
+              }))
+            ).catch(() => [] as FriendActivityItem[])
+          )
+        );
+        if (!active) return;
+        const flat = results.flat().sort((a, b) => b.timestamp - a.timestamp).slice(0, 8);
+        setFriendActivity(flat);
+      } finally {
+        if (active) setLoadingFriends(false);
       }
     }
 
-    if (friendUsers.length === 0) {
-      setFriendActivity([]);
-      return;
-    }
-
-    setLoadingFriends(true);
-    Promise.all(
-      friendUsers.slice(0, 10).map((f) =>
-        api.recentSolves(f.id, 3).then((solves) =>
-          solves.map((s) => ({
-            id: `${f.id}-${s.title_slug}-${s.solved_at}`,
-            username: f.name || f.username,
-            title: s.title,
-            platform: s.platform || "leetcode",
-            timestamp: new Date(s.solved_at).getTime(),
-            relativeTime: s.relative_time,
-            url: s.problem_url || s.leetcode_url || `https://leetcode.com/problems/${s.title_slug}/`,
-          }))
-        ).catch(() => [] as FriendActivityItem[])
-      )
-    ).then((results) => {
-      if (!active) return;
-      const flat = results.flat().sort((a, b) => b.timestamp - a.timestamp).slice(0, 8);
-      setFriendActivity(flat);
-      setLoadingFriends(false);
-    });
-
+    void loadFriendsActivity();
     return () => { active = false; };
   }, [groups, userId]);
 

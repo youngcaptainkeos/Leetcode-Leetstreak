@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { api, GroupResponse, GroupMember, RecentSolve } from "../lib/api";
+import { api, GroupResponse, GroupMember, RecentSolve, FriendSummary } from "../lib/api";
 import { getStored, setStored } from "../storage";
 import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, ProgressState, StudyPlan, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, readProgress, readStudyPlan, parsePlanInput, fetchStudyPlan, addStudyPlan, removeStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, questionCodeforcesSlug, automaticQuestion, mergeSolvedHistory, visiblePlans, restoreStarterPlans } from "./data";
 import { fetchSolvedHistory, SolvedHistory } from "./history";
@@ -365,13 +365,32 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
 
 interface FriendSolve extends Submission { friend: GroupMember; platform?: string; problemUrl?: string }
 function FriendsActivity({ userId, groups }: { userId: number; groups: GroupResponse[] }) {
-  const friends = [...new Map(groups.flatMap(g => g.members).filter(m => m.id !== userId).map(m => [m.id, m])).values()];
+  const [directFriends, setDirectFriends] = useState<FriendSummary[]>([]);
+  const allCandidateFriends: GroupMember[] = [
+    ...groups.flatMap(g => g.members),
+    ...directFriends.map(df => ({
+      id: df.id,
+      name: df.name,
+      leetcode_username: df.leetcode_username,
+      codeforces_username: df.codeforces_username,
+      avatar_url: df.avatar_url,
+    })),
+  ];
+  const friends = [...new Map(allCandidateFriends.filter(m => m.id !== userId).map(m => [m.id, m])).values()];
   const signature = JSON.stringify(friends.map(f => [f.id, f.leetcode_username, f.codeforces_username]).sort());
   const [items, setItems] = useState<FriendSolve[]>([]);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(0);
   const [refresh, setRefresh] = useState(0);
   const [filter, setFilter] = useState("all");
+
+  useEffect(() => {
+    let active = true;
+    api.getFriends(userId).then(res => {
+      if (active && res?.friends) setDirectFriends(res.friends);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [userId, refresh]);
 
   useEffect(() => {
     const update = () => setRefresh(n => n + 1);
