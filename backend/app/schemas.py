@@ -16,7 +16,7 @@ class PointBreakdownSchema(BaseModel):
     subtotal: float = 0.0
     streak_days: int = 0
     streak_multiplier: float = 1.0
-    points_earned: int = 0
+    points_earned: float = 0
 
 
 class RecentSolveSchema(BaseModel):
@@ -24,12 +24,19 @@ class RecentSolveSchema(BaseModel):
     title: str
     solved_at: datetime
     relative_time: str
-    leetcode_url: str
-    points_earned: int = 0
+    leetcode_url: str  # Legacy alias; points to the actual platform URL.
+    problem_url: Optional[str] = None
+    platform: str = "leetcode"
+    source_handle: Optional[str] = None
+    source_submission_id: Optional[int] = None
+    problem_rating: Optional[float] = None
+    scoring_version: str = "leetcode-v1"
+    points_earned: float = 0
     breakdown: Optional[PointBreakdownSchema] = None
 
 
 class RegisterRequest(BaseModel):
+    codeforces_username: Optional[str] = Field(default=None, max_length=24)
     name: str = Field(min_length=1, max_length=80)
     leetcode_username: str = Field(min_length=1, max_length=80)
     email: str = Field(min_length=3, max_length=120)
@@ -56,6 +63,10 @@ class UpdateUsernameRequest(BaseModel):
     leetcode_username: str = Field(min_length=1, max_length=80)
 
 
+class UpdateCodeforcesRequest(BaseModel):
+    codeforces_username: str = Field(min_length=3, max_length=24)
+
+
 class UpdateSettingsRequest(BaseModel):
     global_leaderboard_enabled: bool
 
@@ -68,6 +79,7 @@ class RegisterResponse(BaseModel):
     id: int
     name: str
     leetcode_username: str
+    codeforces_username: Optional[str] = None
     avatar_url: Optional[str] = None
     access_token: Optional[str] = None
     token_type: str = "bearer"
@@ -81,9 +93,16 @@ class DayCount(BaseModel):
 
 
 class DashboardResponse(BaseModel):
+    codeforces_last_sync: Optional[datetime] = None
+    codeforces_sync_error: Optional[str] = None
+    codeforces_count: int = 0
+    codeforces_points: float = 0
+    leetcode_points: float = 0
+    points: float = 0
     id: int
     name: str
     leetcode_username: str
+    codeforces_username: Optional[str] = None
     avatar_url: Optional[str] = None
     easy_count: int = 0
     medium_count: int = 0
@@ -98,10 +117,14 @@ class DashboardResponse(BaseModel):
 
 
 class LeaderboardEntry(BaseModel):
+    codeforces_count: int = 0
+    codeforces_points: float = 0
+    leetcode_points: float = 0
     rank: int
     id: int
     name: str
     leetcode_username: str
+    codeforces_username: Optional[str] = None
     avatar_url: Optional[str] = None
     easy_count: int = 0
     medium_count: int = 0
@@ -146,6 +169,7 @@ class GroupMemberSchema(BaseModel):
     id: int
     name: str
     leetcode_username: str
+    codeforces_username: Optional[str] = None
     avatar_url: Optional[str] = None
 
 
@@ -170,7 +194,13 @@ class ActivityFeedItemSchema(BaseModel):
     title_slug: str
     solved_at: datetime
     relative_time: str
-    leetcode_url: str
+    leetcode_url: str  # Legacy alias; points to the actual platform URL.
+    problem_url: Optional[str] = None
+    platform: str = "leetcode"
+    source_handle: Optional[str] = None
+    source_submission_id: Optional[int] = None
+    problem_rating: Optional[float] = None
+    scoring_version: str = "leetcode-v1"
 
 
 class DynamicMenuItem(BaseModel):

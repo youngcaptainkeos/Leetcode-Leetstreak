@@ -37,6 +37,14 @@ function Home({ signedIn }: { signedIn: boolean }) {
         <article><span className="web-feature-icon green">◎</span><h3>Bring your coding circle</h3><p>Create a private group, share its invite code, and keep each other moving. Or join the global leaderboard.</p><span className="web-feature-tag">Better together</span></article>
       </div>
     </section>
+    <section className="web-features" id="scoring" aria-labelledby="scoring-title">
+      <div className="web-section-heading"><span className="web-eyebrow">HOW SCORING WORKS</span><h2 id="scoring-title">Two platforms. One scoreboard.</h2></div>
+      <div className="web-feature-grid">
+        <article><span className="web-feature-icon purple">LC</span><h3>LeetCode</h3><p>Contest problems use ZeroTrac rating ÷ 100. Otherwise, Easy starts at 8 points, Medium at 15, and Hard at 24, adjusted by acceptance rate.</p></article>
+        <article><span className="web-feature-icon green">CF</span><h3>Codeforces</h3><p>Base points = 8 + 0.012 × (problem rating − 800). A 1400-rated problem earns 15.2 base points; 1800 earns 20; 2200 earns 24.8. Connect your public handle in account settings to sync automatically.</p></article>
+        <article><span className="web-feature-icon orange">✦</span><h3>Reward consistency</h3><p>The streak multiplier adds up to 10%. Codeforces awards points once per unique, final accepted problem. Unrated Codeforces problems count as activity with 0 points. The +5 daily challenge bonus applies only to LeetCode.</p><span className="web-feature-tag">CF scale is provisional · based on matched problems</span></article>
+      </div>
+    </section>
     <section className="web-get-started"><div><span className="web-eyebrow">LESS SETUP. MORE SOLVING.</span><h2>From your first login<br />to your next milestone.</h2></div><ol><li><span>01</span><div><h3>Create your account</h3><p>Use your email and public LeetCode username.</p></div></li><li><span>02</span><div><h3>Let your progress catch up</h3><p>Sync your activity and see your current streak.</p></div></li><li><span>03</span><div><h3>Show up again tomorrow</h3><p>Solve a problem. Build your streak. Repeat.</p></div></li></ol></section>
     <section className="web-final-cta"><div><h2>Your next streak starts here.</h2><p>Use LeetStreak on the web, or keep it one click away in your browser.</p></div><div className="web-cta-row"><a className="web-button web-button-primary" href={signedIn ? "/dashboard" : "/register"}>{signedIn ? "Open your dashboard ↗" : "Create an account ↗"}</a><a className="web-button web-button-secondary" href={download}>Get the extension ↓</a></div></section>
   </>;
@@ -66,6 +74,7 @@ function Website() {
   return <div className={`website ${isHome ? "website-home" : isWorkspace ? "website-workspace" : "website-account"}`}>
     <header className="web-nav"><Brand /><nav aria-label="Main navigation">
       {isHome && <a className="web-nav-feature" href="#features">Features</a>}
+      {isHome && <a className="web-nav-feature" href="#scoring">Scoring</a>}
       <a className="web-nav-download" href={download}>Extension ↓</a>
       {userId ? <>
         <a className="web-nav-dashboard" href="/dashboard" aria-current={isWorkspace ? "page" : undefined}>Dashboard</a>

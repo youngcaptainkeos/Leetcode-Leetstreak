@@ -1,9 +1,11 @@
+import { getStored } from "../storage";
 export const API_BASE = "https://codestreak-api.onrender.com/api";
 
 export interface RegisterResponse {
   id: number;
   name: string;
   leetcode_username: string;
+  codeforces_username?: string;
   avatar_url?: string;
   access_token?: string;
   token_type?: string;
@@ -38,14 +40,27 @@ export interface RecentSolve {
   solved_at: string;
   relative_time: string;
   leetcode_url: string;
+  problem_url?: string;
+  platform?: "leetcode" | "codeforces";
+  source_handle?: string;
+  source_submission_id?: number;
+  problem_rating?: number;
+  scoring_version?: string;
   points_earned?: number;
   breakdown?: PointBreakdown;
 }
 
 export interface DashboardResponse {
+  codeforces_last_sync?: string;
+  codeforces_sync_error?: string;
+  codeforces_count?: number;
+  codeforces_points?: number;
+  leetcode_points?: number;
+  points?: number;
   id: number;
   name: string;
   leetcode_username: string;
+  codeforces_username?: string;
   avatar_url?: string;
   easy_count: number;
   medium_count: number;
@@ -60,10 +75,14 @@ export interface DashboardResponse {
 }
 
 export interface LeaderboardEntry {
+  codeforces_count?: number;
+  codeforces_points?: number;
+  leetcode_points?: number;
   rank: number;
   id: number;
   name: string;
   leetcode_username: string;
+  codeforces_username?: string;
   avatar_url?: string;
   easy_count: number;
   medium_count: number;
@@ -134,6 +153,7 @@ export interface GroupMember {
   id: number;
   name: string;
   leetcode_username: string;
+  codeforces_username?: string;
   avatar_url?: string;
 }
 
@@ -151,9 +171,10 @@ export interface GroupListResponse {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = await getStored("codestreak_access_token");
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options?.headers },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -163,10 +184,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  register: (name: string, leetcode_username: string, email: string, password: string, global_leaderboard_enabled: boolean = true) =>
+  register: (name: string, leetcode_username: string, email: string, password: string, global_leaderboard_enabled: boolean = true, codeforces_username?: string) =>
     request<RegisterResponse>("/users/register", {
       method: "POST",
-      body: JSON.stringify({ name, leetcode_username, email, password, global_leaderboard_enabled }),
+      body: JSON.stringify({ name, leetcode_username, email, password, global_leaderboard_enabled, ...(codeforces_username?.trim() ? { codeforces_username: codeforces_username.trim() } : {}) }),
     }),
   login: (leetcode_username: string, password: string) =>
     request<RegisterResponse>("/users/login", {
@@ -195,6 +216,10 @@ export const api = {
         body: JSON.stringify({ leetcode_username }),
       }
     ),
+  updateCodeforcesUsername: (userId: number, codeforces_username: string) =>
+    request<{ status: string; codeforces_username: string }>(`/users/${userId}/codeforces-username`, {
+      method: "PUT", body: JSON.stringify({ codeforces_username }),
+    }),
   updateSettings: (userId: number, settings: { global_leaderboard_enabled: boolean }) =>
     request<{ status: string; user_id: number; global_leaderboard_enabled: boolean }>(
       `/users/${userId}/settings`,
@@ -261,6 +286,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ from_user_id: fromUserId, target_user_ids: targetUserIds }),
     }),
+  codeforcesSolves: (userId: number) => request<{ handle: string | null; slugs: string[]; synced_at: string | null }>(`/users/${userId}/codeforces-solves`),
   recentSolves: (userId: number, limit = 10) =>
     request<RecentSolve[]>(`/users/${userId}/recent-solves?limit=${limit}`),
   pollNow: () => request<{ polled: Record<string, number> }>("/admin/poll-now", { method: "POST" }),

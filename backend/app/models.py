@@ -1,7 +1,7 @@
 from datetime import datetime, date as date_type
 
 from sqlalchemy import (
-    Column, Integer, Float, String, Date, DateTime, ForeignKey, UniqueConstraint, func, Boolean
+    Column, Integer, BigInteger, Float, String, Date, DateTime, ForeignKey, UniqueConstraint, func, Boolean
 )
 from sqlalchemy.orm import relationship
 
@@ -19,6 +19,12 @@ class User(Base):
     reset_otp = Column(String(6), nullable=True)
     otp_expires_at = Column(DateTime, nullable=True)
     avatar_url = Column(String(500), nullable=True)
+    codeforces_username = Column(String(80), nullable=True)
+    codeforces_linked_at = Column(DateTime, nullable=True)
+    codeforces_last_full_sync = Column(DateTime, nullable=True)
+    codeforces_last_sync = Column(DateTime, nullable=True)
+    codeforces_sync_error = Column(String(300), nullable=True)
+    platform_activity = relationship("PlatformActivity", cascade="all, delete-orphan")
     easy_count = Column(Integer, default=0)
     medium_count = Column(Integer, default=0)
     hard_count = Column(Integer, default=0)
@@ -49,13 +55,19 @@ class DailyActivity(Base):
 
 class Solve(Base):
     """
-    Dedup ledger: one row per (user, problem) the first time we ever saw it
-    accepted.
+    Dedup ledger: one row per (user, namespaced problem). Codeforces problem
+    IDs use cf-<contest>-<index>; legacy LeetCode slugs retain their original IDs.
     """
     __tablename__ = "solves"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    platform = Column(String(20), nullable=False, default="leetcode", server_default="leetcode", index=True)
+    source_handle = Column(String(80), nullable=True)
+    source_submission_id = Column(BigInteger, nullable=True)
+    problem_rating = Column(Float, nullable=True)
+    problem_url = Column(String(500), nullable=True)
+    scoring_version = Column(String(40), nullable=False, default="leetcode-v1", server_default="leetcode-v1")
     title_slug = Column(String(200), nullable=False)
     title = Column(String(300), nullable=True)
     difficulty = Column(String(20), nullable=True)
@@ -118,3 +130,14 @@ class Kudos(Base):
 
     __table_args__ = (UniqueConstraint("from_user_id", "to_user_id", name="uq_kudos_pair"),)
 
+
+
+class PlatformActivity(Base):
+    """Additional platform daily counts; legacy daily_activity remains LeetCode-only."""
+    __tablename__ = "platform_activity"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    platform = Column(String(20), nullable=False)
+    date = Column(Date, nullable=False)
+    problems_solved = Column(Integer, nullable=False, default=0)
+    __table_args__ = (UniqueConstraint("user_id", "platform", "date", name="uq_platform_activity"),)

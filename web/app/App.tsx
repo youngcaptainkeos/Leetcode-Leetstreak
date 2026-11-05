@@ -51,6 +51,7 @@ function Onboarding({
   const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
+  const [signupCodeforces, setSignupCodeforces] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -138,6 +139,7 @@ function Onboarding({
       const res = await api.login(username.trim(), password);
       await clearStored(AUTH_STORAGE_KEYS);
       onRegistered(res.id);
+      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Login failed.");
     } finally {
@@ -151,9 +153,10 @@ function Onboarding({
     setBusy(true);
     onError(null);
     try {
-      const res = await api.register(name.trim(), username.trim(), email.trim(), password, enableGlobalLeaderboard);
+      const res = await api.register(name.trim(), username.trim(), email.trim(), password, enableGlobalLeaderboard, signupCodeforces);
       await clearStored(AUTH_STORAGE_KEYS);
       onRegistered(res.id);
+      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Registration failed.");
     } finally {
@@ -192,6 +195,7 @@ function Onboarding({
       const res = await api.login(username.trim(), newPassword);
       await clearStored(AUTH_STORAGE_KEYS);
       onRegistered(res.id);
+      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Verification failed.");
     } finally {
@@ -301,6 +305,12 @@ function Onboarding({
             >
               💡 Need help finding your LeetCode username?
             </button>
+
+            <label>
+              <span>Codeforces username · optional</span>
+              <input aria-label="Codeforces username (optional)" value={signupCodeforces} onChange={e => setSignupCodeforces(e.target.value)} placeholder="Leave blank or enter your handle" minLength={3} maxLength={24} />
+            </label>
+            <p className="tiny muted">Optional: include Codeforces solves in your points and streak. You can also connect it later in Settings.</p>
 
             <label>
               <span>Email Address</span>
@@ -478,6 +488,8 @@ function Onboarding({
 }
 
 interface ActivityFeedItem {
+  platform?: "leetcode" | "codeforces";
+  problem_url?: string;
   user_id: number;
   user_name: string;
   user_handle: string;
@@ -581,7 +593,9 @@ function Dashboard({
     null
   );
   const [friendDash, setFriendDash] = useState<DashboardResponse | null>(null);
+
   const [loadingFriendDash, setLoadingFriendDash] = useState(false);
+  const [profileError, setProfileError] = useState("");
   const [modalTab, setModalTab] = useState<"overview" | "solves">("overview");
   const [recentSolvesList, setRecentSolvesList] = useState<RecentSolve[]>([]);
   const [loadingRecentSolves, setLoadingRecentSolves] = useState(false);
@@ -611,6 +625,8 @@ function Dashboard({
   }, [dash?.leetcode_username]);
   const [showUsernameHelpModal, setShowUsernameHelpModal] = useState(false);
   const [newLeetcodeUsername, setNewLeetcodeUsername] = useState("");
+  const [newCodeforcesUsername, setNewCodeforcesUsername] = useState("");
+  const [updatingCodeforces, setUpdatingCodeforces] = useState(false);
   const [updatingUsername, setUpdatingUsername] = useState(false);
   const [togglingLeaderboard, setTogglingLeaderboard] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
@@ -688,6 +704,26 @@ function Dashboard({
       setUpdatingUsername(false);
     }
   }
+
+  async function handleUpdateCodeforces(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newCodeforcesUsername.trim()) return;
+    setUpdatingCodeforces(true); setSettingsMsg(null);
+    try {
+      const result = await api.updateCodeforcesUsername(userId, newCodeforcesUsername.trim());
+      setSettingsMsg(`Connected @${result.codeforces_username}. Public solves and points are syncing automatically.`);
+      setNewCodeforcesUsername("");
+      await loadData(selectedTab);
+    } catch (err) {
+      setSettingsMsg(err instanceof Error ? err.message : "Could not connect Codeforces.");
+    } finally { setUpdatingCodeforces(false); }
+  }
+
+  useEffect(() => {
+    if (!dash?.codeforces_username || dash.codeforces_last_sync || dash.codeforces_sync_error) return;
+    const interval = setInterval(() => { void loadData(selectedTab); }, 5000);
+    return () => clearInterval(interval);
+  }, [dash?.codeforces_username, dash?.codeforces_last_sync, dash?.codeforces_sync_error, selectedTab]);
 
   async function handleToggleGlobalLeaderboard() {
     if (!dash) return;
@@ -1065,25 +1101,24 @@ function Dashboard({
     }
   }
 
-  async function handleInspectFriend(entry: LeaderboardEntry) {
-    setInspectedFriend(entry);
-    setModalTab("overview");
-    setLoadingFriendDash(true);
-    setLoadingRecentSolves(true);
-    try {
-      const [friendData, solvesData] = await Promise.all([
-        api.dashboard(entry.id).catch(() => null),
-        api.recentSolves(entry.id, 10).catch(() => []),
-      ]);
-      setFriendDash(friendData);
-      setRecentSolvesList(solvesData);
-    } catch (err) {
-      console.warn("Could not load friend detailed data", err);
-    } finally {
-      setLoadingFriendDash(false);
-      setLoadingRecentSolves(false);
-    }
+  function handleInspectFriend(entry: LeaderboardEntry) {
+    setFriendDash(null); setRecentSolvesList([]); setProfileError("");
+    setInspectedFriend(entry); setModalTab("overview");
   }
+  useEffect(() => {
+    if (!inspectedFriend) return;
+    let cancelled = false;
+    setLoadingFriendDash(true); setLoadingRecentSolves(true); setProfileError("");
+    setRecentSolvesList([]);
+    Promise.all([api.dashboard(inspectedFriend.id), api.recentSolves(inspectedFriend.id, 10)]).then(([profile, solves]) => {
+      if (!cancelled) { setFriendDash(profile); setRecentSolvesList(solves); }
+    }).catch(() => {
+      if (!cancelled) { setFriendDash(null); setProfileError("Could not load this profile. Close and reopen it to retry."); }
+    }).finally(() => {
+      if (!cancelled) { setLoadingFriendDash(false); setLoadingRecentSolves(false); }
+    });
+    return () => { cancelled = true; };
+  }, [inspectedFriend?.id]);
 
   function handleCopyCode(code: string) {
     navigator.clipboard.writeText(code);
@@ -1205,7 +1240,7 @@ function Dashboard({
       {/* Unified M3 Hero Container Card */}
       <div className="hero-card workspace-summary">
         <div className="streak-hero">
-          <img src={assetUrl("main_fire.png")} alt="🔥" className="hero-flame-img" />
+          <img src="/main_fire.png" alt="🔥" className="hero-flame-img" />
           <span className="streak-count">{dash.current_streak}</span>
         </div>
         <div className="streak-label">DAY STREAK</div>
@@ -1220,7 +1255,8 @@ function Dashboard({
           <span className="diff-pill easy">Easy {dash.easy_count}</span>
           <span className="diff-pill medium">Med {dash.medium_count}</span>
           <span className="diff-pill hard">Hard {dash.hard_count}</span>
-          <span className="diff-pill total">Total {dash.easy_count + dash.medium_count + dash.hard_count}</span>
+          <span className="diff-pill total">CF {dash.codeforces_count || 0}</span>
+          <span className="diff-pill total">Total {dash.easy_count + dash.medium_count + dash.hard_count + (dash.codeforces_count || 0)}</span>
         </div>
       </div>
 
@@ -1524,14 +1560,14 @@ function Dashboard({
       <section className="workspace-community" aria-labelledby="community-title">
         <div className="section-header"><h2 id="community-title">Around the community</h2><span className="web-live-dot" /></div>
         {activityFeed.length ? <ul className="workspace-community-list">{activityFeed.slice(0, 5).map(item => <li key={`${item.user_id}-${item.title_slug}-${item.solved_at}`}>
-          <a href={item.leetcode_url} target="_blank" rel="noreferrer"><strong>{item.user_name}</strong><span>solved {item.title}</span><small>{item.relative_time} ↗</small></a>
+          <a href={item.problem_url || item.leetcode_url} target="_blank" rel="noreferrer"><strong>{item.user_name}</strong><span>solved {item.title}</span><small>{item.platform === "codeforces" ? "Codeforces" : "LeetCode"} · {item.relative_time} ↗</small></a>
         </li>)}</ul> : <p className="muted">New community solves will show up here.</p>}
       </section>
 
       {/* Inspect Friend Modal */}
       {inspectedFriend && (
         <div className="modal-overlay" onClick={() => setInspectedFriend(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content profile-stats-modal" onClick={(e) => e.stopPropagation()}>
             <button
               className="modal-close"
               onClick={() => setInspectedFriend(null)}
@@ -1562,21 +1598,16 @@ function Dashboard({
                 >
                   @{inspectedFriend.leetcode_username} ↗
                 </a>
+                {inspectedFriend.codeforces_username && <a className="profile-handle" href={`https://codeforces.com/profile/${encodeURIComponent(inspectedFriend.codeforces_username)}`} target="_blank" rel="noreferrer">CF @{inspectedFriend.codeforces_username} ↗</a>}
               </div>
             </div>
 
             <div className="modal-streak-box">
-              <img src={assetUrl("main_fire.png")} alt="🔥" className="modal-flame-img" />
-              <span className="modal-streak-count">
-                {inspectedFriend.current_streak} Day Streak
-              </span>
-              <span
-                className="modal-points-tag"
-                title={`Easy: ${inspectedFriend.easy_count} | Medium: ${inspectedFriend.medium_count} | Hard: ${inspectedFriend.hard_count}`}
-              >
-                ⭐ {inspectedFriend.points ?? (inspectedFriend.easy_count * 1 + inspectedFriend.medium_count * 3 + inspectedFriend.hard_count * 6)} pts
-              </span>
+              <img src="/main_fire.png" alt="🔥" className="modal-flame-img" />
+              <span className="modal-streak-count">{friendDash ? `${friendDash.current_streak} Day Streak` : "…"}</span>
+              <span className="modal-points-tag">⭐ {(friendDash?.points ?? inspectedFriend.points)?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? "—"} pts</span>
             </div>
+            {profileError && <p className="tiny error-banner" role="alert">{profileError}</p>}
 
             {/* Modal Tab Bar */}
             <div className="modal-tab-bar">
@@ -1596,35 +1627,21 @@ function Dashboard({
 
             {modalTab === "overview" ? (
               <>
-                <div className="section-title text-center mb-1">QUESTIONS SOLVED</div>
-                <div className="stat-row">
-                  <Stat
-                    label="Today"
-                    value={
-                      friendDash ? friendDash.today_count : (inspectedFriend.is_active_today ? 1 : 0)
-                    }
-                  />
-                  <Stat label="This Week" value={inspectedFriend.weekly_total} />
-                  <Stat
-                    label="This Month"
-                    value={friendDash ? friendDash.monthly_total : 0}
-                  />
-                </div>
-
-                <div className="diff-pills">
-                  <span className="diff-pill easy">
-                    Easy {inspectedFriend.easy_count}
-                  </span>
-                  <span className="diff-pill medium">
-                    Med {inspectedFriend.medium_count}
-                  </span>
-                  <span className="diff-pill hard">
-                    Hard {inspectedFriend.hard_count}
-                  </span>
-                  <span className="diff-pill total">
-                    Total {inspectedFriend.easy_count + inspectedFriend.medium_count + inspectedFriend.hard_count}
-                  </span>
-                </div>
+                {friendDash ? <>
+                  <div className="section-title text-center mb-1">QUESTIONS SOLVED</div>
+                  <div className="stat-row">
+                    <Stat label="Today" value={friendDash.today_count} />
+                    <Stat label="This Week" value={friendDash.weekly_total} />
+                    <Stat label="This Month" value={friendDash.monthly_total} />
+                  </div>
+                  <div className="diff-pills">
+                    <span className="diff-pill easy">Easy {friendDash.easy_count}</span>
+                    <span className="diff-pill medium">Med {friendDash.medium_count}</span>
+                    <span className="diff-pill hard">Hard {friendDash.hard_count}</span>
+                    <span className="diff-pill total">CF {friendDash.codeforces_count || 0}</span>
+                    <span className="diff-pill total">Total {friendDash.easy_count + friendDash.medium_count + friendDash.hard_count + (friendDash.codeforces_count || 0)}</span>
+                  </div>
+                </> : <p className="tiny muted" role="status">{loadingFriendDash ? "Loading profile metrics…" : "Profile metrics are unavailable."}</p>}
 
                 {/* Material UI 7-Day Activity Calendar Card */}
                 {loadingFriendDash ? (
@@ -1651,7 +1668,7 @@ function Dashboard({
                                 title={`${d.date}: ${solved} problem${solved === 1 ? "" : "s"} solved`}
                               />
                             </div>
-                            <span className="profile-heat-day">{dayLabels[i]}</span>
+                            <span className="profile-heat-day">{new Date(`${d.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" })}</span>
                           </div>
                         );
                       })}
@@ -1665,11 +1682,11 @@ function Dashboard({
                 {loadingRecentSolves ? (
                   <div className="centered muted tiny py-3">Loading solves…</div>
                 ) : recentSolvesList.length === 0 ? (
-                  <div className="centered muted tiny py-3">No recent solves recorded yet.</div>
+                  <div className="centered muted tiny py-3">{profileError ? "Solves are unavailable." : "No recent solves recorded yet."}</div>
                 ) : (
                   <ul className="recent-solves-list">
                     {recentSolvesList.map((s, idx) => {
-                      const problemUrl = s.leetcode_url || `https://leetcode.com/problems/${s.title_slug}`;
+                      const problemUrl = s.problem_url || s.leetcode_url || `https://leetcode.com/problems/${s.title_slug}`;
                       return (
                         <li
                           key={idx}
@@ -1681,6 +1698,7 @@ function Dashboard({
                           <div className="solve-info">
                             <span className="solve-title">
                               {s.title}
+                              <small className="solve-platform">{s.platform === "codeforces" ? "Codeforces" : "LeetCode"}</small>
                             </span>
                           </div>
                           <a
@@ -1689,7 +1707,7 @@ function Dashboard({
                             rel="noreferrer"
                             className="solve-external-link"
                             onClick={(e) => e.stopPropagation()}
-                            title="Open on LeetCode"
+                            title={`Open on ${s.platform === "codeforces" ? "Codeforces" : "LeetCode"}`}
                           >
                             ↗
                           </a>
@@ -1759,9 +1777,9 @@ function Dashboard({
       {/* Account Settings Modal */}
       {showSettings && (
         <div className="modal-overlay" onClick={() => setShowSettings(false)}>
-          <div className="modal-content settings-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content settings-modal" role="dialog" aria-modal="true" aria-labelledby="account-settings-title" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>⚙️ Account Settings</h3>
+              <h3 id="account-settings-title">Account Settings</h3>
               <button
                 className="modal-close"
                 onClick={() => setShowSettings(false)}
@@ -1771,6 +1789,7 @@ function Dashboard({
               </button>
             </div>
 
+            <div className="settings-body">
             {settingsMsg && <div className="settings-msg-banner">{settingsMsg}</div>}
 
             {/* Profile Summary Card */}
@@ -1850,6 +1869,7 @@ function Dashboard({
                   <div className="settings-input-wrapper">
                     <span className="settings-input-prefix">@</span>
                     <input
+                      aria-label="LeetCode username"
                       value={newLeetcodeUsername}
                       onChange={(e) => setNewLeetcodeUsername(e.target.value)}
                       placeholder="Username"
@@ -1869,17 +1889,32 @@ function Dashboard({
                     </button>
                   </div>
                   <span className="settings-input-hint">
-                    Syncs solves, contest rating, and streak from this LeetCode handle.
+                    Syncs your public LeetCode solves and streak.
                   </span>
                 </form>
                 <button
                   type="button"
                   className="username-help-link-btn"
                   onClick={() => setShowUsernameHelpModal(true)}
-                  style={{ marginTop: "6px" }}
                 >
                   💡 Need help finding your LeetCode username?
                 </button>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <div className="settings-section-title">CODEFORCES ACCOUNT</div>
+              <div className="settings-card">
+                <form onSubmit={handleUpdateCodeforces} className="settings-username-form">
+                  <div className="settings-input-wrapper">
+                    <span className="settings-input-prefix">@</span>
+                    <input aria-label="Codeforces username" value={newCodeforcesUsername} onChange={e => setNewCodeforcesUsername(e.target.value)} placeholder={dash.codeforces_username || "Codeforces handle"} className="settings-text-input" maxLength={24} required />
+                    <button type="submit" className="settings-action-btn" disabled={updatingCodeforces || !newCodeforcesUsername.trim()}>{updatingCodeforces ? "Connecting…" : dash.codeforces_username ? "Update" : "Connect"}</button>
+                  </div>
+                  <span className="settings-input-hint">{dash.codeforces_username ? `Connected: @${dash.codeforces_username}. ` : ""}Public accepted solves sync automatically with your points and streak.</span>
+                  {dash.codeforces_username && <span className="settings-input-hint" role="status">{dash.codeforces_sync_error || (dash.codeforces_last_sync ? `Last synced ${new Date(dash.codeforces_last_sync + (/Z|[+-]\d\d:\d\d$/.test(dash.codeforces_last_sync) ? "" : "+05:30")).toLocaleString()}` : "Importing public history… Scores will update automatically.")}</span>}
+                </form>
+                <a className="username-help-link-btn" href="https://codeforces.com/" target="_blank" rel="noreferrer">Open Codeforces ↗</a>
               </div>
             </div>
 
@@ -1940,6 +1975,7 @@ function Dashboard({
               <p className="settings-legal-disclaimer">
                 Independent open-source project. Not affiliated with LeetCode LLC.
               </p>
+            </div>
             </div>
           </div>
         </div>
@@ -2101,7 +2137,7 @@ function Dashboard({
               <span className="tiny muted">QUESTION</span>
               <a
                 href={
-                  selectedSolveBreakdown.leetcode_url ||
+                  selectedSolveBreakdown.problem_url || selectedSolveBreakdown.leetcode_url ||
                   `https://leetcode.com/problems/${selectedSolveBreakdown.title_slug}`
                 }
                 target="_blank"
@@ -2113,21 +2149,22 @@ function Dashboard({
               </a>
             </div>
 
+            <p className="tiny muted">Source: {selectedSolveBreakdown.platform === "codeforces" ? "Codeforces" : "LeetCode"}{selectedSolveBreakdown.source_handle ? ` · @${selectedSolveBreakdown.source_handle}` : ""}{selectedSolveBreakdown.source_submission_id ? ` · submission ${selectedSolveBreakdown.source_submission_id}` : ""}</p>
             {/* Base Problem Score Card */}
             <div className="breakdown-card">
               <div className="breakdown-card-header">
                 <span className="card-label">1. Base Problem Score</span>
-                {selectedSolveBreakdown.breakdown?.contest_rating ? (
-                  <span className="badge-contest">ZeroTrac Elo {Math.round(selectedSolveBreakdown.breakdown.contest_rating)}</span>
+                {selectedSolveBreakdown.platform === "codeforces" || selectedSolveBreakdown.breakdown?.contest_rating ? (
+                  <span className="badge-contest">{selectedSolveBreakdown.platform === "codeforces" ? selectedSolveBreakdown.breakdown?.contest_rating ? `Codeforces rating ${Math.round(selectedSolveBreakdown.breakdown.contest_rating)}` : "Codeforces · Unrated" : `ZeroTrac Elo ${Math.round(selectedSolveBreakdown.breakdown?.contest_rating || 0)}`}</span>
                 ) : (
                   <span className="badge-diff">{selectedSolveBreakdown.breakdown?.difficulty || "Medium"} Category</span>
                 )}
               </div>
 
-              {selectedSolveBreakdown.breakdown?.contest_rating ? (
+              {selectedSolveBreakdown.platform === "codeforces" || selectedSolveBreakdown.breakdown?.contest_rating ? (
                 <div className="breakdown-row">
-                  <span className="row-label">Contest Base Points (Elo / 100):</span>
-                  <span className="row-val main-val">{selectedSolveBreakdown.breakdown.base_points} pts</span>
+                  <span className="row-label">{selectedSolveBreakdown.platform === "codeforces" ? "Base: 8 + 0.012 × (rating − 800)" : "Contest Base Points (Elo / 100):"}</span>
+                  <span className="row-val main-val">{selectedSolveBreakdown.breakdown?.base_points} pts</span>
                 </div>
               ) : (
                 <>
@@ -2176,7 +2213,7 @@ function Dashboard({
             <div className="breakdown-total-card">
               <div className="total-title-group">
                 <div className="total-title">Total Points Earned</div>
-                <div className="tiny muted">Base + Bonuses × Streak</div>
+                <div className="tiny muted">(Base + Bonuses) × Streak</div>
               </div>
               <div className="total-score-badge">
                 ⭐ {selectedSolveBreakdown.points_earned ?? selectedSolveBreakdown.breakdown?.points_earned ?? 0} pts
@@ -2282,59 +2319,38 @@ function LeetcodeUsernameHelpModal({ onClose }: { onClose: () => void }) {
 }
 
 function PointsHelpModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content points-help-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>How Points Work</h3>
-          <button className="modal-close" onClick={onClose} title="Close">
-            ✕
-          </button>
-        </div>
-
-        <div className="help-section-list">
-          {/* Section 1: Base Points */}
-          <div className="help-section">
-            <h4 className="help-section-title">1. Base Problem Points</h4>
-            <p className="help-text">
-              Points per problem are calculated based on official LeetCode difficulty data:
-            </p>
-            <ul className="help-bullet-list">
-              <li>
-                <strong>Contest Rating (Primary):</strong> Sourced from <strong>ZeroTrac</strong> contest ratings. Base points equal <code>Rating / 100</code> (e.g. 1550 rating = <strong>15.5 pts</strong>, 2400 rating = <strong>24.0 pts</strong>).
-              </li>
-              <li>
-                <strong>Non-Contest Problems:</strong> Evaluated using difficulty category defaults (Easy: <strong>8 pts</strong>, Medium: <strong>15 pts</strong>, Hard: <strong>24 pts</strong>) scaled inversely by acceptance rate (lower acceptance rate yields higher points).
-              </li>
-            </ul>
-          </div>
-
-          {/* Section 2: Bonus Rewards */}
-          <div className="help-section">
-            <h4 className="help-section-title">2. Bonus Rewards</h4>
-            <div className="bonus-row">
-              <div className="bonus-box">
-                <span className="bonus-label">Daily Challenge</span>
-                <span className="bonus-val">+5 Pts</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Streak Multiplier */}
-          <div className="help-section">
-            <h4 className="help-section-title">3. Streak Multiplier</h4>
-            <p className="help-text">
-              Maintaining an active daily streak boosts your total points up to <strong>+10% max</strong> (scaling linearly from 1.00× on Day 1 to 1.10× at Day 30+).
-            </p>
-          </div>
-        </div>
-
-        <div className="modal-footer centered-footer">
-          <button type="button" className="primary-btn center-btn" onClick={onClose}>
-            Got it
-          </button>
-        </div>
-      </div>
+  const [section, setSection] = useState<string | null>(null);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") { event.stopPropagation(); onClose(); } };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const sections = [
+    { id: "leetcode", title: "LeetCode points", hint: "Contest ratings and difficulty", content: <>
+      <p className="help-text">Contest problems use ZeroTrac: <code>rating ÷ 100</code>. A 1550-rated problem earns 15.5 base points.</p>
+      <p className="help-text">For other problems, Easy starts at <strong>8</strong>, Medium at <strong>15</strong>, and Hard at <strong>24</strong> points. Acceptance rate adjusts these bases; lower acceptance earns more.</p>
+    </> },
+    { id: "codeforces", title: "Codeforces points", hint: "Rating-based points · automatic sync", content: <>
+      <p className="help-text">Base points = <code>8 + 0.012 × (rating − 800)</code>.</p>
+      <ul className="help-bullet-list"><li>800 rating → 8 points</li><li>1400 → 15.2 points</li><li>1800 → 20 points</li><li>2200 → 24.8 points</li></ul>
+      <p className="help-text">Connect your handle at signup or in Settings. Each unique, final accepted problem earns points once. Unrated problems count as activity but earn 0 points. The scale is provisional, calibrated against similar LeetCode problems.</p>
+    </> },
+    { id: "daily", title: "Daily challenge bonus", hint: "+5 points · LeetCode only", content: <p className="help-text">Solve LeetCode’s daily challenge on its challenge date to earn <strong>+5 points</strong> before the streak multiplier. This bonus does not apply to Codeforces.</p> },
+    { id: "streak", title: "Streak multiplier", hint: "Up to +10%", content: <>
+      <p className="help-text">The multiplier is <code>1 + 0.10 × min(streak days, 30) ÷ 30</code>, capped at <strong>1.10×</strong>.</p>
+      <p className="help-text">Final points = <strong>(base + eligible bonus) × multiplier</strong>. For example, a CF 1800 problem earns 20 base points, or 22 at the maximum multiplier.</p>
+    </> },
+  ];
+  return <div className="modal-overlay points-help-overlay" onClick={onClose}>
+    <div className="modal-content points-help-modal" role="dialog" aria-modal="true" aria-labelledby="points-help-title" onClick={event => event.stopPropagation()}>
+      <div className="modal-header"><h3 id="points-help-title">How Points Work</h3><button type="button" className="modal-close" onClick={onClose} aria-label="Close scoring help">✕</button></div>
+      <div className="help-section-list" aria-label="Scoring help topics">{sections.map(item => <div className="help-menu-item" key={item.id}>
+        <button type="button" className="help-menu-toggle" id={`help-toggle-${item.id}`} aria-expanded={section === item.id} aria-controls={`help-content-${item.id}`} onClick={() => setSection(previous => previous === item.id ? null : item.id)}>
+          <span><strong>{item.title}</strong><small>{item.hint}</small></span><span aria-hidden="true">{section === item.id ? "−" : "+"}</span>
+        </button>
+        <div id={`help-content-${item.id}`} role="region" aria-labelledby={`help-toggle-${item.id}`} hidden={section !== item.id} className="help-menu-content">{item.content}</div>
+      </div>)}</div>
+      <div className="modal-footer centered-footer"><button type="button" className="primary-btn center-btn" onClick={onClose}>Got it</button></div>
     </div>
-  );
+  </div>;
 }

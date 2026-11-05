@@ -21,7 +21,7 @@
   "content_scripts": [
     {
       "matches": ["https://leetcode.com/*"],
-      "js": ["leetcode-listener.js"],
+      "js": ["leetcode-listener.js", "history-bridge.js"],
       "run_at": "document_idle"
     }
   ],
@@ -40,5 +40,6 @@
       "strict_min_version": "109.0"
     }
   },
+  "optional_host_permissions": ["https://*/*"],
   "host_permissions": ["https://leetcode.com/*", "https://codestreak-api.onrender.com/*", "http://localhost:8000/*"]
 }
