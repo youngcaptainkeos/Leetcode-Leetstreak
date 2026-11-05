@@ -76,3 +76,42 @@ Connected runtime syncing (`backend/app/scheduler.py` and `backend/app/codeforce
 ### Verification Evidence
 - 86 backend tests passed with zero failures (`backend/tests`).
 - Regression verified against both SQLite and local PostgreSQL test instances.
+
+---
+
+## 2026-11-06 — Step: M2-05 / DATA-01/05/07/08/09: Score Ledger Reconciliation, Point Awards Persistence & Handle Change Recovery
+
+### Summary of Changes
+Connected the deterministic `scoring.py` Decimal calculation engine to runtime score reconciliation in `backend/app/point_calculator.py`. Every calculation captures a protected immutable `ScoreSnapshot` baseline before altering any score. Persisted exact `PointAward` rows for base, daily, and revision awards under version `points-components-v2`. Preserved existing earned daily bonuses without retroactive loss or double-counting. Awarded base-only credit for unlogged historical solves without streak inflation or daily bonuses. Unified breakdown helpers with the stored award formula to eliminate calculation/display discrepancies. Implemented handle-change reconciliation in `update_leetcode_username` (DATA-01) by capturing a baseline snapshot, bumping `leetcode_account_version`, and clearing old LeetCode solves while strictly preserving Codeforces history and tracking.
+
+### Detailed Changes
+1. **`backend/app/point_calculator.py`**:
+   - `compute_solve_points`, `compute_solve_points_breakdown`, and `compute_codeforces_points_breakdown` now delegate directly to `scoring.calculate_points`, eliminating differences between stored awards and display breakdown calculations (DATA-07).
+   - `recalculate_user_points`:
+     - Calls `capture_score_baseline(db, user.id)` before any score modification.
+     - Computes base and daily awards using `calculate_points` for LeetCode (rated or category base * ac_rate) and Codeforces (linear scale).
+     - Records and persists exact `PointAward` rows (`kind="base"`, `kind="daily"`) with `scoring_version="points-components-v2"`.
+     - Preserves existing earned daily bonuses without recomputing or overwriting them.
+     - Adds existing revision awards from `point_awards` to solve totals.
+     - Unlogged historical LeetCode solves are awarded base credit only (`multiplier = 1.0`, no daily bonus, no streak inflation), protecting against artificial score boosts.
+     - Flushes all awards and updates `user.points` with exact 4-place rounded precision.
+
+2. **`backend/app/main.py` (`update_leetcode_username`)**:
+   - When switching to a different LeetCode username:
+     - Captures a baseline `ScoreSnapshot` for recovery.
+     - Increments `user.leetcode_account_version += 1`, invalidating any stale in-flight operations.
+     - Calls `clear_tracking(db, user_id, "leetcode")` and deletes previous LeetCode `Solve` and `DailyActivity` rows.
+     - Resets LeetCode difficulty totals and streak while strictly keeping Codeforces history, solves, and preferences intact (DATA-01).
+     - Polls and repopulates the new handle from scratch.
+
+3. **`backend/tests/test_score_reconciliation.py`**:
+   - Added 5 new tests covering:
+     1. Exact `PointAward` persistence and baseline snapshot capture across LeetCode and Codeforces solves.
+     2. Reconciliation idempotency (running twice produces identical scores without duplicate awards).
+     3. Unlogged historical solves receiving base-only credit.
+     4. Handle change reconciliation: LeetCode solves cleanly replaced, account version bumped, Codeforces history preserved.
+     5. Breakdown helpers matching stored calculation results exactly.
+
+### Verification Evidence
+- 91 backend tests passed with zero failures (`backend/tests`).
+- Verified against both SQLite and local native PostgreSQL 16 instances.

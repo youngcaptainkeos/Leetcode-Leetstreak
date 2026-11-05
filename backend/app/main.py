@@ -51,7 +51,7 @@ from .migrations import (
     migrate_tracking,
 )
 from .recovery import consume_limit, recovery_account, otp_verifier, clear_reset, utcnow
-from .tracking import clear_tracking
+from .tracking import clear_tracking, capture_score_baseline
 
 
 def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Secret")):
@@ -337,6 +337,19 @@ async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest,
         data = await fetch_leetcode_user_data(new_username)
     except LeetCodeError as err:
         raise HTTPException(status_code=400, detail=str(err))
+
+    if new_username.lower() != (user.leetcode_username or "").lower():
+        capture_score_baseline(db, user.id)
+        user.leetcode_account_version += 1
+        clear_tracking(db, user_id, "leetcode")
+        db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "leetcode").delete()
+        db.query(DailyActivity).filter(DailyActivity.user_id == user_id).delete()
+        user.easy_count = 0
+        user.medium_count = 0
+        user.hard_count = 0
+        user.official_streak = 0
+        user.leetcode_history_state = "partial"
+        user.leetcode_history_gap = True
 
     user.leetcode_username = new_username
     user.avatar_url = data.get("avatar_url")
