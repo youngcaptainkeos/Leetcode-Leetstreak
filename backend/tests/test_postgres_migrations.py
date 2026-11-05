@@ -9,7 +9,14 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import sessionmaker
 
-from app.migrations import migrate_auth, migrate_display_preference, migrate_tracking
+from app.migrations import (
+    migrate_auth,
+    migrate_display_preference,
+    migrate_tracking,
+    migrate_core,
+    migrate_platforms,
+    run_all_migrations,
+)
 
 
 class LocalPostgresTests(unittest.TestCase):
@@ -96,6 +103,21 @@ class PostgresMigrationTests(LocalPostgresTests):
             self.assertEqual(row, (None, False, "legacy"))
             self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM point_awards")).scalar_one(), 0)
             self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM accepted_submissions")).scalar_one(), 0)
+
+    def test_run_all_migrations_concurrently_under_advisory_lock(self):
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            list(pool.map(lambda _: run_all_migrations(self.engine), range(4)))
+        with self.engine.connect() as connection:
+            version_count = connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one()
+            self.assertEqual(version_count, 5)
+            user_cols = {c["name"] for c in inspect(self.engine).get_columns("users")}
+            self.assertIn("session_version", user_cols)
+            self.assertIn("show_global_leaderboard", user_cols)
+            self.assertIn("codeforces_username", user_cols)
+            self.assertIn("leetcode_account_version", user_cols)
+            solve_cols = {c["name"] for c in inspect(self.engine).get_columns("solves")}
+            self.assertIn("platform", solve_cols)
+            self.assertIn("first_solve_at", solve_cols)
 
 
 class PostgresTrackingTests(LocalPostgresTests):

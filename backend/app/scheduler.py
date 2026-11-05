@@ -174,21 +174,22 @@ async def poll_all_users() -> dict:
     return results
 
 
-def start_scheduler() -> AsyncIOScheduler:
+def start_scheduler(immediate: bool = False) -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler()
+    job_kwargs = {"next_run_time": datetime.now()} if immediate else {}
     scheduler.add_job(
         poll_all_users,
         "interval",
         minutes=POLL_INTERVAL_MINUTES,
         id="poll_all_users",
-        next_run_time=datetime.now(),  # run once immediately on startup
+        **job_kwargs,
     )
     scheduler.add_job(
         refresh_zerotrac_dataset,
         "interval",
         weeks=1,
         id="refresh_zerotrac_dataset",
-        next_run_time=datetime.now(),  # run once immediately on startup, then weekly
+        **job_kwargs,
     )
     scheduler.start()
     return scheduler

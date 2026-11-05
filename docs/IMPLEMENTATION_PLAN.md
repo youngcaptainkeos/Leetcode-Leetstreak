@@ -200,6 +200,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 | M2-01 | DATA-06 shared clock and period boundaries | Passed locally: 54 backend tests including six new boundary/cooldown checks and four PostgreSQL migration checks. Dashboard and streak helpers use one IST clock; shared UTC storage conversion, Sunday-start weeks, exclusive period ends and seven-day elapsed cooldown helpers added. Ingestion, award migration and client date conversion remain later steps; DATA-06 is not yet complete. |
 | M2-02 | DATA-02/04/05/08 evidence and award storage | Passed locally: 63 backend tests, including concurrent PostgreSQL migration/event replay/baseline capture, old-point preservation, repeat-event idempotency, stale-account rejection, unique precise award identities and immutable baseline capture. Added account generations, explicit unknown first-solve state, accepted-event/award tables and private score snapshots. Migration does not revalue or reconstruct legacy daily awards. Account deletion/reset also clear private evidence. Runtime ingestion, scoring and UI integration remain later steps. |
 | M2-03 | DATA-07/08/09 shared component arithmetic | Passed locally: 71 backend tests, including eight arithmetic checks covering exact component totals, retained credits, invalid metadata and existing base scales. Deterministic Decimal engine added for new ledger integration: existing LC and CF base formulas, capped streak multiplier, multiplied revision awards, explicit retained daily/revision components and four-place half-up rounding. Stored-component totals must match exactly. Runtime calculator migration and read-API integration remain separate steps; no legacy scores are revalued by this module. |
+| M5-01 | OPS-03 versioned atomic schema migrations & safe startup lifecycle | Passed locally: 81 backend tests, including 9 migration/lifecycle tests and concurrent PostgreSQL advisory-locked execution. Unified migrations into versioned registry under PostgreSQL advisory lock / local RLock. Removed unconditional startup repairs, remote challenge fetches, immediate polling, and blanket recalculation. Startup fails closed on migration error; shutdown stops scheduler cleanly. Commit labeled 'M5 OPS-03 step 1: make schema initialization atomic, versioned, and safe during startup'. |
 
 
 ## 4. Security and privacy plans
@@ -740,16 +741,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Move schema changes into ordered, versioned, repeatable migrations with explicit failure behavior and backup/recovery instructions.
+- [x] Move schema changes into ordered, versioned, repeatable migrations with explicit failure behavior and backup/recovery instructions.
 - [ ] Backfill challenge archives incrementally using stored coverage/checkpoints; fetch missing months only.
 - [ ] Run all-user point reconciliation as an explicit versioned job, in bounded batches with progress and restart recovery.
-- [ ] Separate basic liveness from readiness. Startup should validate local configuration/schema and avoid waiting on years of provider requests.
-- [ ] Remove unconditional historical repair statements from normal startup after migrating their intended data safely.
+- [x] Separate basic liveness from readiness. Startup should validate local configuration/schema and avoid waiting on years of provider requests.
+- [x] Remove unconditional historical repair statements from normal startup after migrating their intended data safely.
 
 **Acceptance**
 
-- [ ] Restarting does not refetch the full archive or revalue all accounts.
-- [ ] Migration failure is visible and cannot leave a falsely healthy incompatible service.
+- [x] Restarting does not refetch the full archive or revalue all accounts.
+- [x] Migration failure is visible and cannot leave a falsely healthy incompatible service.
 - [ ] Interrupted backfills resume without duplicate awards or lost coverage.
 
 ### OPS-04 — Cross-process job coordination

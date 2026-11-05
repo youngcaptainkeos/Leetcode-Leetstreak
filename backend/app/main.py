@@ -40,10 +40,16 @@ from .point_calculator import compute_solve_points_breakdown, compute_codeforces
 from .platforms import daily_counts, solve_url
 from .codeforces_client import fetch_profile, CodeforcesError
 from .codeforces_sync import background_codeforces_sync, user_sync_lock
-from .platform_migration import migrate_platforms
 from .security import current_user, require_self, member_group, owned_group
 from .releases import RELEASE_NOTICES
-from .migrations import migrate_auth, migrate_display_preference, migrate_tracking
+from .migrations import (
+    run_all_migrations,
+    migrate_core,
+    migrate_platforms,
+    migrate_auth,
+    migrate_display_preference,
+    migrate_tracking,
+)
 from .recovery import consume_limit, recovery_account, otp_verifier, clear_reset, utcnow
 from .tracking import clear_tracking
 
@@ -56,32 +62,6 @@ def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Ad
 from sqlalchemy import text, func
 
 logging.basicConfig(level=logging.INFO)
-
-try:
-    Base.metadata.create_all(bind=engine)
-    with engine.connect() as conn:
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(120);"))
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);"))
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(6);"))
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP;"))
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS points DOUBLE PRECISION DEFAULT 0.0;"))
-        conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS points_earned DOUBLE PRECISION DEFAULT 0.0;"))
-        conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20);"))
-        conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS ac_rate DOUBLE PRECISION;"))
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_notified_commit VARCHAR(40) DEFAULT 'legacy';"))
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS global_leaderboard_enabled BOOLEAN DEFAULT TRUE;"))
-        # Drop unique constraint on leetcode_username if present
-        conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_leetcode_username_key;"))
-        conn.execute(text("DROP INDEX IF EXISTS ix_users_leetcode_username;"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_leetcode_username ON users (leetcode_username);"))
-        conn.commit()
-except Exception as migration_err:
-    logging.warning("Auto-migration executed with warning: %s", migration_err)
-
-migrate_platforms(engine)
-migrate_auth(engine)
-migrate_display_preference(engine)
-migrate_tracking(engine)
 
 app = FastAPI(title="LeetStreak API")
 
@@ -100,53 +80,22 @@ _scheduler = None
 @app.on_event("startup")
 async def on_startup():
     global _scheduler
-    try:
-        with engine.begin() as conn:
-            conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_leetcode_username_key;"))
-            conn.execute(text("CREATE TABLE IF NOT EXISTS kudos (id SERIAL PRIMARY KEY, from_user_id INTEGER NOT NULL, to_user_id INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"))
-            conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS is_daily BOOLEAN DEFAULT FALSE;"))
-            conn.execute(text("CREATE TABLE IF NOT EXISTS daily_challenges (date DATE PRIMARY KEY, title_slug VARCHAR(200) NOT NULL);"))
-            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS global_leaderboard_enabled BOOLEAN DEFAULT TRUE;"))
-            conn.execute(text("UPDATE solves SET is_daily = TRUE WHERE LOWER(title_slug) = 'image-overlap';"))
-            conn.execute(text("INSERT INTO daily_challenges (date, title_slug) VALUES ('2026-09-13', 'image-overlap') ON CONFLICT DO NOTHING;"))
-    except Exception as e:
-        logger.warning("Startup table migration warning: %s", e)
-
-    db = SessionLocal()
-    try:
-        # Initialize created_at for any existing users if null
-        existing_users_without_date = db.query(User).filter(User.created_at.is_(None)).all()
-        for u in existing_users_without_date:
-            u.created_at = datetime.now()
-
-        # Ensure global_leaderboard_enabled is not null for any existing users
-        null_gl_users = db.query(User).filter(User.global_leaderboard_enabled.is_(None)).all()
-        for u in null_gl_users:
-            u.global_leaderboard_enabled = True
-
-        bloated_rows = db.query(DailyActivity).filter(DailyActivity.problems_solved > 1).all()
-        for r in bloated_rows:
-            solves_count = db.query(Solve).filter(
-                Solve.user_id == r.user_id, Solve.platform == "leetcode",
-                func.date(Solve.solved_at) == r.date
-            ).count()
-            r.problems_solved = max(1, solves_count)
-
-        # Backfill full daily challenge history from LeetCode GraphQL
-        from .scheduler import backfill_daily_challenges_archive
-        await backfill_daily_challenges_archive(db)
-
-        # Recalculate points for all existing users with new scoring rules
-        from .point_calculator import recalculate_all_users_points
-        await recalculate_all_users_points(db)
-
-    except Exception as e:
-        logger.warning("Startup activity cleanup failed: %s", e)
-        db.rollback()
-    finally:
-        db.close()
-
+    run_all_migrations(engine)
     _scheduler = start_scheduler()
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    global _scheduler
+    if _scheduler:
+        try:
+            if _scheduler.running:
+                _scheduler.shutdown(wait=False)
+        except Exception as e:
+            logger.warning("Scheduler shutdown warning: %s", e)
+        finally:
+            _scheduler = None
+
 
 
 @app.get("/api/health")
