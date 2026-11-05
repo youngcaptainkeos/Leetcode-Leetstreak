@@ -183,7 +183,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 |---|---|---|
 | M1-01 | SEC-01 route inventory + OPS-02 key configuration/JWT validation foundation | Passed locally: 7 synthetic token/configuration tests; route map in `backend/ACCESS_CONTROL.md`. Branch commit: `M1 SEC-01 OPS-02 step 1: require stable keys and validate tokens`. Hosting configuration/release still pending. |
 | M1-02 | SEC-01 account/group permissions + client session compatibility | Passed locally: 17 backend tests, 3 client session tests, 11 existing progress tests, both type checks/builds; archives synchronized. Owner transfer API added; UI work remains in M1-06. Branch commit: `M1 SEC-01 step 2: enforce account and group permissions`. Not deployed. |
-| M1-03 | SEC-02 fail-closed administration | Not started |
+| M1-03 | SEC-02 fail-closed administration | Passed locally: 22 backend tests; every admin route guarded, production test-email route removed, reviewed release previews and durable duplicate-job guards. Commit labeled `M1 SEC-02 step 3`. Awaiting release; interrupted mail jobs require operator review. |
 | M1-04 | OPS-01 honest email outcomes | Not started |
 | M1-05 | SEC-03 recovery abuse limits, password policy, session revocation | Not started |
 | M1-06 | SEC-04 Global display-only preference and group/profile behavior | Not started |
@@ -225,17 +225,17 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Remove the fallback secret. Missing/empty configuration must disable administrative actions or prevent production startup, according to the documented deployment policy.
-- [ ] Apply one fail-closed admin dependency to every admin route, including test/broadcast/poll routes. Use constant-time secret comparison or an explicitly authorized admin identity.
-- [ ] Remove test-email endpoints from production, or limit them to an authenticated development/admin workflow with approved destinations.
-- [ ] Restrict broadcast inputs to a validated release record; validate HTTPS download destinations and bound input sizes.
-- [ ] Add limits and audit events for administrative jobs without logging secrets or recipient lists. Coalesce duplicate poll/broadcast jobs.
+- [x] Remove the fallback secret. Missing/empty configuration must disable administrative actions or prevent production startup, according to the documented deployment policy.
+- [x] Apply one fail-closed admin dependency to every admin route, including test/broadcast/poll routes. Use constant-time secret comparison or an explicitly authorized admin identity.
+- [x] Remove test-email endpoints from production, or limit them to an authenticated development/admin workflow with approved destinations.
+- [x] Restrict broadcast inputs to a validated release record; validate HTTPS download destinations and bound input sizes.
+- [x] Add limits and audit events for administrative jobs without logging secrets or recipient lists. Coalesce duplicate poll/broadcast jobs.
 
 **Acceptance**
 
-- [ ] No admin route succeeds anonymously or with a missing, blank, invalid, or obsolete credential.
-- [ ] Unauthorized attempts send no email, mutate no records, and start no sync job.
-- [ ] Valid administration is auditable; errors do not expose configuration values.
+- [x] No admin route succeeds anonymously or with a missing, blank, invalid, or obsolete credential.
+- [x] Unauthorized attempts send no email, mutate no records, and start no sync job.
+- [x] Valid administration is auditable; errors do not expose configuration values.
 
 ### SEC-03 — Password recovery, passwords, and session revocation
 
@@ -1226,7 +1226,7 @@ For each item, record the following when work begins/completes. Do not place rea
 | Item | State | Implementation commit/PR | Verification evidence | Release state | Remaining work |
 |---|---|---|---|---|---|
 | M1-01 | Awaiting release | `f90fb47` | 7 synthetic auth/configuration tests passed | pre-launch | Production key configuration and coordinated release pending |
-| M1-02 | Passed locally; awaiting release | Commit labeled `M1 SEC-01 step 2` | 17 backend + 3 client session + 11 progress tests; type checks/builds passed | pre-launch | Session revocation follows M1-05; owner-transfer UI follows M1-06 |
+| M1-02 | Passed locally; awaiting release | `f200400` | 17 backend + 3 client session + 11 progress tests; type checks/builds passed | pre-launch | Session revocation follows M1-05; owner-transfer UI follows M1-06 |
 
 ### Shared definition of done
 
@@ -1238,6 +1238,8 @@ For each item, record the following when work begins/completes. Do not place rea
 - Extension packages or website output are rebuilt only when their corresponding application changes require it.
 - Required deployment verification is complete, or the item remains explicitly awaiting release.
 - The master checkbox is updated, and any new follow-up has a distinct ID rather than being silently forgotten.
+
+M1-03 evidence: 22 backend tests passed using synthetic users and a temporary database; no emails or production jobs were sent. Administrative configuration/release remains pending.
 
 ## 11. Coverage map back to the review
 

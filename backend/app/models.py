@@ -141,3 +141,12 @@ class PlatformActivity(Base):
     date = Column(Date, nullable=False)
     problems_solved = Column(Integer, nullable=False, default=0)
     __table_args__ = (UniqueConstraint("user_id", "platform", "date", name="uq_platform_activity"),)
+
+
+class AdminOperation(Base):
+    """Durable duplicate guard; contains no recipients, credentials, or message bodies."""
+    __tablename__ = "admin_operations"
+    operation_key = Column(String(120), primary_key=True)
+    state = Column(String(20), nullable=False)
+    started_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    finished_at = Column(DateTime, nullable=True)

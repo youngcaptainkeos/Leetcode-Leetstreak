@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 import secrets
 
 logger = logging.getLogger("codestreak.main")
@@ -20,7 +21,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .config import CORS_ORIGINS, ADMIN_SECRET
 from .database import Base, engine, get_db, SessionLocal
-from .models import User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge
+from .models import AdminOperation, User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
 from .email_service import send_otp_email, send_update_notification_email
 from .schemas import (
@@ -29,7 +30,7 @@ from .schemas import (
     GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema, PointBreakdownSchema,
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
     KudosToggleRequest, KudosAllRequest, UpdateUsernameRequest, UpdateSettingsRequest, ActivityFeedItemSchema,
-    DynamicMenuItem, AppConfigResponse, DeleteAccountRequest, SyncRequest, UpdateCodeforcesRequest, GroupTransferRequest,
+    DynamicMenuItem, AppConfigResponse, DeleteAccountRequest, SyncRequest, UpdateCodeforcesRequest, GroupTransferRequest, ReleaseBroadcastRequest,
 )
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
@@ -40,10 +41,11 @@ from .codeforces_client import fetch_profile, CodeforcesError
 from .codeforces_sync import background_codeforces_sync, user_sync_lock
 from .platform_migration import migrate_platforms
 from .security import current_user, require_self, member_group, owned_group
+from .releases import RELEASE_NOTICES
 
 
 def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Secret")):
-    if ADMIN_SECRET and x_admin_secret != ADMIN_SECRET:
+    if len(ADMIN_SECRET.encode("utf-8")) < 32 or not x_admin_secret or not secrets.compare_digest(x_admin_secret.encode("utf-8"), ADMIN_SECRET.encode("utf-8")):
         raise HTTPException(status_code=403, detail="Forbidden: Invalid Admin Secret Header")
     return True
 
@@ -1097,16 +1099,54 @@ async def get_global_recent_solves(limit: int = Query(15, ge=1, le=100), db: Ses
     return feed
 
 
-@app.post("/api/admin/poll-now")
-async def poll_now():
-    """Manually trigger a poll of all users (backwards compatible for legacy extension clients)."""
-    results = await poll_all_users()
-    return {"polled": results}
+def claim_admin_operation(db: Session, key: str, *, repeat_after: int | None = None):
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    row = db.query(AdminOperation).filter_by(operation_key=key).with_for_update().first()
+    if row:
+        if row.state == "running":
+            raise HTTPException(409, "This job is already running or needs operator recovery.")
+        if repeat_after is None:
+            raise HTTPException(409, "This release job was already submitted. Review its outcome before retrying.")
+        if (now - row.started_at).total_seconds() < repeat_after:
+            raise HTTPException(429, "Wait before starting another all-user sync.")
+        row.state, row.started_at, row.finished_at = "running", now, None
+    else:
+        db.add(AdminOperation(operation_key=key, state="running", started_at=now))
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "This job was already submitted.")
+    logger.info("Administrative job started: %s", key)
+
+
+def finish_admin_operation(key: str, state: str):
+    with SessionLocal() as db:
+        row = db.query(AdminOperation).filter_by(operation_key=key).first()
+        if row:
+            row.state = state
+            row.finished_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            db.commit()
+    logger.info("Administrative job finished: %s (%s)", key, state)
+
+
+@app.post("/api/admin/poll-now", dependencies=[Depends(verify_admin_secret)])
+async def poll_now(db: Session = Depends(get_db)):
+    claim_admin_operation(db, "poll-all", repeat_after=60)
+    try:
+        results = await poll_all_users()
+    except Exception:
+        finish_admin_operation("poll-all", "failed")
+        raise HTTPException(503, "All-user sync failed. Review the job status before retrying.")
+    finish_admin_operation("poll-all", "completed")
+    return {"status": "completed", "accounts_polled": len(results)}
 
 
 @app.post("/api/admin/reset-db", dependencies=[Depends(verify_admin_secret)])
 def reset_db(db: Session = Depends(get_db)):
     """Clears all database records for fresh user registrations."""
+    db.query(Kudos).delete()
+    db.query(PlatformActivity).delete()
     db.query(Solve).delete()
     db.query(DailyActivity).delete()
     db.query(GroupMember).delete()
@@ -1133,7 +1173,7 @@ def debug_users(db: Session = Depends(get_db)):
     ]
 
 
-@app.get("/api/admin/init-user-dates", dependencies=[Depends(verify_admin_secret)])
+@app.post("/api/admin/init-user-dates", dependencies=[Depends(verify_admin_secret)])
 def init_user_dates(db: Session = Depends(get_db)):
     """Backfills created_at timestamp for existing users."""
     users = db.query(User).all()
@@ -1153,6 +1193,9 @@ def delete_user_by_id(user_id: int, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    if db.query(Group.id).filter(Group.creator_id == user_id).first():
+        raise HTTPException(409, "Resolve owned groups before deleting this account.")
+    db.query(Kudos).filter((Kudos.from_user_id == user_id) | (Kudos.to_user_id == user_id)).delete()
     db.query(Solve).filter(Solve.user_id == user_id).delete()
     db.query(DailyActivity).filter(DailyActivity.user_id == user_id).delete()
     db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id).delete()
@@ -1231,72 +1274,42 @@ async def send_and_update_user_commit(
             if u:
                 u.last_notified_commit = commit_id
                 db.commit()
-                logging.info(f"Updated user {user_id} ({username}) last_notified_commit to '{commit_id}'")
+                logging.info("Release notification accepted for account %d", user_id)
         except Exception as e:
-            logging.error(f"Failed to update last_notified_commit for user {user_id}: {e}")
+            logging.error("Release delivery state could not be saved for account %d", user_id)
         finally:
             db.close()
+    return success
 
 
-@app.post("/api/admin/broadcast-update-email")
-async def broadcast_update_email(
-    background_tasks: BackgroundTasks,
-    commit_id: str = "09d1cfc",
-    release_notes: str = "Cleaned up username guide instructions and layout with clear steps and spacious formatting.",
-    download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
-    db: Session = Depends(get_db)
-):
-    """
-    Broadcasts update notification email with a styled 'Download Update Package' CTA button to registered users.
-    Upon successful delivery, updates user's last_notified_commit in the database to the target commit_id.
-    """
-    users = db.query(User).filter(User.email.isnot(None), User.email != "").all()
-    count = 0
-    for user in users:
-        if user.last_notified_commit != commit_id:
-            display_name = user.name.strip() if (user.name and user.name.strip()) else "Coder"
-            background_tasks.add_task(
-                send_and_update_user_commit,
-                user_id=user.id,
-                to_email=user.email,
-                username=display_name,
-                commit_id=commit_id,
-                release_notes=release_notes,
-                download_url=download_url
-            )
-            count += 1
-
-    return {
-        "status": "success",
-        "queued_emails": count,
-        "commit_id": commit_id,
-        "message": f"Queued update emails with download package button to {count} registered users. Database records will update to commit '{commit_id}' upon delivery."
-    }
+async def broadcast_release(release_id: str, recipients: list[int]):
+    notice = RELEASE_NOTICES[release_id]
+    accepted = True
+    try:
+        for user_id in recipients:
+            with SessionLocal() as db:
+                user = db.query(User).filter_by(id=user_id).first()
+                if not user or user.last_notified_commit == release_id:
+                    continue
+                address, name = user.email, (user.name or "Coder").strip() or "Coder"
+            result = await send_and_update_user_commit(user_id, address, name, release_id, notice.notes, notice.download_url)
+            accepted = bool(result) and accepted
+        finish_admin_operation("broadcast:" + release_id, "completed" if accepted else "failed")
+    except Exception:
+        finish_admin_operation("broadcast:" + release_id, "failed")
+        logger.error("Release broadcast interrupted; operator review required.")
 
 
-@app.post("/api/admin/test-update-email")
-async def test_update_email(
-    to_email: str,
-    username: str = "Developer",
-    commit_id: str = "09d1cfc",
-    release_notes: str = "Cleaned up username guide instructions and layout with clear steps and spacious formatting.",
-    download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip"
-):
-    """
-    Sends a test update notification email with 'Download Update Package' CTA button to a specific email address.
-    """
-    success = await send_update_notification_email(
-        to_email=to_email,
-        username=username,
-        commit_id=commit_id,
-        release_notes=release_notes,
-        download_url=download_url
-    )
-    return {
-        "status": "sent" if success else "failed",
-        "to_email": to_email,
-        "commit_id": commit_id
-    }
+@app.post("/api/admin/broadcast-update-email", dependencies=[Depends(verify_admin_secret)])
+def broadcast_update_email(payload: ReleaseBroadcastRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    if payload.release_id not in RELEASE_NOTICES:
+        raise HTTPException(400, "Choose a reviewed release ID.")
+    ids = [row[0] for row in db.query(User.id).filter(User.email.isnot(None), User.email != "", User.last_notified_commit != payload.release_id).all()]
+    if payload.dry_run:
+        return {"status": "preview", "eligible_accounts": len(ids), "release_id": payload.release_id}
+    claim_admin_operation(db, "broadcast:" + payload.release_id)
+    background_tasks.add_task(broadcast_release, payload.release_id, ids)
+    return {"status": "queued", "eligible_accounts": len(ids), "release_id": payload.release_id}
 
 
 # ==========================================================================

@@ -169,6 +169,12 @@ class GroupTransferRequest(BaseModel):
     new_owner_id: int = Field(gt=0)
 
 
+class ReleaseBroadcastRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    release_id: str = Field(min_length=1, max_length=40, pattern=r"^[a-z0-9-]+$")
+    dry_run: bool = True
+
+
 class GroupMemberSchema(BaseModel):
     id: int
     name: str

@@ -41,6 +41,19 @@ checks are added by the route/session implementation steps.
 
 ## Local verification
 
+Administrative requests require a separately generated `ADMIN_SECRET` of at least
+32 bytes in `X-Admin-Secret`. Missing/blank/short configuration always denies
+access. Ordinary account tokens do not grant administration. There is no
+production test-email endpoint. Date repair uses POST, not a mutating GET.
+
+Announcements accept a reviewed `release_id` from `app/releases.py`, with
+`dry_run=true` by default. Preview returns counts only; sending requires an
+explicit `dry_run=false`. Operators cannot supply arbitrary links or HTML.
+Stored job guards reject duplicate broadcasts and overlapping/repeated all-user
+polls. Interrupted/failed broadcasts require private operator review before
+retrying; do not reset the guard blindly because provider acceptance can be
+ambiguous. This is bounded protection, not a claim of exactly-once email delivery.
+
 Run `PYTHONPATH=backend test_env/bin/python -m unittest discover -s backend/tests -v`
 in the current development checkout, or use a separately created local virtual
 environment with `backend/requirements.txt`. No production database or provider

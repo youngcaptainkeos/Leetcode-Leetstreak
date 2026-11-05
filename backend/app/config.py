@@ -10,7 +10,7 @@ DATABASE_URL = os.getenv(
 )
 POLL_INTERVAL_MINUTES = int(os.getenv("POLL_INTERVAL_MINUTES", "15"))
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*")
-ADMIN_SECRET = os.getenv("ADMIN_SECRET", "codestreak_secret_admin_key_2026")
+ADMIN_SECRET = os.getenv("ADMIN_SECRET", "").strip()
 
 
 def load_jwt_secret() -> str:
