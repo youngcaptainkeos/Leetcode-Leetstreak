@@ -153,3 +153,5 @@ Approval shorthand is fine: “Approve the recommendations except Dxx: …”. I
 - Owner confirmed the exposed legacy Render credentials revoked; Supabase password was regenerated and the primary service database reads passed after redeployment. The old passwords were not probed. Public history publication and production release checkpoints remain separate.
 
 Daily limit clarification: each different official daily question first solved that IST day can earn a daily bonus; there is no across-question daily cap. Repeated questions remain revision-only.
+
+Historical-credit fallback accepted: old LeetCode questions with unproved first-solve dates receive clearly labeled current base-only credit; they do not count toward streaks or period rankings without reliable dates. If a previously credited daily amount cannot be separated reliably from the combined score, preserve the combined total as protected legacy credit and flag it for reconciliation rather than inventing a bonus.
