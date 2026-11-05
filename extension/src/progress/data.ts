@@ -1,5 +1,6 @@
 import plans from "../data/study-plans.json";
 import strivers from "../data/strivers-a2z.json";
+import { publicUrl, importedPlanSlug, fetchPublicPlan } from "./importer";
 
 // Public studyPlanV2Detail snapshots from LeetCode, retrieved 2026-11-05.
 // Bundled so the complete question lists remain available offline.
@@ -11,7 +12,7 @@ export const STUDY_PLANS: StudyPlan[] = [
 ];
 const DEFAULTS_VERSION = 2;
 export interface StudyQuestion { title: string; titleSlug: string; difficulty: string; url?: string; leetcodeSlug?: string; kind?: "learning" | "practice" }
-export interface StudyPlan { name: string; slug: string; planSubGroups: { name: string; questions: StudyQuestion[] }[]; source?: "leetcode" | "takeuforward"; sourceUrl?: string; snapshotDate?: string }
+export interface StudyPlan { name: string; slug: string; planSubGroups: { name: string; questions: StudyQuestion[] }[]; source?: "leetcode" | "takeuforward" | "codeforces" | "external"; sourceUrl?: string; snapshotDate?: string }
 export const PRACTICE_REFRESH = "leetstreak:practice-refresh";
 export interface Submission { title: string; titleSlug: string; timestamp: string }
 export interface PracticeSnapshot {
@@ -40,30 +41,27 @@ export function parsePlanSlug(input: string): string {
   return slug;
 }
 
-export function parsePlanInput(input: string): { source: "leetcode" | "takeuforward"; slug: string } {
+export function parsePlanInput(input: string): { source: "leetcode" | "takeuforward" | "codeforces" | "external"; slug: string; url?: string } {
   let raw = input.trim();
   if (raw === strivers.slug) return { source: "takeuforward", slug: strivers.slug };
-  if (/^(?:www\.)?takeuforward\.org\//i.test(raw)) raw = `https://${raw}`;
+  if (/^(?:www\.)?(?:takeuforward\.org|codeforces\.com)\//i.test(raw)) raw = `https://${raw}`;
   if (raw.startsWith("https://")) {
-    const url = new URL(raw);
+    const url = publicUrl(raw);
     if (["takeuforward.org", "www.takeuforward.org"].includes(url.hostname)) {
-      if (url.username || url.password || url.port || url.pathname.replace(/\/$/, "") !== "/prep-hub/strivers-a2z-dsa-sheet") {
-        throw new Error("Use the public Striver’s A2Z DSA sheet link from takeuforward.org/prep-hub/.");
-      }
-      return { source: "takeuforward", slug: strivers.slug };
+      const slug = url.pathname.match(/^\/prep-hub\/([a-z0-9-]+)\/?$/)?.[1];
+      if (!slug) throw new Error("Use a takeUforward prep-hub sheet link.");
+      return { source: "takeuforward", slug, url: url.href };
+    }
+    if (!["leetcode.com", "www.leetcode.com"].includes(url.hostname)) {
+      return { source: /^(www\.)?codeforces\.com$/.test(url.hostname) ? "codeforces" : "external", slug: importedPlanSlug(url), url: url.href };
     }
   }
-  try { return { source: "leetcode", slug: parsePlanSlug(raw) }; }
-  catch { throw new Error("Use a LeetCode study-plan link or Striver’s A2Z sheet link from takeuforward.org."); }
+  return { source: "leetcode", slug: parsePlanSlug(raw) };
 }
 
 function isSafeSourceUrl(value: unknown): value is string {
   if (typeof value !== "string" || value.length > 1000) return false;
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && !url.username && !url.password && !url.port &&
-      ["leetcode.com", "www.leetcode.com", "takeuforward.org", "www.takeuforward.org"].includes(url.hostname);
-  } catch { return false; }
+  try { publicUrl(value); return true; } catch { return false; }
 }
 
 export function questionUrl(question: StudyQuestion): string {
@@ -95,7 +93,7 @@ export function readStudyPlan(value: unknown): StudyPlan | null {
     if (!plan || typeof plan.name !== "string" || !plan.name.trim() || plan.name.length > 150 ||
       typeof plan.slug !== "string" || parsePlanSlug(plan.slug) !== plan.slug ||
       !Array.isArray(plan.planSubGroups) || !plan.planSubGroups.length || plan.planSubGroups.length > 200) return null;
-    if (plan.source && !["leetcode", "takeuforward"].includes(plan.source)) return null;
+    if (plan.source && !["leetcode", "takeuforward", "codeforces", "external"].includes(plan.source)) return null;
     if (plan.sourceUrl !== undefined && !isSafeSourceUrl(plan.sourceUrl)) return null;
     if (plan.snapshotDate !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(plan.snapshotDate)) return null;
     const groups: StudyPlan["planSubGroups"] = [];
@@ -114,7 +112,7 @@ export function readStudyPlan(value: unknown): StudyPlan | null {
         if (question.url !== undefined && !isSafeSourceUrl(question.url)) return null;
         if (question.leetcodeSlug !== undefined && !/^[a-z0-9-]{1,200}$/.test(question.leetcodeSlug)) return null;
         if (question.kind !== undefined && !["learning", "practice"].includes(question.kind)) return null;
-        if (plan.source === "takeuforward" && !question.url) return null;
+        if (plan.source && plan.source !== "leetcode" && !question.url) return null;
         if (!seen.has(question.titleSlug)) {
           seen.add(question.titleSlug);
           questions.push({ title: question.title, titleSlug: question.titleSlug, difficulty: question.difficulty, ...(question.url ? { url: question.url } : {}), ...(question.leetcodeSlug ? { leetcodeSlug: question.leetcodeSlug } : {}), ...(question.kind ? { kind: question.kind } : {}) });
@@ -215,10 +213,15 @@ async function graphql<T>(query: string, variables: Record<string, unknown>, lab
 }
 
 export async function fetchStudyPlan(input: string): Promise<StudyPlan> {
-  const { source, slug } = parsePlanInput(input);
-  if (source === "takeuforward") {
+  const { source, slug, url } = parsePlanInput(input);
+  if (source === "takeuforward" && slug === strivers.slug) {
     const plan = readStudyPlan(strivers);
     if (!plan) throw new Error("The bundled Striver’s sheet could not be loaded.");
+    return plan;
+  }
+  if (source !== "leetcode") {
+    const plan = readStudyPlan(await fetchPublicPlan(url!));
+    if (!plan) throw new Error("This page did not produce a supported question list.");
     return plan;
   }
   const result = await graphql<{ studyPlanV2Detail: unknown }>(

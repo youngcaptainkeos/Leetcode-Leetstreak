@@ -94,3 +94,17 @@
 .practice-menu button:focus-visible,.progress-panel :is(button,input,select,a,summary):focus-visible,.daily-practice-banner :is(button,a):focus-visible { outline:2px solid var(--primary); outline-offset:3px; }
 @keyframes practice-enter { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
 @media(prefers-reduced-motion:reduce) { .daily-practice-banner { animation:none; }.plan-progress-track > div,.plan-mini-meter i,.practice-menu button { transition:none; } }
+
+.plan-import-modes { display:flex; gap:8px; margin-bottom:14px; }
+.plan-import-modes [aria-pressed="true"] { background:var(--primary-container); color:var(--primary); border-color:var(--primary-border); }
+.plan-import-form textarea { box-sizing:border-box; width:100%; resize:vertical; padding:10px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text-primary); font:11px/1.6 var(--md-ref-typeface-plain); }
+.plan-import-form input + label { margin-top:12px; }
+.plan-import-preview { margin:12px 0; padding:12px; background:var(--surface); border:1px solid var(--border); border-radius:10px; }
+.plan-import-preview > strong { font-size:12px; }
+.plan-import-preview > ul { max-height:230px; overflow:auto; }
+.plan-import-preview ul { list-style:none; padding:0; margin:0; }
+.plan-import-preview li { font-size:11px; line-height:1.6; overflow-wrap:anywhere; }
+.plan-import-preview b { display:block; color:var(--text-secondary); margin:10px 0 6px; }
+.plan-import-preview li li { padding:6px 0; border-top:1px solid var(--border); }
+.plan-import-preview a { color:var(--text-primary); text-decoration:none; }
+.plan-import-preview small { display:block; font-size:10px; color:var(--text-muted); }

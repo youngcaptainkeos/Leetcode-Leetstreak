@@ -39,13 +39,42 @@ solve history and added plans. LeetCode 75 is retained if it was explicitly
 followed or imported; otherwise it can be added again by link. Later removals and
 an empty library remain respected after migration.
 
-In **Progress → Add plan**,
-paste a public LeetCode study-plan URL (or its slug), then choose **Add & follow**.
-For example, `https://leetcode.com/studyplan/30-days-of-javascript/` loads its
-current public question list directly from LeetCode. Re-adding an existing plan
-selects and follows it without creating duplicates. Imported lists are saved
-locally and remain available offline. Invalid links, unavailable plans, malformed
-responses, and cancelled imports leave existing plans intact.
+In **Progress → Add plan → Scan a link**, paste a public playlist URL, scan,
+review the detected sections and questions, then choose **Add & follow**. Nothing
+is saved until the review is confirmed. LeetCode plans use their public API;
+Striver's A2Z keeps its offline snapshot. Other takeUforward prep-hub sheets are
+read from public structured metadata, including Striver's 180 Master DSA Patterns
+(currently 179 public items). Unsupported or incomplete structured sheets fail
+rather than quietly saving a partial hierarchy.
+
+Public Codeforces contest links and filtered problemset links use the public
+`problemset.problems` API. Tag and rating filters are applied; for example,
+`https://codeforces.com/problemset?tags=dp;binary%20search`. Lists over 1,000
+questions need narrower filters. Codeforces questions open on Codeforces and use
+saved external completion checkboxes. No Codeforces account linking or automatic
+Codeforces submission sync is included.
+
+Other public pages, including accessible Gym/group/EDU pages, are scanned for
+recognizable exercise links from LeetCode, Codeforces, AtCoder, CSES, CodeChef,
+HackerRank, GeeksforGeeks, and takeUforward. Only links in the downloaded page are
+detected; pagination and dynamically loaded or login-only content are not crawled.
+There is no claim that all Codeforces courses, private mashups, or websites can
+be imported. If scanning is blocked or incomplete, **Paste question links**
+creates a named plan from public HTTPS links, one per line, with optional titles.
+Duplicate question links are merged. Review is available for pasted lists too.
+
+Website scanning requests optional access only to the selected website, from the
+Scan click. The manifest declares `https://*/*` as optional host access; it does
+not grant access to all websites on installation. Pasting links requires no extra
+site access. Requests omit credentials, reject redirects, and enforce response
+size/time limits. Downloaded scripts are parsed as JSON metadata only and never
+executed. No backend scraper, API key, or paid content access is used.
+
+Imported metadata and links are stored locally and remain available offline.
+Saved LeetCode solves automatically apply to matching questions in new plans.
+Other questions have manual external completion. Re-adding a plan follows the
+saved list without duplicates. Invalid links, unavailable pages, malformed
+responses, and cancelled imports leave the existing library intact.
 
 Every selected plan has a **Remove plan** button. Starter plans are hidden when
 removed; imported lists are removed from the library. Solved history is retained.
@@ -73,10 +102,11 @@ same LeetCode problem can complete multiple items if the source sheet references
 it more than once. Questions open their LeetCode link where supplied, otherwise
 the public takeUforward article or the source sheet.
 
-Striver's A2Z is one of the three default plans. Supported sources are explicitly validated. Additional external
-sites require a provider adapter rather than fetching arbitrary pasted URLs.
-Striver import works offline from its bundled snapshot and needs no new host
-permissions or backend changes.
+Striver's A2Z remains one of the three default plans. Public sheet links are
+validated before fetching. Providers with different structured formats may need
+an additional adapter beyond the generic exercise-link scanner.
+The bundled A2Z import works offline without extra site access. Live sheet scans
+request optional access to takeuforward.org. No backend changes are needed.
 
 **What are my friends up to?**, above the playlists, uses members of your existing LeetStreak groups,
 excluding yourself and deduplicating shared members. It retrieves each friend's
@@ -109,8 +139,9 @@ LeetCode tab to load the bridge. Sign in there using the linked handle, then reo
 History syncing starts automatically; no separate sync button is needed.
 
 No cookies or session tokens are read, stored, or sent to the LeetStreak backend.
-Only question slugs and the sync time are saved locally. No new host permissions,
-backend endpoints, or database changes are required. The website and production
+Only question slugs and the sync time are saved locally. No new required host permissions,
+backend endpoints, or database changes are required. Website scanning uses the
+optional site access described above. The website and production
 service are unchanged by this branch.
 
 ## Build and try it

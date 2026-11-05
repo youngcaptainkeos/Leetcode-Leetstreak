@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { GroupResponse, GroupMember } from "../lib/api";
 import { getStored, setStored } from "../storage";
-import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, ProgressState, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, readProgress, parsePlanInput, fetchStudyPlan, addStudyPlan, removeStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, mergeSolvedHistory, visiblePlans, restoreStarterPlans } from "./data";
+import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, ProgressState, StudyPlan, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, readProgress, parsePlanInput, fetchStudyPlan, addStudyPlan, removeStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, mergeSolvedHistory, visiblePlans, restoreStarterPlans } from "./data";
 import { fetchSolvedHistory, SolvedHistory } from "./history";
+import { planFromLinks, requestImportAccess } from "./importer";
 import "./Progress.css";
 
 export function usePractice(username: string) {
@@ -73,6 +74,10 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [planInput, setPlanInput] = useState("");
+  const [importMode, setImportMode] = useState<"link" | "paste">("link");
+  const [pastedLinks, setPastedLinks] = useState("");
+  const [importName, setImportName] = useState("");
+  const [importPreview, setImportPreview] = useState<StudyPlan | null>(null);
   const [addingPlan, setAddingPlan] = useState(false);
   const [planError, setPlanError] = useState("");
   const [historySyncing, setHistorySyncing] = useState(false);
@@ -153,7 +158,7 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   }
   function closeImporter() {
     importRequest.current++;
-    setAddingPlan(false); setAddOpen(false); setPlanError("");
+    setAddingPlan(false); setAddOpen(false); setPlanError(""); setImportPreview(null);
   }
   async function handleAddPlan(event: React.FormEvent) {
     event.preventDefault();
@@ -161,15 +166,26 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
     const request = ++importRequest.current;
     setPlanError(""); setAddingPlan(true);
     try {
-      const { slug } = parsePlanInput(planInput);
-      const existing = [...STUDY_PLANS, ...(state?.customPlans || [])].find(p => p.slug === slug);
-      const imported = existing || await fetchStudyPlan(slug);
-      const history = await syncHistory(true);
+      if (!importPreview) {
+        let preview: StudyPlan;
+        if (importMode === "paste") preview = planFromLinks(pastedLinks, importName);
+        else {
+          const parsed = parsePlanInput(planInput);
+          const existing = [...STUDY_PLANS, ...(state?.customPlans || [])].find(p => p.slug === parsed.slug);
+          if (!existing && parsed.source !== "leetcode") await requestImportAccess(parsed.url!);
+          preview = existing || await fetchStudyPlan(planInput);
+        }
+        if (request === importRequest.current) setImportPreview(preview);
+        return;
+      }
+      const imported = importPreview;
+      const hasLeetCode = imported.planSubGroups.some(group => group.questions.some(q => questionLeetcodeSlug(q)));
+      const history = hasLeetCode ? await syncHistory(true) : null;
       if (request !== importRequest.current) return;
       setState(previous => previous ? addStudyPlan(history ? mergeSolvedHistory(previous, history.slugs, history.syncedAt) : previous, imported) : previous);
       selectPlan(imported.slug);
-      setNotice(history ? `Following ${imported.name}. Progress synced with your solved history.` : `Following ${imported.name}. Saved solves are shown; older solves will appear when automatic LeetCode syncing succeeds.`);
-      setPlanInput(""); setAddOpen(false);
+      setNotice(!hasLeetCode ? `Following ${imported.name}. External-item completion is saved with the plan.` : history ? `Following ${imported.name}. Progress synced with your solved history.` : `Following ${imported.name}. Saved solves are shown; older solves will appear when automatic LeetCode syncing succeeds.`);
+      setPlanInput(""); setPastedLinks(""); setImportName(""); setImportPreview(null); setAddOpen(false);
     } catch (err) {
       if (request === importRequest.current) setPlanError(err instanceof Error ? err.message : "Could not add this study plan. Please try again.");
     } finally {
@@ -190,9 +206,9 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   }
   async function toggleFollow() {
     if (!plan) return;
-    if (!following) await syncHistory(true);
+    if (!following && plan.planSubGroups.some(group => group.questions.some(q => questionLeetcodeSlug(q)))) await syncHistory(true);
     setState(prev => prev && visiblePlans(prev).some(p => p.slug === plan.slug) ? { ...prev, followed: following ? prev.followed.filter(s => s !== plan.slug) : [...new Set([...prev.followed, plan.slug])] } : prev);
-    setNotice(following ? `${plan.name} removed from following. Your progress is saved.` : `Following ${plan.name}. Progress uses verified LeetCode solves.`);
+    setNotice(following ? `${plan.name} removed from following. Your progress is saved.` : `Following ${plan.name}. Your saved progress is applied.`);
   }
   function toggleExternalItem(slug: string) {
     const question = plan?.planSubGroups.flatMap(group => group.questions).find(q => q.titleSlug === slug);
@@ -208,24 +224,40 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
     <div className="history-sync-row"><span role="status">{historySyncing ? historyMessage : state.lastFullSyncAt ? `History saved · ${new Date(state.lastFullSyncAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : "Solved history syncs automatically"}</span></div>
     {historyError && <p className="progress-error" role="status">{historyError} <a href="https://leetcode.com/" target="_blank" rel="noreferrer">Open LeetCode ↗</a></p>}
     {addOpen && <form className="plan-import-form" id="add-study-plan" onSubmit={handleAddPlan}>
-      <label htmlFor="study-plan-link">Study-plan or sheet link</label>
-      <input id="study-plan-link" type="text" value={planInput} onChange={e => setPlanInput(e.target.value)} placeholder="Paste your study-plan link…" maxLength={500} autoFocus aria-describedby="plan-import-help" disabled={addingPlan} />
-      <p className="progress-note" id="plan-import-help">Supports LeetCode study plans and Striver’s A2Z sheet from takeUforward. Plans are saved in this browser.</p>
-      <a href="https://leetcode.com/studyplan/" target="_blank" rel="noreferrer">Browse LeetCode study plans ↗</a>
-      <div className="plan-import-actions"><button className="chip-btn" type="submit" disabled={addingPlan || !planInput.trim()}>{addingPlan ? "Adding & syncing…" : "Add & follow"}</button><button className="chip-btn" type="button" onClick={closeImporter}>Cancel</button></div>
+      <div className="plan-import-modes" role="group" aria-label="Import method">
+        <button type="button" className="chip-btn" aria-pressed={importMode === "link"} disabled={addingPlan} onClick={() => { setImportMode("link"); setImportPreview(null); setPlanError(""); }}>Scan a link</button>
+        <button type="button" className="chip-btn" aria-pressed={importMode === "paste"} disabled={addingPlan} onClick={() => { setImportMode("paste"); setImportPreview(null); setPlanError(""); }}>Paste question links</button>
+      </div>
+      {importMode === "link" ? <>
+        <label htmlFor="study-plan-link">Study-plan or playlist link</label>
+        <input id="study-plan-link" type="text" value={planInput} onChange={e => { setPlanInput(e.target.value); setImportPreview(null); }} placeholder="Paste a public playlist link…" maxLength={1000} autoFocus aria-describedby="plan-import-help" disabled={addingPlan} />
+        <p className="progress-note" id="plan-import-help">LeetCode plans, takeUforward sheets, Codeforces contests and filtered problemsets, or public pages with question links. Your browser may ask for access to the site you choose.</p>
+      </> : <>
+        <label htmlFor="import-plan-name">Plan name</label>
+        <input id="import-plan-name" value={importName} maxLength={150} placeholder="My practice plan" disabled={addingPlan} onChange={e => { setImportName(e.target.value); setImportPreview(null); }} />
+        <label htmlFor="import-question-links">Question links · one per line</label>
+        <textarea id="import-question-links" value={pastedLinks} maxLength={200000} rows={5} placeholder={"Two Sum https://leetcode.com/problems/two-sum/\nhttps://codeforces.com/problemset/problem/4/A"} disabled={addingPlan} onChange={e => { setPastedLinks(e.target.value); setImportPreview(null); }} />
+        <p className="progress-note">Use this for blocked or interactive pages. Include an optional question title before each link. LeetCode links sync automatically; other sites use saved checkboxes.</p>
+      </>}
+      {importPreview && <section className="plan-import-preview" aria-label="Review imported plan">
+        <strong>{importPreview.name}</strong>
+        <p className="progress-note">{importPreview.planSubGroups.reduce((n, group) => n + group.questions.length, 0)} questions · {importPreview.planSubGroups.length} sections. Review before adding: a page scan may find only the questions that page makes public.</p>
+        <ul>{importPreview.planSubGroups.map(group => <li key={group.name}><b>{group.name}</b><ul>{group.questions.map(q => <li key={q.titleSlug}><a href={questionUrl(q)} target="_blank" rel="noreferrer">{q.title} ↗</a><small>{questionLeetcodeSlug(q) ? "LeetCode · automatic" : "External · checkbox"}</small></li>)}</ul></li>)}</ul>
+      </section>}
+      <div className="plan-import-actions"><button className="chip-btn" type="submit" disabled={addingPlan || (importMode === "link" ? !planInput.trim() : !pastedLinks.trim())}>{addingPlan ? importPreview ? "Adding & syncing…" : "Reading questions…" : importPreview ? "Add & follow" : importMode === "link" ? "Scan link" : "Review questions"}</button><button className="chip-btn" type="button" onClick={closeImporter}>Cancel</button></div>
       {planError && <p className="progress-error" role="alert">{planError}</p>}
     </form>}
     <div className="progress-notice" role="status" aria-live="polite">{notice}</div>
     {!library.length && <section className="plan-library-empty" aria-label="No study plans"><strong>Your next plan starts here</strong><p className="progress-note">Add a study plan or sheet, or bring back the three starter plans. Your saved solves are kept.</p><div className="plan-import-actions"><button className="chip-btn" onClick={() => setAddOpen(true)}>Add a plan</button><button className="chip-btn" onClick={restoreStarters}>Restore starter plans</button></div></section>}
     <div className="study-plan-list" id="study-plans" aria-label="Study plans">{library.map(p => { const c = planCounts(p, state); return <button key={p.slug} className={`study-plan-option ${p.slug === plan?.slug ? "selected" : ""}`} aria-pressed={p.slug === plan?.slug} onClick={() => selectPlan(p.slug)}>
-      <span><strong>{p.name}</strong><small>{state.followed.includes(p.slug) ? "Following · " : ""}{c.done}/{c.total} {p.source === "takeuforward" ? "completed" : "solved"}</small></span><span className="plan-mini-meter" aria-hidden="true"><i style={{ width: `${c.percent}%` }} /></span><b>{c.percent}%</b>
+      <span><strong>{p.name}</strong><small>{state.followed.includes(p.slug) ? "Following · " : ""}{c.done}/{c.total} {p.source && p.source !== "leetcode" ? "completed" : "solved"}</small></span><span className="plan-mini-meter" aria-hidden="true"><i style={{ width: `${c.percent}%` }} /></span><b>{c.percent}%</b>
     </button>; })}</div>
     {plan && count && <section className="study-plan-detail" aria-label={`${plan.name} progress`}>
-      <div className="study-plan-top"><div><h3>{plan.name}</h3><a href={plan.sourceUrl || `https://leetcode.com/studyplan/${plan.slug}/`} target="_blank" rel="noreferrer">View on {plan.source === "takeuforward" ? "takeUforward" : "LeetCode"} ↗</a></div><button className={`chip-btn ${following ? "is-following" : ""}`} aria-pressed={following} disabled={historySyncing && !following} onClick={toggleFollow}>{following ? "✓ Following" : "+ Follow plan"}</button></div>
-      <div className="plan-progress-label"><strong>{count.done}<span> / {count.total} {plan.source === "takeuforward" ? "completed" : "solved"}</span></strong><b>{count.percent}%</b></div>
+      <div className="study-plan-top"><div><h3>{plan.name}</h3><a href={plan.sourceUrl || (plan.source === "external" ? questionUrl(plan.planSubGroups[0].questions[0]) : `https://leetcode.com/studyplan/${plan.slug}/`)} target="_blank" rel="noreferrer">View on {plan.source === "takeuforward" ? "takeUforward" : plan.source === "codeforces" ? "Codeforces" : plan.source === "external" ? "source site" : "LeetCode"} ↗</a></div><button className={`chip-btn ${following ? "is-following" : ""}`} aria-pressed={following} disabled={historySyncing && !following} onClick={toggleFollow}>{following ? "✓ Following" : "+ Follow plan"}</button></div>
+      <div className="plan-progress-label"><strong>{count.done}<span> / {count.total} {plan.source && plan.source !== "leetcode" ? "completed" : "solved"}</span></strong><b>{count.percent}%</b></div>
       <div className="plan-progress-track" role="progressbar" aria-label={`${plan.name} completion`} aria-valuenow={count.done} aria-valuemin={0} aria-valuemax={count.total}><div style={{ width: `${count.percent}%` }} /></div>
       {count.next ? <a className="plan-continue" href={questionUrl(count.next)} target="_blank" rel="noreferrer"><span>{state.lastFullSyncAt || !questionLeetcodeSlug(count.next) ? "UP NEXT" : "NOT YET VERIFIED"}<strong>{count.next.title}</strong></span><span aria-hidden="true">↗</span></a> : <p className="plan-complete">{count.total ? "✦ Plan complete. Enjoy that milestone!" : "This plan has no items to track."}</p>}
-      <p className="progress-note">{plan.source === "takeuforward" ? `Public sheet snapshot: ${plan.snapshotDate}. ${count.automatic} linked LeetCode problems sync automatically. The ${count.external} other items have external links and completion checkboxes.` : "Progress comes from your synced LeetCode solved history."} Progress is saved for this account and applied when you add a plan.</p>
+      <p className="progress-note">{plan.source && plan.source !== "leetcode" ? `${plan.snapshotDate ? `Public list snapshot: ${plan.snapshotDate}. ` : ""}${count.automatic} linked LeetCode problems sync automatically. The ${count.external} other items have external links and completion checkboxes.` : "Progress comes from your synced LeetCode solved history."} Progress is saved for this account and applied when you add a plan.</p>
       {error && <p className="progress-error" role="status">Automatic checking is unavailable. Your saved progress is still here.</p>}
       <div className="plan-question-controls"><button className="chip-btn" aria-expanded={showQuestions} aria-controls="plan-question-list" onClick={() => setShowQuestions(value => !value)}>{showQuestions ? "Hide questions ↑" : "Show questions ↓"}</button>{showQuestions && <button className="chip-btn" onClick={() => { const allOpen = visibleGroups.every(g => expandedGroups.includes(g.name)); setExpandedGroups(allOpen ? [] : visibleGroups.map(g => g.name)); }}>{visibleGroups.length > 0 && visibleGroups.every(g => expandedGroups.includes(g.name)) ? "Collapse all" : "Expand all"}</button>}<button className="chip-btn plan-remove" aria-label={`Remove ${plan.name} from your plans`} title="Remove plan; keep solved history" onClick={handleRemovePlan}>Remove plan</button></div>
       {showQuestions && <div id="plan-question-list"><div className="plan-tools"><input type="search" aria-label="Search plan questions" placeholder="Find a question…" value={search} onChange={e => { setSearch(e.target.value); if (e.target.value) setExpandedGroups(plan.planSubGroups.map(g => g.name)); }} /><select aria-label="Filter plan questions" value={filter} onChange={e => setFilter(e.target.value)}><option value="all">All questions</option><option value="todo">To do</option><option value="done">Completed</option>{count.external > 0 && <option value="external">External items</option>}</select></div>

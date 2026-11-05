@@ -67,11 +67,11 @@ test("existing accounts get the new defaults once without losing followed plans 
   assert.equal(visiblePlans(readProgress(JSON.stringify(removedAgain))).some(p => p.slug === "strivers-a2z-dsa-sheet"), false, "user removals after migration must remain respected");
 });
 
-test("study-plan inputs accept supported sources and reject arbitrary hosts and executable URLs", () => {
+test("study-plan inputs accept public sources and reject unsafe URLs", () => {
   assert.equal(parsePlanSlug(" https://leetcode.com/studyplan/30-days-of-javascript/?utm_source=example "), "30-days-of-javascript");
   assert.equal(parsePlanSlug("leetcode.com/studyplan/top-sql-50"), "top-sql-50");
   assert.equal(parsePlanInput("https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet?open=none").source, "takeuforward");
-  for (const link of ["https://evil.example/studyplan/top-sql-50", "https://leetcode.com.evil.example/studyplan/top-sql-50", "https://user:secret@leetcode.com/studyplan/top-sql-50/", "javascript:alert(1)", "https://leetcode.com/problems/two-sum/", "http://localhost:8000/private", "https://takeuforward.org/unknown-sheet"]) {
+  for (const link of ["https://127.0.0.1/private", "https://localhost/private", "https://user:secret@leetcode.com/studyplan/top-sql-50/", "javascript:alert(1)", "https://leetcode.com/problems/two-sum/", "http://localhost:8000/private", "https://takeuforward.org/unknown-sheet"]) {
     assert.throws(() => parsePlanInput(link), undefined, link);
   }
 });
@@ -80,7 +80,7 @@ test("invalid or empty imported plans cannot replace a valid saved library", () 
   const plan = STUDY_PLANS[0];
   assert.equal(readStudyPlan({ ...plan, planSubGroups: [] }), null);
   assert.equal(readStudyPlan({ ...plan, sourceUrl: "javascript:alert(1)" }), null);
-  assert.equal(readStudyPlan({ ...plan, planSubGroups: [{ name: "Examples", questions: [{ title: "Example", titleSlug: "example", difficulty: "EASY", url: "https://evil.example/" }] }] }), null);
+  assert.equal(readStudyPlan({ ...plan, planSubGroups: [{ name: "Examples", questions: [{ title: "Example", titleSlug: "example", difficulty: "EASY", url: "https://localhost/private" }] }] }), null);
   const saved = readProgress(JSON.stringify({ ...emptyProgress(), customPlans: [{ name: "Broken" }], hiddenPlans: ["top-sql-50"] }));
   assert.equal(visiblePlans(saved).length, 2);
   assert.equal(saved.customPlans.length, 0);
@@ -135,7 +135,7 @@ test("LeetCode importer fetches question metadata and handles unavailable plans 
     const saved = readProgress(JSON.stringify(addStudyPlan(emptyProgress(), imported)));
     assert.equal(saved.customPlans[0].name, "Example plan");
     assert.ok(saved.followed.includes("example-plan"));
-    await assert.rejects(fetchStudyPlan("https://evil.example/studyplan/example-plan"));
+    await assert.rejects(fetchStudyPlan("https://localhost/studyplan/example-plan"));
     assert.equal(requests, 1, "unsupported URLs must never be requested");
     globalThis.fetch = async () => new Response(JSON.stringify({ data: { studyPlanV2Detail: null } }));
     await assert.rejects(fetchStudyPlan("missing-plan"), /unavailable/);
