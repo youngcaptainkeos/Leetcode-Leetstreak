@@ -3081,3 +3081,31 @@ input:focus, form input:focus {
 
 
 .solve-platform { display:block; font-size:9px; color:var(--text-secondary); margin-top:3px; font-weight:500; }
+
+/* Keep scoring help inside the popup/viewport; only its topic list scrolls. */
+.points-help-modal {
+  width:100% !important;
+  max-height:calc(100vh - 24px);
+  max-height:min(560px, calc(100dvh - 24px));
+  min-height:0;
+}
+.points-help-modal > .modal-header,.points-help-modal > .modal-footer { flex:0 0 auto; }
+.points-help-modal .help-section-list {
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+  margin:0;
+  gap:8px;
+  padding-right:3px;
+}
+.help-menu-item { border:1px solid var(--border); border-radius:10px; overflow:hidden; flex-shrink:0; }
+.help-menu-toggle { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:12px; border:0; background:var(--surface-low); color:var(--text-primary); text-align:left; cursor:pointer; font-family:var(--md-ref-typeface-plain); }
+.help-menu-toggle strong { display:block; font-size:12px; font-weight:600; }
+.help-menu-toggle small { display:block; margin-top:4px; color:var(--text-secondary); font-size:10px; line-height:1.4; }
+.help-menu-toggle > span:last-child { color:var(--primary); font-size:18px; }
+.help-menu-toggle[aria-expanded="true"] { background:var(--primary-container); }
+.help-menu-toggle:focus-visible { outline:2px solid var(--primary); outline-offset:-3px; }
+.help-menu-content:not([hidden]) { display:flex; flex-direction:column; gap:10px; padding:12px; overflow-wrap:anywhere; }
+.help-menu-content code { white-space:normal; }

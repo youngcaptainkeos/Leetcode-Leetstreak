@@ -2447,67 +2447,38 @@ function LeetcodeUsernameHelpModal({ onClose }: { onClose: () => void }) {
 }
 
 function PointsHelpModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content points-help-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>How Points Work</h3>
-          <button className="modal-close" onClick={onClose} title="Close">
-            ✕
-          </button>
-        </div>
-
-        <div className="help-section-list">
-          <div className="help-section">
-            <h4 className="help-section-title">Codeforces scoring</h4>
-            <p className="help-text">For a rated Codeforces problem: <code>8 + 0.012 × (rating − 800)</code> base points. Examples: 800 → 8 pts, 1400 → 15.2 pts, 1800 → 20 pts, 2200 → 24.8 pts.</p>
-            <p className="help-text">The existing streak multiplier adds up to 10%. Only the first final accepted solve of each problem earns points. Unrated problems count toward activity but earn 0 points. Codeforces has no daily-challenge bonus. This provisional scale was calibrated against similar LeetCode problems with ZeroTrac ratings.</p>
-          </div>
-
-          {/* Section 1: Base Points */}
-          <div className="help-section">
-            <h4 className="help-section-title">1. Base Problem Points</h4>
-            <p className="help-text">
-              Points per problem are calculated based on official LeetCode difficulty data:
-            </p>
-            <ul className="help-bullet-list">
-              <li>
-                <strong>Contest Rating (Primary):</strong> Sourced from <strong>ZeroTrac</strong> contest ratings. Base points equal <code>Rating / 100</code> (e.g. 1550 rating = <strong>15.5 pts</strong>, 2400 rating = <strong>24.0 pts</strong>).
-              </li>
-              <li>
-                <strong>Non-Contest Problems:</strong> Evaluated using difficulty category defaults (Easy: <strong>8 pts</strong>, Medium: <strong>15 pts</strong>, Hard: <strong>24 pts</strong>) scaled inversely by acceptance rate (lower acceptance rate yields higher points).
-              </li>
-            </ul>
-          </div>
-
-          {/* Section 2: Bonus Rewards */}
-          <div className="help-section">
-            <h4 className="help-section-title">2. Bonus Rewards</h4>
-            <div className="bonus-row">
-              <div className="bonus-box">
-                <span className="bonus-label">Daily Challenge</span>
-                <span className="bonus-val">+5 Pts</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Streak Multiplier */}
-          <div className="help-section">
-            <h4 className="help-section-title">3. Streak Multiplier</h4>
-            <p className="help-text">
-              Maintaining an active daily streak boosts your total points up to <strong>+10% max</strong> (scaling linearly from 1.00× on Day 1 to 1.10× at Day 30+).
-            </p>
-          </div>
-        </div>
-
-        <div className="modal-footer centered-footer">
-          <button type="button" className="primary-btn center-btn" onClick={onClose}>
-            Got it
-          </button>
-        </div>
-      </div>
+  const [section, setSection] = useState<string | null>(null);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") { event.stopPropagation(); onClose(); } };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const sections = [
+    { id: "leetcode", title: "LeetCode points", hint: "Contest ratings and difficulty", content: <>
+      <p className="help-text">Contest problems use ZeroTrac: <code>rating ÷ 100</code>. A 1550-rated problem earns 15.5 base points.</p>
+      <p className="help-text">For other problems, Easy starts at <strong>8</strong>, Medium at <strong>15</strong>, and Hard at <strong>24</strong> points. Acceptance rate adjusts these bases; lower acceptance earns more.</p>
+    </> },
+    { id: "codeforces", title: "Codeforces points", hint: "Rating-based points · automatic sync", content: <>
+      <p className="help-text">Base points = <code>8 + 0.012 × (rating − 800)</code>.</p>
+      <ul className="help-bullet-list"><li>800 rating → 8 points</li><li>1400 → 15.2 points</li><li>1800 → 20 points</li><li>2200 → 24.8 points</li></ul>
+      <p className="help-text">Connect your handle at signup or in Settings. Each unique, final accepted problem earns points once. Unrated problems count as activity but earn 0 points. The scale is provisional, calibrated against similar LeetCode problems.</p>
+    </> },
+    { id: "daily", title: "Daily challenge bonus", hint: "+5 points · LeetCode only", content: <p className="help-text">Solve LeetCode’s daily challenge on its challenge date to earn <strong>+5 points</strong> before the streak multiplier. This bonus does not apply to Codeforces.</p> },
+    { id: "streak", title: "Streak multiplier", hint: "Up to +10%", content: <>
+      <p className="help-text">The multiplier is <code>1 + 0.10 × min(streak days, 30) ÷ 30</code>, capped at <strong>1.10×</strong>.</p>
+      <p className="help-text">Final points = <strong>(base + eligible bonus) × multiplier</strong>. For example, a CF 1800 problem earns 20 base points, or 22 at the maximum multiplier.</p>
+    </> },
+  ];
+  return <div className="modal-overlay points-help-overlay" onClick={onClose}>
+    <div className="modal-content points-help-modal" role="dialog" aria-modal="true" aria-labelledby="points-help-title" onClick={event => event.stopPropagation()}>
+      <div className="modal-header"><h3 id="points-help-title">How Points Work</h3><button type="button" className="modal-close" onClick={onClose} aria-label="Close scoring help">✕</button></div>
+      <div className="help-section-list" aria-label="Scoring help topics">{sections.map(item => <div className="help-menu-item" key={item.id}>
+        <button type="button" className="help-menu-toggle" id={`help-toggle-${item.id}`} aria-expanded={section === item.id} aria-controls={`help-content-${item.id}`} onClick={() => setSection(previous => previous === item.id ? null : item.id)}>
+          <span><strong>{item.title}</strong><small>{item.hint}</small></span><span aria-hidden="true">{section === item.id ? "−" : "+"}</span>
+        </button>
+        <div id={`help-content-${item.id}`} role="region" aria-labelledby={`help-toggle-${item.id}`} hidden={section !== item.id} className="help-menu-content">{item.content}</div>
+      </div>)}</div>
+      <div className="modal-footer centered-footer"><button type="button" className="primary-btn center-btn" onClick={onClose}>Got it</button></div>
     </div>
-  );
+  </div>;
 }
-
-
