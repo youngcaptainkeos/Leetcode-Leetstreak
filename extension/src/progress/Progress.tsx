@@ -5,6 +5,7 @@ import { getStored, setStored } from "../storage";
 import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, ProgressState, StudyPlan, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, readProgress, parsePlanInput, fetchStudyPlan, addStudyPlan, removeStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, questionCodeforcesSlug, automaticQuestion, mergeSolvedHistory, visiblePlans, restoreStarterPlans } from "./data";
 import { fetchSolvedHistory, SolvedHistory } from "./history";
 import { planFromLinks, requestImportAccess } from "./importer";
+import { PlanView, ProgressView, readProgressView, emptyPlanView } from "./view";
 import "./Progress.css";
 
 export function usePractice(username: string) {
@@ -66,12 +67,29 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
 }) {
   const key = progressKey(userId, username);
   const [state, setState] = useState<ProgressState | null>(null);
-  const [selected, setSelected] = useState(STUDY_PLANS[0].slug);
+  const [view, setView] = useState<ProgressView | null>(null);
+  const selected = view?.selected || STUDY_PLANS[0].slug;
+  const planView = view && Object.prototype.hasOwnProperty.call(view.plans, selected) ? view.plans[selected] : emptyPlanView();
+  const showQuestions = planView.showQuestions;
+  const expandedGroups = planView.expandedGroups;
+  function updatePlanView(update: (previous: PlanView) => PlanView) {
+    setView(previous => {
+      if (!previous) return previous;
+      const current = Object.prototype.hasOwnProperty.call(previous.plans, selected) ? previous.plans[selected] : emptyPlanView();
+      const next = update(current);
+      if (next.showQuestions === current.showQuestions && next.expandedGroups === current.expandedGroups) return previous;
+      return { ...previous, plans: { ...previous.plans, [selected]: next } };
+    });
+  }
+  function setShowQuestions(value: React.SetStateAction<boolean>) {
+    updatePlanView(previous => ({ ...previous, showQuestions: typeof value === "function" ? value(previous.showQuestions) : value }));
+  }
+  function setExpandedGroups(value: React.SetStateAction<string[]>) {
+    updatePlanView(previous => ({ ...previous, expandedGroups: typeof value === "function" ? value(previous.expandedGroups) : value }));
+  }
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [notice, setNotice] = useState("");
-  const [showQuestions, setShowQuestions] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [planInput, setPlanInput] = useState("");
   const [importMode, setImportMode] = useState<"link" | "paste">("link");
@@ -91,11 +109,20 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   useEffect(() => () => { importRequest.current++; historyRequest.current?.abort(); }, []);
   useEffect(() => {
     let active = true;
-    getStored(key).then(raw => { if (active) { const saved = readProgress(raw); setState(saved); setSelected(saved.followed[0] || STUDY_PLANS[0].slug); } });
+    Promise.all([getStored(key), getStored(`${key}_view`)]).then(([raw, savedView]) => {
+      if (!active) return;
+      const saved = readProgress(raw);
+      const restored = readProgressView(savedView);
+      const plans = visiblePlans(saved);
+      const selectedPlan = plans.some(plan => plan.slug === restored.selected) ? restored.selected : saved.followed.find(slug => plans.some(plan => plan.slug === slug)) || plans[0]?.slug || "";
+      setState(saved);
+      setView({ ...restored, selected: selectedPlan });
+    });
     return () => { active = false; };
   }, [key]);
   useEffect(() => { if (state) void setStored(key, JSON.stringify(state)); }, [key, state]);
-  const loaded = state !== null;
+  useEffect(() => { if (view) void setStored(`${key}_view`, JSON.stringify(view)); }, [key, view]);
+  const loaded = state !== null && view !== null;
   async function syncHistory(force = false): Promise<SolvedHistory | null> {
     const saved = stateRef.current;
     if (!force && saved?.lastFullSyncAt && Date.now() - saved.lastFullSyncAt < 15 * 60000) {
@@ -160,13 +187,14 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
     return () => { cancelled = true; clearInterval(interval); window.removeEventListener(PRACTICE_REFRESH, update); };
   }, [loaded, userId]);
 
-  if (!state) return <div className="centered muted">Loading your progress…</div>;
+  if (!state || !view) return <div className="centered muted">Loading your progress…</div>;
   const library = visiblePlans(state);
   const plan = library.find(p => p.slug === selected) || library[0] || null;
   const count = plan ? planCounts(plan, state) : null;
   const following = plan ? state.followed.includes(plan.slug) : false;
   function selectPlan(slug: string) {
-    setSelected(slug); setSearch(""); setFilter("all"); setNotice(""); setShowQuestions(false); setExpandedGroups([]);
+    setView(previous => previous ? { ...previous, selected: slug } : previous);
+    setSearch(""); setFilter("all"); setNotice("");
   }
   function closeImporter() {
     importRequest.current++;

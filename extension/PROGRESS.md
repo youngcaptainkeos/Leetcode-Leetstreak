@@ -159,3 +159,11 @@ unpacked extension, or reload your existing unpacked installation pointing there
 The root `leetstreak.zip`, `leetstreak_dist.zip`, and
 `backend/app/leetstreak.zip` are synchronized copies for distribution. This branch
 does not update the production download until it is merged and deployed.
+
+## Remembering the Progress view
+
+The selected plan, Show/Hide questions choice, and expanded sections are saved
+per plan and per LeetStreak account/linked LeetCode handle. Reopening the extension
+or switching between plans restores that plan's view. Missing/corrupt view state
+starts collapsed; a removed selected plan falls back to an available plan. View
+preferences are separate from solve history and do not change scoring.
