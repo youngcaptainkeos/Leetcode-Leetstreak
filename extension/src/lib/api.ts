@@ -207,6 +207,9 @@ export interface LeaderboardResponse {
   week_end: string;
   total_users?: number;
   entries: LeaderboardEntry[];
+  period?: "all" | "week" | "month";
+  period_start?: string | null;
+  period_end?: string | null;
 }
 
 export interface GroupMember {
@@ -345,16 +348,18 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ password }),
     }),
-  leaderboard: (userId?: number, sortBy: "points" | "streak" = "points") => {
+  leaderboard: (userId?: number, sortBy: "points" | "streak" = "points", period: "all" | "week" | "month" = "all") => {
     const params = new URLSearchParams();
     if (userId) params.set("user_id", String(userId));
     if (sortBy) params.set("sort_by", sortBy);
+    if (period) params.set("period", period);
     return request<LeaderboardResponse>(`/leaderboard?${params.toString()}`);
   },
-  friendsLeaderboard: (userId: number, sortBy: "points" | "streak" = "points") => {
+  friendsLeaderboard: (userId: number, sortBy: "points" | "streak" = "points", period: "all" | "week" | "month" = "all") => {
     const params = new URLSearchParams();
     params.set("user_id", String(userId));
     if (sortBy) params.set("sort_by", sortBy);
+    if (period) params.set("period", period);
     return request<LeaderboardResponse>(`/friends/leaderboard?${params.toString()}`);
   },
   createGroup: (userId: number, name: string) =>
@@ -380,10 +385,11 @@ export const api = {
     ),
   myGroups: (userId: number) =>
     request<GroupListResponse>(`/groups/my-groups/${userId}`),
-  groupLeaderboard: (groupId: number, userId?: number, sortBy: "points" | "streak" = "points") => {
+  groupLeaderboard: (groupId: number, userId?: number, sortBy: "points" | "streak" = "points", period: "all" | "week" | "month" = "all") => {
     const params = new URLSearchParams();
     if (userId) params.set("user_id", String(userId));
     if (sortBy) params.set("sort_by", sortBy);
+    if (period) params.set("period", period);
     return request<LeaderboardResponse>(`/groups/${groupId}/leaderboard?${params.toString()}`);
   },
   toggleKudos: (toUserId: number, fromUserId: number) =>

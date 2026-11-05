@@ -208,6 +208,10 @@ class LeaderboardResponse(BaseModel):
     week_end: date
     total_users: int = 0
     entries: List[LeaderboardEntry]
+    period: str = "all"
+    period_start: Optional[date] = None
+    period_end: Optional[date] = None
+
 
 
 class GroupCreateRequest(BaseModel):

@@ -98,7 +98,7 @@ This is the working checklist for the repository review. It covers every issue a
 - [x] **FEAT-03 · P1:** Show reliable sync status and history completeness.
 - [x] **FEAT-04 · P2:** Add coding-account ownership verification and claim recovery.
 - [x] **FEAT-05 · P2:** Allow Codeforces unlinking.
-- [ ] **FEAT-06 · P3:** Add weekly/monthly points rankings.
+- [x] **FEAT-06 · P3:** Add weekly/monthly points rankings.
 - [ ] **FEAT-07 · P2 · Deferred:** Add friend notification preferences and quiet hours when that feature is resumed.
 - [ ] **FEAT-08 · P3:** Add searchable history, longer activity views, and exports.
 - [x] **FEAT-09 · P2:** Explain the browser-session requirement for complete LeetCode plan sync.
@@ -988,16 +988,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Add explicit lifetime/week/month periods using the selected activity timezone and documented week start.
-- [ ] Sum eligible awarded events within the period; exclude undated estimates from period rankings unless a separate explicit policy permits them.
-- [ ] Apply the same period rules to global/friends/group views, tie-breaking, and own-rank pinning. Everyone remains eligible for Global rankings; the Global display preference only controls the viewer's own homepage section. Enforce private-group access separately.
-- [ ] Include period in cache keys and support efficient indexed queries rather than loading all historical events per viewer.
+- [x] Add explicit lifetime/week/month periods using the selected activity timezone and documented week start.
+- [x] Sum eligible awarded events within the period; exclude undated estimates from period rankings unless a separate explicit policy permits them.
+- [x] Apply the same period rules to global/friends/group views, tie-breaking, and own-rank pinning. Everyone remains eligible for Global rankings; the Global display preference only controls the viewer's own homepage section. Enforce private-group access separately.
+- [x] Include period in cache keys and support efficient indexed queries rather than loading all historical events per viewer.
 
 **Acceptance**
 
-- [ ] Known fixtures produce correct totals/ranks across week/month boundaries.
-- [ ] Undated legacy credit does not leak into this week's score.
-- [ ] Period labels, user rank, and displayed points stay aligned when switching rapidly.
+- [x] Known fixtures produce correct totals/ranks across week/month boundaries.
+- [x] Undated legacy credit does not leak into this week's score.
+- [x] Period labels, user rank, and displayed points stay aligned when switching rapidly.
 
 ### FEAT-07 — Notification preferences
 

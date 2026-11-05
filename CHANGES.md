@@ -4,6 +4,48 @@ This document records all changes made during the autonomous execution of the Le
 
 ---
 
+## 2026-11-06 — Step: FEAT-06 / M6 Step 1: Weekly and Monthly Points Rankings
+
+### Summary of Changes
+Implemented weekly and monthly points rankings across the backend APIs, Chrome extension, and web application. Point totals can now be toggled between "All-time", "This Week", and "This Month". Rankings use strict IST Sunday-start week boundaries and calendar month boundaries, querying `PointAward` and `Solve` records within `[start_dt, end_dt)`. Undated legacy baseline credit is excluded from period views, eliminating historical point entrenchment while preserving lifetime leaderboards. Deterministic tie-breaking is enforced by `(points, combined_score, streak, -user_id)`. Both extension and web clients include period selectors in the leaderboard header, cache results per `boardKey(tab, sort, period)`, and update synchronously. Added automated test suite `backend/tests/test_period_rankings.py`.
+
+### Detailed Changes
+1. **API Schema & Query Support (`backend/app/schemas.py`, `backend/app/main.py`)**:
+   - Updated `LeaderboardResponse` schema to include `period: str = "all"`, `period_start: Optional[date] = None`, `period_end: Optional[date] = None`.
+   - Updated `_compute_leaderboard()` to accept `period: str = "all"` ("all", "week", "month").
+   - When `period in ("week", "month")`, computes IST start and end instants via `period_bounds(period)`.
+   - Aggregates `PointAward` sums where `earned_at >= start_dt` and `earned_at < end_dt` (falling back to period-bounded `Solve` rows if awards have not yet been generated).
+   - Breaks down Codeforces count/points and LeetCode points specifically for the period.
+   - Enforces deterministic tie-breaking by `-user.id`.
+   - Updated `GET /api/leaderboard`, `GET /api/friends/leaderboard`, and `GET /api/groups/{group_id}/leaderboard` to accept `period: str = Query("all", pattern="^(all|week|month)$")`.
+
+2. **Frontend Extension & Web Clients (`extension/src/`, `web/app/`)**:
+   - Updated API client wrappers `leaderboard(period)`, `friendsLeaderboard(userId, period)`, and `groupLeaderboard(groupId, period)`.
+   - Added period state (`"all" | "week" | "month"`) to both clients.
+   - Extended caching key to `boardKey(tab, sort, period)` preventing cache collisions across periods.
+   - Added interactive period toggle button group ("All-time", "This Week", "This Month") in the leaderboard header.
+   - Rebuilt extension and website bundles; synchronized all 4 ZIP distribution copies.
+
+3. **Automated Testing & Verification (`backend/tests/test_period_rankings.py`)**:
+   - Added test suite with 5 test cases verifying:
+     - Lifetime rankings use total `User.points`.
+     - Week and month period rankings accurately filter awards within `[start_dt, end_dt)`.
+     - Out-of-period awards and undated baseline credit are excluded from period points.
+     - Codeforces and LeetCode period points breakdown.
+     - Group and friends leaderboards support the `period` query parameter.
+     - Deterministic tie-breaking by `-user.id`.
+     - Fast validation rejection (HTTP 422) for invalid period values.
+
+### Verification Evidence
+- `backend/tests/test_period_rankings.py`: 5 tests passed.
+- Full backend test suite: 140 unit and integration tests passed.
+- All 4 extension ZIP files verified byte-synchronized.
+- PostgreSQL migration check: 10 migrations passed with advisory locking.
+- Headless Chrome browser smoke test: extension and web UI passed with 0 runtime errors.
+- Full `./scripts/run_checks.sh` verification passed cleanly.
+
+---
+
 ## 2026-11-06 — Step: OPS-03 / M5 Step 7: Incremental Challenge Archive Backfill & Resumable Bounded Point Reconciliation
 
 ### Summary of Changes

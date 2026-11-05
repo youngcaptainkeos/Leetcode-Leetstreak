@@ -21,7 +21,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .config import CORS_ORIGINS, ADMIN_SECRET
 from .database import Base, engine, get_db, SessionLocal
-from .models import AdminOperation, User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge, UserProgress, UserCustomPlan, Friendship
+from .models import AdminOperation, User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge, UserProgress, UserCustomPlan, Friendship, PointAward
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
 from .email_service import send_otp_email, send_update_notification_email
 from .schemas import (
@@ -39,7 +39,7 @@ from .schemas import (
     FriendSummary, FriendRequestItem, FriendsListResponse, SendFriendRequest, UserSearchResult, FriendshipActionResponse,
 )
 from .streak import current_streak
-from .timekeeping import IST, ist_today, week_start as product_week_start, month_start as product_month_start, period_bounds, utc_now
+from .timekeeping import IST, ist_today, ist_date, week_start as product_week_start, month_start as product_month_start, period_bounds, utc_now
 from .scheduler import start_scheduler, poll_all_users, poll_user
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError, check_leetcode_profile_verification
 from .point_calculator import compute_solve_points_breakdown, compute_codeforces_points_breakdown, recalculate_user_points
@@ -1005,11 +1005,69 @@ def _compute_leaderboard(
     requester_id: Optional[int] = None,
     sort_by: str = "points",
     limit: Optional[int] = None,
+    period: str = "all",
 ) -> LeaderboardResponse:
     today = get_ist_today()
     week_start = get_current_week_start(today)
     days_in_week_so_far = (today - week_start).days + 1
     cutoff_today = get_ist_today_start()
+
+    period_start_date = None
+    period_end_date = None
+    period_points_map = {}
+    period_cf_stats = {}
+    period_lc_points_map = {}
+
+    if period in ("week", "month"):
+        start_dt, end_dt = period_bounds(period)
+        period_start_date = ist_date(start_dt)
+        period_end_date = ist_date(end_dt - timedelta(seconds=1))
+
+        u_ids = [u.id for u in users]
+        if u_ids:
+            award_sums = {
+                row[0]: float(row[1])
+                for row in db.query(
+                    PointAward.user_id,
+                    func.coalesce(func.sum(PointAward.points), 0),
+                )
+                .filter(
+                    PointAward.user_id.in_(u_ids),
+                    PointAward.earned_at >= start_dt,
+                    PointAward.earned_at < end_dt,
+                )
+                .group_by(PointAward.user_id)
+                .all()
+            }
+
+            solve_period_rows = (
+                db.query(
+                    Solve.user_id,
+                    Solve.platform,
+                    func.count(Solve.id),
+                    func.coalesce(func.sum(Solve.points_earned), 0),
+                )
+                .filter(
+                    Solve.user_id.in_(u_ids),
+                    func.coalesce(Solve.first_solve_at, Solve.solved_at) >= start_dt,
+                    func.coalesce(Solve.first_solve_at, Solve.solved_at) < end_dt,
+                )
+                .group_by(Solve.user_id, Solve.platform)
+                .all()
+            )
+
+            solve_sums = {}
+            for uid, plat, count, pts in solve_period_rows:
+                pts_f = float(pts)
+                solve_sums[uid] = solve_sums.get(uid, 0.0) + pts_f
+                if plat == "codeforces":
+                    period_cf_stats[uid] = (count, pts_f)
+
+            for uid in u_ids:
+                u_pts = award_sums.get(uid, solve_sums.get(uid, 0.0))
+                period_points_map[uid] = u_pts
+                cf_pts = period_cf_stats.get(uid, (0, 0.0))[1]
+                period_lc_points_map[uid] = max(0.0, u_pts - cf_pts)
 
     # Pre-fetch today's active kudos (IST calendar day)
     active_kudos = db.query(Kudos).filter(Kudos.created_at >= cutoff_today).all()
@@ -1023,7 +1081,14 @@ def _compute_leaderboard(
 
     user_ids = [u.id for u in users]
     if not user_ids:
-        return LeaderboardResponse(week_start=week_start, week_end=today, entries=[])
+        return LeaderboardResponse(
+            week_start=week_start,
+            week_end=today,
+            entries=[],
+            period=period,
+            period_start=period_start_date,
+            period_end=period_end_date,
+        )
 
     combined = daily_counts(db, user_ids)
     cf_stats = {row[0]: (row[1], float(row[2])) for row in db.query(Solve.user_id, func.count(Solve.id), func.coalesce(func.sum(Solve.points_earned), 0)).filter(Solve.user_id.in_(user_ids), Solve.platform == "codeforces").group_by(Solve.user_id).all()}
@@ -1038,13 +1103,28 @@ def _compute_leaderboard(
         active_days_this_week = len(week_rows)
         consistency = (active_days_this_week / days_in_week_so_far) * 100
         is_active_today = today in active_dates
-        points = int(round(user.points or 0.0))
+
+        if period in ("week", "month"):
+            user_period_pts = period_points_map.get(user.id, 0.0)
+            points = int(round(user_period_pts))
+            cf_count = period_cf_stats.get(user.id, (0, 0.0))[0]
+            cf_points = round(period_cf_stats.get(user.id, (0, 0.0))[1], 4)
+            lc_points = round(period_lc_points_map.get(user.id, 0.0), 4)
+        else:
+            points = int(round(user.points or 0.0))
+            cf_count = cf_stats.get(user.id, (0, 0))[0]
+            cf_points = round(cf_stats.get(user.id, (0, 0))[1], 4)
+            lc_points = round((user.points or 0) - cf_stats.get(user.id, (0, 0))[1], 4)
+
         raw.append({
             "user": user,
             "weekly_total": weekly_total,
             "streak": streak,
             "consistency": consistency,
             "points": points,
+            "cf_count": cf_count,
+            "cf_points": cf_points,
+            "lc_points": lc_points,
             "is_active_today": is_active_today,
             "kudos_count": kudos_counts.get(user.id, 0),
             "has_kudosed": user.id in requester_kudosed_to,
@@ -1056,9 +1136,9 @@ def _compute_leaderboard(
         r["combined"] = round(0.6 * r["consistency"] + 0.4 * normalized_volume, 1)
 
     if sort_by == "streak":
-        raw.sort(key=lambda r: (r["streak"], r["points"], r["combined"]), reverse=True)
+        raw.sort(key=lambda r: (r["streak"], r["points"], r["combined"], -r["user"].id), reverse=True)
     else:
-        raw.sort(key=lambda r: (r["points"], r["combined"], r["streak"]), reverse=True)
+        raw.sort(key=lambda r: (r["points"], r["combined"], r["streak"], -r["user"].id), reverse=True)
 
     entries = [
         LeaderboardEntry(
@@ -1069,9 +1149,9 @@ def _compute_leaderboard(
             leetcode_verified=r["user"].leetcode_verified_at is not None,
             codeforces_username=r["user"].codeforces_username,
             codeforces_verified=r["user"].codeforces_verified_at is not None,
-            codeforces_count=cf_stats.get(r["user"].id, (0, 0))[0],
-            codeforces_points=round(cf_stats.get(r["user"].id, (0, 0))[1], 4),
-            leetcode_points=round((r["user"].points or 0) - cf_stats.get(r["user"].id, (0, 0))[1], 4),
+            codeforces_count=r["cf_count"],
+            codeforces_points=r["cf_points"],
+            leetcode_points=r["lc_points"],
             avatar_url=r["user"].avatar_url,
             easy_count=r["user"].easy_count or 0,
             medium_count=r["user"].medium_count or 0,
@@ -1109,13 +1189,22 @@ def _compute_leaderboard(
                         top_entries.append(entries[p_i])
         entries = top_entries
 
-    return LeaderboardResponse(week_start=week_start, week_end=today, total_users=total_users, entries=entries)
+    return LeaderboardResponse(
+        week_start=week_start,
+        week_end=today,
+        total_users=total_users,
+        entries=entries,
+        period=period,
+        period_start=period_start_date,
+        period_end=period_end_date,
+    )
 
 
 @app.get("/api/leaderboard", response_model=LeaderboardResponse)
 def get_global_leaderboard(
     user_id: Optional[int] = Query(None),
     sort_by: str = Query("points", pattern="^(points|streak)$"),
+    period: str = Query("all", pattern="^(all|week|month)$"),
     limit: Optional[int] = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
     actor: User = Depends(current_user),
@@ -1124,13 +1213,14 @@ def get_global_leaderboard(
     user_id = actor.id
     # Every account participates; the preference controls only the viewer's UI.
     users = db.query(User).all()
-    return _compute_leaderboard(db, users, requester_id=user_id, sort_by=sort_by, limit=limit)
+    return _compute_leaderboard(db, users, requester_id=user_id, sort_by=sort_by, limit=limit, period=period)
 
 
 @app.get("/api/friends/leaderboard", response_model=LeaderboardResponse)
 def get_friends_leaderboard(
     user_id: int = Query(...),
     sort_by: str = Query("points", pattern="^(points|streak)$"),
+    period: str = Query("all", pattern="^(all|week|month)$"),
     limit: Optional[int] = Query(None, ge=1, le=100),
     db: Session = Depends(get_db),
     actor: User = Depends(current_user),
@@ -1160,7 +1250,7 @@ def get_friends_leaderboard(
     all_friend_user_ids = set(shared_group_ids) | set(direct_friend_ids) | {user_id}
     friends = db.query(User).filter(User.id.in_(all_friend_user_ids)).all()
 
-    return _compute_leaderboard(db, friends, requester_id=user_id, sort_by=sort_by, limit=limit)
+    return _compute_leaderboard(db, friends, requester_id=user_id, sort_by=sort_by, limit=limit, period=period)
 
 
 @app.get("/api/users/search", response_model=List[UserSearchResult])
@@ -1659,6 +1749,7 @@ def get_group_leaderboard(
     group_id: int,
     user_id: Optional[int] = Query(None),
     sort_by: str = Query("points", pattern="^(points|streak)$"),
+    period: str = Query("all", pattern="^(all|week|month)$"),
     limit: Optional[int] = Query(None, ge=1, le=100),
     db: Session = Depends(get_db),
     actor: User = Depends(current_user),
@@ -1673,7 +1764,7 @@ def get_group_leaderboard(
         .filter(GroupMember.group_id == group_id)
         .all()
     )
-    return _compute_leaderboard(db, users, requester_id=user_id, sort_by=sort_by, limit=limit)
+    return _compute_leaderboard(db, users, requester_id=user_id, sort_by=sort_by, limit=limit, period=period)
 
 
 @app.post("/api/kudos/kudos-all")

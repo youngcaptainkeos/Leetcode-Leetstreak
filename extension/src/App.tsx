@@ -698,6 +698,7 @@ function Dashboard({
   const [groups, setGroups] = useState<GroupResponse[]>([]);
   const [selectedTab, setSelectedTab] = useState<BoardTab>("global");
   const [sortBy, setSortBy] = useState<"points" | "streak">("points");
+  const [period, setPeriod] = useState<"all" | "week" | "month">("all");
   const [revealedCodes, setRevealedCodes] = useState<Record<number, boolean>>({});
   const [tabBoards, setTabBoards] = useState<Record<string, LeaderboardResponse>>({});
   const [boardLoading, setBoardLoading] = useState<boolean>(false);
@@ -707,7 +708,7 @@ function Dashboard({
 
   const leaderboardReqRef = useRef(0);
   const fullLoadReqRef = useRef(0);
-  const boardKey = (tab: BoardTab, sort: "points" | "streak") => `${String(tab)}_${sort}`;
+  const boardKey = (tab: BoardTab, sort: "points" | "streak", p: "all" | "week" | "month" = period) => `${String(tab)}_${sort}_${p}`;
 
   useEffect(() => {
     let active = true;
@@ -732,7 +733,7 @@ function Dashboard({
     setStored("codestreak_active_tab", tabKey);
 
     // ⚡ INSTANT SWAP (0ms): Clear old board immediately if not cached so old users vanish at once!
-    const key = boardKey(tab, sortBy);
+    const key = boardKey(tab, sortBy, period);
     if (tabBoards[key]) {
       setBoard(tabBoards[key]);
       setBoardLoading(false);
@@ -1213,18 +1214,19 @@ function Dashboard({
 
   async function loadData(
     tab: BoardTab = selectedTab,
-    sortMode: "points" | "streak" = sortBy
+    sortMode: "points" | "streak" = sortBy,
+    p: "all" | "week" | "month" = period
   ) {
-    const key = boardKey(tab, sortMode);
+    const key = boardKey(tab, sortMode, p);
     const reqId = ++fullLoadReqRef.current;
     try {
       // 🚀 Parallelize all independent API calls to eliminate sequential network waterfalls!
       const boardPromise =
         tab === "global"
-          ? api.leaderboard(userId, sortMode)
+          ? api.leaderboard(userId, sortMode, p)
           : tab === "friends"
-          ? api.friendsLeaderboard(userId, sortMode)
-          : api.groupLeaderboard(tab, userId, sortMode);
+          ? api.friendsLeaderboard(userId, sortMode, p)
+          : api.groupLeaderboard(tab, userId, sortMode, p);
 
       const [dashRes, myGroupsRes, boardRes, friendsRes] = await Promise.all([
         api.dashboard(userId).catch((err) => {
@@ -1404,9 +1406,10 @@ function Dashboard({
 
   async function fetchLeaderboardOnly(
     tab: BoardTab = selectedTab,
-    sortMode: "points" | "streak" = sortBy
+    sortMode: "points" | "streak" = sortBy,
+    p: "all" | "week" | "month" = period
   ) {
-    const key = boardKey(tab, sortMode);
+    const key = boardKey(tab, sortMode, p);
     const reqId = ++leaderboardReqRef.current;
 
     // If cached in memory, use it instantly (0ms delay)
@@ -1422,10 +1425,10 @@ function Dashboard({
     try {
       const boardPromise =
         tab === "global"
-          ? api.leaderboard(userId, sortMode)
+          ? api.leaderboard(userId, sortMode, p)
           : tab === "friends"
-          ? api.friendsLeaderboard(userId, sortMode)
-          : api.groupLeaderboard(tab, userId, sortMode);
+          ? api.friendsLeaderboard(userId, sortMode, p)
+          : api.groupLeaderboard(tab, userId, sortMode, p);
 
       const boardRes = await boardPromise;
       if (reqId !== leaderboardReqRef.current) return;
@@ -1450,16 +1453,16 @@ function Dashboard({
   // 1. Initial mount: load full app state (dashboard, groups, feed, active board)
   useEffect(() => {
     if (userId) {
-      loadData(selectedTab, sortBy);
+      loadData(selectedTab, sortBy, period);
     }
   }, [userId]);
 
-  // 2. Fast tab or sort switch: fetch ONLY the leaderboard endpoint (~100ms, old users vanish immediately!)
+  // 2. Fast tab, sort, or period switch: fetch ONLY the leaderboard endpoint (~100ms)
   useEffect(() => {
     if (userId) {
-      fetchLeaderboardOnly(selectedTab, sortBy);
+      fetchLeaderboardOnly(selectedTab, sortBy, period);
     }
-  }, [selectedTab, sortBy]);
+  }, [selectedTab, sortBy, period]);
 
   async function handleSync() {
     setSyncing(true);
@@ -1809,16 +1812,43 @@ function Dashboard({
           ))}
         </div>
 
-        {/* Leaderboard Sort & Group Code Control Bar */}
+        {/* Leaderboard Period & Sort Control Bar */}
         <div className="sort-toggle-bar">
           <div className="sort-left-group">
-            <span className="sort-label">Sort:</span>
+            <span className="sort-label">Period:</span>
+            <div className="period-btn-group" role="group" aria-label="Ranking period">
+              <button
+                type="button"
+                className={`period-btn ${period === "all" ? "active" : ""}`}
+                onClick={() => setPeriod("all")}
+                title="All-time lifetime rankings"
+              >
+                All-time
+              </button>
+              <button
+                type="button"
+                className={`period-btn ${period === "week" ? "active" : ""}`}
+                onClick={() => setPeriod("week")}
+                title="Weekly rankings (Sunday-start week, IST)"
+              >
+                This Week
+              </button>
+              <button
+                type="button"
+                className={`period-btn ${period === "month" ? "active" : ""}`}
+                onClick={() => setPeriod("month")}
+                title="Monthly rankings (Calendar month, IST)"
+              >
+                This Month
+              </button>
+            </div>
+            <span className="sort-label" style={{ marginLeft: "6px" }}>Sort:</span>
             <div className="sort-btn-group">
               <button
                 type="button"
                 className={`sort-btn ${sortBy === "points" ? "active" : ""}`}
                 onClick={() => setSortBy("points")}
-                title="Sort leaderboard by total points"
+                title="Sort leaderboard by points"
               >
                 ⭐ Points
               </button>
