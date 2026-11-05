@@ -33,6 +33,7 @@ from .schemas import (
     DynamicMenuItem, AppConfigResponse, DeleteAccountRequest, SyncRequest, UpdateCodeforcesRequest, GroupTransferRequest, ReleaseBroadcastRequest, ChangePasswordRequest,
 )
 from .streak import current_streak
+from .timekeeping import IST, ist_today, week_start as product_week_start, month_start as product_month_start, period_bounds
 from .scheduler import start_scheduler, poll_all_users, poll_user
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
 from .point_calculator import compute_solve_points_breakdown, compute_codeforces_points_breakdown, recalculate_user_points
@@ -487,31 +488,25 @@ def _active_dates(db: Session, user_id: int) -> set[date]:
     return set(daily_counts(db, [user_id])[user_id])
 
 
-IST = timezone(timedelta(hours=5, minutes=30))
-
-
 def get_ist_today() -> date:
     """Returns today's date in Indian Standard Time (IST, UTC+5:30)."""
-    return datetime.now(IST).date()
+    return ist_today()
 
 
 def get_current_week_start(today: date) -> date:
     """Returns Sunday 00:00:00 (start of current week). Resets weekly counter every Sunday 12:00 AM."""
-    days_since_sunday = (today.weekday() + 1) % 7
-    return today - timedelta(days=days_since_sunday)
+    return product_week_start(today)
 
 
 def get_current_month_start(today: date) -> date:
     """Returns 1st of the current calendar month 00:00:00. Resets monthly counter on the 1st of every month."""
-    return date(today.year, today.month, 1)
+    return product_month_start(today)
 
 
 def get_ist_today_start() -> datetime:
     """Returns midnight (00:00:00) of current calendar day in Indian Standard Time (IST, UTC+5:30) converted to naive UTC for DB comparison."""
-    now_ist = datetime.now(IST)
-    midnight_ist = datetime(now_ist.year, now_ist.month, now_ist.day)
-    utc_midnight = midnight_ist - timedelta(hours=5, minutes=30)
-    return utc_midnight.replace(tzinfo=None)
+    start, _ = period_bounds("today", get_ist_today())
+    return start
 
 
 @app.get("/api/users/{user_id}/dashboard", response_model=DashboardResponse, response_model_exclude_none=True)

@@ -192,6 +192,14 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 | M1-08 | PUB-04 private exposure inventory and concrete remediation proposal | Inventory/proposal prepared for owner review: 662 historical text blobs, 145 ZIP versions, five remote branches plus one tag, GitHub published collections and primary hosted artifact reviewed; private backup restored and integrity checked. Owner approved private rewrite preparation. Rehearsal prepared in isolated protected storage: six refs verified, 521 retained files compared, 869 reachable blobs scanned, approved donation/support assets retained, reviewed packages restored on rehearsal pre-launch and 44 backend tests passed. Local checkout restored after a tool invocation error; remote refs confirmed unchanged. Credential checkpoint closed based on owner confirmation: Supabase password changed and old Render credentials revoked. Final shared-history publication approval remains open. Secondary host timed out; wiki inaccessible; coverage limits recorded privately. No public history rewrite or production change. |
 | M1-09 | OPS-06 local PostgreSQL and browser acceptance | Passed locally: 48 backend tests including four native PostgreSQL checks; six client session/preference tests and 11 progress checks; both type checks/builds. Browser login, persisted display preference, password change and revoked-session return to sign-in pass for website and popup preview with no runtime errors. Fixed concurrent migration-registry creation and website token-refresh storage. Synthetic screenshots visually reviewed; native extension acceptance follows M3. Production release and public-history publication remain separate checkpoints. |
 
+
+### M2 execution steps
+
+| Step | Scope | State / evidence |
+|---|---|---|
+| M2-01 | DATA-06 shared clock and period boundaries | Passed locally: 54 backend tests including six new boundary/cooldown checks and four PostgreSQL migration checks. Dashboard and streak helpers use one IST clock; shared UTC storage conversion, Sunday-start weeks, exclusive period ends and seven-day elapsed cooldown helpers added. Ingestion, award migration and client date conversion remain later steps; DATA-06 is not yet complete. |
+
+
 ## 4. Security and privacy plans
 
 ### SEC-01 — Authenticate account actions and enforce permissions

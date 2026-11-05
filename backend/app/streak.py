@@ -1,7 +1,5 @@
-from datetime import date, datetime, timezone, timedelta
-
-
-IST = timezone(timedelta(hours=5, minutes=30))
+from datetime import date, timedelta
+from .timekeeping import IST, ist_today
 
 
 def current_streak(active_dates: set[date], today: date | None = None) -> int:
@@ -10,7 +8,7 @@ def current_streak(active_dates: set[date], today: date | None = None) -> int:
     Grace period: if the user hasn't solved anything YET today, the streak
     isn't broken until tomorrow (they still have time today).
     """
-    today = today or datetime.now(IST).date()
+    today = today or ist_today()
 
     if not active_dates:
         return 0
