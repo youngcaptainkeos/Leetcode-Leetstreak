@@ -77,9 +77,9 @@ This is the working checklist for the repository review. It covers every issue a
 - [x] **UI-02 · P1:** Repair immediate accepted-submission detection.
 - [ ] **UI-03 · P1 · Deferred:** Repair the friend notification page under Manifest V3 when the owner resumes that feature.
 - [ ] **UI-04 · P2 · Deferred:** Correct friend notification selection, deduplication, and platform labels later.
-- [ ] **UI-05 · P1:** Prevent stale leaderboard responses and incorrect sorted caches.
-- [ ] **UI-06 · P2:** Distinguish friend lookup failures from empty activity.
-- [ ] **UI-07 · P2:** Keep the newest friend submission when merging activity sources.
+- [x] **UI-05 · P1:** Prevent stale leaderboard responses and incorrect sorted caches.
+- [x] **UI-06 · P2:** Distinguish friend lookup failures from empty activity.
+- [x] **UI-07 · P2:** Keep the newest friend submission when merging activity sources.
 
 ### Reliability and maintenance
 
@@ -101,7 +101,7 @@ This is the working checklist for the repository review. It covers every issue a
 - [ ] **FEAT-06 · P3:** Add weekly/monthly points rankings.
 - [ ] **FEAT-07 · P2 · Deferred:** Add friend notification preferences and quiet hours when that feature is resumed.
 - [ ] **FEAT-08 · P3:** Add searchable history, longer activity views, and exports.
-- [ ] **FEAT-09 · P2:** Explain the browser-session requirement for complete LeetCode plan sync.
+- [x] **FEAT-09 · P2:** Explain the browser-session requirement for complete LeetCode plan sync.
 - [ ] **FEAT-10 · P2:** Add direct friendships independently of group membership.
 
 ### Public repository readiness
@@ -210,6 +210,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 | Step | Scope | State / evidence |
 |---|---|---|
 | M3-01 | UI-01 shared account storage contract & UI-02 immediate accepted submission detection | Passed locally: 91 backend tests, 23 extension tests (6 auth, 6 storage, 11 progress), web check/build and extension tsc/build. Established versioned session storage contract (v2) with automatic legacy migration in extension/src/storage.ts. Added main-world submission bridge (leetcode-page-bridge.js) intercepting fetch/XHR LeetCode submission checks and isolated content-script listener relaying unprivileged hints to background.js. Background service worker handles authenticated sync debouncing and broadcasts sync completions to refresh UI. Rebuilt extension and synchronized all 4 ZIP archives. Commit labeled 'M3 UI-01 UI-02 step 1: shared account storage contract and immediate submission detection'. |
+| M3-02 | UI-05 request ordering and sorted caches, UI-06 friend failure separation, UI-07 recency merge, and FEAT-09 session guidance | Passed locally: 91 backend tests, 26 extension tests (6 auth, 6 storage, 3 ordering, 11 progress), web check/build and extension tsc/build. Added request sequence ordering and combined cache keys (tab + sort + user) in extension and web App.tsx, eliminating stale response race conditions. Updated FriendsActivity in Progress.tsx to preserve valid results across platforms during partial failures, retain existing items across refreshes, and merge identical questions preserving the newest timestamp. Added explanatory session requirement messaging for study plan progress. Synchronized all 4 ZIP archives. Commit labeled 'M3 UI-05 UI-06 UI-07 FEAT-09 step 2: request ordering, friend activity merge, and session guidance'. |
 
 
 ## 4. Security and privacy plans
@@ -643,16 +644,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Key data by account, board/group, and sort mode, plus any future period/filter.
-- [ ] Cancel superseded requests or ignore responses whose request generation/key is stale.
-- [ ] Scope loading/error state to the active request; discard private caches after membership or account changes.
-- [ ] Distinguish cached data from fresh results without showing a different board under the current label.
+- [x] Key data by account, board/group, and sort mode, plus any future period/filter.
+- [x] Cancel superseded requests or ignore responses whose request generation/key is stale.
+- [x] Scope loading/error state to the active request; discard private caches after membership or account changes.
+- [x] Distinguish cached data from fresh results without showing a different board under the current label.
 
 **Acceptance**
 
-- [ ] Deliberately reversed response order cannot replace the selected tab/sort.
-- [ ] Sort changes and account switches do not reuse incompatible cached boards.
-- [ ] A failed obsolete request does not clear the current result or its loading state.
+- [x] Deliberately reversed response order cannot replace the selected tab/sort.
+- [x] Sort changes and account switches do not reuse incompatible cached boards.
+- [x] A failed obsolete request does not clear the current result or its loading state.
 
 ### UI-06 — Friend activity failures vs empty results
 
@@ -664,16 +665,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Represent loading, success-empty, partial success, stale data, and error separately, including per-platform outcomes.
-- [ ] Keep previously loaded valid activity while a refresh is pending or fails.
-- [ ] Use bounded retries/backoff and an actionable retry state; avoid clearing/reloading the entire list on every refresh.
-- [ ] Do not suppress a friend's valid LC results solely because their CF lookup failed, or vice versa.
+- [x] Represent loading, success-empty, partial success, stale data, and error separately, including per-platform outcomes.
+- [x] Keep previously loaded valid activity while a refresh is pending or fails.
+- [x] Use bounded retries/backoff and an actionable retry state; avoid clearing/reloading the entire list on every refresh.
+- [x] Do not suppress a friend's valid LC results solely because their CF lookup failed, or vice versa.
 
 **Acceptance**
 
-- [ ] A provider failure cannot display as a verified “no recent solves” result.
-- [ ] Partial results remain usable with a clear error indication.
-- [ ] Repeated refreshes do not create flicker, unbounded requests, or misleading success states.
+- [x] A provider failure cannot display as a verified “no recent solves” result.
+- [x] Partial results remain usable with a clear error indication.
+- [x] Repeated refreshes do not create flicker, unbounded requests, or misleading success states.
 
 ### UI-07 — Merge friend activity without losing recency
 
@@ -685,16 +686,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Define whether this view represents accepted events or latest activity per problem. Keep first-accepted scoring distinct from most-recent activity.
-- [ ] Normalize all timestamps and platform/problem identities before merging.
-- [ ] For a latest-per-problem view, explicitly choose the maximum valid timestamp; merge useful metadata without changing the event's date.
-- [ ] Apply deterministic tie-breaking and ensure link/platform labels come from the selected record.
+- [x] Define whether this view represents accepted events or latest activity per problem. Keep first-accepted scoring distinct from most-recent activity.
+- [x] Normalize all timestamps and platform/problem identities before merging.
+- [x] For a latest-per-problem view, explicitly choose the maximum valid timestamp; merge useful metadata without changing the event's date.
+- [x] Apply deterministic tie-breaking and ensure link/platform labels come from the selected record.
 
 **Acceptance**
 
-- [ ] Older ledger entries cannot move a recent acceptance backward in the feed.
-- [ ] Input order does not change merged results.
-- [ ] A problem on two platforms remains distinguishable; activity recency does not rewrite first-accepted points.
+- [x] Older ledger entries cannot move a recent acceptance backward in the feed.
+- [x] Input order does not change merged results.
+- [x] A problem on two platforms remains distinguishable; activity recency does not rewrite first-accepted points.
 
 ## 7. Reliability and maintenance plans
 
@@ -1042,16 +1043,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Explain public profile sync versus complete browser-session plan history in concise product language.
-- [ ] Detect missing/mismatched LeetCode sessions and show an account-specific instruction/link; never request passwords or copy session cookies to the backend.
-- [ ] Resume automatic syncing when conditions become valid, preserving saved progress and avoiding repeated disruptive prompts.
-- [ ] Explain website limitations and how extension-synced account progress becomes available on the website after FEAT-01.
+- [x] Explain public profile sync versus complete browser-session plan history in concise product language.
+- [x] Detect missing/mismatched LeetCode sessions and show an account-specific instruction/link; never request passwords or copy session cookies to the backend.
+- [x] Resume automatic syncing when conditions become valid, preserving saved progress and avoiding repeated disruptive prompts.
+- [x] Explain website limitations and how extension-synced account progress becomes available on the website after FEAT-01.
 
 **Acceptance**
 
-- [ ] Signed-out and wrong-account users receive useful instructions rather than apparent zero progress.
-- [ ] A correct session triggers automatic sync without a manual checkbox or required history-sync button.
-- [ ] Messaging accurately states what is read and what remains local/account-backed.
+- [x] Signed-out and wrong-account users receive useful instructions rather than apparent zero progress.
+- [x] A correct session triggers automatic sync without a manual checkbox or required history-sync button.
+- [x] Messaging accurately states what is read and what remains local/account-backed.
 
 ### FEAT-10 — Direct friendships without groups
 

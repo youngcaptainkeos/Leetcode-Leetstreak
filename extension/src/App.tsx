@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   api,
   showGlobalLeaderboard,
@@ -661,6 +661,10 @@ function Dashboard({
   const [startupTab, setStartupTab] = useState<StartupTab>("last");
   const practice = usePractice(dash?.leetcode_username || "");
 
+  const leaderboardReqRef = useRef(0);
+  const fullLoadReqRef = useRef(0);
+  const boardKey = (tab: BoardTab, sort: "points" | "streak") => `${String(tab)}_${sort}`;
+
   useEffect(() => {
     let active = true;
     Promise.all([getStored(startupTabKey(userId)), getStored(`codestreak_menu_${userId}`)]).then(([saved, lastUsed]) => {
@@ -684,8 +688,9 @@ function Dashboard({
     setStored("codestreak_active_tab", tabKey);
 
     // ⚡ INSTANT SWAP (0ms): Clear old board immediately if not cached so old users vanish at once!
-    if (tabBoards[tabKey]) {
-      setBoard(tabBoards[tabKey]);
+    const key = boardKey(tab, sortBy);
+    if (tabBoards[key]) {
+      setBoard(tabBoards[key]);
       setBoardLoading(false);
     } else {
       setBoard(null);
@@ -696,7 +701,7 @@ function Dashboard({
   useEffect(() => {
     (async () => {
       const storedTab = await getStored("codestreak_active_tab");
-      const cachedDash = await getStored("codestreak_cached_dash");
+      const cachedDash = await getStored(`codestreak_cached_dash_${userId}`) || await getStored("codestreak_cached_dash");
       let cachedDashObj: DashboardResponse | null = null;
       if (cachedDash) {
         try {
@@ -709,7 +714,7 @@ function Dashboard({
         } catch (e) {}
       }
 
-      let activeTabKey = "global";
+      let activeTabKey: BoardTab = "global";
       if (cachedDashObj && !showGlobalLeaderboard(cachedDashObj)) {
         activeTabKey = "friends";
         setSelectedTab("friends");
@@ -719,16 +724,20 @@ function Dashboard({
           activeTabKey = storedTab;
         } else if (!isNaN(Number(storedTab))) {
           setSelectedTab(Number(storedTab));
-          activeTabKey = storedTab;
+          activeTabKey = Number(storedTab);
         }
       }
       // Instant 0ms stale-while-revalidate cached rendering
-      const cachedBoard = await getStored(`codestreak_cached_board_${activeTabKey}`) || await getStored("codestreak_cached_board");
+      const initialKey = boardKey(activeTabKey, "points");
+      const cachedBoard =
+        await getStored(`codestreak_cached_board_${userId}_${initialKey}`) ||
+        await getStored(`codestreak_cached_board_${String(activeTabKey)}`) ||
+        await getStored("codestreak_cached_board");
       if (cachedBoard && cachedDashObj) {
         try {
           const parsed = JSON.parse(cachedBoard);
           setBoard(parsed);
-          setTabBoards((prev) => ({ ...prev, [activeTabKey]: parsed }));
+          setTabBoards((prev) => ({ ...prev, [initialKey]: parsed }));
         } catch (e) {}
       }
     })();
@@ -960,6 +969,8 @@ function Dashboard({
     tab: BoardTab = selectedTab,
     sortMode: "points" | "streak" = sortBy
   ) {
+    const key = boardKey(tab, sortMode);
+    const reqId = ++fullLoadReqRef.current;
     try {
       // 🚀 Parallelize all independent API calls to eliminate sequential network waterfalls!
       const boardPromise =
@@ -981,6 +992,8 @@ function Dashboard({
         boardPromise.catch(() => null),
       ]);
 
+      if (reqId !== fullLoadReqRef.current) return;
+
       if (!dashRes) {
         setBoardLoading(false);
         return;
@@ -995,15 +1008,18 @@ function Dashboard({
       if (myGroupsRes?.groups) setGroups(myGroupsRes.groups);
       if (boardRes) {
         setBoard(boardRes);
-        setTabBoards((prev) => ({ ...prev, [String(tab)]: boardRes }));
-        setStored(`codestreak_cached_board_${String(tab)}`, JSON.stringify(boardRes));
-        setStored("codestreak_cached_board", JSON.stringify(boardRes));
+        setTabBoards((prev) => ({ ...prev, [key]: boardRes }));
+        if (userId) {
+          setStored(`codestreak_cached_board_${userId}_${key}`, JSON.stringify(boardRes));
+        }
       }
       setBoardLoading(false);
       setError(null);
 
       // Save stale-while-revalidate cache for instant 0ms load next time!
-      setStored("codestreak_cached_dash", JSON.stringify(dashRes));
+      if (userId) {
+        setStored(`codestreak_cached_dash_${userId}`, JSON.stringify(dashRes));
+      }
 
       // Update Chrome Extension Action Badge
       if (typeof chrome !== "undefined" && chrome.action && chrome.action.setBadgeText) {
@@ -1012,6 +1028,7 @@ function Dashboard({
         chrome.action.setBadgeBackgroundColor({ color: dashRes.today_count > 0 ? "#10b981" : "#6366f1" });
       }
     } catch (err) {
+      if (reqId !== fullLoadReqRef.current) return;
       setBoardLoading(false);
       const errMsg = err instanceof Error ? err.message : "";
       if (errMsg.includes("404") || errMsg.includes("User not found")) {
@@ -1141,11 +1158,12 @@ function Dashboard({
     tab: BoardTab = selectedTab,
     sortMode: "points" | "streak" = sortBy
   ) {
-    const tabKey = String(tab);
+    const key = boardKey(tab, sortMode);
+    const reqId = ++leaderboardReqRef.current;
 
     // If cached in memory, use it instantly (0ms delay)
-    if (tabBoards[tabKey]) {
-      setBoard(tabBoards[tabKey]);
+    if (tabBoards[key]) {
+      setBoard(tabBoards[key]);
       setBoardLoading(false);
     } else {
       // Clear board immediately so old users vanish on click
@@ -1162,15 +1180,22 @@ function Dashboard({
           : api.groupLeaderboard(tab, userId, sortMode);
 
       const boardRes = await boardPromise;
+      if (reqId !== leaderboardReqRef.current) return;
       if (boardRes) {
         setBoard(boardRes);
-        setTabBoards((prev) => ({ ...prev, [tabKey]: boardRes }));
-        setStored(`codestreak_cached_board_${tabKey}`, JSON.stringify(boardRes));
+        setTabBoards((prev) => ({ ...prev, [key]: boardRes }));
+        if (userId) {
+          setStored(`codestreak_cached_board_${userId}_${key}`, JSON.stringify(boardRes));
+        }
       }
     } catch (err) {
-      console.error("Leaderboard fetch error:", err);
+      if (reqId === leaderboardReqRef.current) {
+        console.error("Leaderboard fetch error:", err);
+      }
     } finally {
-      setBoardLoading(false);
+      if (reqId === leaderboardReqRef.current) {
+        setBoardLoading(false);
+      }
     }
   }
 

@@ -199,4 +199,43 @@ Unified the extension session storage contract under version 2 (`codestreak_sess
 - Ran backend test suite: 91/91 tests passed (`backend/tests`).
 - Built web application cleanly (`npm run build` -> `backend/web`).
 
+---
+
+## 2026-11-06 — Step: M3-02 / UI-05, UI-06, UI-07, FEAT-09: Request Ordering, Friend Activity Merge Recency, and Session Guidance
+
+### Summary of Changes
+Resolved race conditions in leaderboard switching and caching (UI-05), corrected friend activity lookup failure masking and empty state reporting (UI-06), fixed activity deduplication to preserve the most recent solve timestamp across multiple sources (UI-07), and added clear in-app guidance on browser session requirements for study-plan progress (FEAT-09). In `extension/src/App.tsx` and `web/app/App.tsx`, implemented generation counters (`fullLoadReqRef` and `leaderboardReqRef`) that automatically drop superseded, out-of-order network responses, and keyed in-memory and persistent leaderboard caches by account ID, tab, and sort mode (`points` vs `streak`). In `extension/src/progress/Progress.tsx`, rewrote `FriendsActivity` so partial failures on one platform (LeetCode vs Codeforces) do not discard successful data from the other, preserved existing items across refreshes, and merged duplicate problem entries preserving the newest solve timestamp. Added explanatory copy detailing public profile sync versus complete browser-session plan history. This completes Milestone M3 (with deferred alert items UI-03, UI-04, FEAT-07 untouched as agreed).
+
+### Detailed Changes
+1. **`extension/src/App.tsx` & `web/app/App.tsx` (UI-05)**:
+   - Added `leaderboardReqRef = useRef(0)` and `fullLoadReqRef = useRef(0)` to track active request IDs.
+   - Dropped obsolete responses in both `loadData` and `fetchLeaderboardOnly` when `reqId !== activeReqRef.current`.
+   - Combined cache keys to include sort mode: `boardKey = (tab, sort) => `${String(tab)}_${sort}``.
+   - Scoped persistent cache keys by user ID: `codestreak_cached_board_${userId}_${key}` and `codestreak_cached_dash_${userId}`.
+   - Updated `changeTab` and initial restore to use combined keys.
+
+2. **`extension/src/progress/Progress.tsx` (UI-06 & UI-07 & FEAT-09)**:
+   - Isolated LeetCode and Codeforces lookups per friend in `FriendsActivity`: failures on one platform no longer suppress valid results from the other.
+   - Recorded `failures++` honestly so network/lookup failures are distinguishable from empty activity ("0 solves").
+   - Maintained previously loaded activity during refreshes instead of wiping to an empty screen.
+   - When deduplicating solves across public submissions and database ledger rows for the same problem, compared `Number(solve.timestamp) > Number(existing.timestamp)` and retained the latest timestamp.
+   - Added session requirements explanatory note: "Public solves sync automatically via public profile. Complete study-plan completion requires signing in to @{username} on LeetCode in this browser."
+
+3. **`extension/tests/ordering.test.mjs`**:
+   - Added 3 unit tests verifying:
+     1. UI-07 solve deduplication preserving the latest timestamp.
+     2. UI-06 partial lookup failure preserving successful platform results.
+     3. UI-05 request sequence counters invalidating stale superseded responses.
+
+4. **Distribution Packages**:
+   - Rebuilt extension bundle via `npm run build`.
+   - Synchronized all 4 ZIP copies (`./leetstreak.zip`, `./leetstreak_dist.zip`, `./extension/leetstreak.zip`, `./backend/app/leetstreak.zip`).
+
+### Verification Evidence
+- Ran `tsc --noEmit` on both `extension` and `web` with 0 errors.
+- Ran all 26 extension unit tests (6 auth tests, 6 storage tests, 3 ordering tests, 11 progress tests) — 26 passed, 0 failed.
+- Ran backend test suite: 91/91 tests passed (`backend/tests`).
+- Built web application cleanly (`npm run build` -> `backend/web`).
+
+
 
