@@ -164,3 +164,5 @@ html[data-client="website"] .settings-modal { width:min(520px,calc(100vw - 32px)
 @media(max-width:640px) { .workspace-sidebar nav { scrollbar-width:none; } .workspace-sidebar nav::-webkit-scrollbar { display:none; } }
 
 html[data-client="website"] .modal-content.points-help-modal { overflow:hidden !important; max-height:calc(100vh - 32px); max-height:min(560px,calc(100dvh - 32px)); }
+
+html[data-client="website"] .modal-content.settings-modal { padding:16px !important; gap:14px !important; overflow:hidden !important; max-height:calc(100vh - 32px) !important; max-height:min(760px,calc(100dvh - 32px)) !important; }

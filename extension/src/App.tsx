@@ -1880,9 +1880,9 @@ function Dashboard({
       {/* Account Settings Modal */}
       {showSettings && (
         <div className="modal-overlay" onClick={() => setShowSettings(false)}>
-          <div className="modal-content settings-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content settings-modal" role="dialog" aria-modal="true" aria-labelledby="account-settings-title" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>⚙️ Account Settings</h3>
+              <h3 id="account-settings-title">Account Settings</h3>
               <button
                 className="modal-close"
                 onClick={() => setShowSettings(false)}
@@ -1892,6 +1892,7 @@ function Dashboard({
               </button>
             </div>
 
+            <div className="settings-body">
             {settingsMsg && <div className="settings-msg-banner">{settingsMsg}</div>}
 
             {/* Profile Summary Card */}
@@ -1999,14 +2000,13 @@ function Dashboard({
                     </button>
                   </div>
                   <span className="settings-input-hint">
-                    Syncs solves, contest rating, and streak from this LeetCode handle.
+                    Syncs your public LeetCode solves and streak.
                   </span>
                 </form>
                 <button
                   type="button"
                   className="username-help-link-btn"
                   onClick={() => setShowUsernameHelpModal(true)}
-                  style={{ marginTop: "6px" }}
                 >
                   💡 Need help finding your LeetCode username?
                 </button>
@@ -2022,7 +2022,7 @@ function Dashboard({
                     <input aria-label="Codeforces username" value={newCodeforcesUsername} onChange={e => setNewCodeforcesUsername(e.target.value)} placeholder={dash.codeforces_username || "Codeforces handle"} className="settings-text-input" maxLength={24} required />
                     <button type="submit" className="settings-action-btn" disabled={updatingCodeforces || !newCodeforcesUsername.trim()}>{updatingCodeforces ? "Connecting…" : dash.codeforces_username ? "Update" : "Connect"}</button>
                   </div>
-                  <span className="settings-input-hint">{dash.codeforces_username ? `Connected: @${dash.codeforces_username}. ` : ""}Accepted public solves sync automatically and contribute to your points and streak. Enter the handle from codeforces.com/profile/your-handle.</span>
+                  <span className="settings-input-hint">{dash.codeforces_username ? `Connected: @${dash.codeforces_username}. ` : ""}Public accepted solves sync automatically with your points and streak.</span>
                   {dash.codeforces_username && <span className="settings-input-hint" role="status">{dash.codeforces_sync_error || (dash.codeforces_last_sync ? `Last synced ${new Date(dash.codeforces_last_sync + (/Z|[+-]\d\d:\d\d$/.test(dash.codeforces_last_sync) ? "" : "+05:30")).toLocaleString()}` : "Importing public history… Scores will update automatically.")}</span>}
                 </form>
                 <a className="username-help-link-btn" href="https://codeforces.com/" target="_blank" rel="noreferrer">Open Codeforces ↗</a>
@@ -2086,6 +2086,7 @@ function Dashboard({
               <p className="settings-legal-disclaimer">
                 Independent open-source project. Not affiliated with LeetCode LLC.
               </p>
+            </div>
             </div>
           </div>
         </div>
