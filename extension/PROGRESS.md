@@ -3,7 +3,7 @@
 Branch: `progress-bar` (Git branch names cannot contain spaces).
 
 The extension now has **Leaderboards** and **Progress** menus. Progress includes
-SQL 50, LeetCode 75, and Top Interview 150, with follow controls, completion bars,
+Striver's A2Z, SQL 50, and Top Interview 150 by default, with follow controls, completion bars,
 search, completed/to-do filters, collapsed question lists with expand/collapse
 controls, and a link to the next
 unsolved problem. Public question lists were retrieved from LeetCode's
@@ -24,7 +24,13 @@ its progress. This local progress does not sync between browsers or devices.
 
 ## Add, remove, and restore plans
 
-New users see SQL 50, LeetCode 75, and Top Interview 150. In **Progress → Add plan**,
+New and existing users receive Striver's A2Z, SQL 50, and Top Interview 150, in that
+order. Existing local state migrates once to the new defaults while preserving
+solve history and added plans. LeetCode 75 is retained if it was explicitly
+followed or imported; otherwise it can be added again by link. Later removals and
+an empty library remain respected after migration.
+
+In **Progress → Add plan**,
 paste a public LeetCode study-plan URL (or its slug), then choose **Add & follow**.
 For example, `https://leetcode.com/studyplan/30-days-of-javascript/` loads its
 current public question list directly from LeetCode. Re-adding an existing plan
@@ -57,8 +63,7 @@ same LeetCode problem can complete multiple items if the source sheet references
 it more than once. Questions open their LeetCode link where supplied, otherwise
 the public takeUforward article or the source sheet.
 
-The three LeetCode plans remain the only defaults; Striver's sheet is added only
-when requested. Supported sources are explicitly validated. Additional external
+Striver's A2Z is one of the three default plans. Supported sources are explicitly validated. Additional external
 sites require a provider adapter rather than fetching arbitrary pasted URLs.
 Striver import works offline from its bundled snapshot and needs no new host
 permissions or backend changes.

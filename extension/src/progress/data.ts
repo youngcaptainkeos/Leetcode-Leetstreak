@@ -3,7 +3,13 @@ import strivers from "../data/strivers-a2z.json";
 
 // Public studyPlanV2Detail snapshots from LeetCode, retrieved 2026-11-05.
 // Bundled so the complete question lists remain available offline.
-export const STUDY_PLANS: StudyPlan[] = plans;
+export const BUNDLED_PLANS: StudyPlan[] = plans;
+export const STUDY_PLANS: StudyPlan[] = [
+  strivers as StudyPlan,
+  plans.find(plan => plan.slug === "top-sql-50")!,
+  plans.find(plan => plan.slug === "top-interview-150")!,
+];
+const DEFAULTS_VERSION = 2;
 export interface StudyQuestion { title: string; titleSlug: string; difficulty: string; url?: string; leetcodeSlug?: string; kind?: "learning" | "practice" }
 export interface StudyPlan { name: string; slug: string; planSubGroups: { name: string; questions: StudyQuestion[] }[]; source?: "leetcode" | "takeuforward"; sourceUrl?: string; snapshotDate?: string }
 export const PRACTICE_REFRESH = "leetstreak:practice-refresh";
@@ -13,8 +19,8 @@ export interface PracticeSnapshot {
   submissions: Submission[];
   checkedAt: number;
 }
-export interface ProgressState { followed: string[]; manual: string[]; observed: string[]; customPlans: StudyPlan[]; hiddenPlans: string[] }
-export const emptyProgress = (): ProgressState => ({ followed: [], manual: [], observed: [], customPlans: [], hiddenPlans: [] });
+export interface ProgressState { followed: string[]; manual: string[]; observed: string[]; customPlans: StudyPlan[]; hiddenPlans: string[]; defaultsVersion: number }
+export const emptyProgress = (): ProgressState => ({ followed: [], manual: [], observed: [], customPlans: [], hiddenPlans: [], defaultsVersion: DEFAULTS_VERSION });
 
 export function parsePlanSlug(input: string): string {
   let slug = input.trim();
@@ -111,11 +117,18 @@ export function readProgress(raw: string | null): ProgressState {
     const strings = (value: unknown): string[] => Array.isArray(value)
       ? [...new Set(value.filter((s): s is string => typeof s === "string"))] : [];
     const customPlans = Array.isArray(parsed.customPlans) ? [...new Map(parsed.customPlans
-      .map(readStudyPlan).filter((p: StudyPlan | null): p is StudyPlan => p !== null && !plans.some(b => b.slug === p.slug))
+      .map(readStudyPlan).filter((p: StudyPlan | null): p is StudyPlan => p !== null && !STUDY_PLANS.some(b => b.slug === p.slug))
       .map((p: StudyPlan) => [p.slug, p] as const)).values()] as StudyPlan[] : [];
-    const available = new Set([...plans, ...customPlans].map(p => p.slug));
-    const hiddenPlans = strings(parsed.hiddenPlans).filter(slug => available.has(slug));
-    return { followed: strings(parsed.followed).filter(slug => available.has(slug) && !hiddenPlans.includes(slug)), manual: strings(parsed.manual), observed: strings(parsed.observed), customPlans, hiddenPlans };
+    const migrateDefaults = !(Number.isSafeInteger(parsed.defaultsVersion) && parsed.defaultsVersion >= DEFAULTS_VERSION);
+    // Keep LeetCode 75 when an existing user explicitly followed it. Unselected
+    // legacy starters are replaced by the new default set.
+    if (migrateDefaults && strings(parsed.followed).includes("leetcode-75") && !strings(parsed.hiddenPlans).includes("leetcode-75") && !customPlans.some(p => p.slug === "leetcode-75")) {
+      customPlans.push(BUNDLED_PLANS.find(p => p.slug === "leetcode-75")!);
+    }
+    const available = new Set([...STUDY_PLANS, ...customPlans].map(p => p.slug));
+    const hiddenPlans = strings(parsed.hiddenPlans).filter(slug => available.has(slug) &&
+      !(migrateDefaults && STUDY_PLANS.some(p => p.slug === slug)));
+    return { followed: strings(parsed.followed).filter(slug => available.has(slug) && !hiddenPlans.includes(slug)), manual: strings(parsed.manual), observed: strings(parsed.observed), customPlans, hiddenPlans, defaultsVersion: migrateDefaults ? DEFAULTS_VERSION : parsed.defaultsVersion };
   } catch { return emptyProgress(); }
 }
 

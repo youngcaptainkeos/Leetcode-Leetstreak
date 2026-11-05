@@ -4,11 +4,11 @@ import { fileURLToPath } from "node:url";
 import { build } from "../node_modules/esbuild/lib/main.js";
 
 const bundle = await build({ entryPoints: [fileURLToPath(new URL("../src/progress/data.ts", import.meta.url))], bundle: true, write: false, platform: "node", format: "esm" });
-const { STUDY_PLANS, dailySolved, emptyProgress, readProgress, progressKey, planCounts, fetchPractice, fetchFriendSubmissions, parsePlanSlug, parsePlanInput, readStudyPlan, fetchStudyPlan, addStudyPlan, removeStudyPlan, visiblePlans, restoreStarterPlans, questionSolved, questionUrl } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString("base64")}`);
+const { STUDY_PLANS, BUNDLED_PLANS, dailySolved, emptyProgress, readProgress, progressKey, planCounts, fetchPractice, fetchFriendSubmissions, parsePlanSlug, parsePlanInput, readStudyPlan, fetchStudyPlan, addStudyPlan, removeStudyPlan, visiblePlans, restoreStarterPlans, questionSolved, questionUrl } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString("base64")}`);
 
 test("bundled plans contain complete, unique official question lists", () => {
   for (const [index, expected] of [50, 75, 150].entries()) {
-    const plan = STUDY_PLANS[index];
+    const plan = BUNDLED_PLANS[index];
     const questions = plan.planSubGroups.flatMap(g => g.questions);
     assert.equal(questions.length, expected);
     assert.equal(new Set(questions.map(q => q.titleSlug)).size, expected);
@@ -17,7 +17,7 @@ test("bundled plans contain complete, unique official question lists", () => {
 });
 
 test("manual and automatic progress count each question once and select the next unsolved question", () => {
-  const plan = STUDY_PLANS[0];
+  const plan = STUDY_PLANS.find(p => p.slug === "top-sql-50");
   const slugs = plan.planSubGroups.flatMap(g => g.questions).map(q => q.titleSlug);
   const state = { followed: [plan.slug], manual: [slugs[0], slugs[1]], observed: [slugs[0], slugs[2], "unrelated-question"] };
   const count = planCounts(plan, state);
@@ -40,7 +40,7 @@ test("corrupt saved state is recoverable and progress is separated by account an
 
 test("new users get three starters; removing all survives reload and restoration keeps solved history", () => {
   let state = readProgress(null);
-  assert.deepEqual(visiblePlans(state).map(p => p.slug), STUDY_PLANS.map(p => p.slug));
+  assert.deepEqual(visiblePlans(state).map(p => p.slug), ["strivers-a2z-dsa-sheet", "top-sql-50", "top-interview-150"]);
   state = { ...state, manual: ["big-countries"], observed: ["two-sum"], followed: ["top-sql-50"] };
   for (const plan of STUDY_PLANS) state = removeStudyPlan(state, plan.slug);
   const restoredSession = readProgress(JSON.stringify(state));
@@ -49,9 +49,22 @@ test("new users get three starters; removing all survives reload and restoration
   assert.deepEqual(restoredSession.manual, ["big-countries"]);
   assert.equal(visiblePlans(restoreStarterPlans(restoredSession)).length, 3);
   assert.deepEqual(restoreStarterPlans(restoredSession).observed, ["two-sum"]);
-  const reAdded = addStudyPlan(restoredSession, STUDY_PLANS[0]);
+  const reAdded = addStudyPlan(restoredSession, STUDY_PLANS.find(p => p.slug === "top-sql-50"));
   assert.equal(visiblePlans(reAdded).length, 1);
   assert.equal(planCounts(visiblePlans(reAdded)[0], reAdded).done, 1);
+});
+
+test("existing accounts get the new defaults once without losing followed plans or solve history", () => {
+  const legacy = { followed: ["leetcode-75"], manual: ["big-countries"], observed: ["two-sum"], hiddenPlans: ["top-sql-50", "top-interview-150"], customPlans: [STUDY_PLANS[0]] };
+  const migrated = readProgress(JSON.stringify(legacy));
+  assert.deepEqual(visiblePlans(migrated).map(p => p.slug), ["strivers-a2z-dsa-sheet", "top-sql-50", "top-interview-150", "leetcode-75"]);
+  assert.equal(migrated.customPlans.filter(p => p.slug === "strivers-a2z-dsa-sheet").length, 0);
+  assert.deepEqual(migrated.followed, ["leetcode-75"]);
+  assert.deepEqual(migrated.manual, legacy.manual);
+  assert.deepEqual(migrated.observed, legacy.observed);
+  assert.equal(visiblePlans(readProgress(JSON.stringify({ ...legacy, followed: [] }))).length, 3);
+  const removedAgain = removeStudyPlan(migrated, "strivers-a2z-dsa-sheet");
+  assert.equal(visiblePlans(readProgress(JSON.stringify(removedAgain))).some(p => p.slug === "strivers-a2z-dsa-sheet"), false, "user removals after migration must remain respected");
 });
 
 test("study-plan inputs accept supported sources and reject arbitrary hosts and executable URLs", () => {
@@ -93,11 +106,12 @@ test("Striver's sheet imports offline, preserves sections, and only linked LeetC
     assert.match(questionUrl(lesson), /^https:\/\/takeuforward.org\//);
     let saved = addStudyPlan(state, plan);
     saved = addStudyPlan(saved, plan);
-    assert.equal(saved.customPlans.length, 1, "re-adding a plan must not duplicate it");
+    assert.equal(saved.customPlans.length, 0, "re-adding a default plan must not duplicate it");
     const reopened = readProgress(JSON.stringify(saved));
     assert.ok(reopened.followed.includes(plan.slug));
-    assert.equal(reopened.customPlans[0].source, "takeuforward");
-    assert.ok(planCounts(reopened.customPlans[0], reopened).done > 0);
+    const reopenedStrivers = visiblePlans(reopened).find(p => p.slug === plan.slug);
+    assert.equal(reopenedStrivers.source, "takeuforward");
+    assert.ok(planCounts(reopenedStrivers, reopened).done > 0);
     const removed = removeStudyPlan(reopened, plan.slug);
     assert.equal(removed.customPlans.length, 0);
     assert.equal(removed.followed.includes(plan.slug), false);
@@ -108,7 +122,7 @@ test("Striver's sheet imports offline, preserves sections, and only linked LeetC
 test("LeetCode importer fetches question metadata and handles unavailable plans without saving partial data", async () => {
   const originalFetch = globalThis.fetch;
   try {
-    const plan = { ...STUDY_PLANS[0], slug: "example-plan", name: "Example plan" };
+    const plan = { ...BUNDLED_PLANS[0], slug: "example-plan", name: "Example plan" };
     let requests = 0;
     globalThis.fetch = async (url, options) => {
       requests++;
