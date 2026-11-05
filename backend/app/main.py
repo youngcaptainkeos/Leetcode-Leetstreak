@@ -1,4 +1,6 @@
 import os
+import csv
+import io
 import logging
 import asyncio
 import secrets
@@ -7,7 +9,7 @@ logger = logging.getLogger("codestreak.main")
 import string
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
-from typing import List, Optional, Dict, Set
+from typing import List, Optional, Dict, Set, Any
 
 from fastapi import FastAPI, HTTPException, Depends, Query, Header, BackgroundTasks, Request
 from fastapi.responses import Response, FileResponse, HTMLResponse
@@ -37,9 +39,12 @@ from .schemas import (
     VerificationStatusResponse, PlatformVerificationStatus,
     UnlinkCodeforcesResponse,
     FriendSummary, FriendRequestItem, FriendsListResponse, SendFriendRequest, UserSearchResult, FriendshipActionResponse,
+    SolveHistoryItemSchema, SolveHistoryCoverageSchema, SolveHistoryResponse,
+    ActivityHeatmapDaySchema, ActivityHeatmapResponse,
+    PlanExportResponse, PlanImportPayload, PlanImportResponse,
 )
 from .streak import current_streak
-from .timekeeping import IST, ist_today, ist_date, week_start as product_week_start, month_start as product_month_start, period_bounds, utc_now
+from .timekeeping import IST, ist_today, ist_date, week_start as product_week_start, month_start as product_month_start, period_bounds, utc_now, utc_storage
 from .scheduler import start_scheduler, poll_all_users, poll_user
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError, check_leetcode_profile_verification
 from .point_calculator import compute_solve_points_breakdown, compute_codeforces_points_breakdown, recalculate_user_points
@@ -921,6 +926,142 @@ def restore_starter_plans(user_id: int, db: Session = Depends(get_db), actor: Us
         db.commit()
     return {"ok": True}
 
+
+@app.get("/api/users/{user_id}/plans/export", response_model=PlanExportResponse)
+def export_user_plans(
+    user_id: int,
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    require_self(actor, user_id)
+    prog = db.query(UserProgress).filter(UserProgress.user_id == user_id).first()
+    custom_plans = db.query(UserCustomPlan).filter(UserCustomPlan.user_id == user_id).all()
+
+    return PlanExportResponse(
+        version=prog.version if prog else 1,
+        exported_at=utc_now(),
+        user_id=user_id,
+        followed_plans=prog.followed_plans if prog else [],
+        hidden_plans=prog.hidden_plans if prog else [],
+        manual_solves=prog.manual_solves if prog else [],
+        custom_plans=[cp.plan_json if isinstance(cp.plan_json, dict) else {} for cp in custom_plans],
+    )
+
+
+@app.post("/api/users/{user_id}/plans/import", response_model=PlanImportResponse)
+def import_user_plans(
+    user_id: int,
+    payload: PlanImportPayload,
+    mode: str = Query("merge", pattern="^(merge|replace)$"),
+    dry_run: bool = Query(False),
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    require_self(actor, user_id)
+
+    # Validate limits
+    custom_plans_payload = payload.custom_plans or []
+    if len(custom_plans_payload) > 50:
+        raise HTTPException(400, "Cannot import more than 50 custom plans.")
+
+    for plan in custom_plans_payload:
+        if len(plan.planSubGroups) > 200:
+            raise HTTPException(400, f"Plan '{plan.slug}' exceeds the 200 subgroup limit.")
+
+    existing_prog = db.query(UserProgress).filter(UserProgress.user_id == user_id).first()
+    existing_custom_plans = {cp.slug: cp for cp in db.query(UserCustomPlan).filter(UserCustomPlan.user_id == user_id).all()}
+
+    # Calculate merge / replace
+    if mode == "replace":
+        new_followed = payload.followed_plans if payload.followed_plans is not None else []
+        new_hidden = payload.hidden_plans if payload.hidden_plans is not None else []
+        new_manual = payload.manual_solves if payload.manual_solves is not None else []
+        plans_to_add = custom_plans_payload
+        conflicts = len(existing_custom_plans)
+    else:  # merge
+        base_followed = set(existing_prog.followed_plans if existing_prog else [])
+        if payload.followed_plans:
+            base_followed.update(payload.followed_plans)
+        new_followed = list(base_followed)
+
+        base_hidden = set(existing_prog.hidden_plans if existing_prog else [])
+        if payload.hidden_plans:
+            base_hidden.update(payload.hidden_plans)
+        new_hidden = list(base_hidden)
+
+        base_manual = set(existing_prog.manual_solves if existing_prog else [])
+        if payload.manual_solves:
+            base_manual.update(payload.manual_solves)
+        new_manual = list(base_manual)
+
+        plans_to_add = custom_plans_payload
+        conflicts = sum(1 for p in custom_plans_payload if p.slug in existing_custom_plans)
+
+    total_resulting_plans = len(plans_to_add) if mode == "replace" else len(set(existing_custom_plans.keys()) | {p.slug for p in plans_to_add})
+    if total_resulting_plans > 50:
+        raise HTTPException(400, f"Import would result in {total_resulting_plans} plans, exceeding the maximum of 50.")
+
+    if not dry_run:
+        prog = db.query(UserProgress).filter(UserProgress.user_id == user_id).with_for_update().first()
+        if not prog:
+            prog = UserProgress(
+                user_id=user_id,
+                followed_plans=new_followed,
+                hidden_plans=new_hidden,
+                manual_solves=new_manual,
+                version=1,
+            )
+            db.add(prog)
+        else:
+            prog.followed_plans = new_followed
+            prog.hidden_plans = new_hidden
+            prog.manual_solves = new_manual
+            prog.version += 1
+            prog.updated_at = utc_now()
+
+        if mode == "replace":
+            db.query(UserCustomPlan).filter(UserCustomPlan.user_id == user_id).delete()
+            for p in plans_to_add:
+                plan_dict = p.model_dump()
+                db.add(UserCustomPlan(
+                    user_id=user_id,
+                    slug=p.slug,
+                    name=p.name,
+                    source=p.source,
+                    source_url=p.sourceUrl,
+                    plan_json=plan_dict,
+                ))
+        else:
+            for p in plans_to_add:
+                plan_dict = p.model_dump()
+                existing = existing_custom_plans.get(p.slug)
+                if existing:
+                    existing.name = p.name
+                    existing.source = p.source
+                    existing.source_url = p.sourceUrl
+                    existing.plan_json = plan_dict
+                    existing.updated_at = utc_now()
+                else:
+                    db.add(UserCustomPlan(
+                        user_id=user_id,
+                        slug=p.slug,
+                        name=p.name,
+                        source=p.source,
+                        source_url=p.sourceUrl,
+                        plan_json=plan_dict,
+                    ))
+
+        db.commit()
+
+    return PlanImportResponse(
+        dry_run=dry_run,
+        mode=mode,
+        plans_imported=len(plans_to_add),
+        manual_solves_imported=len(payload.manual_solves or []),
+        conflicts_resolved=conflicts,
+        total_custom_plans=total_resulting_plans,
+        message="Preview generated successfully" if dry_run else "Plans imported successfully",
+    )
 
 
 def _active_dates(db: Session, user_id: int) -> set[date]:
@@ -2001,6 +2142,349 @@ async def get_global_recent_solves(limit: int = Query(15, ge=1, le=100), db: Ses
             )
         )
     return feed
+
+
+# --- FEAT-08: History, Activity Views, and Exports ---
+
+def sanitize_csv_cell(value: Any) -> str:
+    """Neutralize spreadsheet formula injection by prepending a single quote to dangerous prefixes."""
+    if value is None:
+        return ""
+    val_str = str(value)
+    if val_str and val_str[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + val_str
+    return val_str
+
+
+@app.get("/api/users/{user_id}/solves/search", response_model=SolveHistoryResponse)
+def search_user_solves(
+    user_id: int,
+    q: Optional[str] = Query(None, max_length=100),
+    platform: Optional[str] = Query(None, pattern="^(leetcode|codeforces)$"),
+    difficulty: Optional[str] = Query(None, max_length=40),
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    sort_by: str = Query("solved_at_desc", pattern="^(solved_at_desc|solved_at_asc|points_desc|points_asc)$"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    query = db.query(Solve).filter(Solve.user_id == user_id)
+
+    if q and q.strip():
+        search_pattern = f"%{q.strip().lower()}%"
+        query = query.filter(
+            or_(
+                func.lower(Solve.title).like(search_pattern),
+                func.lower(Solve.title_slug).like(search_pattern),
+            )
+        )
+
+    if platform:
+        query = query.filter(Solve.platform == platform)
+
+    if difficulty and difficulty.strip():
+        query = query.filter(func.lower(Solve.difficulty) == difficulty.strip().lower())
+
+    if start_date:
+        start_dt = datetime.combine(start_date, datetime.min.time())
+        query = query.filter(Solve.solved_at >= start_dt)
+
+    if end_date:
+        end_dt = datetime.combine(end_date + timedelta(days=1), datetime.min.time())
+        query = query.filter(Solve.solved_at < end_dt)
+
+    total_count = query.count()
+
+    if sort_by == "solved_at_asc":
+        query = query.order_by(Solve.solved_at.asc(), Solve.id.asc())
+    elif sort_by == "points_desc":
+        query = query.order_by(Solve.points_earned.desc(), Solve.solved_at.desc(), Solve.id.desc())
+    elif sort_by == "points_asc":
+        query = query.order_by(Solve.points_earned.asc(), Solve.solved_at.asc(), Solve.id.asc())
+    else:  # solved_at_desc
+        query = query.order_by(Solve.solved_at.desc(), Solve.id.desc())
+
+    offset = (page - 1) * page_size
+    solves_rows = query.offset(offset).limit(page_size).all()
+    total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
+
+    # Known-history coverage metadata
+    oldest_solve = db.query(func.min(Solve.solved_at)).filter(Solve.user_id == user_id).scalar()
+    newest_solve = db.query(func.max(Solve.solved_at)).filter(Solve.user_id == user_id).scalar()
+    lc_count = db.query(func.count(Solve.id)).filter(Solve.user_id == user_id, Solve.platform == "leetcode").scalar() or 0
+    cf_count = db.query(func.count(Solve.id)).filter(Solve.user_id == user_id, Solve.platform == "codeforces").scalar() or 0
+
+    coverage = SolveHistoryCoverageSchema(
+        oldest_solve_at=oldest_solve.replace(tzinfo=timezone.utc) if oldest_solve and oldest_solve.tzinfo is None else oldest_solve,
+        newest_solve_at=newest_solve.replace(tzinfo=timezone.utc) if newest_solve and newest_solve.tzinfo is None else newest_solve,
+        total_solves=lc_count + cf_count,
+        leetcode_solves=lc_count,
+        codeforces_solves=cf_count,
+        leetcode_username=user.leetcode_username,
+        leetcode_verified=user.leetcode_verified_at is not None,
+        codeforces_username=user.codeforces_username,
+        codeforces_verified=user.codeforces_verified_at is not None,
+        history_complete=user.leetcode_history_state == "complete",
+    )
+
+    items = [
+        SolveHistoryItemSchema(
+            id=s.id,
+            platform=s.platform,
+            title_slug=s.title_slug,
+            title=s.title or s.title_slug.replace("-", " ").title(),
+            difficulty=s.difficulty,
+            problem_rating=s.problem_rating,
+            solved_at=s.solved_at.replace(tzinfo=timezone.utc) if s.solved_at.tzinfo is None else s.solved_at,
+            points_earned=s.points_earned or 0.0,
+            is_daily=s.is_daily or False,
+            scoring_version=s.scoring_version,
+            problem_url=solve_url(s),
+        )
+        for s in solves_rows
+    ]
+
+    return SolveHistoryResponse(
+        total_count=total_count,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+        coverage=coverage,
+        solves=items,
+    )
+
+
+@app.get("/api/users/{user_id}/activity/heatmap", response_model=ActivityHeatmapResponse)
+def get_user_activity_heatmap(
+    user_id: int,
+    days: int = Query(365, ge=7, le=730),
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    today = ist_today()
+    start_date = today - timedelta(days=days - 1)
+
+    # Observation anchor:
+    # Any date strictly prior to user registration and prior to any recorded solve is "unobserved".
+    min_solve_dt = db.query(func.min(Solve.solved_at)).filter(Solve.user_id == user_id).scalar()
+    min_solve_date = ist_date(min_solve_dt) if min_solve_dt else None
+    user_created_date = ist_date(user.created_at) if user.created_at else today
+    tracking_start = min(user_created_date, min_solve_date) if min_solve_date else user_created_date
+
+    # Aggregated daily counts from daily_counts
+    combined_counts = dict(daily_counts(db, [user_id]).get(user_id, {}))
+
+    # Compute daily points from PointAward and Solve
+    start_utc = utc_storage(datetime.combine(start_date, datetime.min.time(), IST))
+    end_utc = utc_storage(datetime.combine(today + timedelta(days=1), datetime.min.time(), IST))
+
+    point_rows = (
+        db.query(PointAward.earned_at, PointAward.points)
+        .filter(
+            PointAward.user_id == user_id,
+            PointAward.earned_at >= start_utc,
+            PointAward.earned_at < end_utc,
+        )
+        .all()
+    )
+    daily_points = defaultdict(float)
+    for earned_at, pts in point_rows:
+        if earned_at:
+            d = ist_date(earned_at)
+            daily_points[d] += float(pts)
+
+    # Platforms and solves active per day
+    solve_rows = (
+        db.query(Solve.solved_at, Solve.platform, Solve.points_earned)
+        .filter(
+            Solve.user_id == user_id,
+            Solve.solved_at >= start_utc,
+            Solve.solved_at < end_utc,
+        )
+        .all()
+    )
+    daily_solve_counts = defaultdict(int)
+    daily_solve_pts = defaultdict(float)
+    daily_platforms = defaultdict(set)
+    for s_at, plat, p_earned in solve_rows:
+        if s_at:
+            d = ist_date(s_at)
+            daily_solve_counts[d] += 1
+            daily_solve_pts[d] += float(p_earned or 0.0)
+            daily_platforms[d].add(plat)
+
+    for d, c in daily_solve_counts.items():
+        combined_counts[d] = max(combined_counts.get(d, 0), c)
+        if not daily_points[d]:
+            daily_points[d] = daily_solve_pts[d]
+
+    day_list = []
+    active_count = 0
+    zero_count = 0
+    unobserved_count = 0
+
+    for i in range(days):
+        cur_date = start_date + timedelta(days=i)
+        solved_count = combined_counts.get(cur_date, 0)
+        pts = round(daily_points.get(cur_date, 0.0), 2)
+        plats = sorted(list(daily_platforms.get(cur_date, set())))
+
+        if solved_count > 0:
+            status = "active"
+            active_count += 1
+        elif cur_date >= tracking_start:
+            status = "zero"
+            zero_count += 1
+        else:
+            status = "unobserved"
+            unobserved_count += 1
+
+        day_list.append(
+            ActivityHeatmapDaySchema(
+                date=cur_date,
+                status=status,
+                count=solved_count,
+                points=pts,
+                platforms=plats,
+            )
+        )
+
+    return ActivityHeatmapResponse(
+        user_id=user_id,
+        start_date=start_date,
+        end_date=today,
+        total_days=days,
+        active_days=active_count,
+        zero_days=zero_count,
+        unobserved_days=unobserved_count,
+        days=day_list,
+    )
+
+
+@app.get("/api/users/{user_id}/export")
+def export_user_account_data(
+    user_id: int,
+    format: str = Query("json", pattern="^(json|csv)$"),
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    require_self(actor, user_id)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    solves = db.query(Solve).filter(Solve.user_id == user_id).order_by(Solve.solved_at.desc()).all()
+
+    if format == "csv":
+        output = io.StringIO()
+        writer = csv.writer(output, quoting=csv.QUOTE_MINIMAL)
+        writer.writerow([
+            "platform",
+            "problem_slug",
+            "problem_title",
+            "difficulty",
+            "problem_rating",
+            "solved_at_utc",
+            "points_earned",
+            "is_daily",
+            "scoring_version",
+            "problem_url",
+        ])
+        for s in solves:
+            writer.writerow([
+                sanitize_csv_cell(s.platform),
+                sanitize_csv_cell(s.title_slug),
+                sanitize_csv_cell(s.title or s.title_slug.replace("-", " ").title()),
+                sanitize_csv_cell(s.difficulty),
+                sanitize_csv_cell(s.problem_rating),
+                sanitize_csv_cell(s.solved_at.isoformat() if s.solved_at else ""),
+                sanitize_csv_cell(s.points_earned or 0.0),
+                sanitize_csv_cell("true" if s.is_daily else "false"),
+                sanitize_csv_cell(s.scoring_version),
+                sanitize_csv_cell(solve_url(s)),
+            ])
+        csv_content = output.getvalue()
+        filename = f"leetstreak_export_{user_id}_{ist_today().isoformat()}.csv"
+        return Response(
+            content=csv_content,
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    # JSON export
+    prog = db.query(UserProgress).filter(UserProgress.user_id == user_id).first()
+    custom_plans = db.query(UserCustomPlan).filter(UserCustomPlan.user_id == user_id).all()
+    awards = db.query(PointAward).filter(PointAward.user_id == user_id).order_by(PointAward.earned_at.desc()).all()
+
+    export_payload = {
+        "export_version": "1.0",
+        "exported_at": utc_now().isoformat() + "Z",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "leetcode_username": user.leetcode_username,
+            "leetcode_verified": user.leetcode_verified_at is not None,
+            "codeforces_username": user.codeforces_username,
+            "codeforces_verified": user.codeforces_verified_at is not None,
+            "points": float(user.points or 0.0),
+        },
+        "progress": {
+            "version": prog.version if prog else 1,
+            "followed_plans": prog.followed_plans if prog else [],
+            "hidden_plans": prog.hidden_plans if prog else [],
+            "manual_solves": prog.manual_solves if prog else [],
+            "updated_at": prog.updated_at.isoformat() if prog and prog.updated_at else None,
+        },
+        "custom_plans": [
+            {
+                "slug": cp.slug,
+                "name": cp.name,
+                "source": cp.source,
+                "source_url": cp.source_url,
+                "plan_json": cp.plan_json,
+                "created_at": cp.created_at.isoformat() if cp.created_at else None,
+                "updated_at": cp.updated_at.isoformat() if cp.updated_at else None,
+            }
+            for cp in custom_plans
+        ],
+        "solves": [
+            {
+                "platform": s.platform,
+                "title_slug": s.title_slug,
+                "title": s.title or s.title_slug.replace("-", " ").title(),
+                "difficulty": s.difficulty,
+                "problem_rating": s.problem_rating,
+                "solved_at": s.solved_at.isoformat() if s.solved_at else None,
+                "points_earned": s.points_earned or 0.0,
+                "is_daily": bool(s.is_daily),
+                "scoring_version": s.scoring_version,
+            }
+            for s in solves
+        ],
+        "point_awards": [
+            {
+                "award_key": a.award_key,
+                "kind": a.kind,
+                "points": float(a.points),
+                "earned_at": a.earned_at.isoformat() if a.earned_at else None,
+                "scoring_version": a.scoring_version,
+            }
+            for a in awards
+        ],
+    }
+    return export_payload
 
 
 def claim_admin_operation(db: Session, key: str, *, repeat_after: int | None = None):

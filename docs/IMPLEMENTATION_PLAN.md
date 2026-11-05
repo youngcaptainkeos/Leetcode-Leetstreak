@@ -100,7 +100,7 @@ This is the working checklist for the repository review. It covers every issue a
 - [x] **FEAT-05 · P2:** Allow Codeforces unlinking.
 - [x] **FEAT-06 · P3:** Add weekly/monthly points rankings.
 - [ ] **FEAT-07 · P2 · Deferred:** Add friend notification preferences and quiet hours when that feature is resumed.
-- [ ] **FEAT-08 · P3:** Add searchable history, longer activity views, and exports.
+- [x] **FEAT-08 · P3:** Add searchable history, longer activity views, and exports.
 - [x] **FEAT-09 · P2:** Explain the browser-session requirement for complete LeetCode plan sync.
 - [x] **FEAT-10 · P2:** Add direct friendships independently of group membership.
 
@@ -1032,17 +1032,17 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Add paginated searchable solve history with date/platform/difficulty filters and clear known-history coverage.
-- [ ] Add longer activity views/heatmap with unknown/incomplete days distinguished from verified zero days.
-- [ ] Export only the authenticated account's data as documented JSON/CSV. Include plan versions, external completion, and provenance without tokens, password hashes, reset data, or other users' private records.
-- [ ] Protect CSV consumers from formula injection; bound export jobs/size and use authenticated expiring downloads if needed.
-- [ ] Provide a versioned plan/progress export format; add import only with strict validation, preview, and explicit conflict handling.
+- [x] Add paginated searchable solve history with date/platform/difficulty filters and clear known-history coverage.
+- [x] Add longer activity views/heatmap with unknown/incomplete days distinguished from verified zero days.
+- [x] Export only the authenticated account's data as documented JSON/CSV. Include plan versions, external completion, and provenance without tokens, password hashes, reset data, or other users' private records.
+- [x] Protect CSV consumers from formula injection; bound export jobs/size and use authenticated expiring downloads if needed.
+- [x] Provide a versioned plan/progress export format; add import only with strict validation, preview, and explicit conflict handling.
 
 **Acceptance**
 
-- [ ] Pagination/search does not omit or duplicate records within its documented snapshot rules.
-- [ ] Exports contain only permitted account data and remain usable with non-ASCII/problem-title edge cases.
-- [ ] History views do not imply that unobserved historical dates are confirmed empty.
+- [x] Pagination/search does not omit or duplicate records within its documented snapshot rules.
+- [x] Exports contain only permitted account data and remain usable with non-ASCII/problem-title edge cases.
+- [x] History views do not imply that unobserved historical dates are confirmed empty.
 
 ### FEAT-09 — Explain LeetCode session requirements
 

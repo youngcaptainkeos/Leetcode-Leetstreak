@@ -4,6 +4,51 @@ This document records all changes made during the autonomous execution of the Le
 
 ---
 
+## 2026-11-06 — Step: FEAT-08 / M6 Step 2: Searchable Solve History, Longer Activity Views & Export Features
+
+### Summary of Changes
+Implemented comprehensive solve history exploration, long-range activity heatmap with unobserved-day distinction, full account data export (JSON & CSV with formula injection protection), and versioned study plan export/import with validation and dry-run preview. Added backend endpoints for paginated solve search with coverage metadata, activity heatmap distinguishing verified zero days from unobserved historical dates, self-scoped account data export, and study plan export/import. Integrated export actions into Settings modals and interactive search filters in solves views for both the extension and web apps. All items for Milestone M6 are now complete. Added automated test suite `backend/tests/test_history_and_exports.py` with 6 test cases.
+
+### Detailed Changes
+1. **Paginated Searchable Solve History (`GET /api/users/{user_id}/solves/search`)**:
+   - Accepts `q` (title / slug text search), `platform`, `difficulty`, `start_date`, `end_date`, `sort_by`, `page`, `page_size`.
+   - Returns paginated solve items alongside known-history coverage metadata (`total_solves`, `leetcode_solves`, `codeforces_solves`, `oldest_solve_at`, `newest_solve_at`, `history_complete`).
+   - Ensures no duplicates or omissions across page boundaries.
+
+2. **Longer Activity Heatmap with Observation State (`GET /api/users/{user_id}/activity/heatmap`)**:
+   - Generates daily activity for the requested range (`days=7` to `730`, default 365) in IST.
+   - Accurately classifies each date into:
+     - `active`: solves recorded on that date.
+     - `zero`: confirmed 0 solves on an actively tracked calendar day.
+     - `unobserved`: date prior to account registration and prior to any recorded solve, avoiding false implication that historical periods were confirmed empty.
+
+3. **Account Data Export (`GET /api/users/{user_id}/export`)**:
+   - Strictly authenticated and self-scoped (`require_self(actor, user_id)` fails closed with HTTP 403 for cross-user requests and HTTP 401 for anonymous).
+   - `format="json"`: exports full account provenance (profile metadata, verified solves, study plan subscriptions, custom plans, point awards) without passwords, session secrets, or other accounts' data.
+   - `format="csv"`: exports flat solve records with spreadsheet formula injection protection (neutralizes values starting with `=`, `+`, `-`, `@`, `\t`, `\r` by prepending a single quote). Downloadable with attachment filename header.
+
+4. **Versioned Plan/Progress Export & Import (`/api/users/{user_id}/plans/export`, `/api/users/{user_id}/plans/import`)**:
+   - `export`: exports JSON payload of followed plans, hidden plans, manual solves, and custom plans.
+   - `import`: validates schema and enforce limits (max 50 plans, max 200 subgroups).
+   - Supports `mode="merge"` (unions followed/manual lists and updates custom plans) and `mode="replace"`.
+   - Supports `dry_run=true` to preview imports without modifying the database.
+
+5. **Client UI & Integration (`extension/src/`, `web/app/`)**:
+   - Added API wrappers for `searchSolves`, `activityHeatmap`, `exportData`, `exportPlans`, `importPlans`.
+   - Added "Data & Privacy" section in Settings modal with one-click JSON and CSV export triggers.
+   - Added interactive solve search filter in profile solves container.
+   - Rebuilt extension and website bundles; synchronized all 4 ZIP distribution copies.
+
+### Verification Evidence
+- `backend/tests/test_history_and_exports.py`: 6 tests passed.
+- Full backend test suite: 146 unit and integration tests passed.
+- All 4 extension ZIP files verified byte-synchronized.
+- PostgreSQL migration check: 10 migrations verified.
+- Headless Chrome browser smoke test: extension and web UI passed with 0 runtime errors.
+- Full `./scripts/run_checks.sh` verification passed cleanly.
+
+---
+
 ## 2026-11-06 — Step: FEAT-06 / M6 Step 1: Weekly and Monthly Points Rankings
 
 ### Summary of Changes

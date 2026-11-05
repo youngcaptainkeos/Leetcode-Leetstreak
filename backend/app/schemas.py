@@ -423,4 +423,89 @@ class FriendshipActionResponse(BaseModel):
     message: str
 
 
+# --- FEAT-08: History, Activity Views, and Exports ---
+
+class SolveHistoryItemSchema(BaseModel):
+    id: int
+    platform: str
+    title_slug: str
+    title: str
+    difficulty: Optional[str] = None
+    problem_rating: Optional[float] = None
+    solved_at: datetime
+    points_earned: float = 0.0
+    is_daily: bool = False
+    scoring_version: str = "leetcode-v1"
+    problem_url: Optional[str] = None
+
+
+class SolveHistoryCoverageSchema(BaseModel):
+    oldest_solve_at: Optional[datetime] = None
+    newest_solve_at: Optional[datetime] = None
+    total_solves: int = 0
+    leetcode_solves: int = 0
+    codeforces_solves: int = 0
+    leetcode_username: Optional[str] = None
+    leetcode_verified: bool = False
+    codeforces_username: Optional[str] = None
+    codeforces_verified: bool = False
+    history_complete: bool = False
+
+
+class SolveHistoryResponse(BaseModel):
+    total_count: int
+    page: int
+    page_size: int
+    total_pages: int
+    coverage: SolveHistoryCoverageSchema
+    solves: List[SolveHistoryItemSchema]
+
+
+class ActivityHeatmapDaySchema(BaseModel):
+    date: date
+    status: str  # "active", "zero", "unobserved"
+    count: int
+    points: float
+    platforms: List[str] = Field(default_factory=list)
+
+
+class ActivityHeatmapResponse(BaseModel):
+    user_id: int
+    start_date: date
+    end_date: date
+    total_days: int
+    active_days: int
+    zero_days: int
+    unobserved_days: int
+    days: List[ActivityHeatmapDaySchema]
+
+
+class PlanExportResponse(BaseModel):
+    version: int = 1
+    exported_at: datetime
+    user_id: int
+    followed_plans: List[str] = Field(default_factory=list)
+    hidden_plans: List[str] = Field(default_factory=list)
+    manual_solves: List[str] = Field(default_factory=list)
+    custom_plans: List[dict] = Field(default_factory=list)
+
+
+class PlanImportPayload(BaseModel):
+    version: int = 1
+    followed_plans: Optional[List[str]] = None
+    hidden_plans: Optional[List[str]] = None
+    manual_solves: Optional[List[str]] = None
+    custom_plans: Optional[List[StudyPlanPayload]] = None
+
+
+class PlanImportResponse(BaseModel):
+    dry_run: bool
+    mode: str
+    plans_imported: int
+    manual_solves_imported: int
+    conflicts_resolved: int
+    total_custom_plans: int
+    message: str
+
+
 

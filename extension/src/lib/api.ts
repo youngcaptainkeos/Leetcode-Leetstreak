@@ -268,10 +268,82 @@ export interface UserSearchResult {
   friendship_status?: "friends" | "pending_sent" | "pending_received" | null;
 }
 
+export interface SolveHistoryItem {
+  id: number;
+  platform: string;
+  title_slug: string;
+  title: string;
+  difficulty?: string;
+  problem_rating?: number;
+  solved_at: string;
+  points_earned: number;
+  is_daily: boolean;
+  scoring_version: string;
+  problem_url?: string;
+}
+
+export interface SolveHistoryCoverage {
+  oldest_solve_at?: string | null;
+  newest_solve_at?: string | null;
+  total_solves: number;
+  leetcode_solves: number;
+  codeforces_solves: number;
+  leetcode_username?: string | null;
+  leetcode_verified: boolean;
+  codeforces_username?: string | null;
+  codeforces_verified: boolean;
+  history_complete: boolean;
+}
+
+export interface SolveHistoryResponse {
+  total_count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  coverage: SolveHistoryCoverage;
+  solves: SolveHistoryItem[];
+}
+
+export interface ActivityHeatmapDay {
+  date: string;
+  status: 'active' | 'zero' | 'unobserved';
+  count: number;
+  points: number;
+  platforms: string[];
+}
+
+export interface ActivityHeatmapResponse {
+  user_id: number;
+  start_date: string;
+  end_date: string;
+  total_days: number;
+  active_days: number;
+  zero_days: number;
+  unobserved_days: number;
+  days: ActivityHeatmapDay[];
+}
+
 export const AUTH_EXPIRED = "leetstreak:auth-expired";
 
 export class ApiError extends Error {
   constructor(message: string, public status: number) { super(message); this.name = "ApiError"; }
+}
+
+async function requestRaw(path: string, options?: RequestInit): Promise<Response> {
+  const token = await getStored("codestreak_access_token");
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options?.headers },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 401 && !path.startsWith("/users/login") && !path.startsWith("/users/register") && !path.startsWith("/users/forgot-password")) {
+      if ((await getStored("codestreak_access_token")) === token) window.dispatchEvent(new Event(AUTH_EXPIRED));
+    }
+    const detail = typeof body.detail === "string" ? body.detail : Array.isArray(body.detail) ? body.detail.map((item: { msg?: string }) => item.msg || "Invalid input").join(". ") : `Request failed (${res.status})`;
+    throw new ApiError(detail, res.status);
+  }
+  return res;
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -464,6 +536,33 @@ export const api = {
   removeFriend: (userId: number, targetUserId: number) =>
     request<{ status: string; message: string }>(`/users/${userId}/friends/${targetUserId}`, {
       method: "DELETE",
+    }),
+  searchSolves: (userId: number, params?: { q?: string; platform?: string; difficulty?: string; page?: number; page_size?: number; sort_by?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.q) qs.set('q', params.q);
+    if (params?.platform) qs.set('platform', params.platform);
+    if (params?.difficulty) qs.set('difficulty', params.difficulty);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.page_size) qs.set('page_size', String(params.page_size));
+    if (params?.sort_by) qs.set('sort_by', params.sort_by);
+    const query = qs.toString() ? `?${qs.toString()}` : '';
+    return request<SolveHistoryResponse>(`/users/${userId}/solves/search${query}`);
+  },
+  activityHeatmap: (userId: number, days: number = 365) =>
+    request<ActivityHeatmapResponse>(`/users/${userId}/activity/heatmap?days=${days}`),
+  exportData: async (userId: number, format: 'json' | 'csv' = 'json') => {
+    const res = await requestRaw(`/users/${userId}/export?format=${format}`);
+    if (format === 'csv') {
+      return await res.text();
+    }
+    return await res.json();
+  },
+  exportPlans: (userId: number) =>
+    request<any>(`/users/${userId}/plans/export`),
+  importPlans: (userId: number, payload: any, mode: 'merge' | 'replace' = 'merge', dryRun: boolean = false) =>
+    request<any>(`/users/${userId}/plans/import?mode=${mode}&dry_run=${dryRun}`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
 };
 

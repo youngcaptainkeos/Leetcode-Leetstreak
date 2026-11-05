@@ -882,6 +882,8 @@ function Dashboard({
   const [deletePassword, setDeletePassword] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [exportingData, setExportingData] = useState(false);
+  const [solvesFilterQuery, setSolvesFilterQuery] = useState("");
 
   // Group Modal States
   const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -1079,6 +1081,32 @@ function Dashboard({
       setDeleteError(err instanceof Error ? err.message : "Incorrect password. Account deletion failed.");
     } finally {
       setDeletingAccount(false);
+    }
+  }
+
+  async function handleExportData(format: "json" | "csv") {
+    if (!userId) return;
+    setExportingData(true);
+    setSettingsMsg(null);
+    try {
+      const data = await api.exportData(userId, format);
+      const content = format === "json" ? JSON.stringify(data, null, 2) : String(data);
+      const mime = format === "json" ? "application/json" : "text/csv;charset=utf-8";
+      const blob = new Blob([content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `leetstreak_export_${userId}_${format}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setSettingsMsg(`Exported account data as ${format.toUpperCase()}.`);
+      setTimeout(() => setSettingsMsg(null), 3500);
+    } catch (err) {
+      setSettingsMsg(err instanceof Error ? err.message : "Failed to export data.");
+    } finally {
+      setExportingData(false);
     }
   }
 
@@ -2195,14 +2223,34 @@ function Dashboard({
               </>
             ) : (
               <div className="modal-solves-container">
-                <div className="section-title mb-1">Last 10 Solved Questions</div>
+                <div className="section-title mb-1">Solved Questions</div>
+                <div style={{ marginBottom: "8px" }}>
+                  <input
+                    type="text"
+                    className="settings-text-input"
+                    placeholder="Search solves by name or platform…"
+                    value={solvesFilterQuery}
+                    onChange={(e) => setSolvesFilterQuery(e.target.value)}
+                    style={{ fontSize: "12px", padding: "5px 8px", width: "100%" }}
+                  />
+                </div>
                 {loadingRecentSolves ? (
                   <div className="centered muted tiny py-3">Loading solves…</div>
                 ) : recentSolvesList.length === 0 ? (
                   <div className="centered muted tiny py-3">{profileError ? "Solves are unavailable." : "No recent solves recorded yet."}</div>
                 ) : (
                   <ul className="recent-solves-list">
-                    {recentSolvesList.map((s, idx) => {
+                    {recentSolvesList
+                      .filter((s) => {
+                        if (!solvesFilterQuery.trim()) return true;
+                        const q = solvesFilterQuery.toLowerCase();
+                        return (
+                          (s.title || "").toLowerCase().includes(q) ||
+                          (s.title_slug || "").toLowerCase().includes(q) ||
+                          (s.platform || "").toLowerCase().includes(q)
+                        );
+                      })
+                      .map((s, idx) => {
                       const problemUrl = s.problem_url || s.leetcode_url || `https://leetcode.com/problems/${s.title_slug}`;
                       return (
                         <li
@@ -2391,6 +2439,39 @@ function Dashboard({
                 <button type="button" className="chip-btn" disabled={securityBusy} onClick={handleRevokeSessions}>Sign out all devices</button>
               </div>
             </section>
+
+            {/* Section: DATA & PRIVACY */}
+            <div className="settings-section">
+              <div className="settings-section-title">Data & Privacy</div>
+              <div className="settings-card">
+                <div className="settings-row">
+                  <div className="settings-row-text">
+                    <span className="settings-row-label">Export Account Data</span>
+                    <span className="settings-row-caption">
+                      Download your verified solve history, custom plans, and points
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      type="button"
+                      className="chip-btn"
+                      onClick={() => handleExportData("json")}
+                      disabled={exportingData}
+                    >
+                      {exportingData ? "Exporting…" : "JSON"}
+                    </button>
+                    <button
+                      type="button"
+                      className="chip-btn"
+                      onClick={() => handleExportData("csv")}
+                      disabled={exportingData}
+                    >
+                      {exportingData ? "Exporting…" : "CSV"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Section: DANGER ZONE */}
             <div className="settings-section danger-section">
