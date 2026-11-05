@@ -128,6 +128,8 @@ class RegisterResponse(BaseModel):
     created_at: Optional[datetime] = None
     global_leaderboard_enabled: bool = True
     show_global_leaderboard: bool = True
+    leetcode_verified: bool = False
+    codeforces_verified: bool = False
 
 
 class DayCount(BaseModel):
@@ -139,8 +141,12 @@ class DashboardResponse(BaseModel):
     leetcode_last_sync: Optional[datetime] = None
     leetcode_history_state: Optional[str] = "partial"
     leetcode_history_gap: Optional[bool] = True
+    leetcode_verified: bool = False
+    leetcode_verified_at: Optional[datetime] = None
     codeforces_last_sync: Optional[datetime] = None
     codeforces_sync_error: Optional[str] = None
+    codeforces_verified: bool = False
+    codeforces_verified_at: Optional[datetime] = None
     codeforces_count: int = 0
     codeforces_points: float = 0
     leetcode_points: float = 0
@@ -167,6 +173,8 @@ class LeaderboardEntry(BaseModel):
     codeforces_count: int = 0
     codeforces_points: float = 0
     leetcode_points: float = 0
+    leetcode_verified: bool = False
+    codeforces_verified: bool = False
     rank: int
     id: int
     name: str
@@ -228,6 +236,8 @@ class GroupMemberSchema(BaseModel):
     leetcode_username: str
     codeforces_username: Optional[str] = None
     avatar_url: Optional[str] = None
+    leetcode_verified: bool = False
+    codeforces_verified: bool = False
 
 
 class GroupResponse(BaseModel):
@@ -317,5 +327,46 @@ class ProgressResponse(BaseModel):
     custom_plans: List[dict]
     version: int
     updated_at: Optional[str] = None
+
+
+class InitiateVerificationRequest(BaseModel):
+    platform: str = Field(pattern=r"^(leetcode|codeforces)$")
+    handle: Optional[str] = None
+
+
+class InitiateVerificationResponse(BaseModel):
+    platform: str
+    handle: str
+    token: str
+    expires_at: datetime
+    instructions: str
+    is_claim_recovery: bool = False
+
+
+class ConfirmVerificationRequest(BaseModel):
+    platform: str = Field(pattern=r"^(leetcode|codeforces)$")
+    handle: Optional[str] = None
+
+
+class ConfirmVerificationResponse(BaseModel):
+    status: str = "verified"
+    platform: str
+    handle: str
+    verified_at: datetime
+
+
+class PlatformVerificationStatus(BaseModel):
+    handle: Optional[str] = None
+    verified: bool = False
+    verified_at: Optional[datetime] = None
+    pending_token: bool = False
+    expires_at: Optional[datetime] = None
+
+
+class VerificationStatusResponse(BaseModel):
+    user_id: int
+    leetcode: PlatformVerificationStatus
+    codeforces: PlatformVerificationStatus
+
 
 

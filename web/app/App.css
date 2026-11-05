@@ -3597,3 +3597,110 @@ input:focus, form input:focus {
   background: rgba(139, 92, 246, 0.1);
 }
 
+/* Ownership Verification UI (FEAT-04) */
+.verified-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.unverified-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.btn-verify-ownership {
+  background: var(--md-sys-color-primary-container, #2563eb);
+  color: var(--md-sys-color-on-primary-container, #ffffff);
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: opacity 0.2s ease;
+  vertical-align: middle;
+}
+
+.btn-verify-ownership:hover {
+  opacity: 0.9;
+}
+
+.verified-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.verified-check.cf-check {
+  background: #3b82f6;
+}
+
+.verification-modal {
+  max-width: 440px;
+  width: 100%;
+}
+
+.verification-token-box {
+  background: var(--md-sys-color-surface-container-low, #18181b);
+  border: 1px solid var(--md-sys-color-outline-variant, #27272a);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+}
+
+.token-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.verification-code {
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.verification-instructions {
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid #38bdf8;
+  padding: 8px 12px;
+  margin: 12px 0;
+  border-radius: 0 6px 6px 0;
+}
+
+

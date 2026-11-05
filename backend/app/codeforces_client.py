@@ -94,3 +94,20 @@ async def fetch_accepted_history(handle: str, since: Optional[int] = None) -> li
             return list(accepted.values())
         offset += 900
     raise CodeforcesError("This account needs a larger history import. Saved scores are unchanged.")
+
+
+async def check_codeforces_profile_verification(handle: str, token: str) -> bool:
+    """Checks whether the verification token is present in the Codeforces user.info profile."""
+    result = await codeforces_request("user.info", {"handles": normalize_handle(handle), "checkHistoricHandles": "false"})
+    if not isinstance(result, list) or len(result) != 1 or not isinstance(result[0], dict):
+        return False
+    user_info = result[0]
+    search_fields = [
+        str(user_info.get("organization") or ""),
+        str(user_info.get("firstName") or ""),
+        str(user_info.get("lastName") or ""),
+        str(user_info.get("city") or ""),
+    ]
+    combined_text = " ".join(search_fields).lower()
+    return token.strip().lower() in combined_text
+

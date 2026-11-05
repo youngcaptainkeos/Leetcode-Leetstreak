@@ -109,12 +109,14 @@ class PostgresMigrationTests(LocalPostgresTests):
             list(pool.map(lambda _: run_all_migrations(self.engine), range(4)))
         with self.engine.connect() as connection:
             version_count = connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one()
-            self.assertEqual(version_count, 6)
+            self.assertEqual(version_count, 7)
             user_cols = {c["name"] for c in inspect(self.engine).get_columns("users")}
             self.assertIn("session_version", user_cols)
             self.assertIn("show_global_leaderboard", user_cols)
             self.assertIn("codeforces_username", user_cols)
             self.assertIn("leetcode_account_version", user_cols)
+            self.assertIn("leetcode_verified_at", user_cols)
+            self.assertIn("codeforces_verified_at", user_cols)
             solve_cols = {c["name"] for c in inspect(self.engine).get_columns("solves")}
             self.assertIn("platform", solve_cols)
             self.assertIn("first_solve_at", solve_cols)

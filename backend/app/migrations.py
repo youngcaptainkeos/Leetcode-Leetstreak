@@ -205,6 +205,32 @@ def migrate_progress(target):
         connection.execute(versions.insert().values(version=version))
 
 
+def migrate_verification(target):
+    """
+    Coding-account ownership verification and challenge state.
+    Version: 20261106-verification-v1
+    """
+    with migration_connection(target) as connection:
+        version = "20261106-verification-v1"
+        if connection.execute(versions.select().where(versions.c.version == version)).first():
+            return
+        existing_users = {column["name"] for column in inspect(connection).get_columns("users")}
+        additions = {
+            "leetcode_verified_at": "TIMESTAMP",
+            "leetcode_verification_token": "VARCHAR(64)",
+            "leetcode_verification_expires_at": "TIMESTAMP",
+            "leetcode_pending_handle": "VARCHAR(80)",
+            "codeforces_verified_at": "TIMESTAMP",
+            "codeforces_verification_token": "VARCHAR(64)",
+            "codeforces_verification_expires_at": "TIMESTAMP",
+            "codeforces_pending_handle": "VARCHAR(80)",
+        }
+        for column, definition in additions.items():
+            if column not in existing_users:
+                connection.execute(text(f"ALTER TABLE users ADD COLUMN {column} {definition}"))
+        connection.execute(versions.insert().values(version=version))
+
+
 def run_all_migrations(target):
     """
     Run all pending migrations in an atomic transaction under advisory lock on PostgreSQL.
@@ -217,4 +243,6 @@ def run_all_migrations(target):
         migrate_display_preference(connection)
         migrate_tracking(connection)
         migrate_progress(connection)
+        migrate_verification(connection)
+
 

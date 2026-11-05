@@ -55,8 +55,12 @@ export interface DashboardResponse {
   leetcode_last_sync?: string;
   leetcode_history_state?: string;
   leetcode_history_gap?: boolean;
+  leetcode_verified?: boolean;
+  leetcode_verified_at?: string;
   codeforces_last_sync?: string;
   codeforces_sync_error?: string;
+  codeforces_verified?: boolean;
+  codeforces_verified_at?: string;
   codeforces_count?: number;
   codeforces_points?: number;
   leetcode_points?: number;
@@ -89,11 +93,43 @@ export interface BackendProgressResponse {
   updated_at?: string | null;
 }
 
+export interface InitiateVerificationResponse {
+  platform: 'leetcode' | 'codeforces';
+  handle: string;
+  token: string;
+  expires_at: string;
+  instructions: string;
+  is_claim_recovery: boolean;
+}
+
+export interface ConfirmVerificationResponse {
+  status: string;
+  platform: 'leetcode' | 'codeforces';
+  handle: string;
+  verified_at: string;
+}
+
+export interface PlatformVerificationStatus {
+  handle: string | null;
+  verified: boolean;
+  verified_at: string | null;
+  pending_token: boolean;
+  expires_at: string | null;
+}
+
+export interface VerificationStatusResponse {
+  user_id: number;
+  leetcode: PlatformVerificationStatus;
+  codeforces: PlatformVerificationStatus;
+}
+
 
 export interface LeaderboardEntry {
   codeforces_count?: number;
   codeforces_points?: number;
   leetcode_points?: number;
+  leetcode_verified?: boolean;
+  codeforces_verified?: boolean;
   rank: number;
   id: number;
   name: string;
@@ -342,6 +378,18 @@ export const api = {
     request<{ ok: boolean }>(`/users/${userId}/plans/restore-starters`, {
       method: "POST",
     }),
+  initiateVerification: (userId: number, platform: 'leetcode' | 'codeforces', handle?: string) =>
+    request<InitiateVerificationResponse>(`/users/${userId}/verify-handle/initiate`, {
+      method: 'POST',
+      body: JSON.stringify({ platform, handle }),
+    }),
+  confirmVerification: (userId: number, platform: 'leetcode' | 'codeforces') =>
+    request<ConfirmVerificationResponse>(`/users/${userId}/verify-handle/confirm`, {
+      method: 'POST',
+      body: JSON.stringify({ platform }),
+    }),
+  verificationStatus: (userId: number) =>
+    request<VerificationStatusResponse>(`/users/${userId}/verify-handle/status`),
 };
 
 

@@ -783,6 +783,52 @@ function Dashboard({
   const [updatingUsername, setUpdatingUsername] = useState(false);
   const [togglingLeaderboard, setTogglingLeaderboard] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
+  const [verificationModal, setVerificationModal] = useState<{
+    platform: 'leetcode' | 'codeforces';
+    handle: string;
+    token: string;
+    instructions: string;
+    expiresAt: string;
+  } | null>(null);
+  const [verifyingHandle, setVerifyingHandle] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [verifySuccess, setVerifySuccess] = useState<string | null>(null);
+
+  async function handleStartVerification(platform: 'leetcode' | 'codeforces', handleToVerify?: string) {
+    setVerifyError(null);
+    setVerifySuccess(null);
+    try {
+      const res = await api.initiateVerification(userId, platform, handleToVerify);
+      setVerificationModal({
+        platform: res.platform,
+        handle: res.handle,
+        token: res.token,
+        instructions: res.instructions,
+        expiresAt: res.expires_at,
+      });
+    } catch (err) {
+      setSettingsMsg(err instanceof Error ? err.message : "Failed to initiate verification.");
+    }
+  }
+
+  async function handleConfirmVerification() {
+    if (!verificationModal) return;
+    setVerifyingHandle(true);
+    setVerifyError(null);
+    try {
+      const res = await api.confirmVerification(userId, verificationModal.platform);
+      setVerifySuccess(`Successfully verified @${res.handle}!`);
+      setTimeout(() => {
+        setVerificationModal(null);
+        setVerifySuccess(null);
+      }, 1500);
+      await loadData(selectedTab);
+    } catch (err) {
+      setVerifyError(err instanceof Error ? err.message : "Verification check failed. Make sure the code is saved in your profile.");
+    } finally {
+      setVerifyingHandle(false);
+    }
+  }
 
   // Delete Account States
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -1696,7 +1742,11 @@ function Dashboard({
                           </span>
                           <span className="name">{e.name}</span>
                         </div>
-                        <span className="handle-mini">@{e.leetcode_username}</span>
+                        <span className="handle-mini">
+                          @{e.leetcode_username}
+                          {e.leetcode_verified && <span className="verified-check" title="Verified LeetCode Account">✓</span>}
+                          {e.codeforces_username && e.codeforces_verified && <span className="verified-check cf-check" title="Verified Codeforces Account">✓</span>}
+                        </span>
                       </div>
                       <span className="streak-mini">
                         <img src="/streak_fire.png" alt="🔥" className="streak-mini-fire" />
@@ -2144,7 +2194,23 @@ function Dashboard({
               <div className="settings-page" id="settings-panel-accounts" role="tabpanel" aria-labelledby="settings-tab-accounts" hidden={settingsPage !== "accounts"}>
             {/* Section: LEETCODE ACCOUNT */}
             <div className="settings-section">
-              <div className="settings-card settings-account-card"><div className="settings-account-heading"><span className="settings-site-icon settings-site-lc" aria-hidden="true">LC</span><div><h4>LeetCode</h4><span>Connected</span></div></div>
+              <div className="settings-card settings-account-card">
+                <div className="settings-account-heading">
+                  <span className="settings-site-icon settings-site-lc" aria-hidden="true">LC</span>
+                  <div>
+                    <h4>LeetCode</h4>
+                    <span>
+                      {dash.leetcode_verified ? (
+                        <span className="verified-badge-pill" title="Ownership verified">✓ Verified</span>
+                      ) : (
+                        <>
+                          <span className="unverified-badge-pill" title="Self-declared handle">Self-declared</span>
+                          <button type="button" className="btn-verify-ownership" onClick={() => handleStartVerification('leetcode')}>Verify</button>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </div>
                 <form onSubmit={handleUpdateUsername} className="settings-username-form">
                   <div className="settings-input-wrapper">
                     <span className="settings-input-prefix">@</span>
@@ -2184,7 +2250,25 @@ function Dashboard({
             </div>
 
             <div className="settings-section">
-              <div className="settings-card settings-account-card"><div className="settings-account-heading"><span className="settings-site-icon settings-site-cf" aria-hidden="true">CF</span><div><h4>Codeforces</h4><span>{dash.codeforces_username ? "Connected" : "Optional account"}</span></div></div>
+              <div className="settings-card settings-account-card">
+                <div className="settings-account-heading">
+                  <span className="settings-site-icon settings-site-cf" aria-hidden="true">CF</span>
+                  <div>
+                    <h4>Codeforces</h4>
+                    <span>
+                      {dash.codeforces_username ? (
+                        dash.codeforces_verified ? (
+                          <span className="verified-badge-pill" title="Ownership verified">✓ Verified</span>
+                        ) : (
+                          <>
+                            <span className="unverified-badge-pill" title="Self-declared handle">Self-declared</span>
+                            <button type="button" className="btn-verify-ownership" onClick={() => handleStartVerification('codeforces')}>Verify</button>
+                          </>
+                        )
+                      ) : "Optional account"}
+                    </span>
+                  </div>
+                </div>
                 <form onSubmit={handleUpdateCodeforces} className="settings-username-form">
                   <div className="settings-input-wrapper">
                     <span className="settings-input-prefix">@</span>
@@ -2463,6 +2547,59 @@ function Dashboard({
                 onClick={() => setSelectedSolveBreakdown(null)}
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {verificationModal && (
+        <div className="modal-overlay" onClick={() => setVerificationModal(null)}>
+          <div className="modal-content verification-modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Verify {verificationModal.platform === 'leetcode' ? 'LeetCode' : 'Codeforces'} Ownership</h3>
+              <button className="modal-close" onClick={() => setVerificationModal(null)}>✕</button>
+            </div>
+            <p className="tiny muted">
+              Prove ownership of <strong>@{verificationModal.handle}</strong> on {verificationModal.platform === 'leetcode' ? 'LeetCode' : 'Codeforces'}.
+            </p>
+            
+            <div className="verification-token-box">
+              <label className="tiny">Your One-Time Verification Code:</label>
+              <div className="token-row">
+                <code className="verification-code">{verificationModal.token}</code>
+                <button
+                  type="button"
+                  className="chip-btn"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(verificationModal.token);
+                    setSettingsMsg("Code copied to clipboard!");
+                  }}
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            <div className="verification-instructions">
+              <p className="tiny">{verificationModal.instructions}</p>
+              <a
+                href={verificationModal.platform === 'leetcode' ? "https://leetcode.com/profile/lab/" : "https://codeforces.com/settings/social"}
+                target="_blank"
+                rel="noreferrer"
+                className="username-help-link-btn"
+              >
+                Open {verificationModal.platform === 'leetcode' ? 'LeetCode Profile Settings' : 'Codeforces Social Settings'} ↗
+              </a>
+            </div>
+
+            {verifyError && <div className="error-banner" role="alert">{verifyError}</div>}
+            {verifySuccess && <div className="success-banner" role="status">{verifySuccess}</div>}
+
+            <div className="modal-actions-row">
+              <button type="button" className="secondary-btn" onClick={() => setVerificationModal(null)}>Cancel</button>
+              <button type="button" className="chip-btn modal-action-btn" onClick={handleConfirmVerification} disabled={verifyingHandle}>
+                {verifyingHandle ? "Checking profile…" : "Confirm Verification"}
               </button>
             </div>
           </div>

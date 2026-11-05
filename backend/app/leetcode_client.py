@@ -113,6 +113,7 @@ query userFullProfile($username: String!) {
     profile {
       realName
       userAvatar
+      aboutMe
     }
     submitStatsGlobal {
       acSubmissionNum {
@@ -225,12 +226,21 @@ async def fetch_leetcode_user_data(username: str) -> dict:
             "username": matched.get("username", username),
             "avatar_url": avatar_url,
             "real_name": real_name,
+            "about_me": profile_info.get("aboutMe") or "",
             "difficulty_counts": difficulty_counts,
             "official_streak": official_streak,
             "total_active_days": total_active_days,
             "submission_calendar": parsed_calendar,
             "recent_submissions": recent_submissions,
         }
+
+
+async def check_leetcode_profile_verification(username: str, token: str) -> bool:
+    """Checks whether the verification token is present in the LeetCode profile aboutMe or realName."""
+    data = await fetch_leetcode_user_data(username)
+    text_to_check = f"{data.get('about_me', '')} {data.get('real_name', '')}".lower()
+    return token.strip().lower() in text_to_check
+
 
 
 PROBLEM_INFO_QUERY = """

@@ -350,6 +350,59 @@ Added the full Progress experience to the web application (`web/app/Progress.tsx
 - Ran browser smoke tests (`backend/tests/browser_smoke.py` in headless Chrome via Playwright) across both extension (380px) and website (1366px): both passed with 0 runtime errors.
 - 90 backend tests and 26 extension tests passed.
 
+---
+
+## 2026-11-06 — Step: M4-03 / FEAT-04: Coding-Account Ownership Verification & Claim Recovery
+
+### Summary of Changes
+Implemented cryptographic one-time token verification for LeetCode and Codeforces coding accounts, solving the account-takeover and preclaimed handle squatter vulnerability. Previously, anyone could enter any public LeetCode or Codeforces handle during signup or in settings without proving ownership, blocking legitimate owners from claiming their own handles on Codeforces (where handles are unique across LeetStreak accounts) and receiving unearned leaderboard standing.
+
+Because neither platform provides OAuth for third-party extensions, ownership is proven via a zero-credential, expiring one-time challenge token (`codestreak-verify-<hex>`). Users place this code temporarily in their public profile bio (`aboutMe` or `realName` on LeetCode; `organization`, name, or city on Codeforces). Once verified by the backend server, the account receives a verified badge (✓) on leaderboards and profile cards. If an unverified user previously preclaimed a handle, the true owner who proves ownership through the challenge reclaims the handle, clearing the unverified squatter's solves and points.
+
+### Detailed Changes
+1. **`backend/app/models.py`**:
+   - Added verification tracking columns to `User`:
+     - `leetcode_verified_at`, `leetcode_verification_token`, `leetcode_verification_expires_at`, `leetcode_pending_handle`
+     - `codeforces_verified_at`, `codeforces_verification_token`, `codeforces_verification_expires_at`, `codeforces_pending_handle`
+
+2. **`backend/app/migrations.py`**:
+   - Added migration `migrate_verification` (version `20261106-verification-v1`).
+   - Included in `run_all_migrations` registry under PostgreSQL advisory lock / local RLock.
+   - Updated migration count in `test_migrations.py` and `test_postgres_migrations.py` to 7 versioned migrations.
+
+3. **`backend/app/leetcode_client.py` & `backend/app/codeforces_client.py`**:
+   - Added `check_leetcode_profile_verification(username, token)`: checks LeetCode GraphQL public profile (`aboutMe` and `realName`).
+   - Added `check_codeforces_profile_verification(handle, token)`: checks Codeforces API `user.info` public fields (`organization`, `firstName`, `lastName`, `city`).
+
+4. **`backend/app/schemas.py`**:
+   - Added `InitiateVerificationRequest`, `InitiateVerificationResponse`, `ConfirmVerificationRequest`, `ConfirmVerificationResponse`, `VerificationStatusResponse`, and `PlatformVerificationStatus`.
+   - Added `leetcode_verified: bool` and `codeforces_verified: bool` to `DashboardResponse`, `RegisterResponse`, `LeaderboardEntry`, and `GroupMemberSchema`.
+
+5. **`backend/app/main.py`**:
+   - Added endpoints:
+     - `POST /api/users/{user_id}/verify-handle/initiate`: generates an expiring 15-minute challenge token, bound to the user ID and requested handle.
+     - `POST /api/users/{user_id}/verify-handle/confirm`: queries the provider's public profile, validates token presence, marks the handle verified with timestamp, and executes preclaim dispute recovery if the handle was held by an unverified account.
+     - `GET /api/users/{user_id}/verify-handle/status`: returns verification status, pending handles, tokens, and expiry for both platforms.
+   - Handle modifications in settings reset verification state to prevent handle-swap inheritance.
+
+6. **Client UI & APIs (`extension` & `web`)**:
+   - Updated `api.ts` in both clients with `initiateVerification`, `confirmVerification`, and `verificationStatus`.
+   - Added verification badges (✓) with distinct tooltips on user cards, leaderboards, and profile modals.
+   - Added interactive Verification Challenge modal in Settings of both extension and website, complete with one-click token copying, direct deep-links to provider profile settings, and instantaneous confirmation feedback.
+
+7. **Distribution Packages**:
+   - Built web application (`npm --prefix web run check && npm --prefix web run build`).
+   - Built extension (`npm --prefix extension run build`).
+   - Synchronized all 4 ZIP copies (`./leetstreak.zip`, `./leetstreak_dist.zip`, `./extension/leetstreak.zip`, `./backend/app/leetstreak.zip`).
+
+### Verification Evidence
+- 99 backend tests passed with zero failures (`backend/tests`), including 9 isolated verification tests in `backend/tests/test_verification.py`.
+- 8 native PostgreSQL tests passed in `test_postgres_migrations.py`.
+- 26 extension unit tests passed (`extension/tests/*.test.mjs`).
+- Browser smoke test (Playwright in headless Chrome) passed on both extension and website with 0 runtime errors.
+- Verified byte-identical ZIP copies across all 4 locations.
+
+
 
 
 

@@ -32,14 +32,17 @@ from .schemas import (
     KudosToggleRequest, KudosAllRequest, UpdateUsernameRequest, UpdateSettingsRequest, ActivityFeedItemSchema,
     DynamicMenuItem, AppConfigResponse, DeleteAccountRequest, SyncRequest, UpdateCodeforcesRequest, GroupTransferRequest, ReleaseBroadcastRequest, ChangePasswordRequest,
     StudyPlanPayload, ProgressUpdateRequest, ProgressResponse,
+    InitiateVerificationRequest, InitiateVerificationResponse,
+    ConfirmVerificationRequest, ConfirmVerificationResponse,
+    VerificationStatusResponse, PlatformVerificationStatus,
 )
 from .streak import current_streak
 from .timekeeping import IST, ist_today, week_start as product_week_start, month_start as product_month_start, period_bounds, utc_now
 from .scheduler import start_scheduler, poll_all_users, poll_user
-from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
+from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError, check_leetcode_profile_verification
 from .point_calculator import compute_solve_points_breakdown, compute_codeforces_points_breakdown, recalculate_user_points
 from .platforms import daily_counts, solve_url
-from .codeforces_client import fetch_profile, CodeforcesError
+from .codeforces_client import fetch_profile, CodeforcesError, check_codeforces_profile_verification
 from .codeforces_sync import background_codeforces_sync, user_sync_lock
 from .security import current_user, require_self, member_group, owned_group
 from .releases import RELEASE_NOTICES
@@ -50,6 +53,8 @@ from .migrations import (
     migrate_auth,
     migrate_display_preference,
     migrate_tracking,
+    migrate_progress,
+    migrate_verification,
 )
 from .recovery import consume_limit, recovery_account, otp_verifier, clear_reset, utcnow
 from .tracking import clear_tracking, capture_score_baseline
@@ -342,6 +347,7 @@ async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest,
     if new_username.lower() != (user.leetcode_username or "").lower():
         capture_score_baseline(db, user.id)
         user.leetcode_account_version += 1
+        user.leetcode_verified_at = None
         clear_tracking(db, user_id, "leetcode")
         db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "leetcode").delete()
         db.query(DailyActivity).filter(DailyActivity.user_id == user_id).delete()
@@ -380,9 +386,11 @@ async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequ
     except CodeforcesError as error:
         raise HTTPException(status_code=400, detail=str(error))
     handle = profile["handle"]
-    owner = db.query(User.id).filter(func.lower(User.codeforces_username) == handle.lower(), User.id != user_id).first()
+    owner = db.query(User).filter(func.lower(User.codeforces_username) == handle.lower(), User.id != user_id).first()
     if owner:
-        raise HTTPException(status_code=409, detail="That Codeforces handle is already connected to another account.")
+        if owner.codeforces_verified_at:
+            raise HTTPException(status_code=409, detail="That Codeforces handle is already connected and verified on another account.")
+        raise HTTPException(status_code=409, detail="That Codeforces handle is claimed by an unverified account. Initiate verification to prove ownership and claim this handle.")
     async with user_sync_lock(user_id):
         db.refresh(user, with_for_update=True)
         if not user.codeforces_username or user.codeforces_username.lower() != handle.lower():
@@ -391,6 +399,7 @@ async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequ
             db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id, PlatformActivity.platform == "codeforces").delete()
             user.codeforces_last_sync = None
             user.codeforces_last_full_sync = None
+            user.codeforces_verified_at = None
         user.codeforces_username = handle
         user.codeforces_linked_at = user.codeforces_linked_at or datetime.now(timezone.utc).replace(tzinfo=None)
         user.codeforces_sync_error = None
@@ -402,6 +411,230 @@ async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequ
             raise HTTPException(status_code=409, detail="That Codeforces handle was just connected to another account.")
     background_tasks.add_task(background_codeforces_sync, user_id)
     return {"status": "syncing", "codeforces_username": handle}
+
+
+@app.post("/api/users/{user_id}/verify-handle/initiate", response_model=InitiateVerificationResponse)
+async def initiate_handle_verification(
+    user_id: int,
+    payload: InitiateVerificationRequest,
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    require_self(actor, user_id)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    platform = payload.platform.lower()
+    target_handle = (payload.handle or "").strip()
+    is_claim_recovery = False
+
+    if platform == "leetcode":
+        if not target_handle:
+            target_handle = user.leetcode_username
+        if not target_handle:
+            raise HTTPException(status_code=400, detail="No LeetCode username linked to your account.")
+        if target_handle.lower() == (user.leetcode_username or "").lower() and user.leetcode_verified_at:
+            raise HTTPException(status_code=400, detail="Your LeetCode account is already verified.")
+
+        owner = db.query(User).filter(func.lower(User.leetcode_username) == target_handle.lower(), User.id != user_id).first()
+        if owner:
+            if owner.leetcode_verified_at:
+                raise HTTPException(status_code=409, detail="That LeetCode handle is already claimed and verified by another user.")
+            is_claim_recovery = True
+
+        token = f"codestreak-verify-{secrets.token_hex(6)}"
+        expires_at = utc_now() + timedelta(minutes=15)
+        user.leetcode_verification_token = token
+        user.leetcode_verification_expires_at = expires_at.replace(tzinfo=None)
+        user.leetcode_pending_handle = target_handle
+        db.commit()
+
+        instructions = (
+            f"Add the verification code '{token}' into your LeetCode profile 'Summary' / 'About Me' or Name "
+            f"(https://leetcode.com/profile/lab/), save your profile, and then click 'Confirm Verification'."
+        )
+        return InitiateVerificationResponse(
+            platform="leetcode",
+            handle=target_handle,
+            token=token,
+            expires_at=expires_at,
+            instructions=instructions,
+            is_claim_recovery=is_claim_recovery,
+        )
+
+    elif platform == "codeforces":
+        if not target_handle:
+            target_handle = user.codeforces_username
+        if not target_handle:
+            raise HTTPException(status_code=400, detail="No Codeforces handle specified or linked to your account.")
+        if user.codeforces_username and target_handle.lower() == user.codeforces_username.lower() and user.codeforces_verified_at:
+            raise HTTPException(status_code=400, detail="Your Codeforces account is already verified.")
+
+        owner = db.query(User).filter(func.lower(User.codeforces_username) == target_handle.lower(), User.id != user_id).first()
+        if owner:
+            if owner.codeforces_verified_at:
+                raise HTTPException(status_code=409, detail="That Codeforces handle is already claimed and verified by another user.")
+            is_claim_recovery = True
+
+        token = f"codestreak-verify-{secrets.token_hex(6)}"
+        expires_at = utc_now() + timedelta(minutes=15)
+        user.codeforces_verification_token = token
+        user.codeforces_verification_expires_at = expires_at.replace(tzinfo=None)
+        user.codeforces_pending_handle = target_handle
+        db.commit()
+
+        instructions = (
+            f"Add the verification code '{token}' into your Codeforces 'Organization' or 'First Name' "
+            f"(https://codeforces.com/settings/social), save changes, and then click 'Confirm Verification'."
+        )
+        return InitiateVerificationResponse(
+            platform="codeforces",
+            handle=target_handle,
+            token=token,
+            expires_at=expires_at,
+            instructions=instructions,
+            is_claim_recovery=is_claim_recovery,
+        )
+
+
+@app.post("/api/users/{user_id}/verify-handle/confirm", response_model=ConfirmVerificationResponse)
+async def confirm_handle_verification(
+    user_id: int,
+    payload: ConfirmVerificationRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    require_self(actor, user_id)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    platform = payload.platform.lower()
+    now_utc = utc_now()
+
+    if platform == "leetcode":
+        token = user.leetcode_verification_token
+        expires_at = user.leetcode_verification_expires_at
+        handle = user.leetcode_pending_handle or user.leetcode_username
+        if not token or not expires_at or not handle:
+            raise HTTPException(status_code=400, detail="No LeetCode verification in progress. Please click 'Verify' to initiate one.")
+        if now_utc.replace(tzinfo=None) > expires_at:
+            raise HTTPException(status_code=400, detail="LeetCode verification code has expired. Please initiate a new one.")
+
+        try:
+            matched = await check_leetcode_profile_verification(handle, token)
+        except LeetCodeError as err:
+            raise HTTPException(status_code=400, detail=f"LeetCode verification check failed: {err}")
+        if not matched:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Verification code '{token}' not found on LeetCode profile for '{handle}'. Make sure you saved your profile changes and try again.",
+            )
+
+        owner = db.query(User).filter(func.lower(User.leetcode_username) == handle.lower(), User.id != user_id).first()
+        if owner:
+            owner.leetcode_username = f"claimed_{owner.id}_{secrets.token_hex(3)}"
+            owner.leetcode_verified_at = None
+            owner.leetcode_account_version += 1
+            clear_tracking(db, owner.id, "leetcode")
+            db.query(Solve).filter(Solve.user_id == owner.id, Solve.platform == "leetcode").delete()
+            recalculate_user_points(owner, db)
+
+        user.leetcode_username = handle
+        user.leetcode_verified_at = now_utc.replace(tzinfo=None)
+        user.leetcode_verification_token = None
+        user.leetcode_verification_expires_at = None
+        user.leetcode_pending_handle = None
+        db.commit()
+
+        background_tasks.add_task(poll_user, db, user)
+        return ConfirmVerificationResponse(
+            status="verified",
+            platform="leetcode",
+            handle=handle,
+            verified_at=now_utc,
+        )
+
+    elif platform == "codeforces":
+        token = user.codeforces_verification_token
+        expires_at = user.codeforces_verification_expires_at
+        handle = user.codeforces_pending_handle or user.codeforces_username
+        if not token or not expires_at or not handle:
+            raise HTTPException(status_code=400, detail="No Codeforces verification in progress. Please click 'Verify' to initiate one.")
+        if now_utc.replace(tzinfo=None) > expires_at:
+            raise HTTPException(status_code=400, detail="Codeforces verification code has expired. Please initiate a new one.")
+
+        try:
+            matched = await check_codeforces_profile_verification(handle, token)
+        except CodeforcesError as err:
+            raise HTTPException(status_code=400, detail=f"Codeforces verification check failed: {err}")
+        if not matched:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Verification code '{token}' not found on Codeforces profile for '{handle}'. Make sure you saved changes in Settings -> Social and try again.",
+            )
+
+        owner = db.query(User).filter(func.lower(User.codeforces_username) == handle.lower(), User.id != user_id).first()
+        if owner:
+            owner.codeforces_username = None
+            owner.codeforces_verified_at = None
+            owner.codeforces_account_version += 1
+            clear_tracking(db, owner.id, "codeforces")
+            db.query(Solve).filter(Solve.user_id == owner.id, Solve.platform == "codeforces").delete()
+            db.query(PlatformActivity).filter(PlatformActivity.user_id == owner.id, PlatformActivity.platform == "codeforces").delete()
+            recalculate_user_points(owner, db)
+
+        user.codeforces_username = handle
+        user.codeforces_verified_at = now_utc.replace(tzinfo=None)
+        user.codeforces_linked_at = user.codeforces_linked_at or now_utc.replace(tzinfo=None)
+        user.codeforces_verification_token = None
+        user.codeforces_verification_expires_at = None
+        user.codeforces_pending_handle = None
+        db.commit()
+
+        background_tasks.add_task(background_codeforces_sync, user_id)
+        return ConfirmVerificationResponse(
+            status="verified",
+            platform="codeforces",
+            handle=handle,
+            verified_at=now_utc,
+        )
+
+
+@app.get("/api/users/{user_id}/verify-handle/status", response_model=VerificationStatusResponse)
+def get_handle_verification_status(
+    user_id: int,
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    require_self(actor, user_id)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    now = utc_now().replace(tzinfo=None)
+    lc_pending = bool(user.leetcode_verification_token and user.leetcode_verification_expires_at and now <= user.leetcode_verification_expires_at)
+    cf_pending = bool(user.codeforces_verification_token and user.codeforces_verification_expires_at and now <= user.codeforces_verification_expires_at)
+
+    return VerificationStatusResponse(
+        user_id=user.id,
+        leetcode=PlatformVerificationStatus(
+            handle=user.leetcode_username,
+            verified=user.leetcode_verified_at is not None,
+            verified_at=user.leetcode_verified_at.replace(tzinfo=timezone.utc) if user.leetcode_verified_at else None,
+            pending_token=lc_pending,
+            expires_at=user.leetcode_verification_expires_at.replace(tzinfo=timezone.utc) if user.leetcode_verification_expires_at else None,
+        ),
+        codeforces=PlatformVerificationStatus(
+            handle=user.codeforces_username,
+            verified=user.codeforces_verified_at is not None,
+            verified_at=user.codeforces_verified_at.replace(tzinfo=timezone.utc) if user.codeforces_verified_at else None,
+            pending_token=cf_pending,
+            expires_at=user.codeforces_verification_expires_at.replace(tzinfo=timezone.utc) if user.codeforces_verification_expires_at else None,
+        ),
+    )
 
 
 @app.put("/api/users/{user_id}/settings")
@@ -692,7 +925,12 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Dep
         leetcode_last_sync=user.leetcode_last_sync.replace(tzinfo=timezone.utc) if user.leetcode_last_sync else None,
         leetcode_history_state=user.leetcode_history_state,
         leetcode_history_gap=user.leetcode_history_gap,
-        codeforces_last_sync=user.codeforces_last_sync.replace(tzinfo=timezone.utc) if user.codeforces_last_sync else None, codeforces_sync_error=user.codeforces_sync_error if actor.id == user_id else None,
+        leetcode_verified=user.leetcode_verified_at is not None,
+        leetcode_verified_at=user.leetcode_verified_at.replace(tzinfo=timezone.utc) if user.leetcode_verified_at else None,
+        codeforces_last_sync=user.codeforces_last_sync.replace(tzinfo=timezone.utc) if user.codeforces_last_sync else None,
+        codeforces_sync_error=user.codeforces_sync_error if actor.id == user_id else None,
+        codeforces_verified=user.codeforces_verified_at is not None,
+        codeforces_verified_at=user.codeforces_verified_at.replace(tzinfo=timezone.utc) if user.codeforces_verified_at else None,
         codeforces_count=cf_count, codeforces_points=round(float(cf_points), 2), leetcode_points=round((user.points or 0) - round(float(cf_points), 2), 2), points=user.points or 0,
         id=user.id,
         name=user.name,
@@ -780,7 +1018,9 @@ def _compute_leaderboard(
             id=r["user"].id,
             name=r["user"].name,
             leetcode_username=r["user"].leetcode_username,
+            leetcode_verified=r["user"].leetcode_verified_at is not None,
             codeforces_username=r["user"].codeforces_username,
+            codeforces_verified=r["user"].codeforces_verified_at is not None,
             codeforces_count=cf_stats.get(r["user"].id, (0, 0))[0],
             codeforces_points=round(cf_stats.get(r["user"].id, (0, 0))[1], 4),
             leetcode_points=round((r["user"].points or 0) - cf_stats.get(r["user"].id, (0, 0))[1], 4),
@@ -982,7 +1222,9 @@ def get_my_groups(user_id: int, db: Session = Depends(get_db), actor: User = Dep
                 id=user_obj.id,
                 name=user_obj.name,
                 leetcode_username=user_obj.leetcode_username,
+                leetcode_verified=user_obj.leetcode_verified_at is not None,
                 codeforces_username=user_obj.codeforces_username,
+                codeforces_verified=user_obj.codeforces_verified_at is not None,
                 avatar_url=user_obj.avatar_url,
             )
         )

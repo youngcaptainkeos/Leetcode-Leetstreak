@@ -96,7 +96,7 @@ This is the working checklist for the repository review. It covers every issue a
 - [x] **FEAT-01 · P2:** Save plans, external completion, and preferences to the account.
 - [x] **FEAT-02 · P2:** Add Progress to the website.
 - [x] **FEAT-03 · P1:** Show reliable sync status and history completeness.
-- [ ] **FEAT-04 · P2:** Add coding-account ownership verification and claim recovery.
+- [x] **FEAT-04 · P2:** Add coding-account ownership verification and claim recovery.
 - [ ] **FEAT-05 · P2:** Allow Codeforces unlinking.
 - [ ] **FEAT-06 · P3:** Add weekly/monthly points rankings.
 - [ ] **FEAT-07 · P2 · Deferred:** Add friend notification preferences and quiet hours when that feature is resumed.
@@ -216,6 +216,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 | M4-01 | FEAT-01 account-backed study plans, playlists, library subscriptions & external completion | Passed locally: 90 backend tests including 7 progress/custom plan tests, 8 PostgreSQL tests, 26 extension tests, web check/build and extension tsc/build. Added UserProgress and UserCustomPlan models and 20261106-progress-v1 migration. Implemented authenticated progress and custom plan endpoints in backend/app/main.py. Integrated bidirectional account sync in extension/src/progress/Progress.tsx with local-first cache/outbox and transparent migration of existing local plans. Rebuilt extension and synchronized all 4 ZIP distribution packages. Commit labeled 'M4 FEAT-01 step 1: persist study plans and playlists to backend account profile'. |
 | M4-02 | FEAT-02 website Progress section with study plans, playlists & friends activity | Passed locally: browser smoke test (Playwright in headless Chrome) passed on both extension and website with 0 errors; web tsc check and build passed cleanly; 26 extension tests and 90 backend tests passed. Added web/app/Progress.tsx with account-backed study plan library, playlist creation from links, starter restoration, subgroup expansion, search/filtering, and manual external completion. Added Study plans navigation in web/main.tsx sidebar and responsive styling in web/app/App.css. Commit labeled 'M4 FEAT-02 step 2: add Progress section and study plan playlists to website'. |
+| M4-03 | FEAT-04 coding-account ownership verification & claim recovery | Passed locally: 99 backend tests including 9 verification tests, 8 PostgreSQL tests, 26 extension tests, web check/build and extension build; browser smoke test passed on both website and extension with 0 runtime errors. Added expiring one-time public-profile token challenge for LeetCode (aboutMe/realName) and Codeforces (user.info organization/name) with dispute recovery for preclaimed unverified handles. Verified badges rendered on leaderboards and profile modals across web and extension. Synchronized all 4 ZIP distribution packages. Commit labeled 'M4 FEAT-04 step 3: coding-account ownership verification and claim recovery'. |
 
 
 
@@ -943,17 +944,17 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Investigate provider-supported ownership proof before promising a method. Prefer official authorization if available; otherwise evaluate an expiring one-time public-profile challenge only where feasible.
-- [ ] For a proof challenge, generate a random account/provider-bound token, verify through a trusted server fetch, expire it, and prevent replay. Never ask for provider passwords/cookies.
-- [ ] Track unverified/pending/verified/disputed state, proof time, and verified provider identity where available.
-- [ ] Define the ranking eligibility policy for unverified accounts and a recovery process for preclaimed handles/provider renames. Retain existing users without falsely marking them verified.
-- [ ] Keep signup's CF field optional and allow onboarding before CF verification.
+- [x] Investigate provider-supported ownership proof before promising a method. Prefer official authorization if available; otherwise evaluate an expiring one-time public-profile challenge only where feasible.
+- [x] For a proof challenge, generate a random account/provider-bound token, verify through a trusted server fetch, expire it, and prevent replay. Never ask for provider passwords/cookies.
+- [x] Track unverified/pending/verified/disputed state, proof time, and verified provider identity where available.
+- [x] Define the ranking eligibility policy for unverified accounts and a recovery process for preclaimed handles/provider renames. Retain existing users without falsely marking them verified.
+- [x] Keep signup's CF field optional and allow onboarding before CF verification.
 
 **Acceptance**
 
-- [ ] Knowing a handle alone cannot produce verified ownership.
-- [ ] Expired/reused/wrong-account challenges fail, and claims have an auditable recovery path.
-- [ ] Existing legitimate accounts can migrate without handing credentials to LeetStreak.
+- [x] Knowing a handle alone cannot produce verified ownership.
+- [x] Expired/reused/wrong-account challenges fail, and claims have an auditable recovery path.
+- [x] Existing legitimate accounts can migrate without handing credentials to LeetStreak.
 
 ### FEAT-05 — Unlink Codeforces
 

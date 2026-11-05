@@ -63,6 +63,7 @@ class MigrationTests(unittest.TestCase):
                 "20261105-global-display-v1",
                 "20261105-tracking-v1",
                 "20261106-progress-v1",
+                "20261106-verification-v1",
             }
             self.assertEqual(recorded_versions, expected_versions)
 
@@ -74,7 +75,7 @@ class MigrationTests(unittest.TestCase):
             count = conn.execute(
                 text("SELECT COUNT(*) FROM schema_migrations")
             ).scalar_one()
-            self.assertEqual(count, 6)
+            self.assertEqual(count, 7)
 
 
     def test_migration_connection_accepts_connection_and_engine(self):
@@ -129,7 +130,7 @@ class MigrationTests(unittest.TestCase):
             count = conn.execute(
                 text("SELECT COUNT(*) FROM schema_migrations")
             ).scalar_one()
-            self.assertEqual(count, 6)
+            self.assertEqual(count, 7)
 
 
 class StartupShutdownTests(unittest.TestCase):
