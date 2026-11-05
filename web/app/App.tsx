@@ -1,3 +1,4 @@
+import { MetricsPanel, MetricsPlatform, PlatformSelector, metricsFor } from "./Metrics";
 import React, { useEffect, useState } from "react";
 import {
   api,
@@ -593,7 +594,12 @@ function Dashboard({
     null
   );
   const [friendDash, setFriendDash] = useState<DashboardResponse | null>(null);
+  const [statsPlatform, setStatsPlatform] = useState<MetricsPlatform>("all");
+  const [profilePlatform, setProfilePlatform] = useState<MetricsPlatform>("all");
+  const friendMetrics = friendDash ? metricsFor(friendDash, profilePlatform) : null;
+
   const [loadingFriendDash, setLoadingFriendDash] = useState(false);
+  const [profileError, setProfileError] = useState("");
   const [modalTab, setModalTab] = useState<"overview" | "solves">("overview");
   const [recentSolvesList, setRecentSolvesList] = useState<RecentSolve[]>([]);
   const [loadingRecentSolves, setLoadingRecentSolves] = useState(false);
@@ -1099,25 +1105,24 @@ function Dashboard({
     }
   }
 
-  async function handleInspectFriend(entry: LeaderboardEntry) {
-    setInspectedFriend(entry);
-    setModalTab("overview");
-    setLoadingFriendDash(true);
-    setLoadingRecentSolves(true);
-    try {
-      const [friendData, solvesData] = await Promise.all([
-        api.dashboard(entry.id).catch(() => null),
-        api.recentSolves(entry.id, 10).catch(() => []),
-      ]);
-      setFriendDash(friendData);
-      setRecentSolvesList(solvesData);
-    } catch (err) {
-      console.warn("Could not load friend detailed data", err);
-    } finally {
-      setLoadingFriendDash(false);
-      setLoadingRecentSolves(false);
-    }
+  function handleInspectFriend(entry: LeaderboardEntry) {
+    setFriendDash(null); setRecentSolvesList([]); setProfileError("");
+    setProfilePlatform(statsPlatform); setInspectedFriend(entry); setModalTab("overview");
   }
+  useEffect(() => {
+    if (!inspectedFriend) return;
+    let cancelled = false;
+    setLoadingFriendDash(true); setLoadingRecentSolves(true); setProfileError("");
+    setRecentSolvesList([]);
+    Promise.all([api.dashboard(inspectedFriend.id), api.recentSolves(inspectedFriend.id, 10, profilePlatform)]).then(([profile, solves]) => {
+      if (!cancelled) { setFriendDash(profile); setRecentSolvesList(solves); }
+    }).catch(() => {
+      if (!cancelled) { setFriendDash(null); setProfileError("Could not load this profile. Close and reopen it to retry."); }
+    }).finally(() => {
+      if (!cancelled) { setLoadingFriendDash(false); setLoadingRecentSolves(false); }
+    });
+    return () => { cancelled = true; };
+  }, [inspectedFriend?.id, profilePlatform]);
 
   function handleCopyCode(code: string) {
     navigator.clipboard.writeText(code);
@@ -1128,7 +1133,8 @@ function Dashboard({
   if (error && !dash) return <div className="error-banner">{error}</div>;
   if (!dash) return <div className="centered muted" role="status">Loading your workspace…</div>;
 
-  const maxDay = Math.max(1, ...dash.last_7_days.map((d) => d.problems_solved));
+  const statsDays = metricsFor(dash, statsPlatform)?.last_7_days || [];
+  const maxDay = Math.max(1, ...statsDays.map((d) => d.problems_solved));
   const dayLabels = dash.last_7_days.map((d) =>
     new Date(d.date).toLocaleDateString(undefined, { weekday: "narrow" })
   );
@@ -1238,32 +1244,14 @@ function Dashboard({
 
       {/* Unified M3 Hero Container Card */}
       <div className="hero-card workspace-summary">
-        <div className="streak-hero">
-          <img src={assetUrl("main_fire.png")} alt="🔥" className="hero-flame-img" />
-          <span className="streak-count">{dash.current_streak}</span>
-        </div>
-        <div className="streak-label">DAY STREAK</div>
-
-        <div className="stat-row">
-          <Stat label="Today" value={dash.today_count} />
-          <Stat label="This Week" value={dash.weekly_total} />
-          <Stat label="This Month" value={dash.monthly_total} />
-        </div>
-
-        <div className="diff-pills">
-          <span className="diff-pill easy">Easy {dash.easy_count}</span>
-          <span className="diff-pill medium">Med {dash.medium_count}</span>
-          <span className="diff-pill hard">Hard {dash.hard_count}</span>
-          <span className="diff-pill total">CF {dash.codeforces_count || 0}</span>
-          <span className="diff-pill total">Total {dash.easy_count + dash.medium_count + dash.hard_count + (dash.codeforces_count || 0)}</span>
-        </div>
+        <MetricsPanel data={dash} platform={statsPlatform} onChange={setStatsPlatform} />
       </div>
 
 
 
       <section className="workspace-week" aria-labelledby="week-title">
-        <div className="section-header"><h2 id="week-title">Your last seven days</h2><span className="muted small">{dash.last_7_days.reduce((total, d) => total + d.problems_solved, 0)} solves</span></div>
-        <div className="workspace-week-chart">{dash.last_7_days.map((day, index) => <div key={day.date} title={`${day.date}: ${day.problems_solved} solves`}>
+        <div className="section-header"><h2 id="week-title">Your last seven days</h2><span className="muted small">{statsDays.reduce((total, d) => total + d.problems_solved, 0)} solves</span></div>
+        <div className="workspace-week-chart">{statsDays.map((day, index) => <div key={day.date} title={`${day.date}: ${day.problems_solved} solves`}>
           <span>{day.problems_solved}</span><div className="workspace-bar-track"><div style={{height: `${Math.max(3, day.problems_solved / maxDay * 100)}%`}} className={day.problems_solved ? "is-active" : ""} /></div>
           <span>{dayLabels[index]}</span></div>)}</div>
       </section>
@@ -1566,7 +1554,7 @@ function Dashboard({
       {/* Inspect Friend Modal */}
       {inspectedFriend && (
         <div className="modal-overlay" onClick={() => setInspectedFriend(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content profile-stats-modal" onClick={(e) => e.stopPropagation()}>
             <button
               className="modal-close"
               onClick={() => setInspectedFriend(null)}
@@ -1597,21 +1585,12 @@ function Dashboard({
                 >
                   @{inspectedFriend.leetcode_username} ↗
                 </a>
+                {inspectedFriend.codeforces_username && <a className="profile-handle" href={`https://codeforces.com/profile/${encodeURIComponent(inspectedFriend.codeforces_username)}`} target="_blank" rel="noreferrer">CF @{inspectedFriend.codeforces_username} ↗</a>}
               </div>
             </div>
 
-            <div className="modal-streak-box">
-              <img src={assetUrl("main_fire.png")} alt="🔥" className="modal-flame-img" />
-              <span className="modal-streak-count">
-                {inspectedFriend.current_streak} Day Streak
-              </span>
-              <span
-                className="modal-points-tag"
-                title={`Easy: ${inspectedFriend.easy_count} | Medium: ${inspectedFriend.medium_count} | Hard: ${inspectedFriend.hard_count}`}
-              >
-                ⭐ {inspectedFriend.points ?? (inspectedFriend.easy_count * 1 + inspectedFriend.medium_count * 3 + inspectedFriend.hard_count * 6)} pts
-              </span>
-            </div>
+            <PlatformSelector platform={profilePlatform} onChange={setProfilePlatform} />
+            {profileError && <p className="tiny error-banner" role="alert">{profileError}</p>}
 
             {/* Modal Tab Bar */}
             <div className="modal-tab-bar">
@@ -1631,49 +1610,21 @@ function Dashboard({
 
             {modalTab === "overview" ? (
               <>
-                <div className="section-title text-center mb-1">QUESTIONS SOLVED</div>
-                <div className="stat-row">
-                  <Stat
-                    label="Today"
-                    value={
-                      friendDash ? friendDash.today_count : (inspectedFriend.is_active_today ? 1 : 0)
-                    }
-                  />
-                  <Stat label="This Week" value={inspectedFriend.weekly_total} />
-                  <Stat
-                    label="This Month"
-                    value={friendDash ? friendDash.monthly_total : 0}
-                  />
-                </div>
-
-                <div className="diff-pills">
-                  <span className="diff-pill easy">
-                    Easy {inspectedFriend.easy_count}
-                  </span>
-                  <span className="diff-pill medium">
-                    Med {inspectedFriend.medium_count}
-                  </span>
-                  <span className="diff-pill hard">
-                    Hard {inspectedFriend.hard_count}
-                  </span>
-                  <span className="diff-pill total">
-                    Total {inspectedFriend.easy_count + inspectedFriend.medium_count + inspectedFriend.hard_count + (inspectedFriend.codeforces_count || 0)}
-                  </span>
-                </div>
+                <MetricsPanel data={friendDash} platform={profilePlatform} onChange={setProfilePlatform} showFilter={false} loading={loadingFriendDash} />
 
                 {/* Material UI 7-Day Activity Calendar Card */}
                 {loadingFriendDash ? (
                   <div className="centered muted tiny py-2">Loading activity calendar…</div>
-                ) : friendDash ? (
+                ) : friendMetrics ? (
                   <div className="profile-calendar-card">
                     <div className="profile-calendar-title">
                       <span>📅</span>
                       <span>LAST 7 DAYS ACTIVITY</span>
                     </div>
                     <div className="profile-heatmap">
-                      {friendDash.last_7_days.map((d, i) => {
+                      {friendMetrics.last_7_days.map((d, i) => {
                         const solved = d.problems_solved;
-                        const maxSolved = Math.max(1, ...friendDash.last_7_days.map((x) => x.problems_solved));
+                        const maxSolved = Math.max(1, ...friendMetrics.last_7_days.map((x) => x.problems_solved));
                         const heightPct = Math.min(100, Math.max(14, (solved / maxSolved) * 100));
                         return (
                           <div className="profile-heat-col" key={d.date}>
@@ -1686,7 +1637,7 @@ function Dashboard({
                                 title={`${d.date}: ${solved} problem${solved === 1 ? "" : "s"} solved`}
                               />
                             </div>
-                            <span className="profile-heat-day">{dayLabels[i]}</span>
+                            <span className="profile-heat-day">{new Date(`${d.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" })}</span>
                           </div>
                         );
                       })}
@@ -1700,7 +1651,7 @@ function Dashboard({
                 {loadingRecentSolves ? (
                   <div className="centered muted tiny py-3">Loading solves…</div>
                 ) : recentSolvesList.length === 0 ? (
-                  <div className="centered muted tiny py-3">No recent solves recorded yet.</div>
+                  <div className="centered muted tiny py-3">{profileError ? "Solves are unavailable." : "No recent solves recorded for this site."}</div>
                 ) : (
                   <ul className="recent-solves-list">
                     {recentSolvesList.map((s, idx) => {
