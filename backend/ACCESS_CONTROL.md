@@ -54,6 +54,14 @@ polls. Interrupted/failed broadcasts require private operator review before
 retrying; do not reset the guard blindly because provider acceptance can be
 ambiguous. This is bounded protection, not a claim of exactly-once email delivery.
 
+Email dispatch selects one configured provider (`EMAIL_BACKEND=auto` chooses the
+first configured Brevo, SendGrid, Resend, or SMTP transport). A provider's accepted
+request is recorded as accepted, not inbox-delivered. Missing configuration,
+rejection, failure, and unknown timeout outcomes never count as successful sends.
+Unknown outcomes require review, not automatic cross-provider resending. SMTP
+work runs outside the async event loop. Development tests mock all transports;
+no log-only mode prints reset codes, recipient addresses, or mail bodies.
+
 Run `PYTHONPATH=backend test_env/bin/python -m unittest discover -s backend/tests -v`
 in the current development checkout, or use a separately created local virtual
 environment with `backend/requirements.txt`. No production database or provider

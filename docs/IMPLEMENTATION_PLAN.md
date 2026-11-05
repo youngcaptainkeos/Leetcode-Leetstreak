@@ -184,7 +184,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 | M1-01 | SEC-01 route inventory + OPS-02 key configuration/JWT validation foundation | Passed locally: 7 synthetic token/configuration tests; route map in `backend/ACCESS_CONTROL.md`. Branch commit: `M1 SEC-01 OPS-02 step 1: require stable keys and validate tokens`. Hosting configuration/release still pending. |
 | M1-02 | SEC-01 account/group permissions + client session compatibility | Passed locally: 17 backend tests, 3 client session tests, 11 existing progress tests, both type checks/builds; archives synchronized. Owner transfer API added; UI work remains in M1-06. Branch commit: `M1 SEC-01 step 2: enforce account and group permissions`. Not deployed. |
 | M1-03 | SEC-02 fail-closed administration | Passed locally: 22 backend tests; every admin route guarded, production test-email route removed, reviewed release previews and durable duplicate-job guards. Commit labeled `M1 SEC-02 step 3`. Awaiting release; interrupted mail jobs require operator review. |
-| M1-04 | OPS-01 honest email outcomes | Not started |
+| M1-04 | OPS-01 honest email outcomes | Passed locally: 28 backend tests, including mocked acceptance/rejection/failure/timeout, redacted logs, escaped templates, offloaded SMTP, and accepted-only release state updates. Commit labeled `M1 OPS-01 step 4`. No real messages sent; awaiting release. |
 | M1-05 | SEC-03 recovery abuse limits, password policy, session revocation | Not started |
 | M1-06 | SEC-04 Global display-only preference and group/profile behavior | Not started |
 | M1-07 | SEC-05 synthetic fixture isolation + PUB-01–03 current-source cleanup | Not started |
@@ -686,16 +686,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Return structured dispatch outcomes: accepted by provider, unavailable, rejected, or failed. Do not claim inbox delivery merely because a provider accepted a request.
-- [ ] Restrict no-send/log-only transport to explicit development mode; never log OTPs or private message bodies.
-- [ ] Keep public reset responses generic while recording private delivery failure for operations/retry. Mark update delivery only after genuine provider acceptance.
-- [ ] Bound retries and make broadcasts idempotent. Sanitize interpolated content and avoid blocking the async server with synchronous SMTP work.
+- [x] Return structured dispatch outcomes: accepted by provider, unavailable, rejected, or failed. Do not claim inbox delivery merely because a provider accepted a request.
+- [x] Restrict no-send/log-only transport to explicit development mode; never log OTPs or private message bodies.
+- [x] Keep public reset responses generic while recording private delivery failure for operations/retry. Mark update delivery only after genuine provider acceptance.
+- [x] Bound retries and make broadcasts idempotent. Sanitize interpolated content and avoid blocking the async server with synchronous SMTP work.
 
 **Acceptance**
 
-- [ ] Missing configuration, rejection, timeout, and failed fallback cannot produce a successful delivery record.
-- [ ] Provider acceptance produces the expected state without duplicate sends on retries.
-- [ ] Error logs contain actionable status without credentials, OTPs, or recipient dumps.
+- [x] Missing configuration, rejection, timeout, and failed fallback cannot produce a successful delivery record.
+- [x] Provider acceptance produces the expected state without duplicate sends on retries.
+- [x] Error logs contain actionable status without credentials, OTPs, or recipient dumps.
 
 ### OPS-02 — Stable signing keys and sessions
 
@@ -1239,7 +1239,7 @@ For each item, record the following when work begins/completes. Do not place rea
 - Required deployment verification is complete, or the item remains explicitly awaiting release.
 - The master checkbox is updated, and any new follow-up has a distinct ID rather than being silently forgotten.
 
-M1-03 evidence: 22 backend tests passed using synthetic users and a temporary database; no emails or production jobs were sent. Administrative configuration/release remains pending.
+M1-03 (`f9f07a3`) evidence: 22 backend tests passed using synthetic users and a temporary database; no emails or production jobs were sent. Administrative configuration/release remains pending.
 
 ## 11. Coverage map back to the review
 

@@ -1275,8 +1275,10 @@ async def send_and_update_user_commit(
                 u.last_notified_commit = commit_id
                 db.commit()
                 logging.info("Release notification accepted for account %d", user_id)
-        except Exception as e:
+        except Exception:
+            db.rollback()
             logging.error("Release delivery state could not be saved for account %d", user_id)
+            return False
         finally:
             db.close()
     return success
