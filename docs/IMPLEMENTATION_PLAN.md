@@ -187,7 +187,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 | M1-04 | OPS-01 honest email outcomes | Passed locally: 28 backend tests, including mocked acceptance/rejection/failure/timeout, redacted logs, escaped templates, offloaded SMTP, and accepted-only release state updates. Commit labeled `M1 OPS-01 step 4`. No real messages sent; awaiting release. |
 | M1-05 | SEC-03 recovery abuse limits, password policy, session revocation | Backend/local checks passed: 37 tests including recovery, revocation, and additive SQLite migration. Password/reset UI copy and client types updated; password-management settings UI follows M1-06. 3 client session checks, both type checks/builds passed; archives synchronized. Commit labeled `M1 SEC-03 step 5`. Production PostgreSQL migration/release remains pending. |
 | M1-06 | SEC-04 Global display-only preference and group/profile behavior | Passed locally: 42 backend + 5 client session/preference tests, both type checks/builds; packages synchronized. Global preference migration, profile field restrictions, transfer/password/session controls implemented. Commit labeled `M1 SEC-04 step 6`; not deployed; full browser visual/release verification remains pending. |
-| M1-07 | SEC-05 synthetic fixture isolation + PUB-01–03 current-source cleanup | Not started |
+| M1-07 | SEC-05 synthetic fixture isolation + PUB-01–03 current-source cleanup | Passed locally: 44 backend tests, extension build and package inspection. Removed fabricated provider responses, obsolete notification demonstrations/pages, five scratch scripts and tracked installed environment (local environment retained). Current-source scan reviewed reserved example addresses/provider sender and route-path false positives; packages synchronized and obsolete assets absent. Donation QR/controls explicitly approved public on 2026-11-05. Historical exposure and production fixture records remain separate pending work; not deployed. |
 | M1-08 | PUB-04 private exposure inventory and concrete remediation proposal | Not started; shared-history rewriting requires approval of the resulting proposal. |
 
 ## 4. Security and privacy plans
@@ -1077,7 +1077,7 @@ Do not paste discovered sensitive values or identities into public issues, this 
 - [ ] Privately inventory test addresses, personal names/handles, local paths, phone/payment details, screenshots, user exports, and hardcoded sample accounts in tracked/releasable files.
 - [ ] Replace examples with clearly fictional identities such as `Demo Coder` and `coder@example.com`. Use reserved example addresses, never a real inbox disguised as test data.
 - [ ] Remove hardcoded personal notification demonstrations; use safe synthetic fixtures in isolated tests or a development-only preview.
-- [ ] Distinguish intentional public product contact/donation details from accidental personal data; retain intentional details only after the owner explicitly confirms that public exposure is intended.
+- [x] Distinguish intentional public product contact/donation details from accidental personal data. Owner explicitly approved the donation QR/payment assets and controls remaining public on 2026-11-05; the illustrated username guide is synthetic.
 - [ ] Check assets and generated output as well as readable source. Rebuild affected artifacts after cleanup.
 
 **Acceptance**
