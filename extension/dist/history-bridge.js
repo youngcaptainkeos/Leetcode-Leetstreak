@@ -20,7 +20,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       if (result.errors || !result.data) throw new Error("LeetCode could not return solved history.");
       respond({ ok: true, data: result.data });
     })
-    .catch(() => respond({ ok: false, error: "Could not read your LeetCode session. Refresh LeetCode, then retry syncing." }))
+    .catch(() => respond({ ok: false, error: "Could not read your LeetCode session. Refresh LeetCode; history will retry automatically." }))
     .finally(() => clearTimeout(timeout));
   return true;
 });

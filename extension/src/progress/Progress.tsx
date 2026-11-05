@@ -112,7 +112,7 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
       } catch (err) {
         if (!controller.signal.aborted) {
           setHistoryMessage("");
-          setHistoryError(err instanceof Error && err.name === "AbortError" ? "LeetCode took too long to respond. Retry to sync your history." : err instanceof Error ? err.message : "Could not sync solved history. Your saved progress is unchanged.");
+          setHistoryError(err instanceof Error && err.name === "AbortError" ? "LeetCode took too long to respond. History will retry automatically." : err instanceof Error ? err.message : "Could not sync solved history. Your saved progress is unchanged.");
         }
         return null;
       } finally {
@@ -129,7 +129,14 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
     const refresh = () => { void syncHistory(); };
     window.addEventListener(PRACTICE_REFRESH, refresh);
     window.addEventListener("online", refresh);
-    return () => { window.removeEventListener(PRACTICE_REFRESH, refresh); window.removeEventListener("online", refresh); };
+    window.addEventListener("focus", refresh);
+    const interval = window.setInterval(refresh, 60000);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(PRACTICE_REFRESH, refresh);
+      window.removeEventListener("online", refresh);
+      window.removeEventListener("focus", refresh);
+    };
   }, [loaded, username]);
   useEffect(() => {
     if (!loaded || !snapshot) return;
@@ -161,7 +168,7 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
       if (request !== importRequest.current) return;
       setState(previous => previous ? addStudyPlan(history ? mergeSolvedHistory(previous, history.slugs, history.syncedAt) : previous, imported) : previous);
       selectPlan(imported.slug);
-      setNotice(history ? `Following ${imported.name}. Progress synced with your solved history.` : `Following ${imported.name}. Saved solves are shown; complete the LeetCode history sync to include older solves.`);
+      setNotice(history ? `Following ${imported.name}. Progress synced with your solved history.` : `Following ${imported.name}. Saved solves are shown; older solves will appear when automatic LeetCode syncing succeeds.`);
       setPlanInput(""); setAddOpen(false);
     } catch (err) {
       if (request === importRequest.current) setPlanError(err instanceof Error ? err.message : "Could not add this study plan. Please try again.");
@@ -198,7 +205,7 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   return <div className="progress-panel" id="progress-panel" role="tabpanel" aria-labelledby="progress-menu">
     {active && <FriendsActivity key={`${userId}-${username}`} userId={userId} groups={groups} />}
     <div className="section-header study-plans-heading"><h2 className="section-title">Study plans</h2><button className="chip-btn" aria-expanded={addOpen} aria-controls="add-study-plan" onClick={() => { if (addOpen) closeImporter(); else { setAddOpen(true); setPlanError(""); } }}>{addOpen ? "Close" : "+ Add plan"}</button></div>
-    <div className="history-sync-row"><span role="status">{historySyncing ? historyMessage : state.lastFullSyncAt ? `History saved · ${new Date(state.lastFullSyncAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : "Complete history not synced yet"}</span><button className="chip-btn" disabled={historySyncing} onClick={() => { void syncHistory(true); }}>{historySyncing ? "Syncing…" : "Sync history"}</button></div>
+    <div className="history-sync-row"><span role="status">{historySyncing ? historyMessage : state.lastFullSyncAt ? `History saved · ${new Date(state.lastFullSyncAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : "Solved history syncs automatically"}</span></div>
     {historyError && <p className="progress-error" role="status">{historyError} <a href="https://leetcode.com/" target="_blank" rel="noreferrer">Open LeetCode ↗</a></p>}
     {addOpen && <form className="plan-import-form" id="add-study-plan" onSubmit={handleAddPlan}>
       <label htmlFor="study-plan-link">Study-plan or sheet link</label>

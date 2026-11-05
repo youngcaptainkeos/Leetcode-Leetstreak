@@ -25,11 +25,11 @@ async function tabQuery<T>(tabId: number, kind: "account" | "page", skip: number
       if (error) reject(error); else resolve(data!);
     };
     const cancel = () => finish(new DOMException("History sync cancelled", "AbortError"));
-    const timeout = setTimeout(() => finish(new Error("LeetCode took too long to respond. Refresh its tab, then sync again.")), 16000);
+    const timeout = setTimeout(() => finish(new Error("LeetCode took too long to respond. History will retry automatically.")), 16000);
     signal.addEventListener("abort", cancel, { once: true });
     chrome.tabs.sendMessage(tabId, { type: "LEETSTREAK_HISTORY", kind, skip }, result => {
       const error = chrome.runtime.lastError;
-      if (error || !result?.ok || !result.data) finish(new Error("Could not read your LeetCode session. Open or refresh LeetCode, then sync again."));
+      if (error || !result?.ok || !result.data) finish(new Error("Could not read your LeetCode session. Open or refresh LeetCode; history will retry automatically."));
       else finish(undefined, result.data);
     });
   });
@@ -62,7 +62,7 @@ async function verifyAccount(username: string, signal: AbortSignal, tabId?: numb
   const account = result.userStatus;
   if (!account?.isSignedIn || !account.username) throw new Error(`Sign in to LeetCode as @${username} in this browser to sync your complete solved history.`);
   if (account.username.toLowerCase() !== username.trim().toLowerCase()) {
-    throw new Error(`Your LeetCode session belongs to another account. Switch to @${username} on LeetCode, then sync again.`);
+    throw new Error(`Your LeetCode session belongs to another account. Switch to @${username} on LeetCode; history will retry automatically.`);
   }
 }
 
@@ -100,12 +100,12 @@ export async function fetchSolvedHistory(username: string, onProgress?: (loaded:
     for (let start = 0; start < offsets.length; start += 4) {
       const batch = await Promise.all(offsets.slice(start, start + 4).map(skip => readPage(skip, controller.signal, tabId)));
       for (const page of batch) {
-        if (page.total !== first.total) throw new Error("Your solved list changed during sync. Retry to finish importing it.");
+        if (page.total !== first.total) throw new Error("Your solved list changed during sync. History will retry automatically.");
         page.questions.forEach(q => solved.add(q.titleSlug));
       }
       onProgress?.(solved.size, first.total);
     }
-    if (solved.size !== first.total) throw new Error("LeetCode returned an incomplete solved list. Retry; your saved progress is unchanged.");
+    if (solved.size !== first.total) throw new Error("LeetCode returned an incomplete solved list. History will retry automatically; your saved progress is unchanged.");
     await verifyAccount(username, controller.signal, tabId);
     if (controller.signal.aborted) throw new DOMException("History sync cancelled", "AbortError");
     return { slugs: [...solved], syncedAt: Date.now() };

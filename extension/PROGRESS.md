@@ -17,8 +17,8 @@ LeetCode-linked items use automatic completion, with no editable checkboxes.
 Complete solved history is imported from the matching LeetCode account signed in
 within the same browser. The extension checks account identity before and after
 fetching all accepted-question pages and only saves a complete, valid result.
-History sync runs on opening (cached for 15 minutes), with an explicit **Sync
-history** action; adding or following a plan also requests a sync. Saved solves
+History sync runs on opening (cached for 15 minutes), and retries automatically each minute while open, when the window regains focus,
+and after reconnecting. Adding or following a plan also requests a sync. Saved solves
 immediately apply to every plan, including newly added plans.
 
 Recent public accepted submissions are also checked on opening, every minute
@@ -105,8 +105,8 @@ progress uses the browser's existing LeetCode session, sent only to LeetCode's
 read-only GraphQL endpoint. A small content-script bridge on an open LeetCode tab
 supports browsers that block cross-site session requests; otherwise the extension
 tries the request directly. After updating the extension, refresh an existing
-LeetCode tab to load the bridge. Sign in there using the linked handle, then
-choose **Sync history**.
+LeetCode tab to load the bridge. Sign in there using the linked handle, then reopen the extension.
+History syncing starts automatically; no separate sync button is needed.
 
 No cookies or session tokens are read, stored, or sent to the LeetStreak backend.
 Only question slugs and the sync time are saved locally. No new host permissions,
