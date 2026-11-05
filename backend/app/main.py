@@ -42,7 +42,7 @@ from .codeforces_sync import background_codeforces_sync, user_sync_lock
 from .platform_migration import migrate_platforms
 from .security import current_user, require_self, member_group, owned_group
 from .releases import RELEASE_NOTICES
-from .migrations import migrate_auth
+from .migrations import migrate_auth, migrate_display_preference
 from .recovery import consume_limit, recovery_account, otp_verifier, clear_reset, utcnow
 
 
@@ -78,6 +78,7 @@ except Exception as migration_err:
 
 migrate_platforms(engine)
 migrate_auth(engine)
+migrate_display_preference(engine)
 
 app = FastAPI(title="LeetStreak API")
 
@@ -206,7 +207,8 @@ async def register_user(payload: RegisterRequest, background_tasks: BackgroundTa
         email=clean_email,
         password_hash=hash_password(payload.password),
         avatar_url=data.get("avatar_url"),
-        global_leaderboard_enabled=payload.global_leaderboard_enabled,
+        global_leaderboard_enabled=payload.show_global_leaderboard if payload.show_global_leaderboard is not None else payload.global_leaderboard_enabled,
+        show_global_leaderboard=payload.show_global_leaderboard if payload.show_global_leaderboard is not None else payload.global_leaderboard_enabled,
         created_at=datetime.now(),
     )
     db.add(user)
@@ -232,7 +234,8 @@ async def register_user(payload: RegisterRequest, background_tasks: BackgroundTa
         access_token=token,
         token_type="bearer",
         created_at=user.created_at,
-        global_leaderboard_enabled=user.global_leaderboard_enabled if user.global_leaderboard_enabled is not None else True,
+        global_leaderboard_enabled=user.show_global_leaderboard,
+        show_global_leaderboard=user.show_global_leaderboard,
     )
 
 
@@ -266,7 +269,8 @@ def login_user(payload: LoginRequest, request: Request, db: Session = Depends(ge
         access_token=token,
         token_type="bearer",
         created_at=matched_user.created_at,
-        global_leaderboard_enabled=matched_user.global_leaderboard_enabled if matched_user.global_leaderboard_enabled is not None else True,
+        global_leaderboard_enabled=matched_user.show_global_leaderboard,
+        show_global_leaderboard=matched_user.show_global_leaderboard,
     )
 
 
@@ -440,14 +444,16 @@ def update_user_settings(user_id: int, payload: UpdateSettingsRequest, db: Sessi
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    user.global_leaderboard_enabled = payload.global_leaderboard_enabled
+    user.show_global_leaderboard = payload.show_global_leaderboard if payload.show_global_leaderboard is not None else payload.global_leaderboard_enabled
+    user.global_leaderboard_enabled = user.show_global_leaderboard
     db.commit()
     db.refresh(user)
 
     return {
         "status": "settings_updated",
         "user_id": user_id,
-        "global_leaderboard_enabled": user.global_leaderboard_enabled,
+        "global_leaderboard_enabled": user.show_global_leaderboard,
+        "show_global_leaderboard": user.show_global_leaderboard,
     }
 
 
@@ -508,7 +514,7 @@ def get_ist_today_start() -> datetime:
     return utc_midnight.replace(tzinfo=None)
 
 
-@app.get("/api/users/{user_id}/dashboard", response_model=DashboardResponse)
+@app.get("/api/users/{user_id}/dashboard", response_model=DashboardResponse, response_model_exclude_none=True)
 def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -530,7 +536,7 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Dep
     today_row = next((d for d in last_7 if d.date == today), None)
 
     return DashboardResponse(
-        codeforces_last_sync=user.codeforces_last_sync.replace(tzinfo=timezone.utc) if user.codeforces_last_sync else None, codeforces_sync_error=user.codeforces_sync_error,
+        codeforces_last_sync=user.codeforces_last_sync.replace(tzinfo=timezone.utc) if user.codeforces_last_sync else None, codeforces_sync_error=user.codeforces_sync_error if actor.id == user_id else None,
         codeforces_count=cf_count, codeforces_points=round(float(cf_points), 2), leetcode_points=round((user.points or 0) - round(float(cf_points), 2), 2), points=user.points or 0,
         id=user.id,
         name=user.name,
@@ -546,7 +552,8 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Dep
         monthly_total=total_since_date(month_start),
         created_at=user.created_at,
         last_7_days=last_7,
-        global_leaderboard_enabled=user.global_leaderboard_enabled if user.global_leaderboard_enabled is not None else True,
+        global_leaderboard_enabled=user.show_global_leaderboard if actor.id == user_id else None,
+        show_global_leaderboard=user.show_global_leaderboard if actor.id == user_id else None,
     )
 
 
@@ -671,12 +678,8 @@ def get_global_leaderboard(
 ):
     require_self(actor, user_id)
     user_id = actor.id
-    # Global Leaderboard includes users who have global leaderboard enabled
-    users = (
-        db.query(User)
-        .filter((User.global_leaderboard_enabled == True) | (User.global_leaderboard_enabled.is_(None)))
-        .all()
-    )
+    # Every account participates; the preference controls only the viewer's UI.
+    users = db.query(User).all()
     return _compute_leaderboard(db, users, requester_id=user_id, sort_by=sort_by, limit=limit)
 
 

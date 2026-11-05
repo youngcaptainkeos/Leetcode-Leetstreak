@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   api,
+  showGlobalLeaderboard,
   API_BASE,
   DashboardResponse,
   LeaderboardResponse,
@@ -343,8 +344,8 @@ function Onboarding({
               tabIndex={0}
               title={
                 enableGlobalLeaderboard
-                  ? "Click to disable global leaderboard participation"
-                  : "Click to enable global leaderboard participation"
+                  ? "Hide Global leaderboard on your home page"
+                  : "Show Global leaderboard on your home page"
               }
               onKeyDown={(e) => {
                 if (e.key === " " || e.key === "Enter") {
@@ -357,12 +358,12 @@ function Onboarding({
                 <span className="auth-leaderboard-icon">🌐</span>
                 <div className="auth-leaderboard-text">
                   <span className="auth-leaderboard-title">
-                    Participate in Global Leaderboard
+                    Show Global leaderboard
                   </span>
                   <span className="auth-leaderboard-desc">
                     {enableGlobalLeaderboard
-                      ? "Public leaderboard enabled"
-                      : "Off (friends & squads only)"}
+                      ? "Shown here; everyone participates"
+                      : "Hidden here; you still participate"}
                   </span>
                 </div>
               </div>
@@ -568,7 +569,7 @@ function Dashboard({
       }
 
       let activeTabKey = "global";
-      if (cachedDashObj && cachedDashObj.global_leaderboard_enabled === false) {
+      if (cachedDashObj && !showGlobalLeaderboard(cachedDashObj)) {
         activeTabKey = "friends";
         setSelectedTab("friends");
       } else if (storedTab) {
@@ -617,6 +618,12 @@ function Dashboard({
 
   // Settings & Coffee Modal States
   const [showSettings, setShowSettings] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [changedPassword, setChangedPassword] = useState("");
+  const [securityBusy, setSecurityBusy] = useState(false);
+  const [transferTarget, setTransferTarget] = useState("");
+  const [transferBusy, setTransferBusy] = useState(false);
+  useEffect(() => { if (!showSettings) { setCurrentPassword(""); setChangedPassword(""); } }, [showSettings]);
   const [showCoffeeModal, setShowCoffeeModal] = useState(false);
   useEffect(() => {
     const openSettings = () => {
@@ -729,21 +736,50 @@ function Dashboard({
     return () => clearInterval(interval);
   }, [dash?.codeforces_username, dash?.codeforces_last_sync, dash?.codeforces_sync_error, selectedTab]);
 
+  async function handleChangePassword(event: React.FormEvent) {
+    event.preventDefault();
+    setSecurityBusy(true); setSettingsMsg(null);
+    try {
+      const result = await api.changePassword(userId, currentPassword, changedPassword);
+      await setStored("codestreak_access_token", result.access_token);
+      setCurrentPassword(""); setChangedPassword("");
+      setSettingsMsg("Password changed. Your other sessions have been signed out.");
+    } catch (error) { setSettingsMsg(error instanceof Error ? error.message : "Could not change password."); }
+    finally { setSecurityBusy(false); }
+  }
+
+  async function handleRevokeSessions() {
+    setSecurityBusy(true); setSettingsMsg(null);
+    try { await api.revokeSessions(userId); onResetUser(); }
+    catch (error) { setSettingsMsg(error instanceof Error ? error.message : "Could not sign out sessions."); }
+    finally { setSecurityBusy(false); }
+  }
+
+  async function handleTransferGroup() {
+    if (!activeGroup || !transferTarget) return;
+    const selected = activeGroup.members.find(member => String(member.id) === transferTarget);
+    if (!selected || !window.confirm(`Transfer ownership to ${selected.name}? They will control group management.`)) return;
+    setTransferBusy(true);
+    try { await api.transferGroup(activeGroup.id, selected.id); setTransferTarget(""); await loadData(selectedTab); }
+    catch (error) { setError(error instanceof Error ? error.message : "Could not transfer ownership."); }
+    finally { setTransferBusy(false); }
+  }
+
   async function handleToggleGlobalLeaderboard() {
     if (!dash) return;
-    const currentEnabled = dash.global_leaderboard_enabled !== false;
+    const currentEnabled = showGlobalLeaderboard(dash);
     const nextState = !currentEnabled;
     setTogglingLeaderboard(true);
     setSettingsMsg(null);
     try {
-      await api.updateSettings(userId, { global_leaderboard_enabled: nextState });
-      const updatedDash = { ...dash, global_leaderboard_enabled: nextState };
+      await api.updateSettings(userId, { show_global_leaderboard: nextState });
+      const updatedDash = { ...dash, show_global_leaderboard: nextState };
       setDash(updatedDash);
       setStored("codestreak_cached_dash", JSON.stringify(updatedDash));
       setSettingsMsg(
         nextState
-          ? "Global Leaderboard enabled! 🌐"
-          : "Global Leaderboard disabled! In friends-only mode. 👥"
+          ? "Global view shown. Everyone still participates."
+          : "Global view hidden here. You still participate."
       );
       setTimeout(() => setSettingsMsg(null), 3000);
 
@@ -807,7 +843,7 @@ function Dashboard({
       }
 
       setDash(dashRes);
-      if (dashRes.global_leaderboard_enabled === false && tab === "global") {
+      if (!showGlobalLeaderboard(dashRes) && tab === "global") {
         changeTab("friends");
         return;
       }
@@ -1321,7 +1357,7 @@ function Dashboard({
 
         {/* Board Switcher Tabs */}
         <div className="tab-bar-container" id="groups">
-          {dash?.global_leaderboard_enabled !== false && (
+          {showGlobalLeaderboard(dash) && (
             <button
               className={`tab-btn ${selectedTab === "global" ? "active" : ""}`}
               onClick={() => changeTab("global")}
@@ -1422,6 +1458,11 @@ function Dashboard({
             )}
           </div>
         )}
+
+        {activeGroup?.creator_id === userId && activeGroup.members.some(member => member.id !== userId) && <div className="group-transfer-row">
+          <select aria-label="New group owner" value={transferTarget} onChange={event => setTransferTarget(event.target.value)}><option value="">Choose a new owner</option>{activeGroup.members.filter(member => member.id !== userId).map(member => <option key={member.id} value={member.id}>{member.name}</option>)}</select>
+          <button type="button" className="chip-btn" disabled={!transferTarget || transferBusy} onClick={handleTransferGroup}>{transferBusy ? "Transferring…" : "Transfer ownership"}</button>
+        </div>}
 
         {/* Leaderboard List */}
         <ul className="leaderboard">
@@ -1836,24 +1877,24 @@ function Dashboard({
               <div className="settings-card">
                 <div className="settings-row">
                   <div className="settings-row-text">
-                    <span className="settings-row-label">🌐 Global Leaderboard</span>
+                    <span className="settings-row-label">Show Global leaderboard</span>
                     <span className="settings-row-caption">
-                      {dash?.global_leaderboard_enabled !== false
-                        ? "Visible publicly on global rankings"
-                        : "Hidden publicly (friends-only mode)"}
+                      {showGlobalLeaderboard(dash)
+                        ? "Shown on your home page; everyone participates"
+                        : "Hidden here; you still participate"}
                     </span>
                   </div>
                   <label
                     className="settings-switch"
                     title={
-                      dash?.global_leaderboard_enabled !== false
-                        ? "Click to disable global leaderboard"
-                        : "Click to enable global leaderboard"
+                      showGlobalLeaderboard(dash)
+                        ? "Hide Global leaderboard on your home page"
+                        : "Show Global leaderboard on your home page"
                     }
                   >
                     <input
                       type="checkbox"
-                      checked={dash?.global_leaderboard_enabled !== false}
+                      checked={showGlobalLeaderboard(dash)}
                       onChange={handleToggleGlobalLeaderboard}
                       disabled={togglingLeaderboard}
                     />
@@ -1919,6 +1960,19 @@ function Dashboard({
                 <a className="username-help-link-btn" href="https://codeforces.com/" target="_blank" rel="noreferrer">Open Codeforces ↗</a>
               </div>
             </div>
+
+            <section className="settings-section" aria-label="Account security">
+              <div className="settings-section-title">Security</div>
+              <div className="settings-card">
+                <form className="settings-security-form" onSubmit={handleChangePassword}>
+                  <label className="settings-security-label">Current password<div className="settings-input-wrapper"><input className="settings-text-input" type="password" autoComplete="current-password" value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} required maxLength={100} /></div></label>
+                  <label className="settings-security-label">New password<div className="settings-input-wrapper"><input className="settings-text-input" type="password" autoComplete="new-password" value={changedPassword} onChange={event => setChangedPassword(event.target.value)} required minLength={15} maxLength={100} placeholder="At least 15 characters" /></div></label>
+                  <button className="chip-btn settings-action-btn" type="submit" disabled={securityBusy}>{securityBusy ? "Please wait…" : "Change password"}</button>
+                </form>
+                <span className="settings-input-hint">Changing your password signs out other sessions. Passwords stay only in this open form.</span>
+                <button type="button" className="chip-btn" disabled={securityBusy} onClick={handleRevokeSessions}>Sign out all devices</button>
+              </div>
+            </section>
 
             {/* Section: DANGER ZONE */}
             <div className="settings-section danger-section">

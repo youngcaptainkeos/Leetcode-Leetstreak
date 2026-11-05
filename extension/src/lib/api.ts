@@ -10,7 +10,8 @@ export interface RegisterResponse {
   access_token?: string;
   token_type?: string;
   created_at?: string;
-  global_leaderboard_enabled?: boolean;
+  global_leaderboard_enabled?: boolean; // Deprecated display-only alias.
+  show_global_leaderboard?: boolean;
 }
 
 export interface DayCount {
@@ -71,7 +72,8 @@ export interface DashboardResponse {
   monthly_total: number;
   created_at?: string;
   last_7_days: DayCount[];
-  global_leaderboard_enabled?: boolean;
+  global_leaderboard_enabled?: boolean; // Deprecated display-only alias.
+  show_global_leaderboard?: boolean;
 }
 
 export interface LeaderboardEntry {
@@ -194,10 +196,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  register: (name: string, leetcode_username: string, email: string, password: string, global_leaderboard_enabled: boolean = true, codeforces_username?: string) =>
+  register: (name: string, leetcode_username: string, email: string, password: string, show_global_leaderboard: boolean = true, codeforces_username?: string) =>
     request<RegisterResponse>("/users/register", {
       method: "POST",
-      body: JSON.stringify({ name, leetcode_username, email, password, global_leaderboard_enabled, ...(codeforces_username?.trim() ? { codeforces_username: codeforces_username.trim() } : {}) }),
+      body: JSON.stringify({ name, leetcode_username, email, password, show_global_leaderboard, ...(codeforces_username?.trim() ? { codeforces_username: codeforces_username.trim() } : {}) }),
     }),
   login: (leetcode_username: string, password: string) =>
     request<RegisterResponse>("/users/login", {
@@ -230,7 +232,7 @@ export const api = {
     request<{ status: string; codeforces_username: string }>(`/users/${userId}/codeforces-username`, {
       method: "PUT", body: JSON.stringify({ codeforces_username }),
     }),
-  updateSettings: (userId: number, settings: { global_leaderboard_enabled: boolean }) =>
+  updateSettings: (userId: number, settings: { show_global_leaderboard: boolean }) =>
     request<{ status: string; user_id: number; global_leaderboard_enabled: boolean }>(
       `/users/${userId}/settings`,
       {
@@ -268,6 +270,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ user_id: userId, code }),
     }),
+  transferGroup: (groupId: number, new_owner_id: number) => request<{ status: string }>(`/groups/${groupId}/transfer`, { method: "POST", body: JSON.stringify({ new_owner_id }) }),
   removeMember: (groupId: number, memberUserId: number, requesterUserId: number) =>
     request<{ status: string }>(
       `/groups/${groupId}/members/${memberUserId}?requester_id=${requesterUserId}`,
@@ -307,3 +310,7 @@ export const api = {
   getAppConfig: getAppConfig,
 };
 
+
+export function showGlobalLeaderboard(profile?: { show_global_leaderboard?: boolean; global_leaderboard_enabled?: boolean } | null): boolean {
+  return profile?.show_global_leaderboard ?? profile?.global_leaderboard_enabled ?? true;
+}

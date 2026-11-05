@@ -17,7 +17,7 @@ This is the working checklist for the repository review. It covers every issue a
 - Keep personal details, real test addresses, account exports, credentials, and raw production logs out of this document and its completion evidence.
 - Evidence should identify the check and outcome without including private payloads.
 
-**Current state: 0 of 45 items completed; 3 notification items explicitly deferred.** DATA-09 tracks revision scoring and FEAT-10 tracks direct friendships without shared groups. All acceptance checks below are planned, not already performed. This is a source-based plan, not proof of current production behavior or hosting configuration.
+**Current state: 0 of 45 items completed; 3 notification items explicitly deferred.** DATA-09 tracks revision scoring and FEAT-10 tracks direct friendships without shared groups. Only checks explicitly recorded as passed have been performed locally; unchecked criteria and production release checks remain pending. This is a source-based plan, not proof of current production behavior or hosting configuration.
 
 ### Execution authorization and branch sequence — owner instruction
 
@@ -186,7 +186,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 | M1-03 | SEC-02 fail-closed administration | Passed locally: 22 backend tests; every admin route guarded, production test-email route removed, reviewed release previews and durable duplicate-job guards. Commit labeled `M1 SEC-02 step 3`. Awaiting release; interrupted mail jobs require operator review. |
 | M1-04 | OPS-01 honest email outcomes | Passed locally: 28 backend tests, including mocked acceptance/rejection/failure/timeout, redacted logs, escaped templates, offloaded SMTP, and accepted-only release state updates. Commit labeled `M1 OPS-01 step 4`. No real messages sent; awaiting release. |
 | M1-05 | SEC-03 recovery abuse limits, password policy, session revocation | Backend/local checks passed: 37 tests including recovery, revocation, and additive SQLite migration. Password/reset UI copy and client types updated; password-management settings UI follows M1-06. 3 client session checks, both type checks/builds passed; archives synchronized. Commit labeled `M1 SEC-03 step 5`. Production PostgreSQL migration/release remains pending. |
-| M1-06 | SEC-04 Global display-only preference and group/profile behavior | Not started |
+| M1-06 | SEC-04 Global display-only preference and group/profile behavior | Passed locally: 42 backend + 5 client session/preference tests, both type checks/builds; packages synchronized. Global preference migration, profile field restrictions, transfer/password/session controls implemented. Commit labeled `M1 SEC-04 step 6`; not deployed; full browser visual/release verification remains pending. |
 | M1-07 | SEC-05 synthetic fixture isolation + PUB-01–03 current-source cleanup | Not started |
 | M1-08 | PUB-04 private exposure inventory and concrete remediation proposal | Not started; shared-history rewriting requires approval of the resulting proposal. |
 
@@ -252,7 +252,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 - [x] Store an OTP verifier rather than plaintext; invalidate previous codes on resend and consume a valid code atomically once.
 - [x] Define and enforce the same stronger password policy at registration and reset. Preserve existing users' login compatibility until they change passwords.
 - [x] Add an account session version or equivalent revocation mechanism; password reset invalidates prior tokens.
-- [ ] Add authenticated password change and session-revocation UI where required to complete account management. Keep passwords/codes out of persisted drafts and logs.
+- [x] Add authenticated password change and session-revocation UI where required to complete account management. Keep passwords/codes out of persisted drafts and logs.
 
 **Acceptance**
 
@@ -270,23 +270,23 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Inventory every use of `global_leaderboard_enabled` in backend queries, schemas, signup/settings, navigation, caches, documentation, and both clients. Separate ranking eligibility from display preferences.
-- [ ] Introduce an unambiguous preference such as `show_global_leaderboard`. Migrate each existing true/false value to the corresponding display choice while including every registered user in Global ranking calculations. Document/deprecate the old field for compatible clients; never reset every display preference to true.
-- [ ] Remove participation filters tied to this preference. Global rank, points, period rankings, and inclusion in other people's boards must not change when someone toggles their own Global view.
-- [ ] Hide/show the Global leaderboard navigation and section on that user's homepage/dashboard. When switching it off while Global is selected, move to Friends or another available view. When reopening either client, respect the persisted preference and ignore stale cached Global selection.
-- [ ] Rename signup/settings copy to “Show Global leaderboard,” with an explanation that all users still participate. Remove “hidden publicly,” “friends-only mode,” and equivalent privacy promises tied to this setting.
-- [ ] Write an endpoint-by-viewer permission matrix: public coding profile fields, authenticated account-only fields, group-member data, owner actions, and administrator actions. Accessible profile links must open complete coding stats/recent solves regardless of the profile owner's Global display setting. Keep credential, email, reset, and private settings data separate.
-- [ ] Restrict private-group membership, codes, and group views to authorized members/owners. Implement owner transfer or group deletion before an owner leaves; define safe behavior when the owner deletes their account.
-- [ ] Invalidate private caches after account/membership changes. Feed inclusion and profile access must not be suppressed by the Global display toggle. Friend notifications still follow membership and notification settings; exports still follow account authorization.
+- [x] Inventory every use of `global_leaderboard_enabled` in backend queries, schemas, signup/settings, navigation, caches, documentation, and both clients. Separate ranking eligibility from display preferences.
+- [x] Introduce an unambiguous preference such as `show_global_leaderboard`. Migrate each existing true/false value to the corresponding display choice while including every registered user in Global ranking calculations. Document/deprecate the old field for compatible clients; never reset every display preference to true.
+- [x] Remove participation filters tied to this preference. Global rank, points, period rankings, and inclusion in other people's boards must not change when someone toggles their own Global view.
+- [x] Hide/show the Global leaderboard navigation and section on that user's homepage/dashboard. When switching it off while Global is selected, move to Friends or another available view. When reopening either client, respect the persisted preference and ignore stale cached Global selection.
+- [x] Rename signup/settings copy to “Show Global leaderboard,” with an explanation that all users still participate. Remove “hidden publicly,” “friends-only mode,” and equivalent privacy promises tied to this setting.
+- [x] Write an endpoint-by-viewer permission matrix: public coding profile fields, authenticated account-only fields, group-member data, owner actions, and administrator actions. Accessible profile links must open complete coding stats/recent solves regardless of the profile owner's Global display setting. Keep credential, email, reset, and private settings data separate.
+- [x] Restrict private-group membership, codes, and group views to authorized members/owners. Implement owner transfer or group deletion before an owner leaves; define safe behavior when the owner deletes their account.
+- [x] Invalidate private caches after account/membership changes. Feed inclusion and profile access must not be suppressed by the Global display toggle. Friend notifications still follow membership and notification settings; exports still follow account authorization.
 
 **Acceptance**
 
-- [ ] With Global display off, a user remains ranked and inspectable from another user's Global leaderboard; points/rank eligibility do not change because of the toggle.
-- [ ] The user's own homepage/dashboard hides the Global view in both clients, persists the choice, and does not reopen a stale Global tab. Re-enabling restores access to that view.
-- [ ] Clicking an accessible profile opens its coding stats, activity, points, and recent solves whether its owner has Global display on or off. Private account data remains inaccessible.
-- [ ] Nonmembers cannot read a private group's membership, code, or leaderboard.
-- [ ] Members retain intended access; leaving/removal takes effect on subsequent requests and cached UI. An owner cannot leave a group without completing the agreed ownership-transfer/deletion flow.
-- [ ] Signup/settings/help copy cannot be read as opting out of participation or hiding the account from other people.
+- [x] With Global display off, a user remains ranked and inspectable from another user's Global leaderboard; points/rank eligibility do not change because of the toggle.
+- [x] The user's own homepage/dashboard hides the Global view in both clients, persists the choice, and does not reopen a stale Global tab. Re-enabling restores access to that view.
+- [x] Clicking an accessible profile opens its coding stats, activity, points, and recent solves whether its owner has Global display on or off. Private account data remains inaccessible.
+- [x] Nonmembers cannot read a private group's membership, code, or leaderboard.
+- [x] Members retain intended access; leaving/removal takes effect on subsequent requests and cached UI. An owner cannot leave a group without completing the agreed ownership-transfer/deletion flow.
+- [x] Signup/settings/help copy cannot be read as opting out of participation or hiding the account from other people.
 
 ### SEC-05 — Remove fabricated-profile production behavior
 

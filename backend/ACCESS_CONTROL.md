@@ -20,6 +20,14 @@ The Global display preference is not an opt-out from participation or coding
 profile visibility. Every user remains ranked. Private group access is separate.
 Direct friendships are a later milestone; this does not implement them.
 
+`show_global_leaderboard` is the canonical account preference. Migration
+`20261105-global-display-v1` preserves the old true/false choice once; the old
+`global_leaderboard_enabled` request field remains a deprecated display-only
+alias for transitional clients. No ranking/feed query filters participation by
+either preference. Other users' coding profiles omit these account preferences
+and private sync diagnostics. Owners can transfer to an existing member before
+leaving; account deletion refuses unresolved owned groups.
+
 ## Signing key configuration
 
 Set a stable `JWT_SECRET` of at least 32 bytes using the hosting secret store.

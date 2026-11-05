@@ -35,6 +35,14 @@ test("website publishes a session only after its token is stored", async () => {
 });
 
 for (const source of ["../src/lib/api.ts", "../../web/app/lib/api.ts"]) {
+  test(`${source}: display-only preference preserves old cache choices`, async () => {
+    browser();
+    const { showGlobalLeaderboard } = await bundled(source);
+    assert.equal(showGlobalLeaderboard({ global_leaderboard_enabled: false }), false);
+    assert.equal(showGlobalLeaderboard({ show_global_leaderboard: true, global_leaderboard_enabled: false }), true);
+    assert.equal(showGlobalLeaderboard({ show_global_leaderboard: false }), false);
+    assert.equal(showGlobalLeaderboard(null), true);
+  });
   test(`${source}: authenticated requests, controlled expiry, and stale-response protection`, async () => {
     browser();
     localStorage.setItem("codestreak_access_token", "synthetic-old-token");

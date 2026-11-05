@@ -2842,3 +2842,10 @@ input:focus, form input:focus {
 .diff-pills { grid-template-columns:repeat(5,minmax(0,1fr)); }
 .diff-pills .diff-pill { min-width:0; padding:6px 1px; font-size:9.5px; }
 .modal-content.profile-stats-modal { max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); overflow-y:auto !important; }
+
+/* Account controls share the existing settings card spacing and typography. */
+.settings-security-form { display:flex; flex-direction:column; gap:10px; }
+.settings-security-label { display:flex; flex-direction:column; gap:5px; color:var(--text-secondary); font-size:11px; }
+.settings-security-form .settings-action-btn { align-self:flex-start; }
+.group-transfer-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:8px 0 12px; }
+.group-transfer-row select { flex:1; min-width:0; max-width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text-primary); border-radius:8px; padding:7px; font:inherit; font-size:11px; }

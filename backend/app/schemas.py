@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from typing import List, Optional, Dict
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 import re
 
 
@@ -51,8 +51,15 @@ class RegisterRequest(BaseModel):
     email: str = Field(min_length=3, max_length=120)
     password: str = Field(min_length=15, max_length=100)
     global_leaderboard_enabled: bool = True
+    show_global_leaderboard: Optional[bool] = None
 
     _password_policy = field_validator("password")(validate_new_password)
+
+    @model_validator(mode="after")
+    def consistent_display_choice(self):
+        if "global_leaderboard_enabled" in self.model_fields_set and self.show_global_leaderboard is not None and self.global_leaderboard_enabled != self.show_global_leaderboard:
+            raise ValueError("Conflicting Global display preferences.")
+        return self
 
     @field_validator("email")
     @classmethod
@@ -94,7 +101,16 @@ class UpdateCodeforcesRequest(BaseModel):
 
 
 class UpdateSettingsRequest(BaseModel):
-    global_leaderboard_enabled: bool
+    global_leaderboard_enabled: Optional[bool] = Field(default=None, deprecated=True)
+    show_global_leaderboard: Optional[bool] = None
+
+    @model_validator(mode="after")
+    def consistent_display_choice(self):
+        if self.show_global_leaderboard is None and self.global_leaderboard_enabled is None:
+            raise ValueError("Choose whether to show the Global leaderboard.")
+        if self.show_global_leaderboard is not None and self.global_leaderboard_enabled is not None and self.show_global_leaderboard != self.global_leaderboard_enabled:
+            raise ValueError("Conflicting Global display preferences.")
+        return self
 
 
 class DeleteAccountRequest(BaseModel):
@@ -111,6 +127,7 @@ class RegisterResponse(BaseModel):
     token_type: str = "bearer"
     created_at: Optional[datetime] = None
     global_leaderboard_enabled: bool = True
+    show_global_leaderboard: bool = True
 
 
 class DayCount(BaseModel):
@@ -139,7 +156,8 @@ class DashboardResponse(BaseModel):
     monthly_total: int
     created_at: Optional[datetime] = None
     last_7_days: List[DayCount]
-    global_leaderboard_enabled: bool = True
+    global_leaderboard_enabled: Optional[bool] = None
+    show_global_leaderboard: Optional[bool] = None
 
 
 class LeaderboardEntry(BaseModel):
