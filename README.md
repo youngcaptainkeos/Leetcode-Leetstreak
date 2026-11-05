@@ -171,6 +171,10 @@ LeetStreak is committed to user privacy, transparent data handling, and open-sou
 * ⚖️ **[Terms of Service & EULA](TERMS.md)** (Live Web: [codestreak-api.onrender.com/terms](https://codestreak-api.onrender.com/terms))
 * 🛡️ **[Security Policy](SECURITY.md)**
 * 📑 **[MIT License](LICENSE)**
+* 🛠️ **[Environment Setup Guide](docs/ENVIRONMENT_SETUP.md)**
+* 🧪 **[Testing & Verification Guide](docs/TESTING.md)**
+* 📦 **[Release Procedure](docs/RELEASE_PROCEDURE.md)**
+* ✅ **[Manual Verification Checklist](docs/MANUAL_VERIFICATION_CHECKLIST.md)**
 * 🚀 **[Chrome Web Store Submission Guide](CHROME_STORE_SUBMISSION.md)**
 
 ### ⚠️ Trademark Disclaimer

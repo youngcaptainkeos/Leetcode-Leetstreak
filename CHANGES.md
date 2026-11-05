@@ -4,6 +4,38 @@ This document records all changes made during the autonomous execution of the Le
 
 ---
 
+## 2026-11-06 — Step: OPS-07 / M5 Step 5: Untracked Environments, Clean Staging & Automated Packaging
+
+### Summary of Changes
+Cleaned up repository virtual environments and generated build outputs. Verified that `test_env/`, `venv/`, and `linux_venv/` are completely untracked and enforced through comprehensive ignore rules in `.gitignore` and `.dockerignore`. Removed 5 abandoned historical build artifacts from `extension/dist/assets/` (reducing extension release ZIP archive size from 9.68 MB to 9.42 MB), automated `rm -rf dist` clean staging in `extension/package.json`, published the reproducible environment setup guide `docs/ENVIRONMENT_SETUP.md`, and ensured `scripts/sync_release.py` automates byte-identical mirroring and checksum verification across all 4 release ZIP copies (`./leetstreak.zip`, `./leetstreak_dist.zip`, `./extension/leetstreak.zip`, `./backend/app/leetstreak.zip`).
+
+### Detailed Changes
+1. **Virtual Environment Ignore Rules (`.gitignore` & `.dockerignore`)**:
+   - Enhanced `.gitignore` to comprehensively ignore `venv/`, `linux_venv/`, `*venv*/`, `test_env/`, `*.pyd`, and local database files.
+   - Enhanced `.dockerignore` to ignore `test_env`, `**/linux_venv`, `**/*venv*`, and `private-audit`.
+   - Verified that `git ls-files test_env` and other venvs report zero tracked files.
+
+2. **Clean Staging & Removal of Abandoned Assets**:
+   - Removed obsolete tracked hash bundles in `extension/dist/assets/` (`index-Bxqks-9B.css`, `index-D4eizpAd.css`, `index-D4eizpAd.js`, `index-main.css`, `index-main.js`) using `git rm -r`.
+   - Updated `extension/package.json` build script to wipe staging directory (`rm -rf dist && mkdir -p dist`) before copying active assets, preventing accumulation of stale build artifacts.
+   - Package archive size optimized from 9,680,827 bytes to 9,429,382 bytes.
+
+3. **Reproducible Environment Documentation (`docs/ENVIRONMENT_SETUP.md` & `README.md`)**:
+   - Published `docs/ENVIRONMENT_SETUP.md` documenting prerequisite versions (Python 3.12+, Node 20+), step-by-step virtual environment creation and dependency installation (`pip install -r backend/requirements.txt -r backend/requirements-test.txt`), frontend package setup (`npm ci`), building, running the development server, and environment variable reference.
+   - Linked setup and testing guides in `README.md`.
+
+4. **Automated Package Mirroring & Equality Verification**:
+   - Automated extension package generation and mirroring in `scripts/sync_release.py` and `npm --prefix extension run package`.
+   - Verified byte-identity across all 4 ZIP locations (`./leetstreak.zip`, `./leetstreak_dist.zip`, `./extension/leetstreak.zip`, `./backend/app/leetstreak.zip`) with identical SHA-256 and MD5 hashes (`8790b066b41c6e89a0a9dd811ba18a72`).
+
+### Verification Evidence
+- `git ls-files test_env` returns empty (no tracked environment files in git).
+- `scripts/check_hygiene.py` passed: 0 exposed secrets, valid gitignore rules, clean package archive.
+- `scripts/sync_release.py --verify` passed: all 4 ZIP copies match with 0 divergence.
+- Full verification suite `./scripts/run_checks.sh` passed: 125 backend tests, 8 PostgreSQL tests, 26 extension tests, and browser smoke test (0 runtime errors).
+
+---
+
 ## 2026-11-06 — Step: OPS-06 / M5 Step 4: Regression Coverage, Continuous Integration & Hygiene Checks
 
 ### Summary of Changes

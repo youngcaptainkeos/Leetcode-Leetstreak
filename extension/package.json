@@ -6,7 +6,7 @@
   "scripts": {
     "test:progress": "node --test tests/progress.test.mjs",
     "dev": "vite",
-    "build": "npx esbuild src/main.tsx --bundle --outfile=public/index-main.js --loader:.tsx=tsx --loader:.ts=ts --loader:.css=css --jsx=automatic --minify && cp public/index-main.js index-main.js && cp public/index-main.css index-main.css && cp manifest.json index.html public/ && mkdir -p dist && cp -r public/* dist/",
+    "build": "npx esbuild src/main.tsx --bundle --outfile=public/index-main.js --loader:.tsx=tsx --loader:.ts=ts --loader:.css=css --jsx=automatic --minify && cp public/index-main.js index-main.js && cp public/index-main.css index-main.css && cp manifest.json index.html public/ && rm -rf dist && mkdir -p dist && cp -r public/* dist/",
     "package": "npm run build && (cd dist && zip -FS -qr ../leetstreak.zip .) && cp leetstreak.zip ../leetstreak.zip && cp leetstreak.zip ../leetstreak_dist.zip && cp leetstreak.zip ../backend/app/leetstreak.zip"
   },
   "dependencies": {

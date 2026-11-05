@@ -1,8 +1,12 @@
 # Python / Virtual Environment
 venv/
+linux_venv/
+*venv*/
+test_env/
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 .env
 .env.*
 *.db

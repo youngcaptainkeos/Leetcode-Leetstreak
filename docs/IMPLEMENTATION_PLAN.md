@@ -89,7 +89,7 @@ This is the working checklist for the repository review. It covers every issue a
 - [x] **OPS-04 · P2:** Coordinate sync jobs and provider limits across processes.
 - [x] **OPS-05 · P1:** Make release versions and update metadata accurate.
 - [x] **OPS-06 · P1:** Add regression coverage and continuous checks.
-- [ ] **OPS-07 · P2:** Remove tracked environments and simplify generated output management.
+- [x] **OPS-07 · P2:** Remove tracked environments and simplify generated output management.
 
 ### Product features
 
@@ -849,16 +849,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Remove `test_env/` from Git tracking without deleting a developer's working environment unnecessarily; add an effective ignore rule.
-- [ ] Document reproducible environment installation from maintained dependency files.
-- [ ] Identify authoritative source vs required release output. Remove abandoned generated copies only after confirming all references and consumers.
-- [ ] Automate any ZIP copies that remain necessary; prefer one built artifact copied to the required locations, with checksums proving equality.
+- [x] Remove `test_env/` from Git tracking without deleting a developer's working environment unnecessarily; add an effective ignore rule.
+- [x] Document reproducible environment installation from maintained dependency files.
+- [x] Identify authoritative source vs required release output. Remove abandoned generated copies only after confirming all references and consumers.
+- [x] Automate any ZIP copies that remain necessary; prefer one built artifact copied to the required locations, with checksums proving equality.
 
 **Acceptance**
 
-- [ ] A fresh clone contains no tracked installed environment or dependency tree.
-- [ ] Developers can recreate the environment from documentation.
-- [ ] Builds/downloads still work and required package copies are identical.
+- [x] A fresh clone contains no tracked installed environment or dependency tree.
+- [x] Developers can recreate the environment from documentation.
+- [x] Builds/downloads still work and required package copies are identical.
 
 ## 8. Product feature plans
 

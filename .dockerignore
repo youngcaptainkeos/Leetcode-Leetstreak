@@ -1,6 +1,8 @@
 .git
 **/node_modules
 **/venv
+**/linux_venv
+**/*venv*
 test_env
 **/__pycache__
 **/.env
@@ -10,3 +12,4 @@ test_env
 extension/
 backend/web
 scratch
+private-audit
