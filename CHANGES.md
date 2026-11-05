@@ -4,6 +4,51 @@ This document records all changes made during the autonomous execution of the Le
 
 ---
 
+## 2026-11-06 — Step: OPS-05 / M5 Step 3: Authoritative Release Metadata, Version Consistency & Update Truthfulness
+
+### Summary of Changes
+Established a single authoritative source of truth for release metadata in `backend/app/release_metadata.py`, upgraded canonical semantic versioning across the project from `1.0.0` to `1.1.0` (reflecting all M1-M4 multi-platform, study plan, and friendship features), retired dead Omaha XML / fictitious `.crx` endpoints with HTTP 410 Gone, differentiated mandatory vs recommended updates, provided clear step-by-step reload guides for unpacked extension installations, synchronized and checksummed all 4 ZIP copies, and published `docs/RELEASE_PROCEDURE.md` and automated release validation tooling `scripts/sync_release.py`.
+
+### Detailed Changes
+1. **`backend/app/release_metadata.py`**:
+   - Single authoritative source of truth defining `SEMANTIC_VERSION = "1.1.0"`, `MIN_SUPPORTED_VERSION = "1.0.0"`, `RELEASE_TAG = "v1.1.0"`, recorded Git commit revision, release notes, download URL, update channel, and update instructions.
+   - Dynamically computes SHA-256 and MD5 checksums and byte size of the served `leetstreak.zip` package.
+   - Provides `get_release_metadata()` returning comprehensive release metadata dictionary.
+
+2. **`backend/app/releases.py`**:
+   - Integrated with `release_metadata.py` while preserving existing `"integration-2026-11-05"` notice for test compatibility and adding `"v1.1.0"`.
+
+3. **`backend/app/main.py`**:
+   - Updated `/api/extension/version` to serve canonical `get_release_metadata()`, including artifact checksums and truthful update instructions.
+   - Retired legacy `/api/extension/updates.xml` endpoint with HTTP 410 Gone and explicit deprecation reason ("CRX auto-update manifest has been retired. LeetStreak distributes via manual unpacked ZIP or official browser store releases.").
+   - Updated `/api/config/app` dynamic config version to `SEMANTIC_VERSION` ("1.1.0").
+
+4. **Package & Manifest Version Alignment**:
+   - `extension/manifest.json`: version bumped to `"1.1.0"`.
+   - `extension/package.json`: version bumped to `"1.1.0"`, added `"package"` script to automate building and byte-identical mirroring across all 4 locations.
+   - `web/package.json`: version bumped to `"1.1.0"`.
+
+5. **Client Update Banner & Instructions**:
+   - `extension/src/App.tsx`: updated fallback version to `"1.1.0"`. Added comparison against `min_supported_version` to render `⚠️ Required Update: v{latest_version}` if client is unsupported, and `🚀 Update v{latest_version} Available` if newer. Added toggleable step-by-step instructions explaining how to update unpacked installations (download ZIP, extract, click reload in `chrome://extensions`).
+   - `extension/src/lib/api.ts` & `web/app/lib/api.ts`: updated `VersionCheckResponse` to include `channel`, `update_instructions`, and `checksums`, and made `crx_url` optional.
+   - `README.md`: added "How to Update an Existing Installation" section clearly separating unpacked ZIP reload procedures from automatic store-managed updates.
+
+6. **Release Tooling & Procedure**:
+   - `scripts/sync_release.py`: automated CLI utility to synchronize versions across metadata, manifests, and package files (`--sync`), package and mirror zip archives (`--package`), and verify that all versions and all 4 zip archives are byte-identical (`--verify`).
+   - `docs/RELEASE_PROCEDURE.md`: comprehensive guide detailing authoritative metadata, development vs production branching rules, rollback-compatible deployment order (additive DB migrations -> deploy API -> verify metadata -> build clients -> distribute), artifact verification, and distribution channels.
+
+7. **`backend/tests/test_release_metadata.py`**:
+   - Added 7 unit tests covering canonical metadata endpoint, config version, 410 Gone for retired XML, valid zip download with root manifest inspection, release notice registry, byte-identical mirror verification across all 4 locations, and client-side version comparison logic (older client, current client, unsupported client, future client).
+
+### Verification Evidence
+- `scripts/sync_release.py --verify` passed: canonical version 1.1.0 verified across metadata, `extension/manifest.json`, `extension/package.json`, `web/package.json`, and all 4 ZIP archives confirmed byte-identical (MD5: `2a67b5c41d77362697bc036aa7c36153`, 9,680,827 bytes).
+- 125 backend tests passed with zero failures (`backend/tests`), including all 7 release metadata tests.
+- 8 native PostgreSQL tests passed in `test_postgres_migrations.py`.
+- 26 extension unit tests passed (`extension/tests/*.test.mjs`).
+- Browser smoke test (Playwright in headless Chrome) passed on both extension and website with 0 runtime errors.
+
+---
+
 ## 2026-11-06 — Step: OPS-03 / M5 Step 1: Versioned Atomic Migrations & Safe Startup Lifecycle
 
 ### Summary of Changes

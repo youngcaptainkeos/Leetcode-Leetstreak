@@ -87,7 +87,7 @@ This is the working checklist for the repository review. It covers every issue a
 - [ ] **OPS-02 · P1:** Configure stable signing keys and predictable session behavior.
 - [ ] **OPS-03 · P2:** Remove full archive imports and all-user recalculation from startup.
 - [x] **OPS-04 · P2:** Coordinate sync jobs and provider limits across processes.
-- [ ] **OPS-05 · P1:** Make release versions and update metadata accurate.
+- [x] **OPS-05 · P1:** Make release versions and update metadata accurate.
 - [ ] **OPS-06 · P1:** Add regression coverage and continuous checks.
 - [ ] **OPS-07 · P2:** Remove tracked environments and simplify generated output management.
 
@@ -805,16 +805,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Establish one release metadata source: semantic version, minimum backend/client compatibility, source revision, release notes, and artifact checksums.
-- [ ] Generate the manifest/API update response from the release record and ensure the served archive matches it.
-- [ ] Separate manual ZIP reload instructions from genuine browser/store-managed automatic updates. Remove or repair unsupported CRX/update references; do not promise automatic updating of unpacked installs.
-- [ ] Add a release procedure for branch builds vs public stable builds and a rollback-compatible backend/client order.
+- [x] Establish one release metadata source: semantic version, minimum backend/client compatibility, source revision, release notes, and artifact checksums.
+- [x] Generate the manifest/API update response from the release record and ensure the served archive matches it.
+- [x] Separate manual ZIP reload instructions from genuine browser/store-managed automatic updates. Remove or repair unsupported CRX/update references; do not promise automatic updating of unpacked installs.
+- [x] Add a release procedure for branch builds vs public stable builds and a rollback-compatible backend/client order.
 
 **Acceptance**
 
-- [ ] Downloaded package version, API metadata, source revision, and release notes agree.
-- [ ] Older clients see the appropriate update/compatibility message; current clients do not see a false update.
-- [ ] Installation/update instructions work for the distribution channel actually offered.
+- [x] Downloaded package version, API metadata, source revision, and release notes agree.
+- [x] Older clients see the appropriate update/compatibility message; current clients do not see a false update.
+- [x] Installation/update instructions work for the distribution channel actually offered.
 
 ### OPS-06 — Regression coverage and continuous checks
 

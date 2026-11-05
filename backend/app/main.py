@@ -48,6 +48,7 @@ from .codeforces_client import fetch_profile, CodeforcesError, check_codeforces_
 from .codeforces_sync import background_codeforces_sync, user_sync_lock
 from .security import current_user, require_self, member_group, owned_group
 from .releases import RELEASE_NOTICES
+from .release_metadata import get_release_metadata, SEMANTIC_VERSION
 from .leases import user_sync_lease
 from .migrations import (
     run_all_migrations,
@@ -2022,31 +2023,21 @@ def delete_user_by_id(user_id: int, db: Session = Depends(get_db)):
 
 
 # ==========================================================================
-# 🚀 EXTENSION OVER-THE-AIR (OTA) AUTO-UPDATE ENDPOINTS
+# 🚀 EXTENSION RELEASE & UPDATE METADATA ENDPOINTS
 # ==========================================================================
 @app.get("/api/extension/updates.xml")
 def get_extension_updates_xml():
-    """Serves official Chrome Omaha XML manifest for background auto-updates."""
-    xml_content = """<?xml version='1.0' encoding='UTF-8'?>
-<gupdate xmlns='http://www.google.com/service/update2/crx' protocol='2.0'>
-  <app appid='leetstreak@example.com'>
-    <updatecheck codebase='https://codestreak-api.onrender.com/downloads/leetstreak.crx' version='1.0.0' />
-  </app>
-</gupdate>"""
-    return Response(content=xml_content, media_type="application/xml")
+    """CRX Omaha XML endpoint is retired. Unpacked extensions do not support CRX auto-updates."""
+    raise HTTPException(
+        status_code=410,
+        detail="CRX auto-update manifest has been retired. LeetStreak distributes via manual unpacked ZIP or official browser store releases."
+    )
 
 
 @app.get("/api/extension/version")
 def get_extension_version():
-    """Serves latest extension version info for in-app update notification banner."""
-    return {
-        "latest_version": "1.0.0",
-        "latest_commit": "09d1cfc",
-        "min_supported_version": "1.0.0",
-        "release_notes": "Cleaned up username guide instructions and layout with clear steps and spacious formatting.",
-        "download_url": "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
-        "crx_url": "https://codestreak-api.onrender.com/downloads/leetstreak.crx"
-    }
+    """Serves latest extension version info, release notes, and artifact checksums."""
+    return get_release_metadata()
 
 
 @app.get("/downloads/leetstreak.zip")
@@ -2144,7 +2135,7 @@ DEFAULT_WHATSAPP_SHARE_URL = (
 def get_app_config():
     """Serves dynamic over-the-air app configuration, feature flags, announcements, dynamic menus, and share URLs."""
     return AppConfigResponse(
-        version="1.0.0",
+        version=SEMANTIC_VERSION,
         maintenance_mode=False,
         announcement=None,
         whatsapp_share_url=DEFAULT_WHATSAPP_SHARE_URL,

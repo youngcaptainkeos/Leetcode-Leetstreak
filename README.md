@@ -31,6 +31,16 @@ Follow these simple steps to install **LeetStreak** on Google Chrome, Microsoft 
 2. Click the **Pin icon** (📌) next to **LeetStreak** to keep it accessible.
 3. Click the **LeetStreak icon** to launch!
 
+### 🔄 How to Update an Existing Installation
+Because unpacked extensions installed via Developer Mode do not update automatically in the background, update your extension whenever a new release is available:
+1. Download the latest [`leetstreak.zip`](https://codestreak-api.onrender.com/downloads/leetstreak.zip).
+2. Unzip and replace the files inside your existing extension folder (or extract to a folder of your choice).
+3. Open your browser extensions page (`chrome://extensions`, `edge://extensions`, or `brave://extensions`).
+4. Locate the **LeetStreak** card and click the **Reload icon** (🔄).
+5. Done! The extension is now running the latest version without losing your saved session or settings.
+
+> 💡 *Note on Chrome Web Store*: Once published to the Chrome Web Store, updates are managed and applied automatically by the browser.
+
 ---
 
 ### 🦊 Firefox Setup Guide

@@ -35,6 +35,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [showPointsHelp, setShowPointsHelp] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<VersionCheckResponse | null>(null);
+  const [isUnsupported, setIsUnsupported] = useState(false);
+  const [showUpdateGuide, setShowUpdateGuide] = useState(false);
 
   const [appConfig, setAppConfig] = useState<AppConfigResponse | null>(null);
 
@@ -68,7 +70,7 @@ export default function App() {
         if (info && info.latest_version) {
           const currentVer =
             (typeof chrome !== "undefined" && chrome.runtime?.getManifest?.()?.version) ||
-            "1.0.0";
+            "1.1.0";
           const cParts = currentVer.split(".").map(Number);
           const lParts = info.latest_version.split(".").map(Number);
           let isNewer = false;
@@ -86,6 +88,21 @@ export default function App() {
           }
           if (isNewer) {
             setUpdateInfo(info);
+            const mParts = (info.min_supported_version || "1.0.0").split(".").map(Number);
+            let unsupp = false;
+            for (let i = 0; i < Math.max(cParts.length, mParts.length); i++) {
+              const c = cParts[i] || 0;
+              const m = mParts[i] || 0;
+              if (m > c) {
+                unsupp = true;
+                break;
+              }
+              if (m < c) {
+                unsupp = false;
+                break;
+              }
+            }
+            setIsUnsupported(unsupp);
           }
         }
       } catch (err) {
@@ -163,21 +180,47 @@ export default function App() {
       <div id="daily-reminder-slot" />
 
       {updateInfo && (
-        <div className="update-ota-banner">
-          <div>
-            🚀 <strong>Update v{updateInfo.latest_version} Available!</strong>
-            <div style={{ fontSize: "10px", opacity: 0.85, marginTop: "2px" }}>
-              {updateInfo.release_notes || "Performance fixes and new features available."} (Reinstall/Reload unpacked folder to apply)
+        <div className="update-ota-banner" style={{ flexDirection: "column", alignItems: "stretch", gap: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+            <div style={{ flex: 1 }}>
+              {isUnsupported ? (
+                <strong style={{ color: "#fca5a5" }}>⚠️ Required Update: v{updateInfo.latest_version}</strong>
+              ) : (
+                <strong>🚀 Update v{updateInfo.latest_version} Available!</strong>
+              )}
+              <div style={{ fontSize: "10px", opacity: 0.85, marginTop: "2px" }}>
+                {updateInfo.release_notes || "Performance fixes and new features available."}
+              </div>
             </div>
+            <a
+              href={updateInfo.download_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="update-ota-btn"
+              style={{ whiteSpace: "nowrap" }}
+            >
+              Download ZIP
+            </a>
           </div>
-          <a
-            href={updateInfo.download_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="update-ota-btn"
-          >
-            Update Now
-          </a>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "10px", opacity: 0.8, borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: "4px" }}>
+            <span>Unpacked install: extract ZIP & reload in chrome://extensions</span>
+            <button
+              type="button"
+              onClick={() => setShowUpdateGuide(!showUpdateGuide)}
+              style={{ background: "none", border: "none", color: "var(--primary)", cursor: "pointer", fontSize: "10px", padding: "0 2px", textDecoration: "underline" }}
+            >
+              {showUpdateGuide ? "Hide Steps" : "How to update?"}
+            </button>
+          </div>
+          {showUpdateGuide && (
+            <div style={{ fontSize: "10px", lineHeight: "1.4", background: "rgba(0,0,0,0.25)", padding: "6px 8px", borderRadius: "4px", marginTop: "2px" }}>
+              <ol style={{ paddingLeft: "16px", margin: "0" }}>
+                <li>Download the latest <code>leetstreak.zip</code> package.</li>
+                <li>Extract and replace existing files in your extension folder.</li>
+                <li>Go to <code>chrome://extensions</code> and click the 🔄 reload icon on LeetStreak.</li>
+              </ol>
+            </div>
+          )}
         </div>
       )}
 

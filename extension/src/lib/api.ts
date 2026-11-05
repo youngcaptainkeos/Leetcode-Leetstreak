@@ -154,7 +154,15 @@ export interface VersionCheckResponse {
   min_supported_version: string;
   release_notes: string;
   download_url: string;
-  crx_url: string;
+  crx_url?: string | null;
+  channel?: string;
+  update_instructions?: string;
+  checksums?: {
+    filename?: string;
+    sha256?: string;
+    md5?: string;
+    size_bytes?: number;
+  };
 }
 
 export async function checkExtensionVersion(): Promise<VersionCheckResponse | null> {
