@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
   api,
-  API_BASE,
   DashboardResponse,
   LeaderboardResponse,
   LeaderboardEntry,
@@ -13,6 +12,8 @@ import {
   checkExtensionVersion,
 } from "./lib/api";
 import { getStored, setStored, clearStored } from "./storage";
+import { DailyReminder, ProgressPanel, usePractice } from "./progress/Progress";
+import { PRACTICE_REFRESH } from "./progress/data";
 
 type View = "loading" | "onboarding" | "dashboard";
 type BoardTab = "global" | "friends" | number; // "global", "friends", or groupId
@@ -138,6 +139,7 @@ export default function App() {
           </div>
         )}
       </header>
+      <div id="daily-reminder-slot" />
 
       {updateInfo && (
         <div className="update-ota-banner">
@@ -601,17 +603,6 @@ function Onboarding({
   );
 }
 
-interface ActivityFeedItem {
-  user_id: number;
-  user_name: string;
-  user_handle: string;
-  title: string;
-  title_slug: string;
-  solved_at: string;
-  relative_time: string;
-  leetcode_url: string;
-}
-
 function Dashboard({
   userId,
   onResetUser,
@@ -627,9 +618,23 @@ function Dashboard({
   const [selectedTab, setSelectedTab] = useState<BoardTab>("global");
   const [sortBy, setSortBy] = useState<"points" | "streak">("points");
   const [revealedCodes, setRevealedCodes] = useState<Record<number, boolean>>({});
-  const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
   const [tabBoards, setTabBoards] = useState<Record<string, LeaderboardResponse>>({});
   const [boardLoading, setBoardLoading] = useState<boolean>(false);
+  const [menu, setMenu] = useState<"leaderboards" | "progress">("leaderboards");
+  const practice = usePractice(dash?.leetcode_username || "");
+
+  useEffect(() => {
+    let active = true;
+    getStored(`codestreak_menu_${userId}`).then(value => {
+      if (active && value === "progress") setMenu("progress");
+    });
+    return () => { active = false; };
+  }, [userId]);
+
+  function changeMenu(next: "leaderboards" | "progress") {
+    setMenu(next);
+    void setStored(`codestreak_menu_${userId}`, next);
+  }
 
   const changeTab = (tab: BoardTab) => {
     const tabKey = String(tab);
@@ -654,7 +659,11 @@ function Dashboard({
       if (cachedDash) {
         try {
           cachedDashObj = JSON.parse(cachedDash);
-          setDash(cachedDashObj);
+          if (cachedDashObj?.id === userId) {
+            setDash(cachedDashObj);
+          } else {
+            cachedDashObj = null;
+          }
         } catch (e) {}
       }
 
@@ -673,7 +682,7 @@ function Dashboard({
       }
       // Instant 0ms stale-while-revalidate cached rendering
       const cachedBoard = await getStored(`codestreak_cached_board_${activeTabKey}`) || await getStored("codestreak_cached_board");
-      if (cachedBoard) {
+      if (cachedBoard && cachedDashObj) {
         try {
           const parsed = JSON.parse(cachedBoard);
           setBoard(parsed);
@@ -846,7 +855,7 @@ function Dashboard({
           ? api.friendsLeaderboard(userId, sortMode)
           : api.groupLeaderboard(tab, userId, sortMode);
 
-      const [dashRes, myGroupsRes, boardRes, feedData] = await Promise.all([
+      const [dashRes, myGroupsRes, boardRes] = await Promise.all([
         api.dashboard(userId).catch((err) => {
           if (err.message.includes("404") || err.message.includes("not found")) {
             onResetUser();
@@ -856,9 +865,6 @@ function Dashboard({
         }),
         api.myGroups(userId).catch(() => ({ groups: [] })),
         boardPromise.catch(() => null),
-        fetch(`${API_BASE}/feed/recent-solves?limit=10`)
-          .then((res) => (res.ok ? res.json() : []))
-          .catch(() => []),
       ]);
 
       if (!dashRes) {
@@ -867,6 +873,7 @@ function Dashboard({
       }
 
       setDash(dashRes);
+      window.dispatchEvent(new Event(PRACTICE_REFRESH));
       if (dashRes.global_leaderboard_enabled === false && tab === "global") {
         changeTab("friends");
         return;
@@ -879,7 +886,6 @@ function Dashboard({
         setStored("codestreak_cached_board", JSON.stringify(boardRes));
       }
       setBoardLoading(false);
-      if (Array.isArray(feedData)) setActivityFeed(feedData);
       setError(null);
 
       // Save stale-while-revalidate cache for instant 0ms load next time!
@@ -1196,7 +1202,7 @@ function Dashboard({
   }
 
   if (error && !dash) return <div className="error-banner">{error}</div>;
-  if (!dash || !board) return <div className="centered muted">Loading data…</div>;
+  if (!dash) return <div className="centered muted">Loading data…</div>;
 
   const maxDay = Math.max(1, ...dash.last_7_days.map((d) => d.problems_solved));
   const dayLabels = dash.last_7_days.map((d) =>
@@ -1214,6 +1220,7 @@ function Dashboard({
 
   return (
     <div className="dashboard">
+      <DailyReminder key={`${userId}-${dash.leetcode_username}`} userId={userId} username={dash.leetcode_username} snapshot={practice.snapshot} error={practice.error} retry={practice.retry} />
       {/* Profile Bar */}
       <div className="profile-bar">
         <div className="profile-info">
@@ -1306,6 +1313,12 @@ function Dashboard({
         </div>
       )}
 
+      <div className="practice-menu" role="tablist" aria-label="Extension sections">
+        <button id="leaderboards-menu" role="tab" aria-selected={menu === "leaderboards"} aria-controls="leaderboards-panel" tabIndex={menu === "leaderboards" ? 0 : -1} onClick={() => changeMenu("leaderboards")} onKeyDown={e => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); changeMenu("progress"); document.getElementById("progress-menu")?.focus(); } }}>↗ Leaderboards</button>
+        <button id="progress-menu" role="tab" aria-selected={menu === "progress"} aria-controls="progress-panel" tabIndex={menu === "progress" ? 0 : -1} onClick={() => changeMenu("progress")} onKeyDown={e => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); changeMenu("leaderboards"); document.getElementById("leaderboards-menu")?.focus(); } }}>◉ Progress</button>
+      </div>
+      <div hidden={menu !== "progress"}><ProgressPanel key={`${userId}-${dash.leetcode_username}`} userId={userId} username={dash.leetcode_username} groups={groups} snapshot={practice.snapshot} error={practice.error} active={menu === "progress"} /></div>
+      <div id="leaderboards-panel" role="tabpanel" aria-labelledby="leaderboards-menu" hidden={menu !== "leaderboards"}>
       {/* Unified M3 Hero Container Card */}
       <div className="hero-card">
         <div className="streak-hero">
@@ -1612,6 +1625,8 @@ function Dashboard({
         </ul>
       </div>
 
+      {!board && <div className="progress-note">Leaderboard is unavailable. Use Sync to retry.</div>}
+      </div>
       {/* Inspect Friend Modal */}
       {inspectedFriend && (
         <div className="modal-overlay" onClick={() => setInspectedFriend(null)}>
