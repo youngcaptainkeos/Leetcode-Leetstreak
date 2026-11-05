@@ -88,7 +88,7 @@ This is the working checklist for the repository review. It covers every issue a
 - [ ] **OPS-03 · P2:** Remove full archive imports and all-user recalculation from startup.
 - [x] **OPS-04 · P2:** Coordinate sync jobs and provider limits across processes.
 - [x] **OPS-05 · P1:** Make release versions and update metadata accurate.
-- [ ] **OPS-06 · P1:** Add regression coverage and continuous checks.
+- [x] **OPS-06 · P1:** Add regression coverage and continuous checks.
 - [ ] **OPS-07 · P2:** Remove tracked environments and simplify generated output management.
 
 ### Product features
@@ -826,18 +826,18 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Add deterministic auth/permission, OTP, privacy, counts, streak boundary, scoring, rejudgement, and idempotent-ingestion cases.
-- [ ] Add database migration checks for supported database targets, transactions, uniqueness, and concurrent jobs.
-- [ ] Add client cases for reversed request order, cache identity, account switching, storage migration, plan defaults/removal/empty state, import cancellation, and provider failures.
-- [ ] Use fictional fixtures and mocked providers; normal CI must require no real accounts, email delivery, or production secrets.
-- [ ] Run type checks, relevant tests, builds, and artifact validation in CI. Keep a short explicit manual extension verification checklist for browser-only behaviors.
-- [ ] Add secret/artifact hygiene checks from PUB-03/05 and pin/configure workflow permissions deliberately.
+- [x] Add deterministic auth/permission, OTP, privacy, counts, streak boundary, scoring, rejudgement, and idempotent-ingestion cases.
+- [x] Add database migration checks for supported database targets, transactions, uniqueness, and concurrent jobs.
+- [x] Add client cases for reversed request order, cache identity, account switching, storage migration, plan defaults/removal/empty state, import cancellation, and provider failures.
+- [x] Use fictional fixtures and mocked providers; normal CI must require no real accounts, email delivery, or production secrets.
+- [x] Run type checks, relevant tests, builds, and artifact validation in CI. Keep a short explicit manual extension verification checklist for browser-only behaviors.
+- [x] Add secret/artifact hygiene checks from PUB-03/05 and pin/configure workflow permissions deliberately.
 
 **Acceptance**
 
-- [ ] A clean checkout can run documented checks with synthetic data.
-- [ ] A regression in a fixed P0/P1 path fails its corresponding check.
-- [ ] CI cannot contact production, send real test emails, or publish private fixtures by default.
+- [x] A clean checkout can run documented checks with synthetic data.
+- [x] A regression in a fixed P0/P1 path fails its corresponding check.
+- [x] CI cannot contact production, send real test emails, or publish private fixtures by default.
 
 ### OPS-07 — Tracked environments and generated outputs
 

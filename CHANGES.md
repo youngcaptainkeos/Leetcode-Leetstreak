@@ -4,6 +4,53 @@ This document records all changes made during the autonomous execution of the Le
 
 ---
 
+## 2026-11-06 — Step: OPS-06 / M5 Step 4: Regression Coverage, Continuous Integration & Hygiene Checks
+
+### Summary of Changes
+Established full continuous regression checks and automated quality gates across backend services, client packages, database migrations, and repository hygiene. Added GitHub Actions CI configuration (`.github/workflows/ci.yml`) with pinned permissions and native PostgreSQL service container, created a comprehensive local verification runner (`scripts/run_checks.sh`), built an automated secret and package hygiene scanner (`scripts/check_hygiene.py`), and published testing and contributor guidance (`docs/TESTING.md`) alongside a manual extension verification checklist (`docs/MANUAL_VERIFICATION_CHECKLIST.md`).
+
+### Detailed Changes
+1. **`.github/workflows/ci.yml`**:
+   - Pinned deliberate minimal permissions (`contents: read`).
+   - `backend-checks` job: runs 125 backend tests in Python 3.12 with SQLite & synthetic fixtures, and spins up a native PostgreSQL 16 service container to run concurrent multi-threaded advisory lock migration checks with `LEETSTREAK_TEST_POSTGRES_URL`.
+   - `frontend-checks` job: runs TypeScript type check (`npm --prefix web run check`), 26 client unit tests (`node --test extension/tests/*.test.mjs`), website build (`npm --prefix web run build`), extension packaging (`scripts/sync_release.py --package`), and release archive consistency & checksum validation (`scripts/sync_release.py --verify`).
+   - `hygiene-checks` job: executes repository secret and release artifact cleanliness checks (`scripts/check_hygiene.py`).
+
+2. **`scripts/check_hygiene.py`**:
+   - Automated validator scanning all tracked source files for private cryptographic keys, live API tokens, production credentials, and forbidden file names (`.env.production`, `.env.local`, SSH keys).
+   - Validates release package `leetstreak.zip` to ensure it contains no `.git`, `.env`, `node_modules`, `.DS_Store`, or `__pycache__` artifacts.
+   - Verifies `.gitignore` properly excludes virtual environments (`test_env`), `node_modules`, `.env`, and local `.db` files.
+
+3. **`scripts/run_checks.sh`**:
+   - One-command local runner executing the entire 7-stage verification suite:
+     1. Secret and artifact hygiene scanner
+     2. Website TypeScript type check
+     3. Client unit tests (26 tests)
+     4. Web build and extension packaging
+     5. Release consistency and byte-identical ZIP checks
+     6. Backend unit tests (125 tests)
+     7. Native PostgreSQL migration and concurrency checks
+     - Optional bonus: Headless Chrome browser smoke test (extension popup & web dashboard).
+
+4. **`docs/TESTING.md`**:
+   - Comprehensive testing and contributor documentation explaining synthetic fixtures (fictional identities, `@example.com` email addresses, mocked external providers), deterministic isolation, test module mapping, and local verification instructions.
+
+5. **`docs/MANUAL_VERIFICATION_CHECKLIST.md`**:
+   - Explicit manual checklist for browser-only behaviors: Developer Mode unpacked loading, popup dimensions and Material Design theme, points rulebook modal, update banner and manual reload guide, session persistence across popup closes, password revocation, Codeforces verification challenge, study plan playlists, direct friends search, and LeetCode in-page content script DOM injection without CSP violations.
+
+### Verification Evidence
+- `./scripts/run_checks.sh` executed cleanly and passed 100% of all stages:
+  - Hygiene scan: 0 secrets, clean release package, valid gitignore.
+  - TypeScript check: 0 errors (`tsc --noEmit`).
+  - Client unit tests: 26 tests passed in 306ms.
+  - Build & packaging: website and extension built, 4 ZIP copies mirrored and verified.
+  - Release consistency: canonical version 1.1.0 verified across metadata and archives.
+  - Backend tests: 125 tests passed in 43s.
+  - Native PostgreSQL tests: 8 tests passed in 1.3s against PostgreSQL 16.
+  - Headless Chrome browser smoke test: extension and website tested with 0 console runtime errors.
+
+---
+
 ## 2026-11-06 — Step: OPS-05 / M5 Step 3: Authoritative Release Metadata, Version Consistency & Update Truthfulness
 
 ### Summary of Changes
