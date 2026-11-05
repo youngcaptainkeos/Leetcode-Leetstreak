@@ -1,15 +1,23 @@
 """Versioned, additive authentication migration; never touches solve awards."""
 from sqlalchemy import Column, MetaData, String, Table, inspect, text
+from contextlib import contextmanager
 
 metadata = MetaData()
 versions = Table("schema_migrations", metadata, Column("version", String(80), primary_key=True))
 
 
-def migrate_auth(engine):
-    metadata.create_all(engine)
+@contextmanager
+def migration_connection(engine):
+    """Lock before creating the version registry, including on a fresh database."""
     with engine.begin() as connection:
         if connection.dialect.name == "postgresql":
             connection.execute(text("SELECT pg_advisory_xact_lock(72635001)"))
+        metadata.create_all(connection)
+        yield connection
+
+
+def migrate_auth(engine):
+    with migration_connection(engine) as connection:
         version = "20261105-auth-v1"
         if connection.execute(versions.select().where(versions.c.version == version)).first():
             return
@@ -28,10 +36,7 @@ def migrate_auth(engine):
 
 
 def migrate_display_preference(engine):
-    metadata.create_all(engine)
-    with engine.begin() as connection:
-        if connection.dialect.name == "postgresql":
-            connection.execute(text("SELECT pg_advisory_xact_lock(72635001)"))
+    with migration_connection(engine) as connection:
         version = "20261105-global-display-v1"
         if connection.execute(versions.select().where(versions.c.version == version)).first():
             return

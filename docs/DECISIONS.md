@@ -144,3 +144,10 @@ Approval shorthand is fine: “Approve the recommendations except Dxx: …”. I
 | 2026-11-05 | Owner authorized milestone implementation on pre-launch with a labeled commit/push and notification after every successful step. M1-01 passed seven synthetic authentication/configuration checks; no production changes. |
 
 | 2026-11-05 | Owner confirmed recurring revision rewards seven days after first solve/last rewarded revision; unrewarded attempts do not restart the clock. No M2 scoring implementation performed yet. |
+
+### Additional owner confirmations — 2026-11-05
+
+- New users may earn daily bonuses on future live solves; imported historical solves receive base points only.
+- Eligible recurring revisions apply the streak multiplier to their 2-point base. Revision/daily stacking remains open.
+- Daily reminders and eligibility follow the current official challenge even if it changes within an IST day; product day boundaries remain IST.
+- Owner confirmed the exposed legacy Render credentials revoked; Supabase password was regenerated and the primary service database reads passed after redeployment. The old passwords were not probed. Public history publication and production release checkpoints remain separate.

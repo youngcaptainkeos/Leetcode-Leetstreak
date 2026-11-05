@@ -12,7 +12,7 @@ import {
   DynamicMenuItem,
 } from "./lib/api";
 import { getStored, setStored, clearStored, getAccountStored, setAccountStored } from "./storage";
-import { navigate } from "./session";
+import { navigate, setSessionUserId } from "./session";
 import { IS_WEBSITE, assetUrl } from "./lib/runtime";
 
 type BoardTab = "global" | "friends" | number;
@@ -741,7 +741,8 @@ function Dashboard({
     setSecurityBusy(true); setSettingsMsg(null);
     try {
       const result = await api.changePassword(userId, currentPassword, changedPassword);
-      await setStored("codestreak_access_token", result.access_token);
+      // Dashboard storage is account-scoped; credentials belong to the session.
+      setSessionUserId(userId, result.access_token);
       setCurrentPassword(""); setChangedPassword("");
       setSettingsMsg("Password changed. Your other sessions have been signed out.");
     } catch (error) { setSettingsMsg(error instanceof Error ? error.message : "Could not change password."); }

@@ -34,6 +34,20 @@ test("website publishes a session only after its token is stored", async () => {
   assert.equal(localStorage.getItem("codestreak_access_token"), null);
 });
 
+test("same-account token refresh updates the session credential and preserves its caches", async () => {
+  browser();
+  const session = await bundled("../../web/app/session.ts");
+  session.setSessionUserId(2, "synthetic-old-token");
+  localStorage.setItem("codestreak_account_2:cached_dashboard", "synthetic-cache");
+  let observedToken;
+  window.addEventListener("leetstreak:session", () => { observedToken = localStorage.getItem("codestreak_access_token"); });
+  session.setSessionUserId(2, "synthetic-new-token");
+  assert.equal(observedToken, "synthetic-new-token");
+  assert.equal(localStorage.getItem("codestreak_access_token"), "synthetic-new-token");
+  assert.equal(localStorage.getItem("codestreak_account_2:cached_dashboard"), "synthetic-cache");
+  assert.equal(localStorage.getItem("codestreak_account_2:codestreak_access_token"), null);
+});
+
 for (const source of ["../src/lib/api.ts", "../../web/app/lib/api.ts"]) {
   test(`${source}: display-only preference preserves old cache choices`, async () => {
     browser();

@@ -93,6 +93,24 @@ in the current development checkout, or use a separately created local virtual
 environment with `backend/requirements.txt`. No production database or provider
 credentials should be required. Tests must select isolated temporary databases.
 
+### PostgreSQL and browser acceptance
+
+Install `backend/requirements-test.txt` into a local virtual environment for the
+optional browser checks. Build both clients first. Run
+`python backend/tests/browser_smoke.py` with Playwright Chromium installed, or
+set `LEETSTREAK_CHROME_EXECUTABLE` to a local Chrome/Chromium executable.
+`LEETSTREAK_BROWSER_EVIDENCE_DIR` optionally selects a private output directory;
+otherwise evidence goes into a temporary directory. The script uses synthetic
+accounts, isolated SQLite, mocked providers and intercepted API requests. It
+checks the popup in browser-preview mode and the website; native extension
+background/content-script acceptance is a separate M3 check.
+
+To exercise PostgreSQL migrations, supply `LEETSTREAK_TEST_POSTGRES_URL` when
+running the backend tests. The test refuses non-loopback hosts or database names
+without the `leetstreak_test_` prefix. It uses a temporary schema per check and
+verifies additive changes, retained solve awards/preferences, concurrent registry
+creation, transaction rollback and safe retry. Never point it at production.
+
 ## Release checkpoint
 
 These changes are developed on `pre-launch`. Do not deploy until the production
