@@ -1,8 +1,11 @@
 import plans from "../data/study-plans.json";
+import strivers from "../data/strivers-a2z.json";
 
 // Public studyPlanV2Detail snapshots from LeetCode, retrieved 2026-11-05.
 // Bundled so the complete question lists remain available offline.
-export const STUDY_PLANS = plans;
+export const STUDY_PLANS: StudyPlan[] = plans;
+export interface StudyQuestion { title: string; titleSlug: string; difficulty: string; url?: string; leetcodeSlug?: string; kind?: "learning" | "practice" }
+export interface StudyPlan { name: string; slug: string; planSubGroups: { name: string; questions: StudyQuestion[] }[]; source?: "leetcode" | "takeuforward"; sourceUrl?: string; snapshotDate?: string }
 export const PRACTICE_REFRESH = "leetstreak:practice-refresh";
 export interface Submission { title: string; titleSlug: string; timestamp: string }
 export interface PracticeSnapshot {
@@ -10,16 +13,136 @@ export interface PracticeSnapshot {
   submissions: Submission[];
   checkedAt: number;
 }
-export interface ProgressState { followed: string[]; manual: string[]; observed: string[] }
-export const emptyProgress = (): ProgressState => ({ followed: [], manual: [], observed: [] });
+export interface ProgressState { followed: string[]; manual: string[]; observed: string[]; customPlans: StudyPlan[]; hiddenPlans: string[] }
+export const emptyProgress = (): ProgressState => ({ followed: [], manual: [], observed: [], customPlans: [], hiddenPlans: [] });
+
+export function parsePlanSlug(input: string): string {
+  let slug = input.trim();
+  if (/^(?:www\.)?leetcode\.com\//i.test(slug)) slug = `https://${slug}`;
+  if (slug.startsWith("https://")) {
+    const url = new URL(slug);
+    if (!["leetcode.com", "www.leetcode.com"].includes(url.hostname) || url.port || url.username || url.password) {
+      throw new Error("Paste a study-plan link from leetcode.com.");
+    }
+    const match = url.pathname.match(/^\/studyplan\/([^/]+)\/?$/);
+    if (!match) throw new Error("Use a link like https://leetcode.com/studyplan/30-days-of-javascript/.");
+    slug = match[1];
+  }
+  if (slug.length > 100 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+    throw new Error("Enter a LeetCode study-plan link or its slug, such as 30-days-of-javascript.");
+  }
+  return slug;
+}
+
+export function parsePlanInput(input: string): { source: "leetcode" | "takeuforward"; slug: string } {
+  let raw = input.trim();
+  if (raw === strivers.slug) return { source: "takeuforward", slug: strivers.slug };
+  if (/^(?:www\.)?takeuforward\.org\//i.test(raw)) raw = `https://${raw}`;
+  if (raw.startsWith("https://")) {
+    const url = new URL(raw);
+    if (["takeuforward.org", "www.takeuforward.org"].includes(url.hostname)) {
+      if (url.username || url.password || url.port || url.pathname.replace(/\/$/, "") !== "/prep-hub/strivers-a2z-dsa-sheet") {
+        throw new Error("Use the public Striver’s A2Z DSA sheet link from takeuforward.org/prep-hub/.");
+      }
+      return { source: "takeuforward", slug: strivers.slug };
+    }
+  }
+  try { return { source: "leetcode", slug: parsePlanSlug(raw) }; }
+  catch { throw new Error("Use a LeetCode study-plan link or Striver’s A2Z sheet link from takeuforward.org."); }
+}
+
+function isSafeSourceUrl(value: unknown): value is string {
+  if (typeof value !== "string" || value.length > 1000) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password && !url.port &&
+      ["leetcode.com", "www.leetcode.com", "takeuforward.org", "www.takeuforward.org"].includes(url.hostname);
+  } catch { return false; }
+}
+
+export function questionUrl(question: StudyQuestion): string {
+  return question.url && isSafeSourceUrl(question.url) ? question.url : `https://leetcode.com/problems/${question.titleSlug}/`;
+}
+
+export function questionSolved(question: StudyQuestion, state: Pick<ProgressState, "manual" | "observed">): boolean {
+  return state.manual.includes(question.titleSlug) || state.observed.includes(question.leetcodeSlug || question.titleSlug);
+}
+
+export function readStudyPlan(value: unknown): StudyPlan | null {
+  try {
+    const plan = value as StudyPlan;
+    if (!plan || typeof plan.name !== "string" || !plan.name.trim() || plan.name.length > 150 ||
+      typeof plan.slug !== "string" || parsePlanSlug(plan.slug) !== plan.slug ||
+      !Array.isArray(plan.planSubGroups) || !plan.planSubGroups.length || plan.planSubGroups.length > 200) return null;
+    if (plan.source && !["leetcode", "takeuforward"].includes(plan.source)) return null;
+    if (plan.sourceUrl !== undefined && !isSafeSourceUrl(plan.sourceUrl)) return null;
+    if (plan.snapshotDate !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(plan.snapshotDate)) return null;
+    const groups: StudyPlan["planSubGroups"] = [];
+    const seen = new Set<string>();
+    const names = new Set<string>();
+    let total = 0;
+    for (const group of plan.planSubGroups) {
+      if (!group || typeof group.name !== "string" || !group.name.trim() || group.name.length > 150 ||
+        names.has(group.name) || !Array.isArray(group.questions)) return null;
+      names.add(group.name);
+      const questions: StudyPlan["planSubGroups"][number]["questions"] = [];
+      for (const question of group.questions) {
+        if (++total > 1000 || !question || typeof question.title !== "string" || !question.title.trim() || question.title.length > 300 ||
+          typeof question.titleSlug !== "string" || question.titleSlug.length > 200 || !/^[a-z0-9-]+$/.test(question.titleSlug) ||
+          !["EASY", "MEDIUM", "HARD", "BASIC", "CORE", "PRO", "LESSON", "PRACTICE"].includes(question.difficulty)) return null;
+        if (question.url !== undefined && !isSafeSourceUrl(question.url)) return null;
+        if (question.leetcodeSlug !== undefined && !/^[a-z0-9-]{1,200}$/.test(question.leetcodeSlug)) return null;
+        if (question.kind !== undefined && !["learning", "practice"].includes(question.kind)) return null;
+        if (plan.source === "takeuforward" && !question.url) return null;
+        if (!seen.has(question.titleSlug)) {
+          seen.add(question.titleSlug);
+          questions.push({ title: question.title, titleSlug: question.titleSlug, difficulty: question.difficulty, ...(question.url ? { url: question.url } : {}), ...(question.leetcodeSlug ? { leetcodeSlug: question.leetcodeSlug } : {}), ...(question.kind ? { kind: question.kind } : {}) });
+        }
+      }
+      if (questions.length) groups.push({ name: group.name, questions });
+    }
+    return groups.length ? { name: plan.name.trim(), slug: plan.slug, planSubGroups: groups, ...(plan.source ? { source: plan.source } : {}), ...(plan.sourceUrl ? { sourceUrl: plan.sourceUrl } : {}), ...(plan.snapshotDate ? { snapshotDate: plan.snapshotDate } : {}) } : null;
+  } catch { return null; }
+}
 
 export function readProgress(raw: string | null): ProgressState {
   try {
     const parsed = JSON.parse(raw || "{}");
     const strings = (value: unknown): string[] => Array.isArray(value)
       ? [...new Set(value.filter((s): s is string => typeof s === "string"))] : [];
-    return { followed: strings(parsed.followed).filter(slug => plans.some(p => p.slug === slug)), manual: strings(parsed.manual), observed: strings(parsed.observed) };
+    const customPlans = Array.isArray(parsed.customPlans) ? [...new Map(parsed.customPlans
+      .map(readStudyPlan).filter((p: StudyPlan | null): p is StudyPlan => p !== null && !plans.some(b => b.slug === p.slug))
+      .map((p: StudyPlan) => [p.slug, p] as const)).values()] as StudyPlan[] : [];
+    const available = new Set([...plans, ...customPlans].map(p => p.slug));
+    const hiddenPlans = strings(parsed.hiddenPlans).filter(slug => available.has(slug));
+    return { followed: strings(parsed.followed).filter(slug => available.has(slug) && !hiddenPlans.includes(slug)), manual: strings(parsed.manual), observed: strings(parsed.observed), customPlans, hiddenPlans };
   } catch { return emptyProgress(); }
+}
+
+export function addStudyPlan(state: ProgressState, plan: StudyPlan): ProgressState {
+  return {
+    ...state,
+    customPlans: STUDY_PLANS.some(p => p.slug === plan.slug) ? state.customPlans : [...state.customPlans.filter(p => p.slug !== plan.slug), plan],
+    hiddenPlans: state.hiddenPlans.filter(slug => slug !== plan.slug),
+    followed: [...new Set([...state.followed, plan.slug])],
+  };
+}
+
+export function removeStudyPlan(state: ProgressState, slug: string): ProgressState {
+  return {
+    ...state,
+    customPlans: state.customPlans.filter(p => p.slug !== slug),
+    hiddenPlans: STUDY_PLANS.some(p => p.slug === slug) ? [...new Set([...state.hiddenPlans, slug])] : state.hiddenPlans.filter(s => s !== slug),
+    followed: state.followed.filter(s => s !== slug),
+  };
+}
+
+export function visiblePlans(state: ProgressState): StudyPlan[] {
+  return [...STUDY_PLANS, ...state.customPlans].filter(plan => !state.hiddenPlans.includes(plan.slug));
+}
+
+export function restoreStarterPlans(state: ProgressState): ProgressState {
+  return { ...state, hiddenPlans: state.hiddenPlans.filter(slug => !STUDY_PLANS.some(plan => plan.slug === slug)) };
 }
 
 export function progressKey(userId: number, username: string) {
@@ -40,14 +163,13 @@ function validSubmissions(rows: Submission[]): Submission[] {
     Number(s.timestamp) > 0 && Number(s.timestamp) * 1000 < 8640000000000000);
 }
 
-export function planCounts(plan: typeof plans[number], state: ProgressState) {
-  const solved = new Set([...state.observed, ...state.manual]);
+export function planCounts(plan: StudyPlan, state: Pick<ProgressState, "manual" | "observed">) {
   const questions = [...new Map(plan.planSubGroups.flatMap(g => g.questions).map(q => [q.titleSlug, q])).values()];
-  const done = questions.filter(q => solved.has(q.titleSlug)).length;
-  return { done, total: questions.length, percent: Math.round(done / questions.length * 100), next: questions.find(q => !solved.has(q.titleSlug)) };
+  const done = questions.filter(q => questionSolved(q, state)).length;
+  return { done, total: questions.length, percent: questions.length ? Math.round(done / questions.length * 1000) / 10 : 0, next: questions.find(q => !questionSolved(q, state)) };
 }
 
-async function graphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
+async function graphql<T>(query: string, variables: Record<string, unknown>, label = "public activity"): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 14000);
   try {
@@ -58,9 +180,25 @@ async function graphql<T>(query: string, variables: Record<string, unknown>): Pr
     });
     if (!response.ok) throw new Error("LeetCode is unavailable. Try refreshing in a moment.");
     const body = await response.json();
-    if (body.errors || !body.data) throw new Error("LeetCode could not return public activity. Try again shortly.");
+    if (body.errors || !body.data) throw new Error(`LeetCode could not return ${label}. Try again shortly.`);
     return body.data;
   } finally { clearTimeout(timeout); }
+}
+
+export async function fetchStudyPlan(input: string): Promise<StudyPlan> {
+  const { source, slug } = parsePlanInput(input);
+  if (source === "takeuforward") {
+    const plan = readStudyPlan(strivers);
+    if (!plan) throw new Error("The bundled Striver’s sheet could not be loaded.");
+    return plan;
+  }
+  const result = await graphql<{ studyPlanV2Detail: unknown }>(
+    `query extensionStudyPlan($slug: String!) { studyPlanV2Detail(planSlug: $slug) {
+      name slug planSubGroups { name questions { title titleSlug difficulty } }
+    } }`, { slug }, "this study plan");
+  const plan = readStudyPlan(result.studyPlanV2Detail);
+  if (!plan || plan.slug !== slug) throw new Error("That study plan is unavailable. Check its link and try again.");
+  return plan;
 }
 
 const snapshots = new Map<string, PracticeSnapshot>();

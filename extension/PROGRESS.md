@@ -22,6 +22,47 @@ Followed plans, observed solves, and manual checkmarks are stored locally for ea
 LeetStreak account and linked LeetCode handle. Removing a followed plan preserves
 its progress. This local progress does not sync between browsers or devices.
 
+## Add, remove, and restore plans
+
+New users see SQL 50, LeetCode 75, and Top Interview 150. In **Progress → Add plan**,
+paste a public LeetCode study-plan URL (or its slug), then choose **Add & follow**.
+For example, `https://leetcode.com/studyplan/30-days-of-javascript/` loads its
+current public question list directly from LeetCode. Re-adding an existing plan
+selects and follows it without creating duplicates. Imported lists are saved
+locally and remain available offline. Invalid links, unavailable plans, malformed
+responses, and cancelled imports leave existing plans intact.
+
+Every selected plan has a **Remove plan** button. Starter plans are hidden when
+removed; imported lists are removed from the library. Solved history is retained.
+When every plan has been removed, the UI shows a compact empty state with **Add a
+plan** and **Restore starter plans** actions. An empty library survives reopening
+the extension. Restoration or re-importing restores progress rather than resetting
+it.
+
+### External provider: Striver's A2Z
+
+The importer also accepts:
+`https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet?open=none`
+
+This provider uses a bundled public metadata snapshot dated November 5, 2026:
+495 items across 84 sections, including practice problems and lessons. Only public
+item names, categories, difficulty labels, and links are included; no solutions,
+paid lesson content, login state, cookies, or user progress are imported.
+The snapshot date and source link appear on the plan. Future sheet changes require
+updating this snapshot in an extension release.
+
+Questions with a public LeetCode problem link are matched to observed accepted
+LeetCode submissions. Other questions and lessons are completed manually. The
+same LeetCode problem can complete multiple items if the source sheet references
+it more than once. Questions open their LeetCode link where supplied, otherwise
+the public takeUforward article or the source sheet.
+
+The three LeetCode plans remain the only defaults; Striver's sheet is added only
+when requested. Supported sources are explicitly validated. Additional external
+sites require a provider adapter rather than fetching arbitrary pasted URLs.
+Striver import works offline from its bundled snapshot and needs no new host
+permissions or backend changes.
+
 **What are my friends up to?**, above the playlists, uses members of your existing LeetStreak groups,
 excluding yourself and deduplicating shared members. It retrieves each friend's
 three most recent public accepted submissions, shows the latest 15 across the
