@@ -170,6 +170,12 @@ export interface GroupListResponse {
   groups: GroupResponse[];
 }
 
+export const AUTH_EXPIRED = "leetstreak:auth-expired";
+
+export class ApiError extends Error {
+  constructor(message: string, public status: number) { super(message); this.name = "ApiError"; }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = await getStored("codestreak_access_token");
   const res = await fetch(`${API_BASE}${path}`, {
@@ -178,12 +184,17 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || `Request failed (${res.status})`);
+    if (res.status === 401 && !path.startsWith("/users/login") && !path.startsWith("/users/register") && !path.startsWith("/users/forgot-password")) {
+      if ((await getStored("codestreak_access_token")) === token) window.dispatchEvent(new Event(AUTH_EXPIRED));
+    }
+    const detail = typeof body.detail === "string" ? body.detail : Array.isArray(body.detail) ? body.detail.map((item: { msg?: string }) => item.msg || "Invalid input").join(". ") : `Request failed (${res.status})`;
+    throw new ApiError(detail, res.status);
   }
   return res.json();
 }
 
 export const api = {
+  activityFeed: () => request<any[]>("/feed/recent-solves?limit=10"),
   register: (name: string, leetcode_username: string, email: string, password: string, global_leaderboard_enabled: boolean = true, codeforces_username?: string) =>
     request<RegisterResponse>("/users/register", {
       method: "POST",

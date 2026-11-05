@@ -6,10 +6,10 @@ const SESSION_EVENT = "leetstreak:session";
 export function getSessionUserId(): number | null {
   const stored = localStorage.getItem(SESSION_KEY);
   const id = stored ? Number(stored) : NaN;
-  return Number.isSafeInteger(id) && id > 0 ? id : null;
+  return Number.isSafeInteger(id) && id > 0 && localStorage.getItem("codestreak_access_token") ? id : null;
 }
 
-export function setSessionUserId(id: number | null): void {
+export function setSessionUserId(id: number | null, token?: string): void {
   if (id !== null && (!Number.isSafeInteger(id) || id <= 0)) throw new Error("Invalid account ID");
   // Account-specific caches and unfinished form drafts must not survive sign-out.
   if (id === null || id !== getSessionUserId()) {
@@ -17,6 +17,7 @@ export function setSessionUserId(id: number | null): void {
   }
   if (id === null) localStorage.removeItem(SESSION_KEY);
   else localStorage.setItem(SESSION_KEY, String(id));
+  if (id !== null && token) localStorage.setItem("codestreak_access_token", token);
   window.dispatchEvent(new Event(SESSION_EVENT));
 }
 

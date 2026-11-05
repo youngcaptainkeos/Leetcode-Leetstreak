@@ -29,7 +29,7 @@ from .schemas import (
     GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema, PointBreakdownSchema,
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
     KudosToggleRequest, KudosAllRequest, UpdateUsernameRequest, UpdateSettingsRequest, ActivityFeedItemSchema,
-    DynamicMenuItem, AppConfigResponse, DeleteAccountRequest, SyncRequest, UpdateCodeforcesRequest,
+    DynamicMenuItem, AppConfigResponse, DeleteAccountRequest, SyncRequest, UpdateCodeforcesRequest, GroupTransferRequest,
 )
 from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
@@ -39,6 +39,7 @@ from .platforms import daily_counts, solve_url
 from .codeforces_client import fetch_profile, CodeforcesError
 from .codeforces_sync import background_codeforces_sync, user_sync_lock
 from .platform_migration import migrate_platforms
+from .security import current_user, require_self, member_group, owned_group
 
 
 def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Secret")):
@@ -306,7 +307,8 @@ def verify_forgot_password(payload: ForgotPasswordVerifyRequest, db: Session = D
 
 
 @app.post("/api/users/{user_id}/sync")
-async def sync_user(user_id: int, db: Session = Depends(get_db)):
+async def sync_user(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -315,7 +317,8 @@ async def sync_user(user_id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/api/users/{user_id}/leetcode-username")
-async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest, db: Session = Depends(get_db)):
+async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -344,15 +347,8 @@ async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest,
 
 
 @app.put("/api/users/{user_id}/codeforces-username")
-async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequest, background_tasks: BackgroundTasks, authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    try:
-        if not authorization or not authorization.startswith("Bearer "):
-            raise ValueError("Missing token")
-        identity = decode_access_token(authorization[7:])
-        if int(identity.get("sub", -1)) != user_id:
-            raise ValueError("Wrong account")
-    except (ValueError, TypeError, KeyError):
-        raise HTTPException(status_code=401, detail="Please log out and sign in again before linking a coding account.")
+async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -388,7 +384,8 @@ async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequ
 
 
 @app.put("/api/users/{user_id}/settings")
-def update_user_settings(user_id: int, payload: UpdateSettingsRequest, db: Session = Depends(get_db)):
+def update_user_settings(user_id: int, payload: UpdateSettingsRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -405,13 +402,17 @@ def update_user_settings(user_id: int, payload: UpdateSettingsRequest, db: Sessi
 
 
 @app.post("/api/users/{user_id}/delete-account")
-def delete_user_account(user_id: int, payload: DeleteAccountRequest, db: Session = Depends(get_db)):
+def delete_user_account(user_id: int, payload: DeleteAccountRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     if not user.password_hash or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Incorrect password. Account deletion failed.")
+
+    if db.query(Group.id).filter(Group.creator_id == actor.id).first():
+        raise HTTPException(409, "Transfer ownership or delete your groups before deleting your account.")
 
     db.query(GroupMember).filter(GroupMember.user_id == user_id).delete()
     db.query(DailyActivity).filter(DailyActivity.user_id == user_id).delete()
@@ -458,7 +459,7 @@ def get_ist_today_start() -> datetime:
 
 
 @app.get("/api/users/{user_id}/dashboard", response_model=DashboardResponse)
-def get_dashboard(user_id: int, db: Session = Depends(get_db)):
+def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -616,7 +617,10 @@ def get_global_leaderboard(
     sort_by: str = Query("points", pattern="^(points|streak)$"),
     limit: Optional[int] = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
 ):
+    require_self(actor, user_id)
+    user_id = actor.id
     # Global Leaderboard includes users who have global leaderboard enabled
     users = (
         db.query(User)
@@ -632,7 +636,10 @@ def get_friends_leaderboard(
     sort_by: str = Query("points", pattern="^(points|streak)$"),
     limit: Optional[int] = Query(None, ge=1, le=100),
     db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
 ):
+    require_self(actor, user_id)
+    user_id = actor.id
     # Aggregated leaderboard of all unique friends who share at least one group with user_id
     my_group_ids = [
         m.group_id for m in db.query(GroupMember.group_id).filter(GroupMember.user_id == user_id).all()
@@ -650,7 +657,8 @@ def get_friends_leaderboard(
 
 # Group Endpoints
 @app.post("/api/groups", response_model=GroupResponse)
-def create_group(payload: GroupCreateRequest, db: Session = Depends(get_db)):
+def create_group(payload: GroupCreateRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, payload.user_id)
     user = db.query(User).filter(User.id == payload.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -658,12 +666,14 @@ def create_group(payload: GroupCreateRequest, db: Session = Depends(get_db)):
     code = _generate_group_code()
     group = Group(name=payload.name, code=code, creator_id=user.id)
     db.add(group)
-    db.commit()
-    db.refresh(group)
-
-    membership = GroupMember(group_id=group.id, user_id=user.id)
-    db.add(membership)
-    db.commit()
+    try:
+        db.flush()
+        db.add(GroupMember(group_id=group.id, user_id=actor.id))
+        db.commit()
+        db.refresh(group)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Could not create the group. Please retry.")
 
     return GroupResponse(
         id=group.id,
@@ -684,7 +694,8 @@ def create_group(payload: GroupCreateRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/api/groups/join", response_model=GroupResponse)
-def join_group(payload: GroupJoinRequest, db: Session = Depends(get_db)):
+def join_group(payload: GroupJoinRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, payload.user_id)
     user = db.query(User).filter(User.id == payload.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -701,7 +712,12 @@ def join_group(payload: GroupJoinRequest, db: Session = Depends(get_db)):
     )
     if not existing_mem:
         db.add(GroupMember(group_id=group.id, user_id=user.id))
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            if not db.query(GroupMember.id).filter_by(group_id=group.id, user_id=actor.id).first():
+                raise HTTPException(409, "Could not join the group. Please retry.")
 
     members = (
         db.query(User)
@@ -730,7 +746,8 @@ def join_group(payload: GroupJoinRequest, db: Session = Depends(get_db)):
 
 
 @app.get("/api/groups/my-groups/{user_id}", response_model=GroupListResponse)
-def get_my_groups(user_id: int, db: Session = Depends(get_db)):
+def get_my_groups(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
     groups = (
         db.query(Group)
         .join(GroupMember, GroupMember.group_id == Group.id)
@@ -777,13 +794,14 @@ def get_my_groups(user_id: int, db: Session = Depends(get_db)):
 
 
 @app.delete("/api/groups/{group_id}/members/{user_id}")
-def remove_group_member(group_id: int, user_id: int, requester_id: int, db: Session = Depends(get_db)):
-    group = db.query(Group).filter(Group.id == group_id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
-
-    if group.creator_id != requester_id and user_id != requester_id:
-        raise HTTPException(status_code=403, detail="Only the group owner or member themselves can remove from group.")
+def remove_group_member(group_id: int, user_id: int, requester_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, requester_id)
+    group = member_group(db, actor, group_id)
+    db.refresh(group, with_for_update=True)
+    if group.creator_id != actor.id and user_id != actor.id:
+        raise HTTPException(403, "Only the group owner can remove another member.")
+    if group.creator_id == user_id:
+        raise HTTPException(409, "Transfer ownership or delete the group before leaving.")
 
     mem = (
         db.query(GroupMember)
@@ -797,14 +815,20 @@ def remove_group_member(group_id: int, user_id: int, requester_id: int, db: Sess
     return {"status": "removed", "group_id": group_id, "user_id": user_id}
 
 
-@app.delete("/api/groups/{group_id}")
-def delete_group(group_id: int, requester_id: int, db: Session = Depends(get_db)):
-    group = db.query(Group).filter(Group.id == group_id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
+@app.post("/api/groups/{group_id}/transfer")
+def transfer_group(group_id: int, payload: GroupTransferRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    group = owned_group(db, actor, group_id)
+    if not db.query(GroupMember.id).filter_by(group_id=group_id, user_id=payload.new_owner_id).first():
+        raise HTTPException(400, "The new owner must already belong to the group.")
+    group.creator_id = payload.new_owner_id
+    db.commit()
+    return {"status": "transferred", "group_id": group_id, "creator_id": group.creator_id}
 
-    if group.creator_id != requester_id:
-        raise HTTPException(status_code=403, detail="Only the group creator can delete this group.")
+
+@app.delete("/api/groups/{group_id}")
+def delete_group(group_id: int, requester_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, requester_id)
+    group = owned_group(db, actor, group_id)
 
     # Delete all member associations first
     db.query(GroupMember).filter(GroupMember.group_id == group_id).delete()
@@ -822,10 +846,11 @@ def get_group_leaderboard(
     sort_by: str = Query("points", pattern="^(points|streak)$"),
     limit: Optional[int] = Query(None, ge=1, le=100),
     db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
 ):
-    group = db.query(Group).filter(Group.id == group_id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
+    require_self(actor, user_id)
+    user_id = actor.id
+    group = member_group(db, actor, group_id)
 
     users = (
         db.query(User)
@@ -837,9 +862,14 @@ def get_group_leaderboard(
 
 
 @app.post("/api/kudos/kudos-all")
-def kudos_all_users(payload: KudosAllRequest, db: Session = Depends(get_db)):
+def kudos_all_users(payload: KudosAllRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, payload.from_user_id)
     from_id = payload.from_user_id
-    targets = [tid for tid in (payload.target_user_ids or []) if tid != from_id]
+    targets = sorted({tid for tid in (payload.target_user_ids or []) if tid != actor.id})
+    if len(targets) > 100:
+        raise HTTPException(400, "Choose at most 100 users.")
+    if targets and db.query(User.id).filter(User.id.in_(targets)).count() != len(targets):
+        raise HTTPException(400, "One or more target accounts no longer exist.")
     if not targets:
         return {"status": "ok", "updated_count": 0}
 
@@ -868,7 +898,8 @@ def kudos_all_users(payload: KudosAllRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/api/kudos/{to_user_id}")
-def toggle_kudos(to_user_id: int, payload: KudosToggleRequest, db: Session = Depends(get_db)):
+def toggle_kudos(to_user_id: int, payload: KudosToggleRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, payload.from_user_id)
     from_id = payload.from_user_id
     if from_id == to_user_id:
         raise HTTPException(status_code=400, detail="You cannot give kudos to yourself.")
@@ -933,7 +964,7 @@ def _time_ago(dt: datetime) -> str:
 
 
 @app.get("/api/users/{user_id}/recent-solves", response_model=List[RecentSolveSchema])
-async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = Depends(get_db)):
+async def get_user_recent_solves(user_id: int, limit: int = Query(10, ge=1, le=100), db: Session = Depends(get_db), actor: User = Depends(current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -1027,7 +1058,7 @@ async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = De
 
 
 @app.get("/api/users/{user_id}/codeforces-solves")
-def codeforces_solved_questions(user_id: int, db: Session = Depends(get_db)):
+def codeforces_solved_questions(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -1036,7 +1067,7 @@ def codeforces_solved_questions(user_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/api/feed/recent-solves", response_model=List[ActivityFeedItemSchema])
-async def get_global_recent_solves(limit: int = 15, db: Session = Depends(get_db)):
+async def get_global_recent_solves(limit: int = Query(15, ge=1, le=100), db: Session = Depends(get_db), actor: User = Depends(current_user)):
     """Returns the latest solved questions from all users across the platform in chronological order."""
     solves = (
         db.query(Solve, User)

@@ -165,6 +165,10 @@ class GroupJoinRequest(BaseModel):
     user_id: int
 
 
+class GroupTransferRequest(BaseModel):
+    new_owner_id: int = Field(gt=0)
+
+
 class GroupMemberSchema(BaseModel):
     id: int
     name: str

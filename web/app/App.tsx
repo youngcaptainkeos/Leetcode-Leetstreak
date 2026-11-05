@@ -19,7 +19,7 @@ export type AuthMode = "login" | "register" | "forgot";
 
 export default function App({ userId, onRegistered, onLogout, authMode = "login" }: {
   userId: number | null;
-  onRegistered: (id: number) => void;
+  onRegistered: (id: number, token?: string) => void;
   onLogout: () => void;
   authMode?: AuthMode;
 }) {
@@ -45,7 +45,7 @@ function Onboarding({
   onError,
 }: {
   initialMode: AuthMode;
-  onRegistered: (id: number) => void;
+  onRegistered: (id: number, token?: string) => void;
   onError: (e: string | null) => void;
 }) {
   const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
@@ -138,8 +138,8 @@ function Onboarding({
     try {
       const res = await api.login(username.trim(), password);
       await clearStored(AUTH_STORAGE_KEYS);
-      onRegistered(res.id);
-      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
+      if (!res.access_token) throw new Error("Please update the app and sign in again.");
+      onRegistered(res.id, res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Login failed.");
     } finally {
@@ -155,8 +155,8 @@ function Onboarding({
     try {
       const res = await api.register(name.trim(), username.trim(), email.trim(), password, enableGlobalLeaderboard, signupCodeforces);
       await clearStored(AUTH_STORAGE_KEYS);
-      onRegistered(res.id);
-      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
+      if (!res.access_token) throw new Error("Please update the app and sign in again.");
+      onRegistered(res.id, res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Registration failed.");
     } finally {
@@ -194,8 +194,8 @@ function Onboarding({
       setPassword(newPassword);
       const res = await api.login(username.trim(), newPassword);
       await clearStored(AUTH_STORAGE_KEYS);
-      onRegistered(res.id);
-      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
+      if (!res.access_token) throw new Error("Please update the app and sign in again.");
+      onRegistered(res.id, res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Verification failed.");
     } finally {
@@ -794,9 +794,7 @@ function Dashboard({
         }),
         api.myGroups(userId).catch(() => ({ groups: [] })),
         boardPromise.catch(() => null),
-        fetch(`${API_BASE}/feed/recent-solves?limit=10`)
-          .then((res) => (res.ok ? res.json() : []))
-          .catch(() => []),
+        api.activityFeed().catch(() => []),
       ]);
 
       if (!dashRes) {

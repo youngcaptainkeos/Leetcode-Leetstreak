@@ -10,6 +10,7 @@ import {
   AppConfigResponse,
   DynamicMenuItem,
   checkExtensionVersion,
+  AUTH_EXPIRED,
 } from "./lib/api";
 import { getStored, setStored, clearStored } from "./storage";
 import { DailyReminder, ProgressPanel, usePractice } from "./progress/Progress";
@@ -31,7 +32,8 @@ export default function App() {
   useEffect(() => {
     (async () => {
       const stored = await getStored("codestreak_user_id");
-      if (stored) {
+      const token = await getStored("codestreak_access_token");
+      if (stored && token && Number.isSafeInteger(Number(stored)) && Number(stored) > 0) {
         setUserId(Number(stored));
         setView("dashboard");
       } else {
@@ -82,6 +84,12 @@ export default function App() {
         console.warn("Update check error:", err);
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    const expired = () => { void handleLogout(); setError("Your session expired. Please sign in again."); };
+    window.addEventListener(AUTH_EXPIRED, expired);
+    return () => window.removeEventListener(AUTH_EXPIRED, expired);
   }, []);
 
   async function handleRegistered(id: number) {
@@ -265,8 +273,9 @@ function Onboarding({
     try {
       const res = await api.login(username.trim(), password);
       await clearStored(AUTH_STORAGE_KEYS);
+      if (!res.access_token) throw new Error("Please update the app and sign in again.");
+      await setStored("codestreak_access_token", res.access_token);
       onRegistered(res.id);
-      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Login failed.");
     } finally {
@@ -282,8 +291,9 @@ function Onboarding({
     try {
       const res = await api.register(name.trim(), username.trim(), email.trim(), password, enableGlobalLeaderboard, signupCodeforces);
       await clearStored(AUTH_STORAGE_KEYS);
+      if (!res.access_token) throw new Error("Please update the app and sign in again.");
+      await setStored("codestreak_access_token", res.access_token);
       onRegistered(res.id);
-      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Registration failed.");
     } finally {
@@ -321,8 +331,9 @@ function Onboarding({
       setPassword(newPassword);
       const res = await api.login(username.trim(), newPassword);
       await clearStored(AUTH_STORAGE_KEYS);
+      if (!res.access_token) throw new Error("Please update the app and sign in again.");
+      await setStored("codestreak_access_token", res.access_token);
       onRegistered(res.id);
-      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Verification failed.");
     } finally {

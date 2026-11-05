@@ -62,8 +62,14 @@ function Website() {
     if (!userId && path === "/dashboard") navigate("/login", true);
   }, [path, userId, isHome]);
 
-  function onRegistered(id: number) {
-    setSessionUserId(id);
+  useEffect(() => {
+    const expired = () => { setSessionUserId(null); navigate("/login", true); };
+    window.addEventListener("leetstreak:auth-expired", expired);
+    return () => window.removeEventListener("leetstreak:auth-expired", expired);
+  }, []);
+
+  function onRegistered(id: number, token?: string) {
+    setSessionUserId(id, token);
     navigate("/dashboard", true);
   }
   function onLogout() {

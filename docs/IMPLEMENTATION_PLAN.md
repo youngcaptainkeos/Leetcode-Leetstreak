@@ -182,7 +182,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 | Step | Scope | State / evidence |
 |---|---|---|
 | M1-01 | SEC-01 route inventory + OPS-02 key configuration/JWT validation foundation | Passed locally: 7 synthetic token/configuration tests; route map in `backend/ACCESS_CONTROL.md`. Branch commit: `M1 SEC-01 OPS-02 step 1: require stable keys and validate tokens`. Hosting configuration/release still pending. |
-| M1-02 | SEC-01 account/group permissions + client session compatibility | Not started |
+| M1-02 | SEC-01 account/group permissions + client session compatibility | Passed locally: 17 backend tests, 3 client session tests, 11 existing progress tests, both type checks/builds; archives synchronized. Owner transfer API added; UI work remains in M1-06. Branch commit: `M1 SEC-01 step 2: enforce account and group permissions`. Not deployed. |
 | M1-03 | SEC-02 fail-closed administration | Not started |
 | M1-04 | OPS-01 honest email outcomes | Not started |
 | M1-05 | SEC-03 recovery abuse limits, password policy, session revocation | Not started |
@@ -204,8 +204,8 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 - [x] Inventory every route: explicitly public, authenticated self-service, group-member, group-owner, or admin. Include dashboard/profile reads, solve history, sync, settings, deletion, group codes, and kudos.
 - [ ] Add a shared authenticated-user dependency. Validate signature, required expiry/subject, supported algorithm, account existence, and session version; malformed tokens must return controlled errors.
-- [ ] Derive actor identity from the token. Retained legacy ID fields must match the actor and must never establish authorization.
-- [ ] Add reusable self/member/owner checks. Use transactions for group creation/membership changes and handle duplicate/racing requests.
+- [x] Derive actor identity from the token. Retained legacy ID fields must match the actor and must never establish authorization.
+- [x] Add reusable self/member/owner checks. Use transactions for group creation/membership changes and handle duplicate/racing requests.
 - [ ] Update both clients and background requests. Clear invalid sessions and request sign-in rather than treating a cached numeric ID as authentication.
 - [ ] Publish a coordinated compatibility change for old clients; do not retain unauthenticated writes as a fallback.
 
@@ -1225,7 +1225,8 @@ For each item, record the following when work begins/completes. Do not place rea
 
 | Item | State | Implementation commit/PR | Verification evidence | Release state | Remaining work |
 |---|---|---|---|---|---|
-| Example only | Not started / In progress / Awaiting verification / Awaiting release / Complete / Deferred | Revision or PR link | Check name, environment, date, result | Local / Feature branch / Production verified | Specific blocker or none |
+| M1-01 | Awaiting release | `f90fb47` | 7 synthetic auth/configuration tests passed | pre-launch | Production key configuration and coordinated release pending |
+| M1-02 | Passed locally; awaiting release | Commit labeled `M1 SEC-01 step 2` | 17 backend + 3 client session + 11 progress tests; type checks/builds passed | pre-launch | Session revocation follows M1-05; owner-transfer UI follows M1-06 |
 
 ### Shared definition of done
 
