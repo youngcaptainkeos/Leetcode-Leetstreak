@@ -309,6 +309,48 @@ Implemented durable, account-backed persistence and bidirectional sync for user 
 - `tsc --noEmit` on both `extension` and `web` passed cleanly with 0 errors.
 - Verified byte-identical ZIP copies (9,669,812 bytes).
 
+---
+
+## 2026-11-06 — Step: M4-02 / FEAT-02: Website Progress Section with Study Plans, Playlists & Friends Activity
+
+### Summary of Changes
+Added the full Progress experience to the web application (`web/app/Progress.tsx`), bringing complete feature parity with the browser extension while using the account-backed persistence layer built in FEAT-01. Previously, the website lacked study plans, custom playlists, and question-level completion tracking altogether. Now, authenticated web users can browse their account-backed study plans, follow/unfollow curated sheets, create custom playlists by pasting question links or choosing catalog slugs, search and filter problems by completion status or difficulty, expand/collapse subgroups, toggle manual checkboxes for external items, and view live friends activity above playlists. All state changes synchronize bidirectionally with the backend and extension.
+
+### Detailed Changes
+1. **`web/app/progressData.ts`**:
+   - Extracted pure plan data models (`StudyPlan`, `StudyQuestion`, `ProgressState`).
+   - Copied bundled catalog sheets (`strivers-a2z.json` and `study-plans.json`) to `web/app/data/`.
+   - Provided pure helpers: `parsePlanSlug`, `publicUrl`, `importedPlanSlug`, `leetcodeSlug`, `questionUrl`, `questionSolved`, `planCounts`, `visiblePlans`, `planFromLinks`, and `fetchBundledOrCatalogPlan`.
+   - Handled web environment CORS constraints: bundled catalog plans load instantly offline, pasted question links are parsed locally via `planFromLinks`, and uncataloged external link scans provide a clear actionable fallback explaining that links can be pasted directly or scanned via the extension.
+
+2. **`web/app/Progress.tsx`**:
+   - Built the `WebsiteProgress` component rendering:
+     - Friends activity feed ("What are my friends up to?") with recent friend solves, platform tags, and relative timestamps.
+     - Study plans header with "+ Add Plan" modal and "Restore Starters" action when default plans are hidden.
+     - Add plan form supporting catalog slugs and pasted question links.
+     - Horizontal grid of plan cards with progress bar, solved count, completion percentage, and active selection.
+     - Active plan detail panel with Next-up recommendation, Follow/Unfollow toggle, and Remove plan action.
+     - Search and filter bar (All, Solved, To Do, External).
+     - Subgroup sections with collapsible headers and solved badges.
+     - Question rows with problem links, difficulty tags, and interactive checkboxes for external items.
+
+3. **`web/app/App.tsx` & `web/main.tsx`**:
+   - Mounted `WebsiteProgress` under `<section className="section workspace-progress-section" id="progress">`.
+   - Added `◉ Study plans` navigation item in `web/main.tsx` workspace sidebar.
+
+4. **`web/app/lib/api.ts`**:
+   - Added `codeforcesSolves` endpoint method and verified full parity with extension API client.
+
+5. **`web/app/App.css`**:
+   - Added responsive styling matching the dark charcoal/purple theme, Outfit headings, Inter controls, collapsible cards, and mobile-friendly layout.
+
+### Verification Evidence
+- Built website cleanly (`npm --prefix web run check && npm --prefix web run build`).
+- `tsc --noEmit` on `web` passed cleanly with 0 errors.
+- Ran browser smoke tests (`backend/tests/browser_smoke.py` in headless Chrome via Playwright) across both extension (380px) and website (1366px): both passed with 0 runtime errors.
+- 90 backend tests and 26 extension tests passed.
+
+
 
 
 

@@ -1,0 +1,1655 @@
+[
+  {
+    "name": "SQL 50",
+    "slug": "top-sql-50",
+    "planSubGroups": [
+      {
+        "name": "Select",
+        "questions": [
+          {
+            "title": "Recyclable and Low Fat Products",
+            "titleSlug": "recyclable-and-low-fat-products",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Find Customer Referee",
+            "titleSlug": "find-customer-referee",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Big Countries",
+            "titleSlug": "big-countries",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Article Views I",
+            "titleSlug": "article-views-i",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Invalid Tweets",
+            "titleSlug": "invalid-tweets",
+            "difficulty": "EASY"
+          }
+        ]
+      },
+      {
+        "name": "Basic Joins",
+        "questions": [
+          {
+            "title": "Replace Employee ID With The Unique Identifier",
+            "titleSlug": "replace-employee-id-with-the-unique-identifier",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Product Sales Analysis I",
+            "titleSlug": "product-sales-analysis-i",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Customer Who Visited but Did Not Make Any Transactions",
+            "titleSlug": "customer-who-visited-but-did-not-make-any-transactions",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Rising Temperature",
+            "titleSlug": "rising-temperature",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Average Time of Process per Machine",
+            "titleSlug": "average-time-of-process-per-machine",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Employee Bonus",
+            "titleSlug": "employee-bonus",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Students and Examinations",
+            "titleSlug": "students-and-examinations",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Managers with at Least 5 Direct Reports",
+            "titleSlug": "managers-with-at-least-5-direct-reports",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Confirmation Rate",
+            "titleSlug": "confirmation-rate",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Basic Aggregate Functions",
+        "questions": [
+          {
+            "title": "Not Boring Movies",
+            "titleSlug": "not-boring-movies",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Average Selling Price",
+            "titleSlug": "average-selling-price",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Project Employees I",
+            "titleSlug": "project-employees-i",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Percentage of Users Attended a Contest",
+            "titleSlug": "percentage-of-users-attended-a-contest",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Queries Quality and Percentage",
+            "titleSlug": "queries-quality-and-percentage",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Monthly Transactions I",
+            "titleSlug": "monthly-transactions-i",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Immediate Food Delivery II",
+            "titleSlug": "immediate-food-delivery-ii",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Game Play Analysis IV",
+            "titleSlug": "game-play-analysis-iv",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Sorting and Grouping",
+        "questions": [
+          {
+            "title": "Number of Unique Subjects Taught by Each Teacher",
+            "titleSlug": "number-of-unique-subjects-taught-by-each-teacher",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "User Activity for the Past 30 Days I",
+            "titleSlug": "user-activity-for-the-past-30-days-i",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Product Sales Analysis III",
+            "titleSlug": "product-sales-analysis-iii",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Classes With at Least 5 Students",
+            "titleSlug": "classes-with-at-least-5-students",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Find Followers Count",
+            "titleSlug": "find-followers-count",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Biggest Single Number",
+            "titleSlug": "biggest-single-number",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Customers Who Bought All Products",
+            "titleSlug": "customers-who-bought-all-products",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Advanced Select and Joins",
+        "questions": [
+          {
+            "title": "The Number of Employees Which Report to Each Employee",
+            "titleSlug": "the-number-of-employees-which-report-to-each-employee",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Primary Department for Each Employee",
+            "titleSlug": "primary-department-for-each-employee",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Triangle Judgement",
+            "titleSlug": "triangle-judgement",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Consecutive Numbers",
+            "titleSlug": "consecutive-numbers",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Product Price at a Given Date",
+            "titleSlug": "product-price-at-a-given-date",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Last Person to Fit in the Bus",
+            "titleSlug": "last-person-to-fit-in-the-bus",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Count Salary Categories",
+            "titleSlug": "count-salary-categories",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Subqueries",
+        "questions": [
+          {
+            "title": "Employees Whose Manager Left the Company",
+            "titleSlug": "employees-whose-manager-left-the-company",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Exchange Seats",
+            "titleSlug": "exchange-seats",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Movie Rating",
+            "titleSlug": "movie-rating",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Restaurant Growth",
+            "titleSlug": "restaurant-growth",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Friend Requests II: Who Has the Most Friends",
+            "titleSlug": "friend-requests-ii-who-has-the-most-friends",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Investments in 2016",
+            "titleSlug": "investments-in-2016",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Department Top Three Salaries",
+            "titleSlug": "department-top-three-salaries",
+            "difficulty": "HARD"
+          }
+        ]
+      },
+      {
+        "name": "Advanced String Functions / Regex / Clause",
+        "questions": [
+          {
+            "title": "Fix Names in a Table",
+            "titleSlug": "fix-names-in-a-table",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Patients With a Condition",
+            "titleSlug": "patients-with-a-condition",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Delete Duplicate Emails",
+            "titleSlug": "delete-duplicate-emails",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Second Highest Salary",
+            "titleSlug": "second-highest-salary",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Group Sold Products By The Date",
+            "titleSlug": "group-sold-products-by-the-date",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "List the Products Ordered in a Period",
+            "titleSlug": "list-the-products-ordered-in-a-period",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Find Users With Valid E-Mails",
+            "titleSlug": "find-users-with-valid-e-mails",
+            "difficulty": "EASY"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "LeetCode 75",
+    "slug": "leetcode-75",
+    "planSubGroups": [
+      {
+        "name": "Array / String",
+        "questions": [
+          {
+            "title": "Merge Strings Alternately",
+            "titleSlug": "merge-strings-alternately",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Greatest Common Divisor of Strings",
+            "titleSlug": "greatest-common-divisor-of-strings",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Kids With the Greatest Number of Candies",
+            "titleSlug": "kids-with-the-greatest-number-of-candies",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Can Place Flowers",
+            "titleSlug": "can-place-flowers",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Reverse Vowels of a String",
+            "titleSlug": "reverse-vowels-of-a-string",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Reverse Words in a String",
+            "titleSlug": "reverse-words-in-a-string",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Product of Array Except Self",
+            "titleSlug": "product-of-array-except-self",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Increasing Triplet Subsequence",
+            "titleSlug": "increasing-triplet-subsequence",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "String Compression",
+            "titleSlug": "string-compression",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Two Pointers",
+        "questions": [
+          {
+            "title": "Move Zeroes",
+            "titleSlug": "move-zeroes",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Is Subsequence",
+            "titleSlug": "is-subsequence",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Container With Most Water",
+            "titleSlug": "container-with-most-water",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Max Number of K-Sum Pairs",
+            "titleSlug": "max-number-of-k-sum-pairs",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Sliding Window",
+        "questions": [
+          {
+            "title": "Maximum Average Subarray I",
+            "titleSlug": "maximum-average-subarray-i",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Maximum Number of Vowels in a Substring of Given Length",
+            "titleSlug": "maximum-number-of-vowels-in-a-substring-of-given-length",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Max Consecutive Ones III",
+            "titleSlug": "max-consecutive-ones-iii",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Longest Subarray of 1's After Deleting One Element",
+            "titleSlug": "longest-subarray-of-1s-after-deleting-one-element",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Prefix Sum",
+        "questions": [
+          {
+            "title": "Find the Highest Altitude",
+            "titleSlug": "find-the-highest-altitude",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Find Pivot Index",
+            "titleSlug": "find-pivot-index",
+            "difficulty": "EASY"
+          }
+        ]
+      },
+      {
+        "name": "Hash Map / Set",
+        "questions": [
+          {
+            "title": "Find the Difference of Two Arrays",
+            "titleSlug": "find-the-difference-of-two-arrays",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Unique Number of Occurrences",
+            "titleSlug": "unique-number-of-occurrences",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Determine if Two Strings Are Close",
+            "titleSlug": "determine-if-two-strings-are-close",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Equal Row and Column Pairs",
+            "titleSlug": "equal-row-and-column-pairs",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Stack",
+        "questions": [
+          {
+            "title": "Removing Stars From a String",
+            "titleSlug": "removing-stars-from-a-string",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Asteroid Collision",
+            "titleSlug": "asteroid-collision",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Decode String",
+            "titleSlug": "decode-string",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Queue",
+        "questions": [
+          {
+            "title": "Number of Recent Calls",
+            "titleSlug": "number-of-recent-calls",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Dota2 Senate",
+            "titleSlug": "dota2-senate",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Linked List",
+        "questions": [
+          {
+            "title": "Delete the Middle Node of a Linked List",
+            "titleSlug": "delete-the-middle-node-of-a-linked-list",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Odd Even Linked List",
+            "titleSlug": "odd-even-linked-list",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Reverse Linked List",
+            "titleSlug": "reverse-linked-list",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Maximum Twin Sum of a Linked List",
+            "titleSlug": "maximum-twin-sum-of-a-linked-list",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Binary Tree - DFS",
+        "questions": [
+          {
+            "title": "Maximum Depth of Binary Tree",
+            "titleSlug": "maximum-depth-of-binary-tree",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Leaf-Similar Trees",
+            "titleSlug": "leaf-similar-trees",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Count Good Nodes in Binary Tree",
+            "titleSlug": "count-good-nodes-in-binary-tree",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Path Sum III",
+            "titleSlug": "path-sum-iii",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Longest ZigZag Path in a Binary Tree",
+            "titleSlug": "longest-zigzag-path-in-a-binary-tree",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Lowest Common Ancestor of a Binary Tree",
+            "titleSlug": "lowest-common-ancestor-of-a-binary-tree",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Binary Tree - BFS",
+        "questions": [
+          {
+            "title": "Binary Tree Right Side View",
+            "titleSlug": "binary-tree-right-side-view",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Maximum Level Sum of a Binary Tree",
+            "titleSlug": "maximum-level-sum-of-a-binary-tree",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Binary Search Tree",
+        "questions": [
+          {
+            "title": "Search in a Binary Search Tree",
+            "titleSlug": "search-in-a-binary-search-tree",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Delete Node in a BST",
+            "titleSlug": "delete-node-in-a-bst",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Graphs - DFS",
+        "questions": [
+          {
+            "title": "Keys and Rooms",
+            "titleSlug": "keys-and-rooms",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Number of Provinces",
+            "titleSlug": "number-of-provinces",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Reorder Routes to Make All Paths Lead to the City Zero",
+            "titleSlug": "reorder-routes-to-make-all-paths-lead-to-the-city-zero",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Evaluate Division",
+            "titleSlug": "evaluate-division",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Graphs - BFS",
+        "questions": [
+          {
+            "title": "Nearest Exit from Entrance in Maze",
+            "titleSlug": "nearest-exit-from-entrance-in-maze",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Rotting Oranges",
+            "titleSlug": "rotting-oranges",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Heap / Priority Queue",
+        "questions": [
+          {
+            "title": "Kth Largest Element in an Array",
+            "titleSlug": "kth-largest-element-in-an-array",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Smallest Number in Infinite Set",
+            "titleSlug": "smallest-number-in-infinite-set",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Maximum Subsequence Score",
+            "titleSlug": "maximum-subsequence-score",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Total Cost to Hire K Workers",
+            "titleSlug": "total-cost-to-hire-k-workers",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Binary Search",
+        "questions": [
+          {
+            "title": "Guess Number Higher or Lower",
+            "titleSlug": "guess-number-higher-or-lower",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Successful Pairs of Spells and Potions",
+            "titleSlug": "successful-pairs-of-spells-and-potions",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Find Peak Element",
+            "titleSlug": "find-peak-element",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Koko Eating Bananas",
+            "titleSlug": "koko-eating-bananas",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Backtracking",
+        "questions": [
+          {
+            "title": "Letter Combinations of a Phone Number",
+            "titleSlug": "letter-combinations-of-a-phone-number",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Combination Sum III",
+            "titleSlug": "combination-sum-iii",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "DP - 1D",
+        "questions": [
+          {
+            "title": "N-th Tribonacci Number",
+            "titleSlug": "n-th-tribonacci-number",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Min Cost Climbing Stairs",
+            "titleSlug": "min-cost-climbing-stairs",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "House Robber",
+            "titleSlug": "house-robber",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Domino and Tromino Tiling",
+            "titleSlug": "domino-and-tromino-tiling",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "DP - Multidimensional",
+        "questions": [
+          {
+            "title": "Unique Paths",
+            "titleSlug": "unique-paths",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Longest Common Subsequence",
+            "titleSlug": "longest-common-subsequence",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Best Time to Buy and Sell Stock with Transaction Fee",
+            "titleSlug": "best-time-to-buy-and-sell-stock-with-transaction-fee",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Edit Distance",
+            "titleSlug": "edit-distance",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Bit Manipulation",
+        "questions": [
+          {
+            "title": "Counting Bits",
+            "titleSlug": "counting-bits",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Single Number",
+            "titleSlug": "single-number",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Minimum Flips to Make a OR b Equal to c",
+            "titleSlug": "minimum-flips-to-make-a-or-b-equal-to-c",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Trie",
+        "questions": [
+          {
+            "title": "Implement Trie (Prefix Tree)",
+            "titleSlug": "implement-trie-prefix-tree",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Search Suggestions System",
+            "titleSlug": "search-suggestions-system",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Intervals",
+        "questions": [
+          {
+            "title": "Non-overlapping Intervals",
+            "titleSlug": "non-overlapping-intervals",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Minimum Number of Arrows to Burst Balloons",
+            "titleSlug": "minimum-number-of-arrows-to-burst-balloons",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Monotonic Stack",
+        "questions": [
+          {
+            "title": "Daily Temperatures",
+            "titleSlug": "daily-temperatures",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Online Stock Span",
+            "titleSlug": "online-stock-span",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Top Interview 150",
+    "slug": "top-interview-150",
+    "planSubGroups": [
+      {
+        "name": "Array / String",
+        "questions": [
+          {
+            "title": "Merge Sorted Array",
+            "titleSlug": "merge-sorted-array",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Remove Element",
+            "titleSlug": "remove-element",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Remove Duplicates from Sorted Array",
+            "titleSlug": "remove-duplicates-from-sorted-array",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Remove Duplicates from Sorted Array II",
+            "titleSlug": "remove-duplicates-from-sorted-array-ii",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Majority Element",
+            "titleSlug": "majority-element",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Rotate Array",
+            "titleSlug": "rotate-array",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Best Time to Buy and Sell Stock",
+            "titleSlug": "best-time-to-buy-and-sell-stock",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Best Time to Buy and Sell Stock II",
+            "titleSlug": "best-time-to-buy-and-sell-stock-ii",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Jump Game",
+            "titleSlug": "jump-game",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Jump Game II",
+            "titleSlug": "jump-game-ii",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "H-Index",
+            "titleSlug": "h-index",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Insert Delete GetRandom O(1)",
+            "titleSlug": "insert-delete-getrandom-o1",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Product of Array Except Self",
+            "titleSlug": "product-of-array-except-self",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Gas Station",
+            "titleSlug": "gas-station",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Candy",
+            "titleSlug": "candy",
+            "difficulty": "HARD"
+          },
+          {
+            "title": "Trapping Rain Water",
+            "titleSlug": "trapping-rain-water",
+            "difficulty": "HARD"
+          },
+          {
+            "title": "Roman to Integer",
+            "titleSlug": "roman-to-integer",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Integer to Roman",
+            "titleSlug": "integer-to-roman",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Length of Last Word",
+            "titleSlug": "length-of-last-word",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Longest Common Prefix",
+            "titleSlug": "longest-common-prefix",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Reverse Words in a String",
+            "titleSlug": "reverse-words-in-a-string",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Zigzag Conversion",
+            "titleSlug": "zigzag-conversion",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Find the Index of the First Occurrence in a String",
+            "titleSlug": "find-the-index-of-the-first-occurrence-in-a-string",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Text Justification",
+            "titleSlug": "text-justification",
+            "difficulty": "HARD"
+          }
+        ]
+      },
+      {
+        "name": "Two Pointers",
+        "questions": [
+          {
+            "title": "Valid Palindrome",
+            "titleSlug": "valid-palindrome",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Is Subsequence",
+            "titleSlug": "is-subsequence",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Two Sum II - Input Array Is Sorted",
+            "titleSlug": "two-sum-ii-input-array-is-sorted",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Container With Most Water",
+            "titleSlug": "container-with-most-water",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "3Sum",
+            "titleSlug": "3sum",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Sliding Window",
+        "questions": [
+          {
+            "title": "Minimum Size Subarray Sum",
+            "titleSlug": "minimum-size-subarray-sum",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Longest Substring Without Repeating Characters",
+            "titleSlug": "longest-substring-without-repeating-characters",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Substring with Concatenation of All Words",
+            "titleSlug": "substring-with-concatenation-of-all-words",
+            "difficulty": "HARD"
+          },
+          {
+            "title": "Minimum Window Substring",
+            "titleSlug": "minimum-window-substring",
+            "difficulty": "HARD"
+          }
+        ]
+      },
+      {
+        "name": "Matrix",
+        "questions": [
+          {
+            "title": "Valid Sudoku",
+            "titleSlug": "valid-sudoku",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Spiral Matrix",
+            "titleSlug": "spiral-matrix",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Rotate Image",
+            "titleSlug": "rotate-image",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Set Matrix Zeroes",
+            "titleSlug": "set-matrix-zeroes",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Game of Life",
+            "titleSlug": "game-of-life",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Hashmap",
+        "questions": [
+          {
+            "title": "Ransom Note",
+            "titleSlug": "ransom-note",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Isomorphic Strings",
+            "titleSlug": "isomorphic-strings",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Word Pattern",
+            "titleSlug": "word-pattern",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Valid Anagram",
+            "titleSlug": "valid-anagram",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Group Anagrams",
+            "titleSlug": "group-anagrams",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Two Sum",
+            "titleSlug": "two-sum",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Happy Number",
+            "titleSlug": "happy-number",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Contains Duplicate II",
+            "titleSlug": "contains-duplicate-ii",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Longest Consecutive Sequence",
+            "titleSlug": "longest-consecutive-sequence",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Intervals",
+        "questions": [
+          {
+            "title": "Summary Ranges",
+            "titleSlug": "summary-ranges",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Merge Intervals",
+            "titleSlug": "merge-intervals",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Insert Interval",
+            "titleSlug": "insert-interval",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Minimum Number of Arrows to Burst Balloons",
+            "titleSlug": "minimum-number-of-arrows-to-burst-balloons",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Stack",
+        "questions": [
+          {
+            "title": "Valid Parentheses",
+            "titleSlug": "valid-parentheses",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Simplify Path",
+            "titleSlug": "simplify-path",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Min Stack",
+            "titleSlug": "min-stack",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Evaluate Reverse Polish Notation",
+            "titleSlug": "evaluate-reverse-polish-notation",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Basic Calculator",
+            "titleSlug": "basic-calculator",
+            "difficulty": "HARD"
+          }
+        ]
+      },
+      {
+        "name": "Linked List",
+        "questions": [
+          {
+            "title": "Linked List Cycle",
+            "titleSlug": "linked-list-cycle",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Add Two Numbers",
+            "titleSlug": "add-two-numbers",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Merge Two Sorted Lists",
+            "titleSlug": "merge-two-sorted-lists",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Copy List with Random Pointer",
+            "titleSlug": "copy-list-with-random-pointer",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Reverse Linked List II",
+            "titleSlug": "reverse-linked-list-ii",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Reverse Nodes in k-Group",
+            "titleSlug": "reverse-nodes-in-k-group",
+            "difficulty": "HARD"
+          },
+          {
+            "title": "Remove Nth Node From End of List",
+            "titleSlug": "remove-nth-node-from-end-of-list",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Remove Duplicates from Sorted List II",
+            "titleSlug": "remove-duplicates-from-sorted-list-ii",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Rotate List",
+            "titleSlug": "rotate-list",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Partition List",
+            "titleSlug": "partition-list",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "LRU Cache",
+            "titleSlug": "lru-cache",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Binary Tree General",
+        "questions": [
+          {
+            "title": "Maximum Depth of Binary Tree",
+            "titleSlug": "maximum-depth-of-binary-tree",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Same Tree",
+            "titleSlug": "same-tree",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Invert Binary Tree",
+            "titleSlug": "invert-binary-tree",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Symmetric Tree",
+            "titleSlug": "symmetric-tree",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Construct Binary Tree from Preorder and Inorder Traversal",
+            "titleSlug": "construct-binary-tree-from-preorder-and-inorder-traversal",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Construct Binary Tree from Inorder and Postorder Traversal",
+            "titleSlug": "construct-binary-tree-from-inorder-and-postorder-traversal",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Populating Next Right Pointers in Each Node II",
+            "titleSlug": "populating-next-right-pointers-in-each-node-ii",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Flatten Binary Tree to Linked List",
+            "titleSlug": "flatten-binary-tree-to-linked-list",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Path Sum",
+            "titleSlug": "path-sum",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Sum Root to Leaf Numbers",
+            "titleSlug": "sum-root-to-leaf-numbers",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Binary Tree Maximum Path Sum",
+            "titleSlug": "binary-tree-maximum-path-sum",
+            "difficulty": "HARD"
+          },
+          {
+            "title": "Binary Search Tree Iterator",
+            "titleSlug": "binary-search-tree-iterator",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Count Complete Tree Nodes",
+            "titleSlug": "count-complete-tree-nodes",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Lowest Common Ancestor of a Binary Tree",
+            "titleSlug": "lowest-common-ancestor-of-a-binary-tree",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Binary Tree BFS",
+        "questions": [
+          {
+            "title": "Binary Tree Right Side View",
+            "titleSlug": "binary-tree-right-side-view",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Average of Levels in Binary Tree",
+            "titleSlug": "average-of-levels-in-binary-tree",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Binary Tree Level Order Traversal",
+            "titleSlug": "binary-tree-level-order-traversal",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Binary Tree Zigzag Level Order Traversal",
+            "titleSlug": "binary-tree-zigzag-level-order-traversal",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Binary Search Tree",
+        "questions": [
+          {
+            "title": "Minimum Absolute Difference in BST",
+            "titleSlug": "minimum-absolute-difference-in-bst",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Kth Smallest Element in a BST",
+            "titleSlug": "kth-smallest-element-in-a-bst",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Validate Binary Search Tree",
+            "titleSlug": "validate-binary-search-tree",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Graph General",
+        "questions": [
+          {
+            "title": "Number of Islands",
+            "titleSlug": "number-of-islands",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Surrounded Regions",
+            "titleSlug": "surrounded-regions",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Clone Graph",
+            "titleSlug": "clone-graph",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Evaluate Division",
+            "titleSlug": "evaluate-division",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Course Schedule",
+            "titleSlug": "course-schedule",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Course Schedule II",
+            "titleSlug": "course-schedule-ii",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Graph BFS",
+        "questions": [
+          {
+            "title": "Snakes and Ladders",
+            "titleSlug": "snakes-and-ladders",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Minimum Genetic Mutation",
+            "titleSlug": "minimum-genetic-mutation",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Word Ladder",
+            "titleSlug": "word-ladder",
+            "difficulty": "HARD"
+          }
+        ]
+      },
+      {
+        "name": "Trie",
+        "questions": [
+          {
+            "title": "Implement Trie (Prefix Tree)",
+            "titleSlug": "implement-trie-prefix-tree",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Design Add and Search Words Data Structure",
+            "titleSlug": "design-add-and-search-words-data-structure",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Word Search II",
+            "titleSlug": "word-search-ii",
+            "difficulty": "HARD"
+          }
+        ]
+      },
+      {
+        "name": "Backtracking",
+        "questions": [
+          {
+            "title": "Letter Combinations of a Phone Number",
+            "titleSlug": "letter-combinations-of-a-phone-number",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Combinations",
+            "titleSlug": "combinations",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Permutations",
+            "titleSlug": "permutations",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Combination Sum",
+            "titleSlug": "combination-sum",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "N-Queens II",
+            "titleSlug": "n-queens-ii",
+            "difficulty": "HARD"
+          },
+          {
+            "title": "Generate Parentheses",
+            "titleSlug": "generate-parentheses",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Word Search",
+            "titleSlug": "word-search",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Divide & Conquer",
+        "questions": [
+          {
+            "title": "Convert Sorted Array to Binary Search Tree",
+            "titleSlug": "convert-sorted-array-to-binary-search-tree",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Sort List",
+            "titleSlug": "sort-list",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Construct Quad Tree",
+            "titleSlug": "construct-quad-tree",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Merge k Sorted Lists",
+            "titleSlug": "merge-k-sorted-lists",
+            "difficulty": "HARD"
+          }
+        ]
+      },
+      {
+        "name": "Kadane's Algorithm",
+        "questions": [
+          {
+            "title": "Maximum Subarray",
+            "titleSlug": "maximum-subarray",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Maximum Sum Circular Subarray",
+            "titleSlug": "maximum-sum-circular-subarray",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Binary Search",
+        "questions": [
+          {
+            "title": "Search Insert Position",
+            "titleSlug": "search-insert-position",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Search a 2D Matrix",
+            "titleSlug": "search-a-2d-matrix",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Find Peak Element",
+            "titleSlug": "find-peak-element",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Search in Rotated Sorted Array",
+            "titleSlug": "search-in-rotated-sorted-array",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Find First and Last Position of Element in Sorted Array",
+            "titleSlug": "find-first-and-last-position-of-element-in-sorted-array",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Find Minimum in Rotated Sorted Array",
+            "titleSlug": "find-minimum-in-rotated-sorted-array",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Median of Two Sorted Arrays",
+            "titleSlug": "median-of-two-sorted-arrays",
+            "difficulty": "HARD"
+          }
+        ]
+      },
+      {
+        "name": "Heap",
+        "questions": [
+          {
+            "title": "Kth Largest Element in an Array",
+            "titleSlug": "kth-largest-element-in-an-array",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "IPO",
+            "titleSlug": "ipo",
+            "difficulty": "HARD"
+          },
+          {
+            "title": "Find K Pairs with Smallest Sums",
+            "titleSlug": "find-k-pairs-with-smallest-sums",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Find Median from Data Stream",
+            "titleSlug": "find-median-from-data-stream",
+            "difficulty": "HARD"
+          }
+        ]
+      },
+      {
+        "name": "Bit Manipulation",
+        "questions": [
+          {
+            "title": "Add Binary",
+            "titleSlug": "add-binary",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Reverse Bits",
+            "titleSlug": "reverse-bits",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Number of 1 Bits",
+            "titleSlug": "number-of-1-bits",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Single Number",
+            "titleSlug": "single-number",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Single Number II",
+            "titleSlug": "single-number-ii",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Bitwise AND of Numbers Range",
+            "titleSlug": "bitwise-and-of-numbers-range",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Math",
+        "questions": [
+          {
+            "title": "Palindrome Number",
+            "titleSlug": "palindrome-number",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Plus One",
+            "titleSlug": "plus-one",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Factorial Trailing Zeroes",
+            "titleSlug": "factorial-trailing-zeroes",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Sqrt(x)",
+            "titleSlug": "sqrtx",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "Pow(x, n)",
+            "titleSlug": "powx-n",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Max Points on a Line",
+            "titleSlug": "max-points-on-a-line",
+            "difficulty": "HARD"
+          }
+        ]
+      },
+      {
+        "name": "1D DP",
+        "questions": [
+          {
+            "title": "Climbing Stairs",
+            "titleSlug": "climbing-stairs",
+            "difficulty": "EASY"
+          },
+          {
+            "title": "House Robber",
+            "titleSlug": "house-robber",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Word Break",
+            "titleSlug": "word-break",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Coin Change",
+            "titleSlug": "coin-change",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Longest Increasing Subsequence",
+            "titleSlug": "longest-increasing-subsequence",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      },
+      {
+        "name": "Multidimensional DP",
+        "questions": [
+          {
+            "title": "Triangle",
+            "titleSlug": "triangle",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Minimum Path Sum",
+            "titleSlug": "minimum-path-sum",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Unique Paths II",
+            "titleSlug": "unique-paths-ii",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Longest Palindromic Substring",
+            "titleSlug": "longest-palindromic-substring",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Interleaving String",
+            "titleSlug": "interleaving-string",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Edit Distance",
+            "titleSlug": "edit-distance",
+            "difficulty": "MEDIUM"
+          },
+          {
+            "title": "Best Time to Buy and Sell Stock III",
+            "titleSlug": "best-time-to-buy-and-sell-stock-iii",
+            "difficulty": "HARD"
+          },
+          {
+            "title": "Best Time to Buy and Sell Stock IV",
+            "titleSlug": "best-time-to-buy-and-sell-stock-iv",
+            "difficulty": "HARD"
+          },
+          {
+            "title": "Maximal Square",
+            "titleSlug": "maximal-square",
+            "difficulty": "MEDIUM"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -94,7 +94,7 @@ This is the working checklist for the repository review. It covers every issue a
 ### Product features
 
 - [x] **FEAT-01 · P2:** Save plans, external completion, and preferences to the account.
-- [ ] **FEAT-02 · P2:** Add Progress to the website.
+- [x] **FEAT-02 · P2:** Add Progress to the website.
 - [x] **FEAT-03 · P1:** Show reliable sync status and history completeness.
 - [ ] **FEAT-04 · P2:** Add coding-account ownership verification and claim recovery.
 - [ ] **FEAT-05 · P2:** Allow Codeforces unlinking.
@@ -214,9 +214,9 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 ### M4 execution steps
 
-| Step | Scope | State / evidence |
-|---|---|---|
 | M4-01 | FEAT-01 account-backed study plans, playlists, library subscriptions & external completion | Passed locally: 90 backend tests including 7 progress/custom plan tests, 8 PostgreSQL tests, 26 extension tests, web check/build and extension tsc/build. Added UserProgress and UserCustomPlan models and 20261106-progress-v1 migration. Implemented authenticated progress and custom plan endpoints in backend/app/main.py. Integrated bidirectional account sync in extension/src/progress/Progress.tsx with local-first cache/outbox and transparent migration of existing local plans. Rebuilt extension and synchronized all 4 ZIP distribution packages. Commit labeled 'M4 FEAT-01 step 1: persist study plans and playlists to backend account profile'. |
+| M4-02 | FEAT-02 website Progress section with study plans, playlists & friends activity | Passed locally: browser smoke test (Playwright in headless Chrome) passed on both extension and website with 0 errors; web tsc check and build passed cleanly; 26 extension tests and 90 backend tests passed. Added web/app/Progress.tsx with account-backed study plan library, playlist creation from links, starter restoration, subgroup expansion, search/filtering, and manual external completion. Added Study plans navigation in web/main.tsx sidebar and responsive styling in web/app/App.css. Commit labeled 'M4 FEAT-02 step 2: add Progress section and study plan playlists to website'. |
+
 
 
 
@@ -900,17 +900,17 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Add website Progress navigation, friends activity above playlists, plan cards, search/filter, next question, and persistent question-list/section expansion.
-- [ ] Use account-backed data and responsive page layout in the established theme.
-- [ ] Support plan add/remove, preview, starter restoration, loading/errors, and the zero-plan state.
-- [ ] Account for browser CORS/permission differences: the website cannot simply reuse extension host-permission scanning or its authenticated LeetCode bridge. Start with supported server/catalog metadata and pasted links; evaluate any server scraper separately with network access controls.
-- [ ] Preserve independent extension builds and sources. Extract pure logic intentionally rather than copying another entire application.
+- [x] Add website Progress navigation, friends activity above playlists, plan cards, search/filter, next question, and persistent question-list/section expansion.
+- [x] Use account-backed data and responsive page layout in the established theme.
+- [x] Support plan add/remove, preview, starter restoration, loading/errors, and the zero-plan state.
+- [x] Account for browser CORS/permission differences: the website cannot simply reuse extension host-permission scanning or its authenticated LeetCode bridge. Start with supported server/catalog metadata and pasted links; evaluate any server scraper separately with network access controls.
+- [x] Preserve independent extension builds and sources. Extract pure logic intentionally rather than copying another entire application.
 
 **Acceptance**
 
-- [ ] Website edits sync to the extension and vice versa after reconnection.
-- [ ] Desktop/mobile layouts preserve usable controls and accessible navigation.
-- [ ] Unsupported imports clearly offer an alternative rather than claiming universal compatibility.
+- [x] Website edits sync to the extension and vice versa after reconnection.
+- [x] Desktop/mobile layouts preserve usable controls and accessible navigation.
+- [x] Unsupported imports clearly offer an alternative rather than claiming universal compatibility.
 
 ### FEAT-03 — Sync status and history completeness
 

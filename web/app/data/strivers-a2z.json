@@ -1,0 +1,4180 @@
+{
+  "name": "Striver’s A2Z DSA Sheet",
+  "slug": "strivers-a2z-dsa-sheet",
+  "source": "takeuforward",
+  "sourceUrl": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+  "snapshotDate": "2026-11-05",
+  "planSubGroups": [
+    {
+      "name": "Beginner Problems / Fundamentals of Programming",
+      "questions": [
+        {
+          "title": "Breaking The Myth",
+          "titleSlug": "tuf-a2z-17136-beginner-problem-fundamentals-of-programming",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/breaking-the-myth-dsa-is-language-independent",
+          "kind": "learning"
+        },
+        {
+          "title": "Programming and What Are Computers?",
+          "titleSlug": "tuf-a2z-17132-beginner-problem-fundamentals-of-programming",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/programming-and-computers",
+          "kind": "learning"
+        },
+        {
+          "title": "How to Think Like a Programmer",
+          "titleSlug": "tuf-a2z-17133-beginner-problem-fundamentals-of-programming",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/how-to-think-like-a-programmer",
+          "kind": "learning"
+        },
+        {
+          "title": "Flowcharts and Pseudocode",
+          "titleSlug": "tuf-a2z-17134-beginner-problem-fundamentals-of-programming",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/flowcharts-and-pseudocode",
+          "kind": "learning"
+        },
+        {
+          "title": "Flowchart Problem-Solving ",
+          "titleSlug": "tuf-a2z-17135-beginner-problem-fundamentals-of-programming",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/flowchart-problem-solving",
+          "kind": "learning"
+        },
+        {
+          "title": "Dry Runs, Edge Cases and Debugging",
+          "titleSlug": "tuf-a2z-17137-beginner-problem-fundamentals-of-programming",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/dry-runs-edge-cases-and-debugging",
+          "kind": "learning"
+        },
+        {
+          "title": "Programming Languages and Choosing a Path",
+          "titleSlug": "tuf-a2z-17138-beginner-problem-fundamentals-of-programming",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/programming-languages-and-choosing-a-path",
+          "kind": "learning"
+        }
+      ]
+    },
+    {
+      "name": "Beginner Problems / Language Basics",
+      "questions": [
+        {
+          "title": "Learn C++",
+          "titleSlug": "tuf-a2z-17083-beginner-problem-language-basics",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Learn Java",
+          "titleSlug": "tuf-a2z-17084-beginner-problem-language-basics",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Learn Python",
+          "titleSlug": "tuf-a2z-17085-beginner-problem-language-basics",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        }
+      ]
+    },
+    {
+      "name": "Beginner Problems / Logic Building (Patterns)",
+      "questions": [
+        {
+          "title": "Easy and Medium",
+          "titleSlug": "tuf-a2z-1216-beginner-problem-logic-building-patterns",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Hard",
+          "titleSlug": "tuf-a2z-1205-beginner-problem-logic-building-patterns",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        }
+      ]
+    },
+    {
+      "name": "Beginner Problems / Patterns",
+      "questions": [
+        {
+          "title": "Pattern 1",
+          "titleSlug": "tuf-a2z-401-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 2",
+          "titleSlug": "tuf-a2z-412-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 3",
+          "titleSlug": "tuf-a2z-416-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 4",
+          "titleSlug": "tuf-a2z-417-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 5",
+          "titleSlug": "tuf-a2z-418-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 6",
+          "titleSlug": "tuf-a2z-419-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 7",
+          "titleSlug": "tuf-a2z-420-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 8",
+          "titleSlug": "tuf-a2z-421-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 9",
+          "titleSlug": "tuf-a2z-422-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 10",
+          "titleSlug": "tuf-a2z-402-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 11",
+          "titleSlug": "tuf-a2z-403-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 12",
+          "titleSlug": "tuf-a2z-404-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 13",
+          "titleSlug": "tuf-a2z-405-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 14",
+          "titleSlug": "tuf-a2z-406-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 15",
+          "titleSlug": "tuf-a2z-407-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 16",
+          "titleSlug": "tuf-a2z-408-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 17",
+          "titleSlug": "tuf-a2z-409-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 18",
+          "titleSlug": "tuf-a2z-410-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 19",
+          "titleSlug": "tuf-a2z-411-beginner-problem-patterns",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 20",
+          "titleSlug": "tuf-a2z-413-beginner-problem-patterns",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 21",
+          "titleSlug": "tuf-a2z-414-beginner-problem-patterns",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Pattern 22",
+          "titleSlug": "tuf-a2z-415-beginner-problem-patterns",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Beginner Problems / Time Complexity",
+      "questions": [
+        {
+          "title": "Theory with examples",
+          "titleSlug": "tuf-a2z-1219-beginner-problem-time-complexity",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        }
+      ]
+    },
+    {
+      "name": "Beginner Problems / Standard Libraries & Collections",
+      "questions": [
+        {
+          "title": "STL",
+          "titleSlug": "tuf-a2z-1218-beginner-problem-standard-libraries-and-collections",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Java Collections",
+          "titleSlug": "tuf-a2z-1217-beginner-problem-standard-libraries-and-collections",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Python Libraries Part 1",
+          "titleSlug": "tuf-a2z-1193-beginner-problem-standard-libraries-and-collections",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Python Libraries Part 2",
+          "titleSlug": "tuf-a2z-1194-beginner-problem-standard-libraries-and-collections",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        }
+      ]
+    },
+    {
+      "name": "Beginner Problems / Concept Basics",
+      "questions": [
+        {
+          "title": "Basic Maths",
+          "titleSlug": "tuf-a2z-1214-beginner-problem-concept-basics",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Basic Arrays",
+          "titleSlug": "tuf-a2z-1213-beginner-problem-concept-basics",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/array-basics",
+          "kind": "learning"
+        },
+        {
+          "title": "Basic Hashing",
+          "titleSlug": "tuf-a2z-1203-beginner-problem-concept-basics",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/hashing-data-structures",
+          "kind": "learning"
+        },
+        {
+          "title": "Basic String",
+          "titleSlug": "tuf-a2z-1204-beginner-problem-concept-basics",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/string-introduction-vowels-consonants-search-frequency-reverse-and-case-conversion",
+          "kind": "learning"
+        }
+      ]
+    },
+    {
+      "name": "Beginner Problems / Basic Maths",
+      "questions": [
+        {
+          "title": "Count all Digits of a Number",
+          "titleSlug": "tuf-a2z-367-beginner-problem-basic-maths",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/count-digits-in-a-number",
+          "kind": "practice"
+        },
+        {
+          "title": "Count number of odd digits in a number",
+          "titleSlug": "tuf-a2z-368-beginner-problem-basic-maths",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/count-odd-digits-in-a-number",
+          "kind": "practice"
+        },
+        {
+          "title": "Reverse a number",
+          "titleSlug": "tuf-a2z-376-beginner-problem-basic-maths",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/reverse-integer/",
+          "kind": "practice",
+          "leetcodeSlug": "reverse-integer"
+        },
+        {
+          "title": "Palindrome Number",
+          "titleSlug": "tuf-a2z-374-beginner-problem-basic-maths",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/palindrome-number/",
+          "kind": "practice",
+          "leetcodeSlug": "palindrome-number"
+        },
+        {
+          "title": "Return the Largest Digit in a Number",
+          "titleSlug": "tuf-a2z-375-beginner-problem-basic-maths",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/find-the-largest-digit-in-a-number",
+          "kind": "practice"
+        },
+        {
+          "title": "Factorial of a given number",
+          "titleSlug": "tuf-a2z-371-beginner-problem-basic-maths",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/factorial-of-a-number",
+          "kind": "practice"
+        },
+        {
+          "title": "Check if the Number is Armstrong",
+          "titleSlug": "tuf-a2z-366-beginner-problem-basic-maths",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/armstrong-number/",
+          "kind": "practice",
+          "leetcodeSlug": "armstrong-number"
+        },
+        {
+          "title": "Check for Perfect Number",
+          "titleSlug": "tuf-a2z-364-beginner-problem-basic-maths",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/perfect-number/",
+          "kind": "practice",
+          "leetcodeSlug": "perfect-number"
+        },
+        {
+          "title": "Check for Prime Number",
+          "titleSlug": "tuf-a2z-365-beginner-problem-basic-maths",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/check-whether-a-number-is-prime",
+          "kind": "practice"
+        },
+        {
+          "title": "Count of Prime Numbers till N",
+          "titleSlug": "tuf-a2z-369-beginner-problem-basic-maths",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/count-primes/",
+          "kind": "practice",
+          "leetcodeSlug": "count-primes"
+        },
+        {
+          "title": "GCD of Two Numbers",
+          "titleSlug": "tuf-a2z-372-beginner-problem-basic-maths",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/gcd-euclidean-algorithm",
+          "kind": "practice"
+        },
+        {
+          "title": "LCM of two numbers",
+          "titleSlug": "tuf-a2z-373-beginner-problem-basic-maths",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Divisors of a Number",
+          "titleSlug": "tuf-a2z-370-beginner-problem-basic-maths",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/count-divisors",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Beginner Problems / Basic Arrays",
+      "questions": [
+        {
+          "title": "Sum of Array Elements",
+          "titleSlug": "tuf-a2z-343-beginner-problem-basic-arrays",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/sum-of-array",
+          "kind": "practice"
+        },
+        {
+          "title": "Count of odd numbers in Array",
+          "titleSlug": "tuf-a2z-341-beginner-problem-basic-arrays",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/odd-elements-in-an-array",
+          "kind": "practice"
+        },
+        {
+          "title": "Check if the Array is Sorted I",
+          "titleSlug": "tuf-a2z-340-beginner-problem-basic-arrays",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/check-if-an-array-is-sorted-in-ascending-order",
+          "kind": "practice"
+        },
+        {
+          "title": "Reverse an array",
+          "titleSlug": "tuf-a2z-342-beginner-problem-basic-arrays",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Beginner Problems / Basic Hashing",
+      "questions": [
+        {
+          "title": "Highest Occurring Element in an Array",
+          "titleSlug": "tuf-a2z-344-beginner-problem-basic-hashing",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/frequency-of-the-most-frequent-element/",
+          "kind": "practice",
+          "leetcodeSlug": "frequency-of-the-most-frequent-element"
+        },
+        {
+          "title": "Second Highest Occurring Element",
+          "titleSlug": "tuf-a2z-345-beginner-problem-basic-hashing",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/second-highest-occurring-element",
+          "kind": "practice"
+        },
+        {
+          "title": "Sum of Highest and Lowest Frequency",
+          "titleSlug": "tuf-a2z-346-beginner-problem-basic-hashing",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Beginner Problems / Basic Strings",
+      "questions": [
+        {
+          "title": "Reverse a String II",
+          "titleSlug": "tuf-a2z-397-beginner-problem-basic-strings",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/reverse-string/",
+          "kind": "practice",
+          "leetcodeSlug": "reverse-string"
+        },
+        {
+          "title": "Palindrome Check",
+          "titleSlug": "tuf-a2z-396-beginner-problem-basic-strings",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/valid-palindrome/",
+          "kind": "practice",
+          "leetcodeSlug": "valid-palindrome"
+        },
+        {
+          "title": "Largest Odd Number in a String",
+          "titleSlug": "tuf-a2z-394-beginner-problem-basic-strings",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/largest-odd-number-in-string/",
+          "kind": "practice",
+          "leetcodeSlug": "largest-odd-number-in-string"
+        },
+        {
+          "title": "Longest Common Prefix",
+          "titleSlug": "tuf-a2z-395-beginner-problem-basic-strings",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/longest-common-prefix/",
+          "kind": "practice",
+          "leetcodeSlug": "longest-common-prefix"
+        },
+        {
+          "title": "Isomorphic Strings",
+          "titleSlug": "tuf-a2z-393-beginner-problem-basic-strings",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/isomorphic-strings/",
+          "kind": "practice",
+          "leetcodeSlug": "isomorphic-strings"
+        },
+        {
+          "title": "Rotate String",
+          "titleSlug": "tuf-a2z-398-beginner-problem-basic-strings",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/rotate-string/",
+          "kind": "practice",
+          "leetcodeSlug": "rotate-string"
+        },
+        {
+          "title": "Valid Anagram",
+          "titleSlug": "tuf-a2z-400-beginner-problem-basic-strings",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/valid-anagram/",
+          "kind": "practice",
+          "leetcodeSlug": "valid-anagram"
+        },
+        {
+          "title": "Sort Characters by Frequency",
+          "titleSlug": "tuf-a2z-399-beginner-problem-basic-strings",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/sort-characters-by-frequency/",
+          "kind": "practice",
+          "leetcodeSlug": "sort-characters-by-frequency"
+        }
+      ]
+    },
+    {
+      "name": "Beginner Problems / Basic Recursion",
+      "questions": [
+        {
+          "title": "Recursion Theory",
+          "titleSlug": "tuf-a2z-1199-beginner-problem-basic-recursion",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Recursion Concepts with Parameters",
+          "titleSlug": "tuf-a2z-1198-beginner-problem-basic-recursion",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Sum of First N Numbers",
+          "titleSlug": "tuf-a2z-386-beginner-problem-basic-recursion",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Factorial of a Given Number",
+          "titleSlug": "tuf-a2z-380-beginner-problem-basic-recursion",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/factorial-of-a-number-using-recursion",
+          "kind": "practice"
+        },
+        {
+          "title": "Sum of Array Elements II",
+          "titleSlug": "tuf-a2z-384-beginner-problem-basic-recursion",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Reverse a String I",
+          "titleSlug": "tuf-a2z-383-beginner-problem-basic-recursion",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/reverse-string/",
+          "kind": "practice",
+          "leetcodeSlug": "reverse-string"
+        },
+        {
+          "title": "Check if String is Palindrome or Not ",
+          "titleSlug": "tuf-a2z-378-beginner-problem-basic-recursion",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/valid-palindrome/",
+          "kind": "practice",
+          "leetcodeSlug": "valid-palindrome"
+        },
+        {
+          "title": "Check if a Number is Prime or Not",
+          "titleSlug": "tuf-a2z-377-beginner-problem-basic-recursion",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Reverse an array 2",
+          "titleSlug": "tuf-a2z-382-beginner-problem-basic-recursion",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/reversing-an-array-using-recursion",
+          "kind": "practice"
+        },
+        {
+          "title": "Check if the Array is Sorted II",
+          "titleSlug": "tuf-a2z-379-beginner-problem-basic-recursion",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/check-if-an-array-is-sorted-in-ascending-order",
+          "kind": "practice"
+        },
+        {
+          "title": "Sum of Digits in a Given Number",
+          "titleSlug": "tuf-a2z-385-beginner-problem-basic-recursion",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/sum-of-digits-of-a-number-using-recursion",
+          "kind": "practice"
+        },
+        {
+          "title": "Fibonacci Number",
+          "titleSlug": "tuf-a2z-381-beginner-problem-basic-recursion",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/fibonacci-number/",
+          "kind": "practice",
+          "leetcodeSlug": "fibonacci-number"
+        }
+      ]
+    },
+    {
+      "name": "Sorting / Algorithms",
+      "questions": [
+        {
+          "title": "Selection Sort",
+          "titleSlug": "tuf-a2z-947-sorting-algorithms",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/selection-sort-algorithm",
+          "kind": "practice"
+        },
+        {
+          "title": "Bubble Sort",
+          "titleSlug": "tuf-a2z-943-sorting-algorithms",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/bubble-sort-algorithm",
+          "kind": "practice"
+        },
+        {
+          "title": "Insertion Sorting",
+          "titleSlug": "tuf-a2z-944-sorting-algorithms",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/insertion-sort-algorithm",
+          "kind": "practice"
+        },
+        {
+          "title": "Merge Sorting",
+          "titleSlug": "tuf-a2z-945-sorting-algorithms",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/merge-sort-algorithm",
+          "kind": "practice"
+        },
+        {
+          "title": "Quick Sorting",
+          "titleSlug": "tuf-a2z-946-sorting-algorithms",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/quick-sort-algorithm",
+          "kind": "practice"
+        },
+        {
+          "title": "Recursive Bubble Sort",
+          "titleSlug": "tuf-a2z-881-sorting-algorithms",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Recursive Insertion Sort",
+          "titleSlug": "tuf-a2z-882-sorting-algorithms",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Arrays / Fundamentals",
+      "questions": [
+        {
+          "title": "Linear Search",
+          "titleSlug": "tuf-a2z-41-arrays-fundamentals",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/linear-search-algorithm",
+          "kind": "practice"
+        },
+        {
+          "title": "Largest Element ",
+          "titleSlug": "tuf-a2z-38-arrays-fundamentals",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/find-the-largest-element-in-an-array",
+          "kind": "practice"
+        },
+        {
+          "title": "Second Largest Element",
+          "titleSlug": "tuf-a2z-43-arrays-fundamentals",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/second-largest-element",
+          "kind": "practice"
+        },
+        {
+          "title": "Maximum Consecutive Ones",
+          "titleSlug": "tuf-a2z-42-arrays-fundamentals",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/max-consecutive-ones/",
+          "kind": "practice",
+          "leetcodeSlug": "max-consecutive-ones"
+        },
+        {
+          "title": "Left Rotate Array by One",
+          "titleSlug": "tuf-a2z-40-arrays-fundamentals",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/rotate-array/",
+          "kind": "practice",
+          "leetcodeSlug": "rotate-array"
+        },
+        {
+          "title": "Left Rotate Array by K Places",
+          "titleSlug": "tuf-a2z-39-arrays-fundamentals",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/rotate-array/",
+          "kind": "practice",
+          "leetcodeSlug": "rotate-array"
+        }
+      ]
+    },
+    {
+      "name": "Arrays / Logic Building",
+      "questions": [
+        {
+          "title": "Move Zeros to End",
+          "titleSlug": "tuf-a2z-46-arrays-logic-building",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/move-zeroes/",
+          "kind": "practice",
+          "leetcodeSlug": "move-zeroes"
+        },
+        {
+          "title": "Remove duplicates from sorted array",
+          "titleSlug": "tuf-a2z-47-arrays-logic-building",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/remove-duplicates-from-sorted-array/",
+          "kind": "practice",
+          "leetcodeSlug": "remove-duplicates-from-sorted-array"
+        },
+        {
+          "title": "Find missing number",
+          "titleSlug": "tuf-a2z-44-arrays-logic-building",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/missing-number/",
+          "kind": "practice",
+          "leetcodeSlug": "missing-number"
+        },
+        {
+          "title": "Union of two sorted arrays",
+          "titleSlug": "tuf-a2z-48-arrays-logic-building",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/union-of-two-sorted-arrays",
+          "kind": "practice"
+        },
+        {
+          "title": "Intersection of two sorted arrays",
+          "titleSlug": "tuf-a2z-45-arrays-logic-building",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/intersection-of-two-arrays",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Arrays / FAQs(Medium)",
+      "questions": [
+        {
+          "title": "Majority Element-I",
+          "titleSlug": "tuf-a2z-22-arrays-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/majority-element/",
+          "kind": "practice",
+          "leetcodeSlug": "majority-element"
+        },
+        {
+          "title": "Leaders in an Array",
+          "titleSlug": "tuf-a2z-30-arrays-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/buildings-with-an-ocean-view/",
+          "kind": "practice",
+          "leetcodeSlug": "buildings-with-an-ocean-view"
+        },
+        {
+          "title": "Rearrange array elements by sign",
+          "titleSlug": "tuf-a2z-34-arrays-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/rearrange-array-elements-by-sign/",
+          "kind": "practice",
+          "leetcodeSlug": "rearrange-array-elements-by-sign"
+        },
+        {
+          "title": "Print the matrix in spiral manner",
+          "titleSlug": "tuf-a2z-33-arrays-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/spiral-matrix/",
+          "kind": "practice",
+          "leetcodeSlug": "spiral-matrix"
+        },
+        {
+          "title": "Pascal's Triangle I",
+          "titleSlug": "tuf-a2z-813-arrays-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/pascals-triangle/",
+          "kind": "practice",
+          "leetcodeSlug": "pascals-triangle"
+        },
+        {
+          "title": "Pascal's Triangle II",
+          "titleSlug": "tuf-a2z-812-arrays-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/pascals-triangle-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "pascals-triangle-ii"
+        },
+        {
+          "title": "Pascal's Triangle III",
+          "titleSlug": "tuf-a2z-32-arrays-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/pascals-triangle-first-n-rows",
+          "kind": "practice"
+        },
+        {
+          "title": "Rotate matrix by 90 degrees",
+          "titleSlug": "tuf-a2z-35-arrays-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/rotate-image/",
+          "kind": "practice",
+          "leetcodeSlug": "rotate-image"
+        },
+        {
+          "title": "Set Matrix Zeroes",
+          "titleSlug": "tuf-a2z-911-arrays-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/set-matrix-zeroes/",
+          "kind": "practice",
+          "leetcodeSlug": "set-matrix-zeroes"
+        },
+        {
+          "title": "Two Sum",
+          "titleSlug": "tuf-a2z-37-arrays-faqs-medium",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/two-sum/",
+          "kind": "practice",
+          "leetcodeSlug": "two-sum"
+        },
+        {
+          "title": "3 Sum",
+          "titleSlug": "tuf-a2z-27-arrays-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/3sum/",
+          "kind": "practice",
+          "leetcodeSlug": "3sum"
+        },
+        {
+          "title": "4 Sum",
+          "titleSlug": "tuf-a2z-28-arrays-faqs-medium",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/4sum/",
+          "kind": "practice",
+          "leetcodeSlug": "4sum"
+        },
+        {
+          "title": "Sort an array of 0's 1's and 2's",
+          "titleSlug": "tuf-a2z-36-arrays-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/sort-colors/",
+          "kind": "practice",
+          "leetcodeSlug": "sort-colors"
+        },
+        {
+          "title": "Kadane's Algorithm",
+          "titleSlug": "tuf-a2z-29-arrays-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/maximum-subarray/",
+          "kind": "practice",
+          "leetcodeSlug": "maximum-subarray"
+        },
+        {
+          "title": "Next Permutation",
+          "titleSlug": "tuf-a2z-31-arrays-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/next-permutation/",
+          "kind": "practice",
+          "leetcodeSlug": "next-permutation"
+        }
+      ]
+    },
+    {
+      "name": "Arrays / FAQs(Hard)",
+      "questions": [
+        {
+          "title": "Majority Element-II",
+          "titleSlug": "tuf-a2z-23-arrays-faqs-hard",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/majority-element-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "majority-element-ii"
+        },
+        {
+          "title": "Find the repeating and missing number",
+          "titleSlug": "tuf-a2z-21-arrays-faqs-hard",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/find-the-missing-and-repeating-numbers-in-an-array",
+          "kind": "practice"
+        },
+        {
+          "title": "Count Inversions",
+          "titleSlug": "tuf-a2z-20-arrays-faqs-hard",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/count-inversions-in-an-array-using-merge-sort",
+          "kind": "practice"
+        },
+        {
+          "title": "Reverse Pairs",
+          "titleSlug": "tuf-a2z-26-arrays-faqs-hard",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/reverse-pairs/",
+          "kind": "practice",
+          "leetcodeSlug": "reverse-pairs"
+        },
+        {
+          "title": "Maximum Product Subarray in an Array",
+          "titleSlug": "tuf-a2z-24-arrays-faqs-hard",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/maximum-product-subarray/",
+          "kind": "practice",
+          "leetcodeSlug": "maximum-product-subarray"
+        },
+        {
+          "title": "Merge two sorted arrays without extra space",
+          "titleSlug": "tuf-a2z-25-arrays-faqs-hard",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/merge-sorted-array/",
+          "kind": "practice",
+          "leetcodeSlug": "merge-sorted-array"
+        }
+      ]
+    },
+    {
+      "name": "Hashing / Theory",
+      "questions": [
+        {
+          "title": "Basic Hashing",
+          "titleSlug": "tuf-a2z-1203-hashing-theory",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/hashing-data-structures",
+          "kind": "learning"
+        }
+      ]
+    },
+    {
+      "name": "Hashing / FAQs",
+      "questions": [
+        {
+          "title": "Longest Consecutive Sequence in an Array",
+          "titleSlug": "tuf-a2z-563-hashing-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/longest-consecutive-sequence/",
+          "kind": "practice",
+          "leetcodeSlug": "longest-consecutive-sequence"
+        },
+        {
+          "title": "Longest subarray with sum K",
+          "titleSlug": "tuf-a2z-564-hashing-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/maximum-size-subarray-sum-equals-k/",
+          "kind": "practice",
+          "leetcodeSlug": "maximum-size-subarray-sum-equals-k"
+        },
+        {
+          "title": "Largest Subarray with Sum 0",
+          "titleSlug": "tuf-a2z-605-hashing-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/maximum-size-subarray-sum-equals-k/",
+          "kind": "practice",
+          "leetcodeSlug": "maximum-size-subarray-sum-equals-k"
+        },
+        {
+          "title": "Count subarrays with given sum",
+          "titleSlug": "tuf-a2z-561-hashing-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/subarray-sum-equals-k/",
+          "kind": "practice",
+          "leetcodeSlug": "subarray-sum-equals-k"
+        },
+        {
+          "title": "Count subarrays with given xor K",
+          "titleSlug": "tuf-a2z-562-hashing-faqs",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/count-subarrays-with-a-given-xor-k",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Binary Search / Fundamentals",
+      "questions": [
+        {
+          "title": "Search X in sorted array",
+          "titleSlug": "tuf-a2z-81-binary-search-fundamentals",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/binary-search/",
+          "kind": "practice",
+          "leetcodeSlug": "binary-search"
+        },
+        {
+          "title": "Lower Bound ",
+          "titleSlug": "tuf-a2z-80-binary-search-fundamentals",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/lower-bound-in-sorted-array",
+          "kind": "practice"
+        },
+        {
+          "title": "Upper Bound",
+          "titleSlug": "tuf-a2z-82-binary-search-fundamentals",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/upper-bound-in-sorted-array",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Binary Search / Logic Building",
+      "questions": [
+        {
+          "title": "Search insert position",
+          "titleSlug": "tuf-a2z-89-binary-search-logic-building",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/search-insert-position/",
+          "kind": "practice",
+          "leetcodeSlug": "search-insert-position"
+        },
+        {
+          "title": "Floor and Ceil in Sorted Array",
+          "titleSlug": "tuf-a2z-86-binary-search-logic-building",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "First and last occurrence",
+          "titleSlug": "tuf-a2z-85-binary-search-logic-building",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/find-first-and-last-position-of-element-in-sorted-array/",
+          "kind": "practice",
+          "leetcodeSlug": "find-first-and-last-position-of-element-in-sorted-array"
+        },
+        {
+          "title": "Search in rotated sorted array-I",
+          "titleSlug": "tuf-a2z-87-binary-search-logic-building",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/search-in-rotated-sorted-array/",
+          "kind": "practice",
+          "leetcodeSlug": "search-in-rotated-sorted-array"
+        },
+        {
+          "title": "Search in rotated sorted array-II",
+          "titleSlug": "tuf-a2z-88-binary-search-logic-building",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/search-in-rotated-sorted-array-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "search-in-rotated-sorted-array-ii"
+        },
+        {
+          "title": "Find minimum in Rotated Sorted Array",
+          "titleSlug": "tuf-a2z-83-binary-search-logic-building",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/",
+          "kind": "practice",
+          "leetcodeSlug": "find-minimum-in-rotated-sorted-array"
+        },
+        {
+          "title": "Find out how many times the array is rotated",
+          "titleSlug": "tuf-a2z-84-binary-search-logic-building",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/rotation-count-sorted-array",
+          "kind": "practice"
+        },
+        {
+          "title": "Single element in sorted array",
+          "titleSlug": "tuf-a2z-90-binary-search-logic-building",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/single-element-in-a-sorted-array/",
+          "kind": "practice",
+          "leetcodeSlug": "single-element-in-a-sorted-array"
+        },
+        {
+          "title": "Count Occurrences in a Sorted Array",
+          "titleSlug": "tuf-a2z-229-binary-search-logic-building",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/count-occurrences-in-a-sorted-array",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Binary Search / On answers",
+      "questions": [
+        {
+          "title": "Find square root of a number",
+          "titleSlug": "tuf-a2z-92-binary-search-on-answers",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/sqrtx/",
+          "kind": "practice",
+          "leetcodeSlug": "sqrtx"
+        },
+        {
+          "title": "Find Nth root of a number",
+          "titleSlug": "tuf-a2z-91-binary-search-on-answers",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Find the smallest divisor",
+          "titleSlug": "tuf-a2z-93-binary-search-on-answers",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/find-the-smallest-divisor-given-a-threshold/",
+          "kind": "practice",
+          "leetcodeSlug": "find-the-smallest-divisor-given-a-threshold"
+        },
+        {
+          "title": "Koko eating bananas",
+          "titleSlug": "tuf-a2z-94-binary-search-on-answers",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/koko-eating-bananas/",
+          "kind": "practice",
+          "leetcodeSlug": "koko-eating-bananas"
+        },
+        {
+          "title": "Minimum days to make M bouquets",
+          "titleSlug": "tuf-a2z-95-binary-search-on-answers",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/minimum-number-of-days-to-make-m-bouquets/",
+          "kind": "practice",
+          "leetcodeSlug": "minimum-number-of-days-to-make-m-bouquets"
+        },
+        {
+          "title": "Capacity to Ship Packages Within D Days",
+          "titleSlug": "tuf-a2z-161-binary-search-on-answers",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/capacity-to-ship-packages-within-d-days/",
+          "kind": "practice",
+          "leetcodeSlug": "capacity-to-ship-packages-within-d-days"
+        },
+        {
+          "title": "Kth Missing Positive Number",
+          "titleSlug": "tuf-a2z-600-binary-search-on-answers",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/kth-missing-positive-number/",
+          "kind": "practice",
+          "leetcodeSlug": "kth-missing-positive-number"
+        },
+        {
+          "title": "Painter's Partition",
+          "titleSlug": "tuf-a2z-805-binary-search-on-answers",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/split-array-largest-sum/",
+          "kind": "practice",
+          "leetcodeSlug": "split-array-largest-sum"
+        }
+      ]
+    },
+    {
+      "name": "Binary Search / FAQs",
+      "questions": [
+        {
+          "title": "Aggressive Cows",
+          "titleSlug": "tuf-a2z-73-binary-search-faqs",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/aggressive-cows",
+          "kind": "practice"
+        },
+        {
+          "title": "Book Allocation Problem",
+          "titleSlug": "tuf-a2z-74-binary-search-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/split-array-largest-sum/",
+          "kind": "practice",
+          "leetcodeSlug": "split-array-largest-sum"
+        },
+        {
+          "title": "Find peak element",
+          "titleSlug": "tuf-a2z-75-binary-search-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/find-peak-element/",
+          "kind": "practice",
+          "leetcodeSlug": "find-peak-element"
+        },
+        {
+          "title": "Median of 2 sorted arrays",
+          "titleSlug": "tuf-a2z-77-binary-search-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/median-of-two-sorted-arrays/",
+          "kind": "practice",
+          "leetcodeSlug": "median-of-two-sorted-arrays"
+        },
+        {
+          "title": "Kth element of 2 sorted arrays",
+          "titleSlug": "tuf-a2z-76-binary-search-faqs",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/kth-element-of-two-sorted-arrays",
+          "kind": "practice"
+        },
+        {
+          "title": "Minimize Max Distance to Gas Station",
+          "titleSlug": "tuf-a2z-78-binary-search-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/minimize-max-distance-to-gas-station/",
+          "kind": "practice",
+          "leetcodeSlug": "minimize-max-distance-to-gas-station"
+        },
+        {
+          "title": "Split array - largest sum",
+          "titleSlug": "tuf-a2z-79-binary-search-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/split-array-largest-sum/",
+          "kind": "practice",
+          "leetcodeSlug": "split-array-largest-sum"
+        }
+      ]
+    },
+    {
+      "name": "Binary Search / 2D Arrays",
+      "questions": [
+        {
+          "title": "Find row with maximum 1's",
+          "titleSlug": "tuf-a2z-66-binary-search-2d-arrays",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/find-the-row-with-maximum-1s-in-a-sorted-binary-matrix",
+          "kind": "practice"
+        },
+        {
+          "title": "Search in a 2D Matrix",
+          "titleSlug": "tuf-a2z-69-binary-search-2d-arrays",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/search-a-2d-matrix/",
+          "kind": "practice",
+          "leetcodeSlug": "search-a-2d-matrix"
+        },
+        {
+          "title": "Search in 2D matrix - II",
+          "titleSlug": "tuf-a2z-68-binary-search-2d-arrays",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/search-a-2d-matrix-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "search-a-2d-matrix-ii"
+        },
+        {
+          "title": "Find Peak Element - II",
+          "titleSlug": "tuf-a2z-65-binary-search-2d-arrays",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/find-a-peak-element-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "find-a-peak-element-ii"
+        },
+        {
+          "title": "Matrix Median",
+          "titleSlug": "tuf-a2z-67-binary-search-2d-arrays",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/median-of-a-row-wise-sorted-matrix/",
+          "kind": "practice",
+          "leetcodeSlug": "median-of-a-row-wise-sorted-matrix"
+        }
+      ]
+    },
+    {
+      "name": "Strings (Basic and Medium) / Parentheses",
+      "questions": [
+        {
+          "title": "Remove Outermost Parentheses",
+          "titleSlug": "tuf-a2z-892-strings-basic-and-medium-parentheses",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/remove-outermost-parentheses/",
+          "kind": "practice",
+          "leetcodeSlug": "remove-outermost-parentheses"
+        },
+        {
+          "title": "Maximum Nesting Depth of the Parentheses",
+          "titleSlug": "tuf-a2z-674-strings-basic-and-medium-parentheses",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/maximum-nesting-depth-of-the-parentheses/",
+          "kind": "practice",
+          "leetcodeSlug": "maximum-nesting-depth-of-the-parentheses"
+        }
+      ]
+    },
+    {
+      "name": "Strings (Basic and Medium) / String Conversions",
+      "questions": [
+        {
+          "title": "Roman to Integer",
+          "titleSlug": "tuf-a2z-903-strings-basic-and-medium-string-conversions",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/roman-to-integer/",
+          "kind": "practice",
+          "leetcodeSlug": "roman-to-integer"
+        },
+        {
+          "title": "String to Integer (atoi)",
+          "titleSlug": "tuf-a2z-974-strings-basic-and-medium-string-conversions",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/string-to-integer-atoi/",
+          "kind": "practice",
+          "leetcodeSlug": "string-to-integer-atoi"
+        }
+      ]
+    },
+    {
+      "name": "Strings (Basic and Medium) / Substring Problems",
+      "questions": [
+        {
+          "title": "Count Number of Substrings",
+          "titleSlug": "tuf-a2z-19364-strings-basic-and-medium-substring-problems",
+          "difficulty": "PRACTICE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Longest Palindromic Substring",
+          "titleSlug": "tuf-a2z-638-strings-basic-and-medium-substring-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/longest-palindromic-substring/",
+          "kind": "practice",
+          "leetcodeSlug": "longest-palindromic-substring"
+        },
+        {
+          "title": "Sum of Beauty of All Substrings",
+          "titleSlug": "tuf-a2z-993-strings-basic-and-medium-substring-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/sum-of-beauty-of-all-substrings/",
+          "kind": "practice",
+          "leetcodeSlug": "sum-of-beauty-of-all-substrings"
+        }
+      ]
+    },
+    {
+      "name": "Recursion / Implementation Problems",
+      "questions": [
+        {
+          "title": "Pow(x,n)",
+          "titleSlug": "tuf-a2z-877-recursion-implementation-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/powx-n/",
+          "kind": "practice",
+          "leetcodeSlug": "powx-n"
+        },
+        {
+          "title": "Generate Parentheses",
+          "titleSlug": "tuf-a2z-876-recursion-implementation-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/generate-parentheses/",
+          "kind": "practice",
+          "leetcodeSlug": "generate-parentheses"
+        },
+        {
+          "title": "Power Set",
+          "titleSlug": "tuf-a2z-878-recursion-implementation-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/subsets/",
+          "kind": "practice",
+          "leetcodeSlug": "subsets"
+        },
+        {
+          "title": "Count Good Numbers",
+          "titleSlug": "tuf-a2z-222-recursion-implementation-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/count-good-numbers/",
+          "kind": "practice",
+          "leetcodeSlug": "count-good-numbers"
+        },
+        {
+          "title": "Reverse a Stack",
+          "titleSlug": "tuf-a2z-901-recursion-implementation-problems",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Recursion / Subsequence Pattern Problems",
+      "questions": [
+        {
+          "title": "Learn All Patterns of Subsequences (Theory)",
+          "titleSlug": "tuf-a2z-2400-recursion-subsequence-pattern-problems",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Check if there exists a subsequence with sum K",
+          "titleSlug": "tuf-a2z-879-recursion-subsequence-pattern-problems",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Count all subsequences with sum K",
+          "titleSlug": "tuf-a2z-880-recursion-subsequence-pattern-problems",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Generate Binary Strings Without Consecutive 1s",
+          "titleSlug": "tuf-a2z-493-recursion-subsequence-pattern-problems",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Recursion / FAQs (Medium)",
+      "questions": [
+        {
+          "title": "Combination Sum",
+          "titleSlug": "tuf-a2z-864-recursion-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/combination-sum/",
+          "kind": "practice",
+          "leetcodeSlug": "combination-sum"
+        },
+        {
+          "title": "Combination Sum II",
+          "titleSlug": "tuf-a2z-865-recursion-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/combination-sum-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "combination-sum-ii"
+        },
+        {
+          "title": "Subsets I",
+          "titleSlug": "tuf-a2z-867-recursion-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/subsets/",
+          "kind": "practice",
+          "leetcodeSlug": "subsets"
+        },
+        {
+          "title": "Subsets II",
+          "titleSlug": "tuf-a2z-868-recursion-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/subsets-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "subsets-ii"
+        },
+        {
+          "title": "Combination Sum III",
+          "titleSlug": "tuf-a2z-866-recursion-faqs-medium",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/combination-sum-iii/",
+          "kind": "practice",
+          "leetcodeSlug": "combination-sum-iii"
+        }
+      ]
+    },
+    {
+      "name": "Recursion / Hard",
+      "questions": [
+        {
+          "title": "Letter Combinations of a Phone Number",
+          "titleSlug": "tuf-a2z-875-recursion-hard",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/letter-combinations-of-a-phone-number/",
+          "kind": "practice",
+          "leetcodeSlug": "letter-combinations-of-a-phone-number"
+        }
+      ]
+    },
+    {
+      "name": "Recursion / FAQs (Hard)",
+      "questions": [
+        {
+          "title": "Palindrome partitioning",
+          "titleSlug": "tuf-a2z-871-recursion-faqs-hard",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/palindrome-partitioning/",
+          "kind": "practice",
+          "leetcodeSlug": "palindrome-partitioning"
+        },
+        {
+          "title": "Word Search",
+          "titleSlug": "tuf-a2z-874-recursion-faqs-hard",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/word-search/",
+          "kind": "practice",
+          "leetcodeSlug": "word-search"
+        },
+        {
+          "title": "N Queen",
+          "titleSlug": "tuf-a2z-870-recursion-faqs-hard",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/n-queens/",
+          "kind": "practice",
+          "leetcodeSlug": "n-queens"
+        },
+        {
+          "title": "Rat in a Maze",
+          "titleSlug": "tuf-a2z-872-recursion-faqs-hard",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "M Coloring Problem",
+          "titleSlug": "tuf-a2z-869-recursion-faqs-hard",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Sudoku Solver",
+          "titleSlug": "tuf-a2z-873-recursion-faqs-hard",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/sudoku-solver/",
+          "kind": "practice",
+          "leetcodeSlug": "sudoku-solver"
+        },
+        {
+          "title": "Expression Add Operators",
+          "titleSlug": "tuf-a2z-3-recursion-faqs-hard",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/expression-add-operators/",
+          "kind": "practice",
+          "leetcodeSlug": "expression-add-operators"
+        }
+      ]
+    },
+    {
+      "name": "Linked-List / Fundamentals (Single LL)",
+      "questions": [
+        {
+          "title": "Introduction to Singly LinkedList",
+          "titleSlug": "tuf-a2z-1237-linked-list-fundamentals-single-ll",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/singly-linked-list",
+          "kind": "learning"
+        },
+        {
+          "title": "Traversal in Linked List",
+          "titleSlug": "tuf-a2z-624-linked-list-fundamentals-single-ll",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Deletion in Linked List",
+          "titleSlug": "tuf-a2z-1235-linked-list-fundamentals-single-ll",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Insertion in Linked List",
+          "titleSlug": "tuf-a2z-1236-linked-list-fundamentals-single-ll",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Deletion of the head of LL",
+          "titleSlug": "tuf-a2z-352-linked-list-fundamentals-single-ll",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/delete-node-in-a-linked-list/",
+          "kind": "practice",
+          "leetcodeSlug": "delete-node-in-a-linked-list"
+        },
+        {
+          "title": "Deletion of the tail of Linked List",
+          "titleSlug": "tuf-a2z-354-linked-list-fundamentals-single-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Deletion of the Kth element of Linked List",
+          "titleSlug": "tuf-a2z-353-linked-list-fundamentals-single-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Delete the element with value X",
+          "titleSlug": "tuf-a2z-351-linked-list-fundamentals-single-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Insertion at the head of Linked List",
+          "titleSlug": "tuf-a2z-356-linked-list-fundamentals-single-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/insert-a-node-at-the-beginning-of-a-singly-linked-list",
+          "kind": "practice"
+        },
+        {
+          "title": "Insertion at the tail of Linked List",
+          "titleSlug": "tuf-a2z-358-linked-list-fundamentals-single-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Insertion at the Kth position of Linked List",
+          "titleSlug": "tuf-a2z-357-linked-list-fundamentals-single-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/insert-node-at-kth-position-in-linked-list",
+          "kind": "practice"
+        },
+        {
+          "title": "Insertion before the value X in Linked List",
+          "titleSlug": "tuf-a2z-359-linked-list-fundamentals-single-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/insert-node-before-value-x-in-linked-list",
+          "kind": "practice"
+        },
+        {
+          "title": "Find the length of the Linked List",
+          "titleSlug": "tuf-a2z-470-linked-list-fundamentals-single-ll",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Search in Linked List",
+          "titleSlug": "tuf-a2z-905-linked-list-fundamentals-single-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Linked-List / Fundamentals (Doubly LL)",
+      "questions": [
+        {
+          "title": "Introduction to Doubly LL",
+          "titleSlug": "tuf-a2z-1234-linked-list-fundamentals-doubly-ll",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/doubly-linked-list",
+          "kind": "learning"
+        },
+        {
+          "title": "Deletion in Doubly LL",
+          "titleSlug": "tuf-a2z-1232-linked-list-fundamentals-doubly-ll",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Insertion in DLL",
+          "titleSlug": "tuf-a2z-1233-linked-list-fundamentals-doubly-ll",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Convert Array to Doubly Linked List",
+          "titleSlug": "tuf-a2z-347-linked-list-fundamentals-doubly-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Delete Tail of Doubly Linked List",
+          "titleSlug": "tuf-a2z-350-linked-list-fundamentals-doubly-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Delete Kth Element of Doubly Linked List",
+          "titleSlug": "tuf-a2z-349-linked-list-fundamentals-doubly-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Removing given node in Doubly Linked List",
+          "titleSlug": "tuf-a2z-363-linked-list-fundamentals-doubly-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Insert node before head in Doubly Linked List",
+          "titleSlug": "tuf-a2z-361-linked-list-fundamentals-doubly-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Insert node before tail in Doubly Linked List",
+          "titleSlug": "tuf-a2z-362-linked-list-fundamentals-doubly-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Insert node before (kth node) in Doubly Linked List",
+          "titleSlug": "tuf-a2z-360-linked-list-fundamentals-doubly-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Insert before given node in Doubly Linked List",
+          "titleSlug": "tuf-a2z-355-linked-list-fundamentals-doubly-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Delete head of Doubly Linked List",
+          "titleSlug": "tuf-a2z-348-linked-list-fundamentals-doubly-ll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Reverse a Doubly Linked List",
+          "titleSlug": "tuf-a2z-900-linked-list-fundamentals-doubly-ll",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/reverse-linked-list/",
+          "kind": "practice",
+          "leetcodeSlug": "reverse-linked-list"
+        }
+      ]
+    },
+    {
+      "name": "Linked-List / Logic Building",
+      "questions": [
+        {
+          "title": "Add two numbers in Linked List",
+          "titleSlug": "tuf-a2z-625-linked-list-logic-building",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/add-two-numbers/",
+          "kind": "practice",
+          "leetcodeSlug": "add-two-numbers"
+        },
+        {
+          "title": "Segregate odd and even nodes in Linked List",
+          "titleSlug": "tuf-a2z-628-linked-list-logic-building",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/odd-even-linked-list/",
+          "kind": "practice",
+          "leetcodeSlug": "odd-even-linked-list"
+        },
+        {
+          "title": "Sort a Linked List of 0's 1's and 2's",
+          "titleSlug": "tuf-a2z-629-linked-list-logic-building",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/sort-linked-list-0s-1s-2s-changing-links",
+          "kind": "practice"
+        },
+        {
+          "title": "Remove Nth node from the back of the LL",
+          "titleSlug": "tuf-a2z-626-linked-list-logic-building",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/remove-nth-node-from-end-of-list/",
+          "kind": "practice",
+          "leetcodeSlug": "remove-nth-node-from-end-of-list"
+        },
+        {
+          "title": "Reverse a LL",
+          "titleSlug": "tuf-a2z-627-linked-list-logic-building",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/reverse-linked-list/",
+          "kind": "practice",
+          "leetcodeSlug": "reverse-linked-list"
+        }
+      ]
+    },
+    {
+      "name": "Linked-List / FAQs (Medium)",
+      "questions": [
+        {
+          "title": "Add one to a number represented by LL",
+          "titleSlug": "tuf-a2z-617-linked-list-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/plus-one-linked-list/",
+          "kind": "practice",
+          "leetcodeSlug": "plus-one-linked-list"
+        },
+        {
+          "title": "Find Middle of Linked List",
+          "titleSlug": "tuf-a2z-448-linked-list-faqs-medium",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/middle-of-the-linked-list/",
+          "kind": "practice",
+          "leetcodeSlug": "middle-of-the-linked-list"
+        },
+        {
+          "title": "Delete the middle node in LL",
+          "titleSlug": "tuf-a2z-619-linked-list-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/",
+          "kind": "practice",
+          "leetcodeSlug": "delete-the-middle-node-of-a-linked-list"
+        },
+        {
+          "title": "Check if LL is palindrome or not",
+          "titleSlug": "tuf-a2z-618-linked-list-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/palindrome-linked-list/",
+          "kind": "practice",
+          "leetcodeSlug": "palindrome-linked-list"
+        },
+        {
+          "title": "Find the intersection point of Y LL",
+          "titleSlug": "tuf-a2z-621-linked-list-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/intersection-of-two-linked-lists/",
+          "kind": "practice",
+          "leetcodeSlug": "intersection-of-two-linked-lists"
+        },
+        {
+          "title": "Detect a loop in LL",
+          "titleSlug": "tuf-a2z-620-linked-list-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/linked-list-cycle/",
+          "kind": "practice",
+          "leetcodeSlug": "linked-list-cycle"
+        },
+        {
+          "title": "Find the starting point in LL",
+          "titleSlug": "tuf-a2z-622-linked-list-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/linked-list-cycle-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "linked-list-cycle-ii"
+        },
+        {
+          "title": "Length of loop in LL",
+          "titleSlug": "tuf-a2z-623-linked-list-faqs-medium",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/length-of-cycle-linked-list",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Linked-List / FAQs (Hard)",
+      "questions": [
+        {
+          "title": "Reverse LL in group of given size K",
+          "titleSlug": "tuf-a2z-614-linked-list-faqs-hard",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/reverse-nodes-in-k-group/",
+          "kind": "practice",
+          "leetcodeSlug": "reverse-nodes-in-k-group"
+        },
+        {
+          "title": "Rotate a LL",
+          "titleSlug": "tuf-a2z-615-linked-list-faqs-hard",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/rotate-list/",
+          "kind": "practice",
+          "leetcodeSlug": "rotate-list"
+        },
+        {
+          "title": "Merge two Sorted Lists ",
+          "titleSlug": "tuf-a2z-613-linked-list-faqs-hard",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/merge-two-sorted-lists/",
+          "kind": "practice",
+          "leetcodeSlug": "merge-two-sorted-lists"
+        },
+        {
+          "title": "Flattening of LL",
+          "titleSlug": "tuf-a2z-612-linked-list-faqs-hard",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/merge-k-sorted-lists/",
+          "kind": "practice",
+          "leetcodeSlug": "merge-k-sorted-lists"
+        },
+        {
+          "title": "Sort LL",
+          "titleSlug": "tuf-a2z-616-linked-list-faqs-hard",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/sort-list/",
+          "kind": "practice",
+          "leetcodeSlug": "sort-list"
+        },
+        {
+          "title": "Clone a LL with random and next pointer",
+          "titleSlug": "tuf-a2z-611-linked-list-faqs-hard",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/copy-list-with-random-pointer/",
+          "kind": "practice",
+          "leetcodeSlug": "copy-list-with-random-pointer"
+        }
+      ]
+    },
+    {
+      "name": "Linked-List / FAQS (DLL)",
+      "questions": [
+        {
+          "title": "Delete all occurrences of a key in DLL",
+          "titleSlug": "tuf-a2z-609-linked-list-faqs-dll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/delete-all-occurrences-of-a-key-in-a-doubly-linked-list",
+          "kind": "practice"
+        },
+        {
+          "title": "Remove duplicates from sorted DLL",
+          "titleSlug": "tuf-a2z-610-linked-list-faqs-dll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/remove-duplicates-from-a-sorted-doubly-linked-list",
+          "kind": "practice"
+        },
+        {
+          "title": "Find Pairs with Given Sum in Doubly Linked List",
+          "titleSlug": "tuf-a2z-452-linked-list-faqs-dll",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/find-pairs-with-given-sum-in-doubly-linked-list",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Bit Manipulation / Theory",
+      "questions": [
+        {
+          "title": "Introduction to Bits and Tricks",
+          "titleSlug": "tuf-a2z-1155-bit-manipulation-theory",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/bit-basics-and-operators",
+          "kind": "learning"
+        }
+      ]
+    },
+    {
+      "name": "Bit Manipulation / Bit Fundamentals",
+      "questions": [
+        {
+          "title": "Check if the i-th bit is Set or Not",
+          "titleSlug": "tuf-a2z-177-bit-manipulation-bit-fundamentals",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Check if a Number is Odd or Not",
+          "titleSlug": "tuf-a2z-171-bit-manipulation-bit-fundamentals",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/check-even-or-odd",
+          "kind": "practice"
+        },
+        {
+          "title": "Check if a Number is Power of 2 or Not",
+          "titleSlug": "tuf-a2z-172-bit-manipulation-bit-fundamentals",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/power-of-two/",
+          "kind": "practice",
+          "leetcodeSlug": "power-of-two"
+        },
+        {
+          "title": "Count the Number of Set Bits",
+          "titleSlug": "tuf-a2z-243-bit-manipulation-bit-fundamentals",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/number-of-1-bits/",
+          "kind": "practice",
+          "leetcodeSlug": "number-of-1-bits"
+        },
+        {
+          "title": "Set the Rightmost Unset Bit",
+          "titleSlug": "tuf-a2z-19363-bit-manipulation-bit-fundamentals",
+          "difficulty": "PRACTICE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Swap Two Numbers",
+          "titleSlug": "tuf-a2z-1005-bit-manipulation-bit-fundamentals",
+          "difficulty": "BASIC",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Bit Manipulation / Problems",
+      "questions": [
+        {
+          "title": "Minimum Bit Flips to Convert Number",
+          "titleSlug": "tuf-a2z-141-bit-manipulation-problems",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/minimum-bit-flips-to-convert-number/",
+          "kind": "practice",
+          "leetcodeSlug": "minimum-bit-flips-to-convert-number"
+        },
+        {
+          "title": "Single Number - I",
+          "titleSlug": "tuf-a2z-143-bit-manipulation-problems",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/single-number/",
+          "kind": "practice",
+          "leetcodeSlug": "single-number"
+        },
+        {
+          "title": "Single Number - II",
+          "titleSlug": "tuf-a2z-144-bit-manipulation-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/single-number-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "single-number-ii"
+        },
+        {
+          "title": "Single Number - III",
+          "titleSlug": "tuf-a2z-145-bit-manipulation-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/single-number-iii/",
+          "kind": "practice",
+          "leetcodeSlug": "single-number-iii"
+        },
+        {
+          "title": "Divide two numbers without multiplication and division",
+          "titleSlug": "tuf-a2z-140-bit-manipulation-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/divide-two-integers/",
+          "kind": "practice",
+          "leetcodeSlug": "divide-two-integers"
+        },
+        {
+          "title": "Power Set Bit Manipulation",
+          "titleSlug": "tuf-a2z-142-bit-manipulation-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/subsets/",
+          "kind": "practice",
+          "leetcodeSlug": "subsets"
+        },
+        {
+          "title": "XOR of numbers in a given range",
+          "titleSlug": "tuf-a2z-146-bit-manipulation-problems",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/xor-of-numbers-in-a-range-l-to-r",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Greedy Algorithms / Easy",
+      "questions": [
+        {
+          "title": "Assign Cookies",
+          "titleSlug": "tuf-a2z-541-greedy-algorithms-easy",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/assign-cookies/",
+          "kind": "practice",
+          "leetcodeSlug": "assign-cookies"
+        },
+        {
+          "title": "Lemonade Change",
+          "titleSlug": "tuf-a2z-543-greedy-algorithms-easy",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/lemonade-change/",
+          "kind": "practice",
+          "leetcodeSlug": "lemonade-change"
+        },
+        {
+          "title": "Fractional Knapsack",
+          "titleSlug": "tuf-a2z-489-greedy-algorithms-easy",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Jump Game - I",
+          "titleSlug": "tuf-a2z-542-greedy-algorithms-easy",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/jump-game/",
+          "kind": "practice",
+          "leetcodeSlug": "jump-game"
+        }
+      ]
+    },
+    {
+      "name": "Greedy Algorithms / Scheduling and Interval Problems",
+      "questions": [
+        {
+          "title": "Shortest Job First",
+          "titleSlug": "tuf-a2z-551-greedy-algorithms-scheduling-and-interval-problems",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Job sequencing Problem",
+          "titleSlug": "tuf-a2z-547-greedy-algorithms-scheduling-and-interval-problems",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/job-sequencing-problem",
+          "kind": "practice"
+        },
+        {
+          "title": "N meetings in one room",
+          "titleSlug": "tuf-a2z-549-greedy-algorithms-scheduling-and-interval-problems",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/n-meetings-in-one-room",
+          "kind": "practice"
+        },
+        {
+          "title": "Non-overlapping Intervals",
+          "titleSlug": "tuf-a2z-550-greedy-algorithms-scheduling-and-interval-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/non-overlapping-intervals/",
+          "kind": "practice",
+          "leetcodeSlug": "non-overlapping-intervals"
+        },
+        {
+          "title": "Insert Interval",
+          "titleSlug": "tuf-a2z-546-greedy-algorithms-scheduling-and-interval-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/insert-interval/",
+          "kind": "practice",
+          "leetcodeSlug": "insert-interval"
+        },
+        {
+          "title": "Merge Intervals",
+          "titleSlug": "tuf-a2z-712-greedy-algorithms-scheduling-and-interval-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/merge-intervals/",
+          "kind": "practice",
+          "leetcodeSlug": "merge-intervals"
+        },
+        {
+          "title": "Minimum number of platforms required for a railway",
+          "titleSlug": "tuf-a2z-548-greedy-algorithms-scheduling-and-interval-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/divide-intervals-into-minimum-number-of-groups/",
+          "kind": "practice",
+          "leetcodeSlug": "divide-intervals-into-minimum-number-of-groups"
+        }
+      ]
+    },
+    {
+      "name": "Greedy Algorithms / Hard",
+      "questions": [
+        {
+          "title": "Valid Parenthesis Checker",
+          "titleSlug": "tuf-a2z-545-greedy-algorithms-hard",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/valid-parenthesis-string/",
+          "kind": "practice",
+          "leetcodeSlug": "valid-parenthesis-string"
+        },
+        {
+          "title": "Candy",
+          "titleSlug": "tuf-a2z-544-greedy-algorithms-hard",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/candy/",
+          "kind": "practice",
+          "leetcodeSlug": "candy"
+        },
+        {
+          "title": "Jump Game II",
+          "titleSlug": "tuf-a2z-595-greedy-algorithms-hard",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/jump-game-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "jump-game-ii"
+        }
+      ]
+    },
+    {
+      "name": "Sliding Window / 2 Pointer / Pattern and Template",
+      "questions": [
+        {
+          "title": "Theory",
+          "titleSlug": "tuf-a2z-1254-sliding-window-and-2-pointer-pattern-and-template",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/template-mental-model",
+          "kind": "learning"
+        }
+      ]
+    },
+    {
+      "name": "Sliding Window / 2 Pointer / Constant Window",
+      "questions": [
+        {
+          "title": "Maximum Points You Can Obtain from Cards ",
+          "titleSlug": "tuf-a2z-922-sliding-window-and-2-pointer-constant-window",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/maximum-points-you-can-obtain-from-cards/",
+          "kind": "practice",
+          "leetcodeSlug": "maximum-points-you-can-obtain-from-cards"
+        }
+      ]
+    },
+    {
+      "name": "Sliding Window / 2 Pointer / Longest and Smallest Window Problems",
+      "questions": [
+        {
+          "title": "Longest Substring Without Repeating Characters",
+          "titleSlug": "tuf-a2z-929-sliding-window-and-2-pointer-longest-and-smallest-window-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/longest-substring-without-repeating-characters/",
+          "kind": "practice",
+          "leetcodeSlug": "longest-substring-without-repeating-characters"
+        },
+        {
+          "title": " Max Consecutive Ones III",
+          "titleSlug": "tuf-a2z-930-sliding-window-and-2-pointer-longest-and-smallest-window-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/max-consecutive-ones-iii/",
+          "kind": "practice",
+          "leetcodeSlug": "max-consecutive-ones-iii"
+        },
+        {
+          "title": " Fruit Into Baskets",
+          "titleSlug": "tuf-a2z-926-sliding-window-and-2-pointer-longest-and-smallest-window-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/fruit-into-baskets/",
+          "kind": "practice",
+          "leetcodeSlug": "fruit-into-baskets"
+        },
+        {
+          "title": "Longest Substring With At Most K Distinct Characters",
+          "titleSlug": "tuf-a2z-928-sliding-window-and-2-pointer-longest-and-smallest-window-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/longest-substring-with-at-most-k-distinct-characters/",
+          "kind": "practice",
+          "leetcodeSlug": "longest-substring-with-at-most-k-distinct-characters"
+        },
+        {
+          "title": "Longest Repeating Character Replacement",
+          "titleSlug": "tuf-a2z-927-sliding-window-and-2-pointer-longest-and-smallest-window-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/longest-repeating-character-replacement/",
+          "kind": "practice",
+          "leetcodeSlug": "longest-repeating-character-replacement"
+        },
+        {
+          "title": "Minimum Window Substring ",
+          "titleSlug": "tuf-a2z-931-sliding-window-and-2-pointer-longest-and-smallest-window-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/minimum-window-substring/",
+          "kind": "practice",
+          "leetcodeSlug": "minimum-window-substring"
+        },
+        {
+          "title": "Minimum Window Subsequence",
+          "titleSlug": "tuf-a2z-754-sliding-window-and-2-pointer-longest-and-smallest-window-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/minimum-window-subsequence/",
+          "kind": "practice",
+          "leetcodeSlug": "minimum-window-subsequence"
+        }
+      ]
+    },
+    {
+      "name": "Sliding Window / 2 Pointer / Counting Subarrays / Substrings Problems",
+      "questions": [
+        {
+          "title": "Number of Substrings Containing All Three Characters",
+          "titleSlug": "tuf-a2z-925-sliding-window-and-2-pointer-counting-subarrays-and-substrings-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/number-of-substrings-containing-all-three-characters/",
+          "kind": "practice",
+          "leetcodeSlug": "number-of-substrings-containing-all-three-characters"
+        },
+        {
+          "title": "Binary Subarrays With Sum",
+          "titleSlug": "tuf-a2z-923-sliding-window-and-2-pointer-counting-subarrays-and-substrings-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/binary-subarrays-with-sum/",
+          "kind": "practice",
+          "leetcodeSlug": "binary-subarrays-with-sum"
+        },
+        {
+          "title": "Count number of Nice subarrays",
+          "titleSlug": "tuf-a2z-924-sliding-window-and-2-pointer-counting-subarrays-and-substrings-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/count-number-of-nice-subarrays/",
+          "kind": "practice",
+          "leetcodeSlug": "count-number-of-nice-subarrays"
+        },
+        {
+          "title": "Subarrays with K Different Integers",
+          "titleSlug": "tuf-a2z-988-sliding-window-and-2-pointer-counting-subarrays-and-substrings-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/subarrays-with-k-different-integers/",
+          "kind": "practice",
+          "leetcodeSlug": "subarrays-with-k-different-integers"
+        }
+      ]
+    },
+    {
+      "name": "Stack / Queues / Implementation",
+      "questions": [
+        {
+          "title": "Implementation using different DS",
+          "titleSlug": "tuf-a2z-1256-stack-and-queues-implementation",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Implement Stack using Arrays",
+          "titleSlug": "tuf-a2z-390-stack-and-queues-implementation",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/implement-a-stack-using-an-array",
+          "kind": "practice"
+        },
+        {
+          "title": "Implement Queue using Arrays",
+          "titleSlug": "tuf-a2z-387-stack-and-queues-implementation",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/implement-a-queue-using-an-array",
+          "kind": "practice"
+        },
+        {
+          "title": "Implement Stack using Queue",
+          "titleSlug": "tuf-a2z-392-stack-and-queues-implementation",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/implement-stack-using-queues/",
+          "kind": "practice",
+          "leetcodeSlug": "implement-stack-using-queues"
+        },
+        {
+          "title": "Implement Queue using Stack",
+          "titleSlug": "tuf-a2z-389-stack-and-queues-implementation",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/implement-queue-using-stacks/",
+          "kind": "practice",
+          "leetcodeSlug": "implement-queue-using-stacks"
+        },
+        {
+          "title": "Implement stack using Linkedlist",
+          "titleSlug": "tuf-a2z-391-stack-and-queues-implementation",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/implement-a-stack-using-a-linked-list",
+          "kind": "practice"
+        },
+        {
+          "title": "Implement queue using Linkedlist",
+          "titleSlug": "tuf-a2z-388-stack-and-queues-implementation",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Balanced Paranthesis",
+          "titleSlug": "tuf-a2z-966-stack-and-queues-implementation",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/valid-parentheses/",
+          "kind": "practice",
+          "leetcodeSlug": "valid-parentheses"
+        }
+      ]
+    },
+    {
+      "name": "Stack / Queues / Prefix, Infix and Postfix Conversions",
+      "questions": [
+        {
+          "title": "Infix to Postfix Conversion",
+          "titleSlug": "tuf-a2z-586-stack-and-queues-expression-conversions",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Infix to Prefix Conversion",
+          "titleSlug": "tuf-a2z-587-stack-and-queues-expression-conversions",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Prefix to Infix Conversion",
+          "titleSlug": "tuf-a2z-848-stack-and-queues-expression-conversions",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Prefix to Postfix Conversion",
+          "titleSlug": "tuf-a2z-849-stack-and-queues-expression-conversions",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Postfix to Infix Conversion",
+          "titleSlug": "tuf-a2z-824-stack-and-queues-expression-conversions",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Postfix to Prefix Conversion",
+          "titleSlug": "tuf-a2z-825-stack-and-queues-expression-conversions",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Stack / Queues / Monotonic Stack",
+      "questions": [
+        {
+          "title": "Next Greater Element",
+          "titleSlug": "tuf-a2z-968-stack-and-queues-monotonic-stack",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/next-greater-element-i/",
+          "kind": "practice",
+          "leetcodeSlug": "next-greater-element-i"
+        },
+        {
+          "title": "Next Greater Element - 2",
+          "titleSlug": "tuf-a2z-969-stack-and-queues-monotonic-stack",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/next-greater-element-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "next-greater-element-ii"
+        },
+        {
+          "title": "Asteroid Collision",
+          "titleSlug": "tuf-a2z-967-stack-and-queues-monotonic-stack",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/asteroid-collision/",
+          "kind": "practice",
+          "leetcodeSlug": "asteroid-collision"
+        },
+        {
+          "title": "Sum of Subarray Minimums",
+          "titleSlug": "tuf-a2z-971-stack-and-queues-monotonic-stack",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/sum-of-subarray-minimums/",
+          "kind": "practice",
+          "leetcodeSlug": "sum-of-subarray-minimums"
+        },
+        {
+          "title": "Sum of Subarray Ranges",
+          "titleSlug": "tuf-a2z-972-stack-and-queues-monotonic-stack",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/sum-of-subarray-ranges/",
+          "kind": "practice",
+          "leetcodeSlug": "sum-of-subarray-ranges"
+        },
+        {
+          "title": "Remove K Digits",
+          "titleSlug": "tuf-a2z-970-stack-and-queues-monotonic-stack",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/remove-k-digits/",
+          "kind": "practice",
+          "leetcodeSlug": "remove-k-digits"
+        },
+        {
+          "title": "Next Smaller Element",
+          "titleSlug": "tuf-a2z-768-stack-and-queues-monotonic-stack",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Stack / Queues / FAQs",
+      "questions": [
+        {
+          "title": "Implement Min Stack",
+          "titleSlug": "tuf-a2z-958-stack-and-queues-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/min-stack/",
+          "kind": "practice",
+          "leetcodeSlug": "min-stack"
+        },
+        {
+          "title": "Sliding Window Maximum",
+          "titleSlug": "tuf-a2z-963-stack-and-queues-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/sliding-window-maximum/",
+          "kind": "practice",
+          "leetcodeSlug": "sliding-window-maximum"
+        },
+        {
+          "title": "Trapping Rainwater",
+          "titleSlug": "tuf-a2z-965-stack-and-queues-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/trapping-rain-water/",
+          "kind": "practice",
+          "leetcodeSlug": "trapping-rain-water"
+        },
+        {
+          "title": "Largest rectangle in a histogram",
+          "titleSlug": "tuf-a2z-959-stack-and-queues-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/largest-rectangle-in-histogram/",
+          "kind": "practice",
+          "leetcodeSlug": "largest-rectangle-in-histogram"
+        },
+        {
+          "title": "Maximum Rectangles",
+          "titleSlug": "tuf-a2z-962-stack-and-queues-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/maximal-rectangle/",
+          "kind": "practice",
+          "leetcodeSlug": "maximal-rectangle"
+        },
+        {
+          "title": "Stock span problem",
+          "titleSlug": "tuf-a2z-964-stack-and-queues-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/online-stock-span/",
+          "kind": "practice",
+          "leetcodeSlug": "online-stock-span"
+        },
+        {
+          "title": "Celebrity Problem",
+          "titleSlug": "tuf-a2z-957-stack-and-queues-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/find-the-celebrity/",
+          "kind": "practice",
+          "leetcodeSlug": "find-the-celebrity"
+        },
+        {
+          "title": "LRU Cache",
+          "titleSlug": "tuf-a2z-961-stack-and-queues-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/lru-cache/",
+          "kind": "practice",
+          "leetcodeSlug": "lru-cache"
+        },
+        {
+          "title": "LFU Cache",
+          "titleSlug": "tuf-a2z-960-stack-and-queues-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/lfu-cache/",
+          "kind": "practice",
+          "leetcodeSlug": "lfu-cache"
+        },
+        {
+          "title": "Number of Greater Elements to the Right",
+          "titleSlug": "tuf-a2z-285-stack-and-queues-faqs",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Binary Trees / Theory/Traversals",
+      "questions": [
+        {
+          "title": "Introduction ",
+          "titleSlug": "tuf-a2z-1154-binary-trees-theory-and-traversals",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/binary-tree-data-structure",
+          "kind": "learning"
+        },
+        {
+          "title": "Inorder Traversal",
+          "titleSlug": "tuf-a2z-133-binary-trees-theory-and-traversals",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/binary-tree-inorder-traversal/",
+          "kind": "practice",
+          "leetcodeSlug": "binary-tree-inorder-traversal"
+        },
+        {
+          "title": "Preorder Traversal",
+          "titleSlug": "tuf-a2z-137-binary-trees-theory-and-traversals",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/binary-tree-preorder-traversal/",
+          "kind": "practice",
+          "leetcodeSlug": "binary-tree-preorder-traversal"
+        },
+        {
+          "title": "Postorder Traversal",
+          "titleSlug": "tuf-a2z-135-binary-trees-theory-and-traversals",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/binary-tree-postorder-traversal/",
+          "kind": "practice",
+          "leetcodeSlug": "binary-tree-postorder-traversal"
+        },
+        {
+          "title": "Level Order Traversal",
+          "titleSlug": "tuf-a2z-134-binary-trees-theory-and-traversals",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/binary-tree-level-order-traversal/",
+          "kind": "practice",
+          "leetcodeSlug": "binary-tree-level-order-traversal"
+        },
+        {
+          "title": "Pre, Post, Inorder in one traversal",
+          "titleSlug": "tuf-a2z-136-binary-trees-theory-and-traversals",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Binary Trees / Medium Problems",
+      "questions": [
+        {
+          "title": "Maximum Depth in BT",
+          "titleSlug": "tuf-a2z-131-binary-trees-medium-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/maximum-depth-of-binary-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "maximum-depth-of-binary-tree"
+        },
+        {
+          "title": "Check if two trees are identical or not",
+          "titleSlug": "tuf-a2z-129-binary-trees-medium-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/same-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "same-tree"
+        },
+        {
+          "title": "Check for balanced binary tree",
+          "titleSlug": "tuf-a2z-127-binary-trees-medium-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/balanced-binary-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "balanced-binary-tree"
+        },
+        {
+          "title": "Diameter of Binary Tree",
+          "titleSlug": "tuf-a2z-130-binary-trees-medium-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/diameter-of-binary-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "diameter-of-binary-tree"
+        },
+        {
+          "title": "Maximum path sum ",
+          "titleSlug": "tuf-a2z-132-binary-trees-medium-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/binary-tree-maximum-path-sum/",
+          "kind": "practice",
+          "leetcodeSlug": "binary-tree-maximum-path-sum"
+        },
+        {
+          "title": "Check for symmetrical BTs",
+          "titleSlug": "tuf-a2z-128-binary-trees-medium-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/symmetric-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "symmetric-tree"
+        },
+        {
+          "title": "Children Sum Property in Binary Tree",
+          "titleSlug": "tuf-a2z-185-binary-trees-medium-problems",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Binary Trees / FAQs",
+      "questions": [
+        {
+          "title": "Zig Zag or Spiral Traversal",
+          "titleSlug": "tuf-a2z-126-binary-trees-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/binary-tree-zigzag-level-order-traversal/",
+          "kind": "practice",
+          "leetcodeSlug": "binary-tree-zigzag-level-order-traversal"
+        },
+        {
+          "title": "Boundary Traversal",
+          "titleSlug": "tuf-a2z-116-binary-trees-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/boundary-of-binary-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "boundary-of-binary-tree"
+        },
+        {
+          "title": "Vertical Order Traversal",
+          "titleSlug": "tuf-a2z-125-binary-trees-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/vertical-order-traversal-of-a-binary-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "vertical-order-traversal-of-a-binary-tree"
+        },
+        {
+          "title": "Top View of BT",
+          "titleSlug": "tuf-a2z-124-binary-trees-faqs",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/top-view-of-binary-tree",
+          "kind": "practice"
+        },
+        {
+          "title": "Bottom view of BT",
+          "titleSlug": "tuf-a2z-115-binary-trees-faqs",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/bottom-view-of-binary-tree",
+          "kind": "practice"
+        },
+        {
+          "title": "Right/Left View of BT",
+          "titleSlug": "tuf-a2z-123-binary-trees-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/binary-tree-right-side-view/",
+          "kind": "practice",
+          "leetcodeSlug": "binary-tree-right-side-view"
+        },
+        {
+          "title": "Print root to leaf path in BT",
+          "titleSlug": "tuf-a2z-122-binary-trees-faqs",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/print-root-to-leaf-path-in-binary-tree",
+          "kind": "practice"
+        },
+        {
+          "title": "LCA in BT",
+          "titleSlug": "tuf-a2z-118-binary-trees-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "lowest-common-ancestor-of-a-binary-tree"
+        },
+        {
+          "title": "Maximum Width of BT",
+          "titleSlug": "tuf-a2z-119-binary-trees-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/maximum-width-of-binary-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "maximum-width-of-binary-tree"
+        },
+        {
+          "title": "Print all nodes at a distance of K in BT",
+          "titleSlug": "tuf-a2z-121-binary-trees-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/all-nodes-distance-k-in-binary-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "all-nodes-distance-k-in-binary-tree"
+        },
+        {
+          "title": "Minimum time taken to burn the BT from a given Node",
+          "titleSlug": "tuf-a2z-120-binary-trees-faqs",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/minimum-time-burn-binary-tree",
+          "kind": "practice"
+        },
+        {
+          "title": "Count total nodes in a complete BT",
+          "titleSlug": "tuf-a2z-117-binary-trees-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/count-complete-tree-nodes/",
+          "kind": "practice",
+          "leetcodeSlug": "count-complete-tree-nodes"
+        },
+        {
+          "title": "Flatten Binary Tree to Linked List",
+          "titleSlug": "tuf-a2z-486-binary-trees-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/flatten-binary-tree-to-linked-list/",
+          "kind": "practice",
+          "leetcodeSlug": "flatten-binary-tree-to-linked-list"
+        }
+      ]
+    },
+    {
+      "name": "Binary Trees / Construction Problems",
+      "questions": [
+        {
+          "title": "Requirements needed to construct a unique BT",
+          "titleSlug": "tuf-a2z-111-binary-trees-construction-problems",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/requirements-needed-to-construct-a-unique-binary-tree",
+          "kind": "practice"
+        },
+        {
+          "title": "Construct a BT from Preorder and Inorder",
+          "titleSlug": "tuf-a2z-110-binary-trees-construction-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/",
+          "kind": "practice",
+          "leetcodeSlug": "construct-binary-tree-from-preorder-and-inorder-traversal"
+        },
+        {
+          "title": "Construct a BT from Postorder and Inorder",
+          "titleSlug": "tuf-a2z-109-binary-trees-construction-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/construct-binary-tree-from-inorder-and-postorder-traversal/",
+          "kind": "practice",
+          "leetcodeSlug": "construct-binary-tree-from-inorder-and-postorder-traversal"
+        },
+        {
+          "title": "Serialize and De-serialize BT",
+          "titleSlug": "tuf-a2z-112-binary-trees-construction-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/serialize-and-deserialize-binary-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "serialize-and-deserialize-binary-tree"
+        }
+      ]
+    },
+    {
+      "name": "Binary Trees / Traversal in Constant Space",
+      "questions": [
+        {
+          "title": "Morris Inorder Traversal ",
+          "titleSlug": "tuf-a2z-139-binary-trees-traversal-in-constant-space",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/binary-tree-inorder-traversal/",
+          "kind": "practice",
+          "leetcodeSlug": "binary-tree-inorder-traversal"
+        },
+        {
+          "title": "Morris Preorder Traversal ",
+          "titleSlug": "tuf-a2z-138-binary-trees-traversal-in-constant-space",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/binary-tree-preorder-traversal/",
+          "kind": "practice",
+          "leetcodeSlug": "binary-tree-preorder-traversal"
+        }
+      ]
+    },
+    {
+      "name": "Binary Search Trees / Theory and Basics",
+      "questions": [
+        {
+          "title": "Introduction to BST",
+          "titleSlug": "tuf-a2z-1153-binary-search-trees-theory-and-basics",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/binary-search-tree",
+          "kind": "learning"
+        },
+        {
+          "title": "Search in BST",
+          "titleSlug": "tuf-a2z-108-binary-search-trees-theory-and-basics",
+          "difficulty": "BASIC",
+          "url": "https://leetcode.com/problems/search-in-a-binary-search-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "search-in-a-binary-search-tree"
+        },
+        {
+          "title": "Floor and Ceil in a BST",
+          "titleSlug": "tuf-a2z-107-binary-search-trees-theory-and-basics",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/floor-and-ceil-in-a-bst",
+          "kind": "practice"
+        },
+        {
+          "title": "Minimum and Maximum in BST",
+          "titleSlug": "tuf-a2z-19365-binary-search-trees-theory-and-basics",
+          "difficulty": "PRACTICE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Binary Search Trees / Medium",
+      "questions": [
+        {
+          "title": "Insert a given node in BST",
+          "titleSlug": "tuf-a2z-104-binary-search-trees-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/insert-into-a-binary-search-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "insert-into-a-binary-search-tree"
+        },
+        {
+          "title": "Delete a node in BST",
+          "titleSlug": "tuf-a2z-102-binary-search-trees-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/delete-node-in-a-bst/",
+          "kind": "practice",
+          "leetcodeSlug": "delete-node-in-a-bst"
+        },
+        {
+          "title": "Kth Smallest and Largest element in BST",
+          "titleSlug": "tuf-a2z-105-binary-search-trees-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/kth-smallest-element-in-a-bst/",
+          "kind": "practice",
+          "leetcodeSlug": "kth-smallest-element-in-a-bst"
+        },
+        {
+          "title": "Check if a tree is a BST or not",
+          "titleSlug": "tuf-a2z-100-binary-search-trees-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/validate-binary-search-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "validate-binary-search-tree"
+        },
+        {
+          "title": "LCA in BST",
+          "titleSlug": "tuf-a2z-106-binary-search-trees-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "lowest-common-ancestor-of-a-binary-search-tree"
+        },
+        {
+          "title": "Construct a BST from a preorder traversal",
+          "titleSlug": "tuf-a2z-101-binary-search-trees-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/construct-binary-search-tree-from-preorder-traversal/",
+          "kind": "practice",
+          "leetcodeSlug": "construct-binary-search-tree-from-preorder-traversal"
+        },
+        {
+          "title": "Inorder successor and predecessor in BST",
+          "titleSlug": "tuf-a2z-103-binary-search-trees-medium",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/inorder-successor-in-bst/",
+          "kind": "practice",
+          "leetcodeSlug": "inorder-successor-in-bst"
+        }
+      ]
+    },
+    {
+      "name": "Binary Search Trees / FAQs",
+      "questions": [
+        {
+          "title": "BST iterator",
+          "titleSlug": "tuf-a2z-96-binary-search-trees-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/binary-search-tree-iterator/",
+          "kind": "practice",
+          "leetcodeSlug": "binary-search-tree-iterator"
+        },
+        {
+          "title": "Two sum in BST",
+          "titleSlug": "tuf-a2z-99-binary-search-trees-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/two-sum-iv-input-is-a-bst/",
+          "kind": "practice",
+          "leetcodeSlug": "two-sum-iv-input-is-a-bst"
+        },
+        {
+          "title": "Correct BST with two nodes swapped",
+          "titleSlug": "tuf-a2z-97-binary-search-trees-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/recover-binary-search-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "recover-binary-search-tree"
+        },
+        {
+          "title": "Largest BST in Binary Tree",
+          "titleSlug": "tuf-a2z-98-binary-search-trees-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/largest-bst-subtree/",
+          "kind": "practice",
+          "leetcodeSlug": "largest-bst-subtree"
+        }
+      ]
+    },
+    {
+      "name": "Heaps / Theory and Implementation",
+      "questions": [
+        {
+          "title": "Heaps (Theory Video)",
+          "titleSlug": "tuf-a2z-1223-heaps-theory-and-implementation",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/introduction-to-heap",
+          "kind": "learning"
+        },
+        {
+          "title": "Heapify Algorithm",
+          "titleSlug": "tuf-a2z-573-heaps-theory-and-implementation",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Build heap from a given Array",
+          "titleSlug": "tuf-a2z-570-heaps-theory-and-implementation",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Implement Min Heap",
+          "titleSlug": "tuf-a2z-576-heaps-theory-and-implementation",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Implement Max Heap",
+          "titleSlug": "tuf-a2z-575-heaps-theory-and-implementation",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Check if an array represents a min heap ",
+          "titleSlug": "tuf-a2z-571-heaps-theory-and-implementation",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Convert Min Heap to Max Heap",
+          "titleSlug": "tuf-a2z-572-heaps-theory-and-implementation",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Heap Sort",
+          "titleSlug": "tuf-a2z-574-heaps-theory-and-implementation",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/heap-sort",
+          "kind": "practice"
+        },
+        {
+          "title": "K-th Largest element in an array",
+          "titleSlug": "tuf-a2z-578-heaps-theory-and-implementation",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/kth-largest-element-in-an-array/",
+          "kind": "practice",
+          "leetcodeSlug": "kth-largest-element-in-an-array"
+        }
+      ]
+    },
+    {
+      "name": "Heaps / FAQs",
+      "questions": [
+        {
+          "title": "Kth largest element in a stream of running integers",
+          "titleSlug": "tuf-a2z-567-heaps-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/kth-largest-element-in-a-stream/",
+          "kind": "practice",
+          "leetcodeSlug": "kth-largest-element-in-a-stream"
+        },
+        {
+          "title": "Sort a K-Sorted Array",
+          "titleSlug": "tuf-a2z-19361-heaps-faqs",
+          "difficulty": "PRACTICE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Merge K sorted Lists",
+          "titleSlug": "tuf-a2z-569-heaps-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/merge-k-sorted-lists/",
+          "kind": "practice",
+          "leetcodeSlug": "merge-k-sorted-lists"
+        },
+        {
+          "title": "Replace Elements by Their Rank",
+          "titleSlug": "tuf-a2z-898-heaps-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/rank-transform-of-an-array/",
+          "kind": "practice",
+          "leetcodeSlug": "rank-transform-of-an-array"
+        },
+        {
+          "title": "Task Scheduler",
+          "titleSlug": "tuf-a2z-1008-heaps-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/task-scheduler/",
+          "kind": "practice",
+          "leetcodeSlug": "task-scheduler"
+        },
+        {
+          "title": "Hand of Straights",
+          "titleSlug": "tuf-a2z-556-heaps-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/hand-of-straights/",
+          "kind": "practice",
+          "leetcodeSlug": "hand-of-straights"
+        },
+        {
+          "title": "Design Twitter",
+          "titleSlug": "tuf-a2z-565-heaps-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/design-twitter/",
+          "kind": "practice",
+          "leetcodeSlug": "design-twitter"
+        },
+        {
+          "title": "Minimum Cost to Connect Sticks",
+          "titleSlug": "tuf-a2z-755-heaps-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/minimum-cost-to-connect-sticks/",
+          "kind": "practice",
+          "leetcodeSlug": "minimum-cost-to-connect-sticks"
+        },
+        {
+          "title": "Maximum Sum Combination",
+          "titleSlug": "tuf-a2z-568-heaps-faqs",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Find Median from Data Stream",
+          "titleSlug": "tuf-a2z-566-heaps-faqs",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/find-median-from-data-stream/",
+          "kind": "practice",
+          "leetcodeSlug": "find-median-from-data-stream"
+        },
+        {
+          "title": "Top K Frequent Elements",
+          "titleSlug": "tuf-a2z-1018-heaps-faqs",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/top-k-frequent-elements/",
+          "kind": "practice",
+          "leetcodeSlug": "top-k-frequent-elements"
+        }
+      ]
+    },
+    {
+      "name": "Graphs / Theory and traversals",
+      "questions": [
+        {
+          "title": "Introduction to Graph",
+          "titleSlug": "tuf-a2z-1222-graph-theory-and-traversals",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/introduction-to-graph",
+          "kind": "learning"
+        },
+        {
+          "title": "Traversal Techniques",
+          "titleSlug": "tuf-a2z-529-graph-theory-and-traversals",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Connected Components",
+          "titleSlug": "tuf-a2z-528-graph-theory-and-traversals",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/number-of-connected-components-in-an-undirected-graph/",
+          "kind": "practice",
+          "leetcodeSlug": "number-of-connected-components-in-an-undirected-graph"
+        }
+      ]
+    },
+    {
+      "name": "Graphs / Traversal Problems",
+      "questions": [
+        {
+          "title": "Number of provinces",
+          "titleSlug": "tuf-a2z-535-graph-traversal-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/number-of-provinces/",
+          "kind": "practice",
+          "leetcodeSlug": "number-of-provinces"
+        },
+        {
+          "title": "Number of islands",
+          "titleSlug": "tuf-a2z-534-graph-traversal-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/number-of-islands/",
+          "kind": "practice",
+          "leetcodeSlug": "number-of-islands"
+        },
+        {
+          "title": "Flood fill algorithm",
+          "titleSlug": "tuf-a2z-531-graph-traversal-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/flood-fill/",
+          "kind": "practice",
+          "leetcodeSlug": "flood-fill"
+        },
+        {
+          "title": "Number of enclaves",
+          "titleSlug": "tuf-a2z-533-graph-traversal-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/number-of-enclaves/",
+          "kind": "practice",
+          "leetcodeSlug": "number-of-enclaves"
+        },
+        {
+          "title": "Rotten Oranges",
+          "titleSlug": "tuf-a2z-536-graph-traversal-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/rotting-oranges/",
+          "kind": "practice",
+          "leetcodeSlug": "rotting-oranges"
+        },
+        {
+          "title": "Distance of nearest cell having one",
+          "titleSlug": "tuf-a2z-530-graph-traversal-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/01-matrix/",
+          "kind": "practice",
+          "leetcodeSlug": "01-matrix"
+        },
+        {
+          "title": "Surrounded Regions",
+          "titleSlug": "tuf-a2z-537-graph-traversal-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/surrounded-regions/",
+          "kind": "practice",
+          "leetcodeSlug": "surrounded-regions"
+        },
+        {
+          "title": "Number of distinct islands",
+          "titleSlug": "tuf-a2z-532-graph-traversal-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/number-of-distinct-islands/",
+          "kind": "practice",
+          "leetcodeSlug": "number-of-distinct-islands"
+        }
+      ]
+    },
+    {
+      "name": "Graphs / Cycles",
+      "questions": [
+        {
+          "title": "Detect a cycle in an undirected graph",
+          "titleSlug": "tuf-a2z-501-graph-cycles",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/course-schedule/",
+          "kind": "practice",
+          "leetcodeSlug": "course-schedule"
+        },
+        {
+          "title": "Bipartite graph",
+          "titleSlug": "tuf-a2z-499-graph-cycles",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/is-graph-bipartite/",
+          "kind": "practice",
+          "leetcodeSlug": "is-graph-bipartite"
+        },
+        {
+          "title": "Topological sort or Kahn's algorithm",
+          "titleSlug": "tuf-a2z-502-graph-cycles",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Detect a cycle in a directed graph",
+          "titleSlug": "tuf-a2z-500-graph-cycles",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/course-schedule/",
+          "kind": "practice",
+          "leetcodeSlug": "course-schedule"
+        }
+      ]
+    },
+    {
+      "name": "Graphs / Hard Problems",
+      "questions": [
+        {
+          "title": "Find eventual safe states",
+          "titleSlug": "tuf-a2z-506-graph-hard-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/find-eventual-safe-states/",
+          "kind": "practice",
+          "leetcodeSlug": "find-eventual-safe-states"
+        },
+        {
+          "title": "Course Schedule I",
+          "titleSlug": "tuf-a2z-504-graph-hard-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/course-schedule/",
+          "kind": "practice",
+          "leetcodeSlug": "course-schedule"
+        },
+        {
+          "title": "Course Schedule II",
+          "titleSlug": "tuf-a2z-505-graph-hard-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/course-schedule-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "course-schedule-ii"
+        },
+        {
+          "title": "Alien Dictionary",
+          "titleSlug": "tuf-a2z-503-graph-hard-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/alien-dictionary/",
+          "kind": "practice",
+          "leetcodeSlug": "alien-dictionary"
+        },
+        {
+          "title": "Shortest path in DAG",
+          "titleSlug": "tuf-a2z-507-graph-hard-problems",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/shortest-path-in-a-directed-acyclic-graph-dag",
+          "kind": "practice"
+        },
+        {
+          "title": "Shortest path in undirected graph with unit weights",
+          "titleSlug": "tuf-a2z-508-graph-hard-problems",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/shortest-path-in-an-unweighted-undirected-graph-using-bfs",
+          "kind": "practice"
+        },
+        {
+          "title": "Word ladder I",
+          "titleSlug": "tuf-a2z-509-graph-hard-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/word-ladder/",
+          "kind": "practice",
+          "leetcodeSlug": "word-ladder"
+        },
+        {
+          "title": "Word ladder II",
+          "titleSlug": "tuf-a2z-510-graph-hard-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/word-ladder-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "word-ladder-ii"
+        }
+      ]
+    },
+    {
+      "name": "Graphs / Shortest Path Algorithms",
+      "questions": [
+        {
+          "title": "Dijkstra's algorithm",
+          "titleSlug": "tuf-a2z-520-graph-shortest-path-algorithms",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/dijkstras-algorithm",
+          "kind": "practice"
+        },
+        {
+          "title": "Print Shortest Path ",
+          "titleSlug": "tuf-a2z-526-graph-shortest-path-algorithms",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/print-shortest-path",
+          "kind": "practice"
+        },
+        {
+          "title": "Shortest Distance in a Binary Maze",
+          "titleSlug": "tuf-a2z-527-graph-shortest-path-algorithms",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/shortest-path-in-binary-matrix/",
+          "kind": "practice",
+          "leetcodeSlug": "shortest-path-in-binary-matrix"
+        },
+        {
+          "title": "Path with minimum effort",
+          "titleSlug": "tuf-a2z-525-graph-shortest-path-algorithms",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/path-with-minimum-effort/",
+          "kind": "practice",
+          "leetcodeSlug": "path-with-minimum-effort"
+        },
+        {
+          "title": "Cheapest flight within K stops",
+          "titleSlug": "tuf-a2z-519-graph-shortest-path-algorithms",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/cheapest-flights-within-k-stops/",
+          "kind": "practice",
+          "leetcodeSlug": "cheapest-flights-within-k-stops"
+        },
+        {
+          "title": "Minimum multiplications to reach end",
+          "titleSlug": "tuf-a2z-523-graph-shortest-path-algorithms",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/minimum-multiplications-to-reach-end",
+          "kind": "practice"
+        },
+        {
+          "title": "Number of ways to arrive at destination",
+          "titleSlug": "tuf-a2z-524-graph-shortest-path-algorithms",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/number-of-ways-to-arrive-at-destination/",
+          "kind": "practice",
+          "leetcodeSlug": "number-of-ways-to-arrive-at-destination"
+        },
+        {
+          "title": "Bellman ford algorithm",
+          "titleSlug": "tuf-a2z-518-graph-shortest-path-algorithms",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/bellman-ford-algorithm",
+          "kind": "practice"
+        },
+        {
+          "title": "Floyd warshall algorithm",
+          "titleSlug": "tuf-a2z-522-graph-shortest-path-algorithms",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Find the city with the smallest number of neighbors",
+          "titleSlug": "tuf-a2z-521-graph-shortest-path-algorithms",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/find-the-city-with-the-smallest-number-of-neighbors-at-a-threshold-distance/",
+          "kind": "practice",
+          "leetcodeSlug": "find-the-city-with-the-smallest-number-of-neighbors-at-a-threshold-distance"
+        },
+        {
+          "title": "Network Delay Time",
+          "titleSlug": "tuf-a2z-764-graph-shortest-path-algorithms",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/network-delay-time/",
+          "kind": "practice",
+          "leetcodeSlug": "network-delay-time"
+        },
+        {
+          "title": "Swim in Rising Water",
+          "titleSlug": "tuf-a2z-1006-graph-shortest-path-algorithms",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/swim-in-rising-water/",
+          "kind": "practice",
+          "leetcodeSlug": "swim-in-rising-water"
+        }
+      ]
+    },
+    {
+      "name": "Graphs / Minimum Spanning Tree",
+      "questions": [
+        {
+          "title": "MST theory",
+          "titleSlug": "tuf-a2z-1221-graph-minimum-spanning-tree",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Disjoint Set ",
+          "titleSlug": "tuf-a2z-516-graph-minimum-spanning-tree",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/disjoint-set-union",
+          "kind": "practice"
+        },
+        {
+          "title": "Find the MST weight",
+          "titleSlug": "tuf-a2z-517-graph-minimum-spanning-tree",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/connecting-cities-with-minimum-cost/",
+          "kind": "practice",
+          "leetcodeSlug": "connecting-cities-with-minimum-cost"
+        }
+      ]
+    },
+    {
+      "name": "Graphs / Hard Problems II",
+      "questions": [
+        {
+          "title": "Number of operations to make network connected",
+          "titleSlug": "tuf-a2z-515-graph-hard-problems-ii",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/number-of-operations-to-make-network-connected/",
+          "kind": "practice",
+          "leetcodeSlug": "number-of-operations-to-make-network-connected"
+        },
+        {
+          "title": "Accounts merge",
+          "titleSlug": "tuf-a2z-511-graph-hard-problems-ii",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/accounts-merge/",
+          "kind": "practice",
+          "leetcodeSlug": "accounts-merge"
+        },
+        {
+          "title": "Number of islands II",
+          "titleSlug": "tuf-a2z-514-graph-hard-problems-ii",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/number-of-islands-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "number-of-islands-ii"
+        },
+        {
+          "title": "Making a large island",
+          "titleSlug": "tuf-a2z-512-graph-hard-problems-ii",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/making-a-large-island/",
+          "kind": "practice",
+          "leetcodeSlug": "making-a-large-island"
+        },
+        {
+          "title": "Most stones removed with same row or column",
+          "titleSlug": "tuf-a2z-513-graph-hard-problems-ii",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/most-stones-removed-with-same-row-or-column/",
+          "kind": "practice",
+          "leetcodeSlug": "most-stones-removed-with-same-row-or-column"
+        }
+      ]
+    },
+    {
+      "name": "Graphs / Additional Algorithms",
+      "questions": [
+        {
+          "title": "Kosaraju's algorithm",
+          "titleSlug": "tuf-a2z-498-graph-additional-algorithms",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/kosarajus-algorithm",
+          "kind": "practice"
+        },
+        {
+          "title": "Bridges in graph",
+          "titleSlug": "tuf-a2z-497-graph-additional-algorithms",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/critical-connections-in-a-network/",
+          "kind": "practice",
+          "leetcodeSlug": "critical-connections-in-a-network"
+        },
+        {
+          "title": "Articulation point in graph",
+          "titleSlug": "tuf-a2z-496-graph-additional-algorithms",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/articulation-points-in-graph",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Programming / Introduction",
+      "questions": [
+        {
+          "title": "Introduction to DP",
+          "titleSlug": "tuf-a2z-1195-dynamic-programming-introduction",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/dynamic-programming-memoization-tabulation",
+          "kind": "learning"
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Programming / 1D DP",
+      "questions": [
+        {
+          "title": "Climbing stairs",
+          "titleSlug": "tuf-a2z-287-dynamic-programming-1d-dp",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/climbing-stairs/",
+          "kind": "practice",
+          "leetcodeSlug": "climbing-stairs"
+        },
+        {
+          "title": "Frog Jump",
+          "titleSlug": "tuf-a2z-288-dynamic-programming-1d-dp",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/frog-jump-minimum-energy",
+          "kind": "practice"
+        },
+        {
+          "title": "Frog jump with K distances",
+          "titleSlug": "tuf-a2z-289-dynamic-programming-1d-dp",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/frog-jump-with-k-distances",
+          "kind": "practice"
+        },
+        {
+          "title": "Maximum sum of non adjacent elements",
+          "titleSlug": "tuf-a2z-291-dynamic-programming-1d-dp",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/house-robber/",
+          "kind": "practice",
+          "leetcodeSlug": "house-robber"
+        },
+        {
+          "title": "House robber",
+          "titleSlug": "tuf-a2z-290-dynamic-programming-1d-dp",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/house-robber/",
+          "kind": "practice",
+          "leetcodeSlug": "house-robber"
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Programming / 2D DP",
+      "questions": [
+        {
+          "title": "Ninja's training",
+          "titleSlug": "tuf-a2z-292-dynamic-programming-2d-dp",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/ninjas-training",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Programming / DP on grids",
+      "questions": [
+        {
+          "title": "Grid unique paths",
+          "titleSlug": "tuf-a2z-297-dynamic-programming-dp-on-grids",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/unique-paths/",
+          "kind": "practice",
+          "leetcodeSlug": "unique-paths"
+        },
+        {
+          "title": "Unique paths II",
+          "titleSlug": "tuf-a2z-300-dynamic-programming-dp-on-grids",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/unique-paths-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "unique-paths-ii"
+        },
+        {
+          "title": "Minimum Falling Path Sum",
+          "titleSlug": "tuf-a2z-298-dynamic-programming-dp-on-grids",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/minimum-falling-path-sum/",
+          "kind": "practice",
+          "leetcodeSlug": "minimum-falling-path-sum"
+        },
+        {
+          "title": "Triangle",
+          "titleSlug": "tuf-a2z-299-dynamic-programming-dp-on-grids",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/triangle/",
+          "kind": "practice",
+          "leetcodeSlug": "triangle"
+        },
+        {
+          "title": "Cherry pickup II",
+          "titleSlug": "tuf-a2z-296-dynamic-programming-dp-on-grids",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/cherry-pickup-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "cherry-pickup-ii"
+        },
+        {
+          "title": "Count Square Submatrices with All Ones",
+          "titleSlug": "tuf-a2z-19360-dynamic-programming-dp-on-grids",
+          "difficulty": "PRACTICE",
+          "url": "https://leetcode.com/problems/count-square-submatrices-with-all-ones/",
+          "kind": "practice",
+          "leetcodeSlug": "count-square-submatrices-with-all-ones"
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Programming / DP on stocks",
+      "questions": [
+        {
+          "title": "Best time to buy and sell stock",
+          "titleSlug": "tuf-a2z-301-dynamic-programming-dp-on-stocks",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/",
+          "kind": "practice",
+          "leetcodeSlug": "best-time-to-buy-and-sell-stock"
+        },
+        {
+          "title": "Best time to buy and sell stock II",
+          "titleSlug": "tuf-a2z-302-dynamic-programming-dp-on-stocks",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "best-time-to-buy-and-sell-stock-ii"
+        },
+        {
+          "title": "Best time to buy and sell stock III",
+          "titleSlug": "tuf-a2z-303-dynamic-programming-dp-on-stocks",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iii/",
+          "kind": "practice",
+          "leetcodeSlug": "best-time-to-buy-and-sell-stock-iii"
+        },
+        {
+          "title": "Best time to buy and sell stock IV",
+          "titleSlug": "tuf-a2z-304-dynamic-programming-dp-on-stocks",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iv/",
+          "kind": "practice",
+          "leetcodeSlug": "best-time-to-buy-and-sell-stock-iv"
+        },
+        {
+          "title": "Best time to buy and sell stock with transaction fees",
+          "titleSlug": "tuf-a2z-305-dynamic-programming-dp-on-stocks",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/",
+          "kind": "practice",
+          "leetcodeSlug": "best-time-to-buy-and-sell-stock-with-transaction-fee"
+        },
+        {
+          "title": "Best Time to Buy and Sell Stock with Cooldown",
+          "titleSlug": "tuf-a2z-56-dynamic-programming-dp-on-stocks",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-with-cooldown/",
+          "kind": "practice",
+          "leetcodeSlug": "best-time-to-buy-and-sell-stock-with-cooldown"
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Programming / DP on subsequences",
+      "questions": [
+        {
+          "title": "Subset sum equals to target",
+          "titleSlug": "tuf-a2z-323-dynamic-programming-dp-on-subsequences",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/subset-sum-equal-to-target",
+          "kind": "practice"
+        },
+        {
+          "title": "Partition equal subset sum",
+          "titleSlug": "tuf-a2z-321-dynamic-programming-dp-on-subsequences",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/partition-equal-subset-sum/",
+          "kind": "practice",
+          "leetcodeSlug": "partition-equal-subset-sum"
+        },
+        {
+          "title": "Partition a set into two subsets with minimum absolute sum difference",
+          "titleSlug": "tuf-a2z-320-dynamic-programming-dp-on-subsequences",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/last-stone-weight-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "last-stone-weight-ii"
+        },
+        {
+          "title": "Count subsets with sum K",
+          "titleSlug": "tuf-a2z-318-dynamic-programming-dp-on-subsequences",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/count-subsets-with-sum-k",
+          "kind": "practice"
+        },
+        {
+          "title": "Count partitions with given difference",
+          "titleSlug": "tuf-a2z-317-dynamic-programming-dp-on-subsequences",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/count-partitions-with-a-given-difference",
+          "kind": "practice"
+        },
+        {
+          "title": "0 and 1 Knapsack",
+          "titleSlug": "tuf-a2z-315-dynamic-programming-dp-on-subsequences",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Minimum coins",
+          "titleSlug": "tuf-a2z-319-dynamic-programming-dp-on-subsequences",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/coin-change/",
+          "kind": "practice",
+          "leetcodeSlug": "coin-change"
+        },
+        {
+          "title": "Target sum",
+          "titleSlug": "tuf-a2z-324-dynamic-programming-dp-on-subsequences",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/target-sum/",
+          "kind": "practice",
+          "leetcodeSlug": "target-sum"
+        },
+        {
+          "title": "Coin change II",
+          "titleSlug": "tuf-a2z-316-dynamic-programming-dp-on-subsequences",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/coin-change-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "coin-change-ii"
+        },
+        {
+          "title": "Unbounded knapsack",
+          "titleSlug": "tuf-a2z-325-dynamic-programming-dp-on-subsequences",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/unbounded-knapsack",
+          "kind": "practice"
+        },
+        {
+          "title": "Rod cutting problem",
+          "titleSlug": "tuf-a2z-322-dynamic-programming-dp-on-subsequences",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/rod-cutting-problem",
+          "kind": "practice"
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Programming / LIS",
+      "questions": [
+        {
+          "title": "Longest Increasing Subsequence",
+          "titleSlug": "tuf-a2z-636-dynamic-programming-lis-dp",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/longest-increasing-subsequence/",
+          "kind": "practice",
+          "leetcodeSlug": "longest-increasing-subsequence"
+        },
+        {
+          "title": "Print Longest Increasing Subsequence",
+          "titleSlug": "tuf-a2z-851-dynamic-programming-lis-dp",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/print-longest-increasing-subsequence",
+          "kind": "practice"
+        },
+        {
+          "title": "Largest Divisible Subset",
+          "titleSlug": "tuf-a2z-603-dynamic-programming-lis-dp",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/largest-divisible-subset/",
+          "kind": "practice",
+          "leetcodeSlug": "largest-divisible-subset"
+        },
+        {
+          "title": "Longest String Chain",
+          "titleSlug": "tuf-a2z-640-dynamic-programming-lis-dp",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/longest-string-chain/",
+          "kind": "practice",
+          "leetcodeSlug": "longest-string-chain"
+        },
+        {
+          "title": "Longest Bitonic Subsequence",
+          "titleSlug": "tuf-a2z-633-dynamic-programming-lis-dp",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Number of Longest Increasing Subsequences",
+          "titleSlug": "tuf-a2z-780-dynamic-programming-lis-dp",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/number-of-longest-increasing-subsequence/",
+          "kind": "practice",
+          "leetcodeSlug": "number-of-longest-increasing-subsequence"
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Programming / DP on strings",
+      "questions": [
+        {
+          "title": "Longest common subsequence",
+          "titleSlug": "tuf-a2z-308-dynamic-programming-dp-on-strings",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/longest-common-subsequence/",
+          "kind": "practice",
+          "leetcodeSlug": "longest-common-subsequence"
+        },
+        {
+          "title": "Longest common substring",
+          "titleSlug": "tuf-a2z-309-dynamic-programming-dp-on-strings",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Longest palindromic subsequence",
+          "titleSlug": "tuf-a2z-310-dynamic-programming-dp-on-strings",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/longest-palindromic-subsequence/",
+          "kind": "practice",
+          "leetcodeSlug": "longest-palindromic-subsequence"
+        },
+        {
+          "title": "Minimum insertions to make string palindrome",
+          "titleSlug": "tuf-a2z-312-dynamic-programming-dp-on-strings",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/minimum-insertion-steps-to-make-a-string-palindrome/",
+          "kind": "practice",
+          "leetcodeSlug": "minimum-insertion-steps-to-make-a-string-palindrome"
+        },
+        {
+          "title": "Minimum insertions or deletions to convert string A to B",
+          "titleSlug": "tuf-a2z-311-dynamic-programming-dp-on-strings",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/delete-operation-for-two-strings/",
+          "kind": "practice",
+          "leetcodeSlug": "delete-operation-for-two-strings"
+        },
+        {
+          "title": "Shortest common supersequence",
+          "titleSlug": "tuf-a2z-313-dynamic-programming-dp-on-strings",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/shortest-common-supersequence/",
+          "kind": "practice",
+          "leetcodeSlug": "shortest-common-supersequence"
+        },
+        {
+          "title": "Distinct subsequences",
+          "titleSlug": "tuf-a2z-306-dynamic-programming-dp-on-strings",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/distinct-subsequences/",
+          "kind": "practice",
+          "leetcodeSlug": "distinct-subsequences"
+        },
+        {
+          "title": "Edit distance",
+          "titleSlug": "tuf-a2z-307-dynamic-programming-dp-on-strings",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/edit-distance/",
+          "kind": "practice",
+          "leetcodeSlug": "edit-distance"
+        },
+        {
+          "title": "Wildcard matching",
+          "titleSlug": "tuf-a2z-314-dynamic-programming-dp-on-strings",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/wildcard-matching/",
+          "kind": "practice",
+          "leetcodeSlug": "wildcard-matching"
+        },
+        {
+          "title": "Word Break",
+          "titleSlug": "tuf-a2z-4-dynamic-programming-dp-on-strings",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/word-break/",
+          "kind": "practice",
+          "leetcodeSlug": "word-break"
+        },
+        {
+          "title": "Count Palindromic Subsequences",
+          "titleSlug": "tuf-a2z-231-dynamic-programming-dp-on-strings",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/count-palindromic-subsequences/",
+          "kind": "practice",
+          "leetcodeSlug": "count-palindromic-subsequences"
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Programming / MCM DP",
+      "questions": [
+        {
+          "title": "Matrix chain multiplication",
+          "titleSlug": "tuf-a2z-327-dynamic-programming-mcm-dp",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Burst balloons",
+          "titleSlug": "tuf-a2z-326-dynamic-programming-mcm-dp",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/burst-balloons/",
+          "kind": "practice",
+          "leetcodeSlug": "burst-balloons"
+        },
+        {
+          "title": "Palindrome partitioning II ",
+          "titleSlug": "tuf-a2z-329-dynamic-programming-mcm-dp",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/palindrome-partitioning-ii/",
+          "kind": "practice",
+          "leetcodeSlug": "palindrome-partitioning-ii"
+        },
+        {
+          "title": "Partition Array for Maximum Sum",
+          "titleSlug": "tuf-a2z-810-dynamic-programming-mcm-dp",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/partition-array-for-maximum-sum/",
+          "kind": "practice",
+          "leetcodeSlug": "partition-array-for-maximum-sum"
+        },
+        {
+          "title": "Minimum cost to cut the stick",
+          "titleSlug": "tuf-a2z-328-dynamic-programming-mcm-dp",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/minimum-cost-to-cut-a-stick/",
+          "kind": "practice",
+          "leetcodeSlug": "minimum-cost-to-cut-a-stick"
+        },
+        {
+          "title": "Different Ways to Evaluate a Boolean Expression",
+          "titleSlug": "tuf-a2z-276-dynamic-programming-mcm-dp",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/parsing-a-boolean-expression/",
+          "kind": "practice",
+          "leetcodeSlug": "parsing-a-boolean-expression"
+        }
+      ]
+    },
+    {
+      "name": "Tries / Theory",
+      "questions": [
+        {
+          "title": "Bit PreRequisites for TRIE Problems",
+          "titleSlug": "tuf-a2z-2390-tries-triessubc",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "learning"
+        },
+        {
+          "title": "Trie Implementation and Operations",
+          "titleSlug": "tuf-a2z-1028-tries-triessubc",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/implement-trie-prefix-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "implement-trie-prefix-tree"
+        },
+        {
+          "title": "Trie Implementation and Advanced Operations",
+          "titleSlug": "tuf-a2z-1027-tries-triessubc",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/implement-trie-ii-prefix-tree/",
+          "kind": "practice",
+          "leetcodeSlug": "implement-trie-ii-prefix-tree"
+        }
+      ]
+    },
+    {
+      "name": "Tries / Problems",
+      "questions": [
+        {
+          "title": "Longest Word with All Prefixes",
+          "titleSlug": "tuf-a2z-1023-tries-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/longest-word-with-all-prefixes/",
+          "kind": "practice",
+          "leetcodeSlug": "longest-word-with-all-prefixes"
+        },
+        {
+          "title": "Number of distinct substrings in a string",
+          "titleSlug": "tuf-a2z-1026-tries-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/number-of-distinct-substrings-in-a-string/",
+          "kind": "practice",
+          "leetcodeSlug": "number-of-distinct-substrings-in-a-string"
+        },
+        {
+          "title": "Maximum XOR of two numbers in an array",
+          "titleSlug": "tuf-a2z-1024-tries-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/maximum-xor-of-two-numbers-in-an-array/",
+          "kind": "practice",
+          "leetcodeSlug": "maximum-xor-of-two-numbers-in-an-array"
+        },
+        {
+          "title": "Maximum Xor with an element from an array",
+          "titleSlug": "tuf-a2z-1025-tries-problems",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/maximum-xor-with-an-element-from-array/",
+          "kind": "practice",
+          "leetcodeSlug": "maximum-xor-with-an-element-from-array"
+        }
+      ]
+    },
+    {
+      "name": "Strings (Advanced Algo) / Medium Problems",
+      "questions": [
+        {
+          "title": "Reverse every word in a string",
+          "titleSlug": "tuf-a2z-984-strings-advanced-algo-medium-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/reverse-words-in-a-string/",
+          "kind": "practice",
+          "leetcodeSlug": "reverse-words-in-a-string"
+        },
+        {
+          "title": "Minimum number of bracket reversals to make an expression balanced",
+          "titleSlug": "tuf-a2z-983-strings-advanced-algo-medium-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/minimum-add-to-make-parentheses-valid/",
+          "kind": "practice",
+          "leetcodeSlug": "minimum-add-to-make-parentheses-valid"
+        },
+        {
+          "title": "Count and say",
+          "titleSlug": "tuf-a2z-982-strings-advanced-algo-medium-problems",
+          "difficulty": "CORE",
+          "url": "https://leetcode.com/problems/count-and-say/",
+          "kind": "practice",
+          "leetcodeSlug": "count-and-say"
+        }
+      ]
+    },
+    {
+      "name": "Strings (Advanced Algo) / Advanced Problems (Less asked)",
+      "questions": [
+        {
+          "title": "Hashing In Strings | Theory",
+          "titleSlug": "tuf-a2z-2399-strings-advanced-algo-advanced-problems-less-asked",
+          "difficulty": "LESSON",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/string-hashing-rolling-hash",
+          "kind": "learning"
+        },
+        {
+          "title": "Rabin Karp Algorithm",
+          "titleSlug": "tuf-a2z-979-strings-advanced-algo-advanced-problems-less-asked",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Z function",
+          "titleSlug": "tuf-a2z-981-strings-advanced-algo-advanced-problems-less-asked",
+          "difficulty": "PRO",
+          "url": "https://takeuforward.org/blogs/data-structure-and-algorithm/z-function",
+          "kind": "practice"
+        },
+        {
+          "title": "KMP Algorithm or LPS array",
+          "titleSlug": "tuf-a2z-977-strings-advanced-algo-advanced-problems-less-asked",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/implement-strstr/",
+          "kind": "practice",
+          "leetcodeSlug": "implement-strstr"
+        },
+        {
+          "title": "Shortest Palindrome",
+          "titleSlug": "tuf-a2z-980-strings-advanced-algo-advanced-problems-less-asked",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/shortest-palindrome/",
+          "kind": "practice",
+          "leetcodeSlug": "shortest-palindrome"
+        },
+        {
+          "title": "Longest happy prefix",
+          "titleSlug": "tuf-a2z-978-strings-advanced-algo-advanced-problems-less-asked",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/longest-happy-prefix/",
+          "kind": "practice",
+          "leetcodeSlug": "longest-happy-prefix"
+        }
+      ]
+    },
+    {
+      "name": "Maths / Sieve of Eratosthenes",
+      "questions": [
+        {
+          "title": "Print all primes till N",
+          "titleSlug": "tuf-a2z-653-maths-sieve-of-eratosthenes",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Prime factorisation of a Number",
+          "titleSlug": "tuf-a2z-652-maths-sieve-of-eratosthenes",
+          "difficulty": "CORE",
+          "url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet",
+          "kind": "practice"
+        },
+        {
+          "title": "Count primes in range L to R",
+          "titleSlug": "tuf-a2z-651-maths-sieve-of-eratosthenes",
+          "difficulty": "PRO",
+          "url": "https://leetcode.com/problems/count-primes/",
+          "kind": "practice",
+          "leetcodeSlug": "count-primes"
+        }
+      ]
+    }
+  ]
+}

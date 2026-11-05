@@ -319,6 +319,7 @@ export const api = {
     }),
   recentSolves: (userId: number, limit = 10) =>
     request<RecentSolve[]>(`/users/${userId}/recent-solves?limit=${limit}`),
+  codeforcesSolves: (userId: number) => request<{ handle: string | null; slugs: string[]; synced_at: string | null }>(`/users/${userId}/codeforces-solves`),
   pollNow: () => request<{ polled: Record<string, number> }>("/admin/poll-now", { method: "POST" }),
   checkExtensionVersion: checkExtensionVersion,
   getAppConfig: getAppConfig,

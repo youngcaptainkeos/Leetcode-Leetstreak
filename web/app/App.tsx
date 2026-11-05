@@ -14,6 +14,7 @@ import {
 import { getStored, setStored, clearStored, getAccountStored, setAccountStored } from "./storage";
 import { navigate, setSessionUserId } from "./session";
 import { IS_WEBSITE, assetUrl } from "./lib/runtime";
+import { WebsiteProgress } from "./Progress";
 
 type BoardTab = "global" | "friends" | number;
 export type AuthMode = "login" | "register" | "forgot";
@@ -1336,6 +1337,11 @@ function Dashboard({
           <span>{day.problems_solved}</span><div className="workspace-bar-track"><div style={{height: `${Math.max(3, day.problems_solved / maxDay * 100)}%`}} className={day.problems_solved ? "is-active" : ""} /></div>
           <span>{dayLabels[index]}</span></div>)}</div>
       </section>
+
+      <section className="section workspace-progress-section" id="progress" aria-label="Study plans and progress">
+        <WebsiteProgress userId={userId} username={dash.leetcode_username} groups={groups} />
+      </section>
+
       <section className="section workspace-leaderboard" id="leaderboards" aria-label="Leaderboards and groups">
         <div className="section-header">
           <div className="section-title">Leaderboard</div>

@@ -95,6 +95,7 @@ function Website() {
         <span className="workspace-sidebar-label">WORKSPACE</span>
         <nav aria-label="Workspace navigation">
           <a href="#overview"><span aria-hidden="true">◈</span> Overview</a>
+          <a href="#progress"><span aria-hidden="true">◉</span> Study plans</a>
           <a href="#leaderboards"><span aria-hidden="true">↗</span> Leaderboards</a>
           <a href="#groups"><span aria-hidden="true">◎</span> Your groups</a>
           <a href="#activity"><span aria-hidden="true">≋</span> Recent solves</a>
