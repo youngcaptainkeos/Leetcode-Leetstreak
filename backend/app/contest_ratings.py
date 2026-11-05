@@ -40,8 +40,16 @@ async def refresh_zerotrac_dataset() -> int:
     """
     Fetches the latest contest ratings from ZeroTrac's dataset URL,
     updates CONTEST_RATINGS in memory, and persists to zerotrac_ratings.json.
+    Coordinates across processes using a distributed job lease.
     """
     global CONTEST_RATINGS
+    from .leases import acquire_lease, release_lease
+
+    lease_owner = acquire_lease("scheduler:job:refresh_zerotrac_dataset", ttl_seconds=600.0)
+    if not lease_owner:
+        logger.info("refresh_zerotrac_dataset skipped: already running in another process.")
+        return len(CONTEST_RATINGS)
+
     try:
         async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
             resp = await client.get(ZEROTRAC_DATA_URL)
@@ -65,6 +73,8 @@ async def refresh_zerotrac_dataset() -> int:
                     return len(new_ratings)
     except Exception as e:
         logger.warning("Failed to refresh ZeroTrac dataset: %s", e)
+    finally:
+        release_lease("scheduler:job:refresh_zerotrac_dataset", lease_owner)
     return len(CONTEST_RATINGS)
 
 

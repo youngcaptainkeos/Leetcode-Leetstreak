@@ -48,6 +48,7 @@ from .codeforces_client import fetch_profile, CodeforcesError, check_codeforces_
 from .codeforces_sync import background_codeforces_sync, user_sync_lock
 from .security import current_user, require_self, member_group, owned_group
 from .releases import RELEASE_NOTICES
+from .leases import user_sync_lease
 from .migrations import (
     run_all_migrations,
     migrate_core,
@@ -327,8 +328,11 @@ async def sync_user(user_id: int, db: Session = Depends(get_db), actor: User = D
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    solves_added = await poll_user(db, user)
-    return {"status": "synced", "user_id": user_id, "new_solves": solves_added}
+    async with user_sync_lease(user_id, ttl_seconds=120.0, wait_timeout=0.0) as lease:
+        if not lease:
+            raise HTTPException(status_code=409, detail="A sync is already in progress for this user.")
+        solves_added = await poll_user(db, user, sync_codeforces=True, already_leased=True)
+        return {"status": "synced", "user_id": user_id, "new_solves": solves_added}
 
 
 @app.put("/api/users/{user_id}/leetcode-username")

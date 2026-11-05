@@ -501,3 +501,60 @@ Direct friendships are now first-class, account-backed relationships that persis
 - 26 extension unit tests passed (`extension/tests/*.test.mjs`).
 - Browser smoke test (Playwright in headless Chrome) passed on both extension and website with 0 runtime errors, successfully fetching and verifying friends endpoints.
 - Verified byte-identical ZIP copies across all 4 locations.
+
+---
+
+## 2026-11-06 — Step: M5-02 / OPS-04: Multi-Process Sync Coordination, Scheduler Leases & Shared Provider Rate Limits
+
+### Summary of Changes
+Resolved process-local scheduling, sync concurrency, and rate-limiting limitations across multi-worker deployments. Previously, scheduler jobs, per-user sync locks, and Codeforces request spacing were held solely in process memory via `asyncio.Lock()`. If multiple worker processes or service instances were deployed, overlapping scheduler runs (`poll_all_users`, `refresh_zerotrac_dataset`) would fire concurrently, multiple processes could sync the same user simultaneously with competing row updates, and Codeforces requests from different workers could violate the 2-second rate limit, triggering HTTP 429 Too Many Requests.
+
+Introduced durable, distributed job leases and rate-limiting coordination in `backend/app/leases.py` backed by atomic transactions against a new `job_leases` table. Short, sub-millisecond database transactions acquire and release leases without holding open database row locks or connections across slow remote network requests. Dead worker leases automatically expire after their TTL and are cleanly reclaimed. Coordinated per-account sync leases return 409 Conflict when a sync is already in progress, background scheduled jobs skip execution when a distributed job lease is active, and provider rate limits (such as Codeforces 2-second spacing) are enforced deployment-wide across all worker processes.
+
+### Detailed Changes
+1. **`backend/app/models.py`**:
+   - Added `JobLease` model with `resource_key` (primary key), `owner_id`, `acquired_at`, and `expires_at` (indexed).
+
+2. **`backend/app/migrations.py`**:
+   - Added `migrate_leases(target)` (version `20261106-leases-v1`): creates `job_leases` table and index on `(resource_key, expires_at)`.
+   - Updated `run_all_migrations` (now 9 atomic migrations).
+   - Updated migration counts and expected versions in `test_migrations.py` and `test_postgres_migrations.py`.
+
+3. **`backend/app/leases.py`**:
+   - Implemented `acquire_lease(resource_key, ttl_seconds, owner_id, db)`: atomic acquisition and renewal using immediate transactions without holding long-lived DB connections.
+   - Implemented `release_lease(resource_key, owner_id, db)`: atomic release.
+   - Implemented `renew_lease(resource_key, owner_id, extension_seconds, db)` and `is_lease_active(resource_key, db)`.
+   - Implemented `user_sync_lease(user_id, ttl_seconds, wait_timeout)`: async context manager combining fast in-memory locking with distributed database leasing.
+   - Implemented `acquire_provider_rate_limit(provider, min_interval, max_wait)`: multi-process distributed rate limiter enforcing minimum spacing between calls across all workers.
+
+4. **`backend/app/codeforces_client.py`**:
+   - In `codeforces_request`, integrated `acquire_provider_rate_limit("codeforces", min_interval=2.1)` to ensure all outgoing requests across all worker processes strictly respect Codeforces' rate limits.
+
+5. **`backend/app/codeforces_sync.py`**:
+   - Replaced process-local `_locks` dictionary with `UserSyncLock` delegating to `user_sync_lease` and `is_lease_active`.
+   - Updated `sync_codeforces_user` to coordinate under `user_sync_lease` and support `already_leased=True` flag for re-entrant callers.
+
+6. **`backend/app/scheduler.py`**:
+   - Updated `poll_all_users` to acquire distributed lease `scheduler:job:poll_all_users` (300s TTL), gracefully skipping overlapping runs across worker processes.
+   - Updated `poll_user` to coordinate under `user_sync_lease(user.id, ttl_seconds=120.0)` and pass `already_leased=True` to downstream Codeforces sync.
+
+7. **`backend/app/contest_ratings.py`**:
+   - Updated `refresh_zerotrac_dataset` to acquire distributed lease `scheduler:job:refresh_zerotrac_dataset` (600s TTL), preventing concurrent dataset downloads across workers.
+
+8. **`backend/app/main.py`**:
+   - In `POST /api/users/{user_id}/sync`, coordinated under `user_sync_lease(user_id, wait_timeout=0.0)`. Returns HTTP 409 Conflict ("A sync is already in progress for this user.") if a sync is already running.
+
+9. **`backend/tests/test_coordination.py`**:
+   - Added 7 unit tests covering lease acquisition, mutual exclusion, owner renewal, dead-worker expiry recovery, context manager cleanup, scheduler job skipping, cross-process provider rate limiting spacing, and sync endpoint 409 conflict handling.
+
+10. **Distribution Packages**:
+    - Built web application (`npm --prefix web run check && npm --prefix web run build`).
+    - Built extension (`npm --prefix extension run build`).
+    - Synchronized all 4 ZIP copies (`./leetstreak.zip`, `./leetstreak_dist.zip`, `./extension/leetstreak.zip`, `./backend/app/leetstreak.zip`).
+
+### Verification Evidence
+- 118 backend tests passed with zero failures (`backend/tests`), including all 7 coordination tests in `backend/tests/test_coordination.py` and 9 migration tests.
+- 8 native PostgreSQL tests passed in `test_postgres_migrations.py`.
+- 26 extension unit tests passed (`extension/tests/*.test.mjs`).
+- Browser smoke test (Playwright in headless Chrome) passed on both extension and website with 0 runtime errors.
+- Verified byte-identical ZIP copies across all 4 locations.

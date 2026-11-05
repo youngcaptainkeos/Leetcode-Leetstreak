@@ -11,28 +11,25 @@ class CodeforcesError(Exception):
     pass
 
 
-_request_lock = asyncio.Lock()
-_last_request = 0.0
+from .leases import acquire_provider_rate_limit
 
 
 async def codeforces_request(method: str, params: dict):
-    global _last_request
-    # Shared by profile checks and all sync jobs (CF permits 1 call / 2 seconds).
-    async with _request_lock:
-        wait = 2.1 - (time.monotonic() - _last_request)
-        if wait > 0:
-            await asyncio.sleep(wait)
-        _last_request = time.monotonic()
-        try:
-            async with httpx.AsyncClient(timeout=25) as client:
-                response = await client.get(f"https://codeforces.com/api/{method}", params=params)
-                response.raise_for_status()
-                data = response.json()
-        except (httpx.HTTPError, ValueError) as error:
-            raise CodeforcesError("Codeforces is unavailable. Automatic syncing will retry later.") from error
-        if data.get("status") != "OK":
-            raise CodeforcesError("Codeforces could not return this public account. Check the handle or try again later.")
-        return data.get("result")
+    try:
+        await acquire_provider_rate_limit("codeforces", min_interval=2.1, max_wait=30.0)
+    except TimeoutError as e:
+        raise CodeforcesError("Codeforces request limit reached. Retrying later.") from e
+
+    try:
+        async with httpx.AsyncClient(timeout=25) as client:
+            response = await client.get(f"https://codeforces.com/api/{method}", params=params)
+            response.raise_for_status()
+            data = response.json()
+    except (httpx.HTTPError, ValueError) as error:
+        raise CodeforcesError("Codeforces is unavailable. Automatic syncing will retry later.") from error
+    if data.get("status") != "OK":
+        raise CodeforcesError("Codeforces could not return this public account. Check the handle or try again later.")
+    return data.get("result")
 
 
 def normalize_handle(value: str) -> str:

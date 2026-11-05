@@ -20,6 +20,7 @@ from .tracking import record_acceptance
 from .scoring import revision_points, SCORING_VERSION
 from .platforms import daily_counts
 from .streak import current_streak
+from .leases import user_sync_lease, acquire_lease, release_lease
 
 logger = logging.getLogger("codestreak.scheduler")
 
@@ -45,13 +46,24 @@ async def backfill_daily_challenges_archive(db: Session):
     db.commit()
 
 
-async def poll_user(db: Session, user: User, sync_codeforces: bool = True) -> int:
+async def poll_user(db: Session, user: User, sync_codeforces: bool = True, already_leased: bool = False) -> int:
     """Fetch complete LeetCode profile, calendar history, and recent AC submissions for one user."""
+    if not already_leased:
+        async with user_sync_lease(user.id, ttl_seconds=120.0) as lease:
+            if not lease:
+                logger.info("User %s (ID %d) sync skipped: lease held by another process.", user.leetcode_username, user.id)
+                return 0
+            return await _poll_user_inner(db, user, sync_codeforces=sync_codeforces)
+    else:
+        return await _poll_user_inner(db, user, sync_codeforces=sync_codeforces)
+
+
+async def _poll_user_inner(db: Session, user: User, sync_codeforces: bool = True) -> int:
     try:
         data = await fetch_leetcode_user_data(user.leetcode_username)
     except LeetCodeError as e:
         logger.warning("LeetCode fetch failed for %s: %s", user.leetcode_username, e)
-        return await sync_codeforces_user(db, user) if sync_codeforces and user.codeforces_username else 0
+        return await sync_codeforces_user(db, user, already_leased=True) if sync_codeforces and user.codeforces_username else 0
 
     today_daily_slug = await fetch_today_daily_challenge_slug()
     if today_daily_slug:
@@ -189,44 +201,54 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True) -> in
     recalculate_user_points(user, db, today_daily_slug=today_daily_slug)
     db.commit()
     if sync_codeforces and user.codeforces_username:
-        new_count += await sync_codeforces_user(db, user)
+        new_count += await sync_codeforces_user(db, user, already_leased=True)
     return new_count
 
 
 import asyncio
 
 async def poll_all_users() -> dict:
-    """Concurrently poll all users with a max concurrency limit (Semaphore=5) and separate DB sessions."""
-    db = SessionLocal()
-    users = []
+    """Concurrently poll all users with a max concurrency limit (Semaphore=5) and separate DB sessions.
+    Coordinates across worker processes using distributed job lease 'scheduler:job:poll_all_users'.
+    """
+    lease_owner = acquire_lease("scheduler:job:poll_all_users", ttl_seconds=300.0)
+    if not lease_owner:
+        logger.info("poll_all_users skipped: already running in another worker/process.")
+        return {}
+
     try:
-        users = db.query(User.id, User.leetcode_username).all()
+        db = SessionLocal()
+        users = []
+        try:
+            users = db.query(User.id, User.leetcode_username).all()
+        finally:
+            db.close()
+
+        semaphore = asyncio.Semaphore(5)
+        results = {}
+
+        async def _safe_poll(user_id: int, username: str):
+            async with semaphore:
+                user_db = SessionLocal()
+                try:
+                    u = user_db.query(User).filter(User.id == user_id).first()
+                    if u:
+                        solves = await poll_user(user_db, u)
+                        results[username] = solves
+                except Exception as e:
+                    logger.error("Error polling user %s (ID %s): %s", username, user_id, e)
+                    results[username] = 0
+                finally:
+                    user_db.close()
+
+        tasks = [_safe_poll(u.id, u.leetcode_username) for u in users]
+        if tasks:
+            await asyncio.gather(*tasks)
+
+        logger.info("Poll complete for %d users: %s", len(users), results)
+        return results
     finally:
-        db.close()
-
-    semaphore = asyncio.Semaphore(5)
-    results = {}
-
-    async def _safe_poll(user_id: int, username: str):
-        async with semaphore:
-            user_db = SessionLocal()
-            try:
-                u = user_db.query(User).filter(User.id == user_id).first()
-                if u:
-                    solves = await poll_user(user_db, u)
-                    results[username] = solves
-            except Exception as e:
-                logger.error("Error polling user %s (ID %s): %s", username, user_id, e)
-                results[username] = 0
-            finally:
-                user_db.close()
-
-    tasks = [_safe_poll(u.id, u.leetcode_username) for u in users]
-    if tasks:
-        await asyncio.gather(*tasks)
-
-    logger.info("Poll complete for %d users: %s", len(users), results)
-    return results
+        release_lease("scheduler:job:poll_all_users", lease_owner)
 
 
 def start_scheduler(immediate: bool = False) -> AsyncIOScheduler:

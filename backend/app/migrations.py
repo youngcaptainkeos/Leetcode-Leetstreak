@@ -246,6 +246,21 @@ def migrate_friendships(target):
         connection.execute(versions.insert().values(version=version))
 
 
+def migrate_leases(target):
+    """
+    Distributed job leases, cross-process rate limits, and coordination.
+    Version: 20261106-leases-v1
+    """
+    from .models import JobLease
+
+    with migration_connection(target) as connection:
+        version = "20261106-leases-v1"
+        if connection.execute(versions.select().where(versions.c.version == version)).first():
+            return
+        JobLease.__table__.create(connection, checkfirst=True)
+        connection.execute(versions.insert().values(version=version))
+
+
 def run_all_migrations(target):
     """
     Run all pending migrations in an atomic transaction under advisory lock on PostgreSQL.
@@ -260,5 +275,6 @@ def run_all_migrations(target):
         migrate_progress(connection)
         migrate_verification(connection)
         migrate_friendships(connection)
+        migrate_leases(connection)
 
 

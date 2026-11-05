@@ -86,7 +86,7 @@ This is the working checklist for the repository review. It covers every issue a
 - [ ] **OPS-01 · P1:** Report email delivery failures honestly.
 - [ ] **OPS-02 · P1:** Configure stable signing keys and predictable session behavior.
 - [ ] **OPS-03 · P2:** Remove full archive imports and all-user recalculation from startup.
-- [ ] **OPS-04 · P2:** Coordinate sync jobs and provider limits across processes.
+- [x] **OPS-04 · P2:** Coordinate sync jobs and provider limits across processes.
 - [ ] **OPS-05 · P1:** Make release versions and update metadata accurate.
 - [ ] **OPS-06 · P1:** Add regression coverage and continuous checks.
 - [ ] **OPS-07 · P2:** Remove tracked environments and simplify generated output management.
@@ -783,17 +783,17 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Document and enforce the current single-scheduler constraint until shared coordination is implemented.
-- [ ] Introduce durable per-account job ownership/leases with expiry, atomic acquisition, retries, and idempotent writes. Do not hold database row locks across slow provider requests.
-- [ ] Use one shared provider rate limiter/worker ownership model across processes; select database coordination or a queue/cache only after estimating expected volume.
-- [ ] Coalesce manual sync, background polling, and linking jobs. Bound concurrency, batch size, retries, and queue length.
-- [ ] Handle worker shutdown, lease expiry, and rejected provider requests without corrupting committed history.
+- [x] Document and enforce the current single-scheduler constraint until shared coordination is implemented.
+- [x] Introduce durable per-account job ownership/leases with expiry, atomic acquisition, retries, and idempotent writes. Do not hold database row locks across slow provider requests.
+- [x] Use one shared provider rate limiter/worker ownership model across processes; select database coordination or a queue/cache only after estimating expected volume.
+- [x] Coalesce manual sync, background polling, and linking jobs. Bound concurrency, batch size, retries, and queue length.
+- [x] Handle worker shutdown, lease expiry, and rejected provider requests without corrupting committed history.
 
 **Acceptance**
 
-- [ ] Two processes requesting the same account do not perform conflicting imports.
-- [ ] Rate limits apply across the deployment, not separately per worker.
-- [ ] A crashed worker's job is recoverable; clients can see a truthful queued/running/failed state.
+- [x] Two processes requesting the same account do not perform conflicting imports.
+- [x] Rate limits apply across the deployment, not separately per worker.
+- [x] A crashed worker's job is recoverable; clients can see a truthful queued/running/failed state.
 
 ### OPS-05 — Release metadata and update behavior
 

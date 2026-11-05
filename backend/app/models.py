@@ -288,3 +288,17 @@ class Friendship(Base):
         Index("ix_friendship_status_pair", "user_id", "friend_id", "status"),
     )
 
+
+class JobLease(Base):
+    """Distributed lock/lease for coordinating background jobs, per-user syncs, and rate limits across processes."""
+    __tablename__ = "job_leases"
+
+    resource_key = Column(String(128), primary_key=True, index=True)
+    owner_id = Column(String(128), nullable=False)
+    acquired_at = Column(DateTime, nullable=False, default=utc_now)
+    expires_at = Column(DateTime, nullable=False, index=True)
+
+    __table_args__ = (
+        Index("ix_job_leases_expiry", "resource_key", "expires_at"),
+    )
+
