@@ -282,6 +282,10 @@ export const api = {
     request<{ status: string; codeforces_username: string }>(`/users/${userId}/codeforces-username`, {
       method: "PUT", body: JSON.stringify({ codeforces_username }),
     }),
+  unlinkCodeforces: (userId: number) =>
+    request<{ status: string; message: string; points: number }>(`/users/${userId}/codeforces`, {
+      method: "DELETE",
+    }),
   updateSettings: (userId: number, settings: { show_global_leaderboard: boolean }) =>
     request<{ status: string; user_id: number; global_leaderboard_enabled: boolean }>(
       `/users/${userId}/settings`,

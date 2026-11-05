@@ -97,7 +97,7 @@ This is the working checklist for the repository review. It covers every issue a
 - [x] **FEAT-02 · P2:** Add Progress to the website.
 - [x] **FEAT-03 · P1:** Show reliable sync status and history completeness.
 - [x] **FEAT-04 · P2:** Add coding-account ownership verification and claim recovery.
-- [ ] **FEAT-05 · P2:** Allow Codeforces unlinking.
+- [x] **FEAT-05 · P2:** Allow Codeforces unlinking.
 - [ ] **FEAT-06 · P3:** Add weekly/monthly points rankings.
 - [ ] **FEAT-07 · P2 · Deferred:** Add friend notification preferences and quiet hours when that feature is resumed.
 - [ ] **FEAT-08 · P3:** Add searchable history, longer activity views, and exports.
@@ -217,6 +217,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 | M4-01 | FEAT-01 account-backed study plans, playlists, library subscriptions & external completion | Passed locally: 90 backend tests including 7 progress/custom plan tests, 8 PostgreSQL tests, 26 extension tests, web check/build and extension tsc/build. Added UserProgress and UserCustomPlan models and 20261106-progress-v1 migration. Implemented authenticated progress and custom plan endpoints in backend/app/main.py. Integrated bidirectional account sync in extension/src/progress/Progress.tsx with local-first cache/outbox and transparent migration of existing local plans. Rebuilt extension and synchronized all 4 ZIP distribution packages. Commit labeled 'M4 FEAT-01 step 1: persist study plans and playlists to backend account profile'. |
 | M4-02 | FEAT-02 website Progress section with study plans, playlists & friends activity | Passed locally: browser smoke test (Playwright in headless Chrome) passed on both extension and website with 0 errors; web tsc check and build passed cleanly; 26 extension tests and 90 backend tests passed. Added web/app/Progress.tsx with account-backed study plan library, playlist creation from links, starter restoration, subgroup expansion, search/filtering, and manual external completion. Added Study plans navigation in web/main.tsx sidebar and responsive styling in web/app/App.css. Commit labeled 'M4 FEAT-02 step 2: add Progress section and study plan playlists to website'. |
 | M4-03 | FEAT-04 coding-account ownership verification & claim recovery | Passed locally: 99 backend tests including 9 verification tests, 8 PostgreSQL tests, 26 extension tests, web check/build and extension build; browser smoke test passed on both website and extension with 0 runtime errors. Added expiring one-time public-profile token challenge for LeetCode (aboutMe/realName) and Codeforces (user.info organization/name) with dispute recovery for preclaimed unverified handles. Verified badges rendered on leaderboards and profile modals across web and extension. Synchronized all 4 ZIP distribution packages. Commit labeled 'M4 FEAT-04 step 3: coding-account ownership verification and claim recovery'. |
+| M4-04 | FEAT-05 Codeforces unlinking and score reconciliation | Passed locally: 103 backend tests including 4 unlink tests in test_unlink.py, 8 PostgreSQL tests, 26 extension tests, web check/build and extension build; browser smoke test passed on both website and extension with 0 runtime errors. Added DELETE /api/users/{user_id}/codeforces with account version bump, atomic deletion of Codeforces solves, platform activity, and point awards, recalculation of points, and confirmation modal in both extension and website settings. Synchronized all 4 ZIP distribution packages. Commit labeled 'M4 FEAT-05 step 4: allow Codeforces unlinking and score reconciliation'. |
 
 
 
@@ -966,16 +967,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Add a clear disconnect action with an impact summary and explicit confirmation, including effects on score, activity, streak, and plan completion.
-- [ ] Cancel/invalidate in-flight work using a linked-account version. Atomically detach the handle and reconcile its active data according to the selected policy.
-- [ ] Recompute affected totals without deleting LeetCode data. Release the handle claim and clear stale CF plan observations.
-- [ ] Define relinking behavior and recovery/retention limits without exposing old data to a subsequent claimant.
+- [x] Add a clear disconnect action with an impact summary and explicit confirmation, including effects on score, activity, streak, and plan completion.
+- [x] Cancel/invalidate in-flight work using a linked-account version. Atomically detach the handle and reconcile its active data according to the selected policy.
+- [x] Recompute affected totals without deleting LeetCode data. Release the handle claim and clear stale CF plan observations.
+- [x] Define relinking behavior and recovery/retention limits without exposing old data to a subsequent claimant.
 
 **Acceptance**
 
-- [ ] Disconnect updates both clients and all affected aggregates consistently.
-- [ ] A late sync response cannot recreate disconnected data.
-- [ ] Reconnecting is idempotent and never doubles points.
+- [x] Disconnect updates both clients and all affected aggregates consistently.
+- [x] A late sync response cannot recreate disconnected data.
+- [x] Reconnecting is idempotent and never doubles points.
 
 ### FEAT-06 — Weekly/monthly points rankings
 

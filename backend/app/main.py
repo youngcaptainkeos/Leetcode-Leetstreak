@@ -35,6 +35,7 @@ from .schemas import (
     InitiateVerificationRequest, InitiateVerificationResponse,
     ConfirmVerificationRequest, ConfirmVerificationResponse,
     VerificationStatusResponse, PlatformVerificationStatus,
+    UnlinkCodeforcesResponse,
 )
 from .streak import current_streak
 from .timekeeping import IST, ist_today, week_start as product_week_start, month_start as product_month_start, period_bounds, utc_now
@@ -411,6 +412,46 @@ async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequ
             raise HTTPException(status_code=409, detail="That Codeforces handle was just connected to another account.")
     background_tasks.add_task(background_codeforces_sync, user_id)
     return {"status": "syncing", "codeforces_username": handle}
+
+
+@app.delete("/api/users/{user_id}/codeforces-username", response_model=UnlinkCodeforcesResponse)
+@app.delete("/api/users/{user_id}/codeforces", response_model=UnlinkCodeforcesResponse)
+async def unlink_codeforces(
+    user_id: int,
+    db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
+):
+    require_self(actor, user_id)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user.codeforces_username:
+        raise HTTPException(status_code=400, detail="No Codeforces account is currently connected.")
+
+    async with user_sync_lock(user_id):
+        db.refresh(user, with_for_update=True)
+        user.codeforces_username = None
+        user.codeforces_verified_at = None
+        user.codeforces_verification_token = None
+        user.codeforces_verification_expires_at = None
+        user.codeforces_pending_handle = None
+        user.codeforces_last_sync = None
+        user.codeforces_last_full_sync = None
+        user.codeforces_linked_at = None
+        user.codeforces_sync_error = None
+        user.codeforces_account_version += 1
+
+        clear_tracking(db, user_id, "codeforces")
+        db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").delete()
+        db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id, PlatformActivity.platform == "codeforces").delete()
+        recalculate_user_points(user, db)
+        db.commit()
+
+    return UnlinkCodeforcesResponse(
+        status="unlinked",
+        message="Codeforces account successfully unlinked.",
+        points=float(user.points or 0),
+    )
 
 
 @app.post("/api/users/{user_id}/verify-handle/initiate", response_model=InitiateVerificationResponse)

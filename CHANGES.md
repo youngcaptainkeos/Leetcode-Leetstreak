@@ -402,6 +402,52 @@ Because neither platform provides OAuth for third-party extensions, ownership is
 - Browser smoke test (Playwright in headless Chrome) passed on both extension and website with 0 runtime errors.
 - Verified byte-identical ZIP copies across all 4 locations.
 
+---
+
+## 2026-11-06 — Step: M4-04 / FEAT-05: Allow Codeforces Unlinking & Score Reconciliation
+
+### Summary of Changes
+Enabled users to disconnect a previously connected Codeforces handle from their account in both the browser extension and web application. Previously, once a Codeforces handle was connected, users could replace it with another handle but had no mechanism to disconnect it or clear its associated data, locking the handle claim indefinitely and leaving users with no way to remove unwanted Codeforces solves or points.
+
+Disconnecting now cleanly and atomically detaches the handle, bumps `codeforces_account_version` to immediately invalidate and discard any running or queued sync jobs, removes all associated Codeforces `Solve` records, `PlatformActivity` rows, and `PointAward` rows, resets verification state, releases the unique handle claim for other accounts to claim or verify, and recalculates the user's score based strictly on remaining LeetCode solves without affecting LeetCode history, streaks, or account integrity.
+
+### Detailed Changes
+1. **`backend/app/schemas.py`**:
+   - Added `UnlinkCodeforcesResponse` schema (`status: str`, `message: str`, `points: float`).
+
+2. **`backend/app/main.py`**:
+   - Added `DELETE /api/users/{user_id}/codeforces` and alias `DELETE /api/users/{user_id}/codeforces-username`.
+   - Requires authenticated user self-authorization (`require_self`).
+   - Validates that a Codeforces account is linked (400 if none).
+   - Under `user_sync_lock`:
+     - Clears `codeforces_username`, `codeforces_verified_at`, `codeforces_verification_token`, `codeforces_verification_expires_at`, `codeforces_pending_handle`, `codeforces_last_sync`, `codeforces_last_full_sync`, `codeforces_linked_at`, and `codeforces_sync_error`.
+     - Increments `codeforces_account_version += 1` to cancel in-flight jobs.
+     - Calls `clear_tracking(db, user_id, "codeforces")` and deletes `Solve` and `PlatformActivity` rows for `codeforces`.
+     - Calls `recalculate_user_points(user, db)`.
+
+3. **`backend/tests/test_unlink.py`**:
+   - Created 4 unit tests covering unauthenticated (401), cross-user forbidden (403), no connected account (400), and successful unlink (200).
+   - Verifies complete removal of CF solves and platform activity, bump of `codeforces_account_version`, preservation of LeetCode solves, and exact point recalculation.
+
+4. **Client API & UI (`web` & `extension`)**:
+   - Added `unlinkCodeforces(userId: number)` in `web/app/lib/api.ts` and `extension/src/lib/api.ts`.
+   - Added `Disconnect Codeforces` button in the Codeforces settings card when a handle is connected.
+   - Added a confirmation modal explaining exact impact (removal of CF solves and rating points, preservation of LeetCode streak and solves, release of the handle).
+   - Added `.danger-text-btn` styling in `web/app/App.css` and `extension/src/App.css`.
+
+5. **Distribution Packages**:
+   - Built web application (`npm --prefix web run check && npm --prefix web run build`).
+   - Built extension (`npm --prefix extension run build`).
+   - Synchronized all 4 ZIP copies (`./leetstreak.zip`, `./leetstreak_dist.zip`, `./extension/leetstreak.zip`, `./backend/app/leetstreak.zip`).
+
+### Verification Evidence
+- 103 backend tests passed with zero failures (`backend/tests`), including 4 tests in `backend/tests/test_unlink.py`.
+- 8 native PostgreSQL tests passed in `test_postgres_migrations.py`.
+- 26 extension unit tests passed (`extension/tests/*.test.mjs`).
+- Browser smoke test (Playwright in headless Chrome) passed on both extension and website with 0 runtime errors.
+- Verified byte-identical ZIP copies across all 4 locations.
+
+
 
 
 

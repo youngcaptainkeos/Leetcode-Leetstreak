@@ -652,6 +652,8 @@ function Dashboard({
   const [newLeetcodeUsername, setNewLeetcodeUsername] = useState("");
   const [newCodeforcesUsername, setNewCodeforcesUsername] = useState("");
   const [updatingCodeforces, setUpdatingCodeforces] = useState(false);
+  const [showDisconnectCfModal, setShowDisconnectCfModal] = useState(false);
+  const [disconnectingCf, setDisconnectingCf] = useState(false);
   const [updatingUsername, setUpdatingUsername] = useState(false);
   const [togglingLeaderboard, setTogglingLeaderboard] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState<string | null>(null);
@@ -788,6 +790,20 @@ function Dashboard({
     } catch (err) {
       setSettingsMsg(err instanceof Error ? err.message : "Could not connect Codeforces.");
     } finally { setUpdatingCodeforces(false); }
+  }
+
+  async function handleUnlinkCodeforces() {
+    setDisconnectingCf(true); setSettingsMsg(null);
+    try {
+      const result = await api.unlinkCodeforces(userId);
+      setSettingsMsg(result.message || "Codeforces account disconnected.");
+      setShowDisconnectCfModal(false);
+      await loadData(selectedTab);
+    } catch (err) {
+      setSettingsMsg(err instanceof Error ? err.message : "Could not disconnect Codeforces.");
+    } finally {
+      setDisconnectingCf(false);
+    }
   }
 
   useEffect(() => {
@@ -2066,7 +2082,18 @@ function Dashboard({
                   <span className="settings-input-hint">{dash.codeforces_username ? `Connected: @${dash.codeforces_username}. ` : ""}Public accepted solves sync automatically with your points and streak.</span>
                   {dash.codeforces_username && <span className="settings-input-hint" role="status">{dash.codeforces_sync_error || (dash.codeforces_last_sync ? `Last synced ${new Date(dash.codeforces_last_sync + (/Z|[+-]\d\d:\d\d$/.test(dash.codeforces_last_sync) ? "" : "+05:30")).toLocaleString()}` : "Importing public history… Scores will update automatically.")}</span>}
                 </form>
-                <a className="username-help-link-btn" href="https://codeforces.com/" target="_blank" rel="noreferrer">Open Codeforces ↗</a>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px" }}>
+                  <a className="username-help-link-btn" href="https://codeforces.com/" target="_blank" rel="noreferrer">Open Codeforces ↗</a>
+                  {dash.codeforces_username && (
+                    <button
+                      type="button"
+                      className="danger-text-btn"
+                      onClick={() => setShowDisconnectCfModal(true)}
+                    >
+                      Disconnect Codeforces
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -2238,6 +2265,50 @@ function Dashboard({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Disconnect Codeforces Confirmation Modal */}
+      {showDisconnectCfModal && dash && (
+        <div className="modal-overlay" onClick={() => setShowDisconnectCfModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="danger-title">Disconnect Codeforces</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowDisconnectCfModal(false)}
+                title="Cancel"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="modal-description">
+              Are you sure you want to disconnect <strong>@{dash.codeforces_username}</strong>?
+            </p>
+            <ul className="help-bullet-list" style={{ margin: "8px 0 16px 20px", fontSize: "13px" }}>
+              <li>All Codeforces solves and rating points will be removed from your profile.</li>
+              <li>Your LeetCode solves, streak, and points are unaffected.</li>
+              <li>The handle will be released and can be claimed or verified again later.</li>
+            </ul>
+            <div className="modal-actions-row">
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => setShowDisconnectCfModal(false)}
+                disabled={disconnectingCf}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="danger-btn modal-action-btn"
+                onClick={handleUnlinkCodeforces}
+                disabled={disconnectingCf}
+              >
+                {disconnectingCf ? "Disconnecting…" : "Disconnect Codeforces"}
+              </button>
+            </div>
           </div>
         </div>
       )}

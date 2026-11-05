@@ -369,4 +369,10 @@ class VerificationStatusResponse(BaseModel):
     codeforces: PlatformVerificationStatus
 
 
+class UnlinkCodeforcesResponse(BaseModel):
+    status: str = "unlinked"
+    message: str
+    points: float
+
+
 

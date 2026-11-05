@@ -1058,6 +1058,23 @@ html, body, #root {
   cursor: not-allowed;
 }
 
+.danger-text-btn {
+  background: transparent;
+  color: #ff5252;
+  border: none;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: opacity 0.2s ease;
+  display: inline-block;
+  margin-top: 6px;
+}
+.danger-text-btn:hover {
+  opacity: 0.8;
+}
+
 .danger-title {
   color: #ff5252 !important;
 }
