@@ -2122,7 +2122,8 @@ function Dashboard({
                     </button>
                   </div>
                   <span className="settings-input-hint">
-                    Syncs your public LeetCode solves and streak.
+                    {dash.leetcode_last_sync ? `Last synced ${new Date(dash.leetcode_last_sync + (/Z|[+-]\d\d:\d\d$/.test(dash.leetcode_last_sync) ? "" : "+05:30")).toLocaleString()}. ` : "Syncs your public LeetCode solves and streak. "}
+                    {dash.leetcode_history_gap ? "History coverage: partial (older historical solves have base points only)." : "History coverage: complete."}
                   </span>
                 </form>
                 <button

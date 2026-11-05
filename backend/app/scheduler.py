@@ -181,6 +181,11 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True) -> in
         db.add(DailyActivity(user_id=user.id, date=day, problems_solved=count))
     db.flush()
 
+    user.leetcode_last_sync = datetime.now(timezone.utc).replace(tzinfo=None)
+    total_known = (user.easy_count or 0) + (user.medium_count or 0) + (user.hard_count or 0)
+    user.leetcode_history_gap = total_known > len(lc_solves)
+    user.leetcode_history_state = "partial" if user.leetcode_history_gap else "complete"
+
     recalculate_user_points(user, db, today_daily_slug=today_daily_slug)
     db.commit()
     if sync_codeforces and user.codeforces_username:

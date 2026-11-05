@@ -115,3 +115,36 @@ Connected the deterministic `scoring.py` Decimal calculation engine to runtime s
 ### Verification Evidence
 - 91 backend tests passed with zero failures (`backend/tests`).
 - Verified against both SQLite and local native PostgreSQL 16 instances.
+
+---
+
+## 2026-11-06 — Step: M2-06 / FEAT-03: Provider Sync Status and History Completeness Across Clients
+
+### Summary of Changes
+Exposed authenticated provider sync status and history completeness across the backend API and client applications (`extension` and `web`). The backend dashboard endpoint now returns `leetcode_last_sync`, `leetcode_history_state`, and `leetcode_history_gap` alongside existing Codeforces sync status. In the scheduler, `leetcode_last_sync` is updated on every poll, and `leetcode_history_gap` is evaluated by comparing total known solves (from difficulty counts) with recorded solve evidence. If a gap exists, history state is labeled as `partial` (older solves receive base credit only); otherwise, `complete`. The Settings UI in both the browser extension and website renders the last sync timestamp and honest history coverage information. Rebuilt the extension and synchronized all four ZIP packages (`./leetstreak.zip`, `./leetstreak_dist.zip`, `./extension/leetstreak.zip`, `./backend/app/leetstreak.zip`). This completes Milestone M2.
+
+### Detailed Changes
+1. **`backend/app/schemas.py` & `backend/app/main.py`**:
+   - Added `leetcode_last_sync: Optional[datetime] = None`, `leetcode_history_state: Optional[str] = "partial"`, and `leetcode_history_gap: Optional[bool] = True` to `DashboardResponse`.
+   - `get_dashboard` serializes `user.leetcode_last_sync` (in UTC timezone), `user.leetcode_history_state`, and `user.leetcode_history_gap`.
+
+2. **`backend/app/scheduler.py`**:
+   - In `poll_user`, updates `user.leetcode_last_sync = datetime.now(timezone.utc).replace(tzinfo=None)`.
+   - Compares total known solved problems (`easy + medium + hard`) to recorded LeetCode solves to compute `user.leetcode_history_gap` and sets `user.leetcode_history_state = "partial"` or `"complete"`.
+
+3. **`extension/src/lib/api.ts` & `web/app/lib/api.ts`**:
+   - Added `leetcode_last_sync?: string`, `leetcode_history_state?: string`, and `leetcode_history_gap?: boolean` to the `DashboardResponse` interface.
+
+4. **`extension/src/App.tsx` & `web/app/App.tsx`**:
+   - Updated the LeetCode settings card input hint to render `Last synced <timestamp>` when available and clearly state `History coverage: partial (older historical solves have base points only)` or `History coverage: complete`.
+
+5. **Distribution Packages**:
+   - Built the extension bundle via `npm run build`.
+   - Synchronized all 4 ZIP copies (`./leetstreak.zip`, `./leetstreak_dist.zip`, `./extension/leetstreak.zip`, `./backend/app/leetstreak.zip`).
+
+### Verification Evidence
+- Ran `tsc --noEmit` on both `extension` and `web` with 0 errors.
+- Ran extension unit tests: 11/11 tests passed (`progress.test.mjs`), 6/6 tests passed (`auth.test.mjs`).
+- Ran backend test suite: 91/91 tests passed (`backend/tests`).
+- Built web application cleanly (`npm run build` -> `backend/web`).
+

@@ -52,6 +52,9 @@ export interface RecentSolve {
 }
 
 export interface DashboardResponse {
+  leetcode_last_sync?: string;
+  leetcode_history_state?: string;
+  leetcode_history_gap?: boolean;
   codeforces_last_sync?: string;
   codeforces_sync_error?: string;
   codeforces_count?: number;

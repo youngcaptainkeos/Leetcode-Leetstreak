@@ -136,6 +136,9 @@ class DayCount(BaseModel):
 
 
 class DashboardResponse(BaseModel):
+    leetcode_last_sync: Optional[datetime] = None
+    leetcode_history_state: Optional[str] = "partial"
+    leetcode_history_gap: Optional[bool] = True
     codeforces_last_sync: Optional[datetime] = None
     codeforces_sync_error: Optional[str] = None
     codeforces_count: int = 0

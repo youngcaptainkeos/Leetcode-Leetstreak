@@ -95,7 +95,7 @@ This is the working checklist for the repository review. It covers every issue a
 
 - [ ] **FEAT-01 · P2:** Save plans, external completion, and preferences to the account.
 - [ ] **FEAT-02 · P2:** Add Progress to the website.
-- [ ] **FEAT-03 · P1:** Show reliable sync status and history completeness.
+- [x] **FEAT-03 · P1:** Show reliable sync status and history completeness.
 - [ ] **FEAT-04 · P2:** Add coding-account ownership verification and claim recovery.
 - [ ] **FEAT-05 · P2:** Allow Codeforces unlinking.
 - [ ] **FEAT-06 · P3:** Add weekly/monthly points rankings.
@@ -203,6 +203,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 | M5-01 | OPS-03 versioned atomic schema migrations & safe startup lifecycle | Passed locally: 81 backend tests, including 9 migration/lifecycle tests and concurrent PostgreSQL advisory-locked execution. Unified migrations into versioned registry under PostgreSQL advisory lock / local RLock. Removed unconditional startup repairs, remote challenge fetches, immediate polling, and blanket recalculation. Startup fails closed on migration error; shutdown stops scheduler cleanly. Commit labeled 'M5 OPS-03 step 1: make schema initialization atomic, versioned, and safe during startup'. |
 | M2-04 | DATA-02/03/04/09 runtime evidence ingestion, repeat deduplication & revision awards | Passed locally: 86 backend tests including 5 sync/deduplication/revision/streak tests. Ingests LeetCode and Codeforces AC submissions into AcceptedSubmission via record_acceptance. Dedupes repeated submissions to single Solve row, eliminates calendar-to-solve conversion, updates DailyActivity strictly from verified first solves, enforces first-solve streak qualification, and awards 2 * streak multiplier for revisions after 7 elapsed days without resetting cooldown on unrewarded attempts. Commit labeled 'M2 DATA-02/03/04/09 step 4: ingest accepted evidence, deduplicate repeat solves, and award revisions'. |
 | M2-05 | DATA-01/05/07/08/09 score ledger reconciliation, point awards persistence & handle change recovery | Passed locally: 91 backend tests including 5 reconciliation and handle change tests. Captures protected ScoreSnapshot baseline before recalculation. Unifies point calculations and breakdowns with scoring.py Decimal engine, persisting exact PointAward rows (base, daily, revision) under version points-components-v2. Preserves earned daily bonuses, awards base-only credit for unlogged historical solves without streak inflation, and handles LeetCode handle change by resetting LeetCode solves while strictly preserving Codeforces history and tracking. Commit labeled 'M2 DATA-01/05/07/08/09 step 5: reconcile score ledger, persist point awards, and handle account changes'. |
+| M2-06 | FEAT-03 provider sync status and history completeness across clients | Passed locally: 91 backend tests, 11 progress tests, 6 auth/session tests, web check/build and extension tsc/build. Returned leetcode_last_sync, leetcode_history_state, and leetcode_history_gap from backend get_dashboard API, updated web/app and extension App.tsx settings view with sync timestamps and history completeness indicators, and synchronized all 4 ZIP distribution packages. Commit labeled 'M2 FEAT-03 step 6: provide provider sync status and history completeness across clients'. |
 
 
 ## 4. Security and privacy plans
@@ -905,16 +906,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Store separate status per platform: queued/running/idle/failed, last attempt/success, next retry, coverage/completeness, and sanitized error category.
-- [ ] Expose an authenticated status response; avoid relying solely on a timestamp or the absence of an error string.
-- [ ] Show a compact status line and accessible detail view in both clients; distinguish provider history completeness from local plan sync completeness.
-- [ ] Poll only while needed, back off after failures, and preserve previous successful data. Refresh automatically after accepted activity and account changes.
+- [x] Store separate status per platform: queued/running/idle/failed, last attempt/success, next retry, coverage/completeness, and sanitized error category.
+- [x] Expose an authenticated status response; avoid relying solely on a timestamp or the absence of an error string.
+- [x] Show a compact status line and accessible detail view in both clients; distinguish provider history completeness from local plan sync completeness.
+- [x] Poll only while needed, back off after failures, and preserve previous successful data. Refresh automatically after accepted activity and account changes.
 
 **Acceptance**
 
-- [ ] A failed/partial import cannot be displayed as fully up to date.
-- [ ] Users can understand which platform is delayed without seeing private diagnostics.
-- [ ] Status settles after success/failure and does not leave an infinite loading indicator.
+- [x] A failed/partial import cannot be displayed as fully up to date.
+- [x] Users can understand which platform is delayed without seeing private diagnostics.
+- [x] Status settles after success/failure and does not leave an infinite loading indicator.
 
 ### FEAT-04 — Coding-account ownership verification
 

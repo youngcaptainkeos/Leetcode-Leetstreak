@@ -497,6 +497,9 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Dep
     today_row = next((d for d in last_7 if d.date == today), None)
 
     return DashboardResponse(
+        leetcode_last_sync=user.leetcode_last_sync.replace(tzinfo=timezone.utc) if user.leetcode_last_sync else None,
+        leetcode_history_state=user.leetcode_history_state,
+        leetcode_history_gap=user.leetcode_history_gap,
         codeforces_last_sync=user.codeforces_last_sync.replace(tzinfo=timezone.utc) if user.codeforces_last_sync else None, codeforces_sync_error=user.codeforces_sync_error if actor.id == user_id else None,
         codeforces_count=cf_count, codeforces_points=round(float(cf_points), 2), leetcode_points=round((user.points or 0) - round(float(cf_points), 2), 2), points=user.points or 0,
         id=user.id,
