@@ -278,3 +278,44 @@ class AppConfigResponse(BaseModel):
 class SyncRequest(BaseModel):
     attempts_map: Optional[Dict[str, dict]] = None
 
+
+class StudyQuestionSchema(BaseModel):
+    title: str = Field(min_length=1, max_length=300)
+    titleSlug: str = Field(min_length=1, max_length=200)
+    difficulty: str = Field(default="MEDIUM", max_length=20)
+    url: Optional[str] = Field(default=None, max_length=1000)
+    leetcodeSlug: Optional[str] = Field(default=None, max_length=200)
+    kind: Optional[str] = Field(default=None, max_length=20)
+
+
+class StudyPlanSubGroupSchema(BaseModel):
+    name: str = Field(min_length=1, max_length=150)
+    questions: List[StudyQuestionSchema] = Field(default_factory=list)
+
+
+class StudyPlanPayload(BaseModel):
+    name: str = Field(min_length=1, max_length=150)
+    slug: str = Field(min_length=1, max_length=100)
+    planSubGroups: List[StudyPlanSubGroupSchema] = Field(default_factory=list)
+    source: Optional[str] = Field(default="external", max_length=40)
+    sourceUrl: Optional[str] = Field(default=None, max_length=1000)
+    snapshotDate: Optional[str] = Field(default=None, max_length=20)
+
+
+class ProgressUpdateRequest(BaseModel):
+    followed: Optional[List[str]] = None
+    hidden: Optional[List[str]] = None
+    manual: Optional[List[str]] = None
+    base_version: Optional[int] = None
+
+
+class ProgressResponse(BaseModel):
+    user_id: int
+    followed: List[str]
+    hidden: List[str]
+    manual: List[str]
+    custom_plans: List[dict]
+    version: int
+    updated_at: Optional[str] = None
+
+

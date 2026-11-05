@@ -21,7 +21,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .config import CORS_ORIGINS, ADMIN_SECRET
 from .database import Base, engine, get_db, SessionLocal
-from .models import AdminOperation, User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge
+from .models import AdminOperation, User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge, UserProgress, UserCustomPlan
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
 from .email_service import send_otp_email, send_update_notification_email
 from .schemas import (
@@ -31,9 +31,10 @@ from .schemas import (
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
     KudosToggleRequest, KudosAllRequest, UpdateUsernameRequest, UpdateSettingsRequest, ActivityFeedItemSchema,
     DynamicMenuItem, AppConfigResponse, DeleteAccountRequest, SyncRequest, UpdateCodeforcesRequest, GroupTransferRequest, ReleaseBroadcastRequest, ChangePasswordRequest,
+    StudyPlanPayload, ProgressUpdateRequest, ProgressResponse,
 )
 from .streak import current_streak
-from .timekeeping import IST, ist_today, week_start as product_week_start, month_start as product_month_start, period_bounds
+from .timekeeping import IST, ist_today, week_start as product_week_start, month_start as product_month_start, period_bounds, utc_now
 from .scheduler import start_scheduler, poll_all_users, poll_user
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
 from .point_calculator import compute_solve_points_breakdown, compute_codeforces_points_breakdown, recalculate_user_points
@@ -437,6 +438,8 @@ def delete_user_account(user_id: int, payload: DeleteAccountRequest, db: Session
         raise HTTPException(409, "Transfer ownership or delete your groups before deleting your account.")
 
     clear_tracking(db, user_id)
+    db.query(UserProgress).filter(UserProgress.user_id == user_id).delete()
+    db.query(UserCustomPlan).filter(UserCustomPlan.user_id == user_id).delete()
     db.query(GroupMember).filter(GroupMember.user_id == user_id).delete()
     db.query(DailyActivity).filter(DailyActivity.user_id == user_id).delete()
     db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id).delete()
@@ -448,6 +451,195 @@ def delete_user_account(user_id: int, payload: DeleteAccountRequest, db: Session
     db.commit()
 
     return {"status": "account_deleted", "message": "Account deleted successfully"}
+
+
+@app.get("/api/users/{user_id}/progress", response_model=ProgressResponse)
+def get_user_progress(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
+    prog = db.query(UserProgress).filter(UserProgress.user_id == user_id).first()
+    if not prog:
+        prog = UserProgress(
+            user_id=user_id,
+            followed_plans=[],
+            hidden_plans=[],
+            manual_solves=[],
+            version=1,
+            updated_at=utc_now(),
+        )
+        db.add(prog)
+        db.commit()
+        db.refresh(prog)
+
+    custom_plans = db.query(UserCustomPlan).filter(UserCustomPlan.user_id == user_id).all()
+    plans_data = [cp.plan_json if isinstance(cp.plan_json, dict) else {} for cp in custom_plans]
+
+    return ProgressResponse(
+        user_id=user_id,
+        followed=prog.followed_plans or [],
+        hidden=prog.hidden_plans or [],
+        manual=prog.manual_solves or [],
+        custom_plans=plans_data,
+        version=prog.version,
+        updated_at=prog.updated_at.isoformat() if prog.updated_at else None,
+    )
+
+
+@app.put("/api/users/{user_id}/progress", response_model=ProgressResponse)
+def update_user_progress(user_id: int, payload: ProgressUpdateRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
+    prog = db.query(UserProgress).filter(UserProgress.user_id == user_id).with_for_update().first()
+    if not prog:
+        prog = UserProgress(
+            user_id=user_id,
+            followed_plans=[],
+            hidden_plans=[],
+            manual_solves=[],
+            version=1,
+            updated_at=utc_now(),
+        )
+        db.add(prog)
+
+    if payload.followed is not None:
+        if len(payload.followed) > 1000 or any(len(s) > 100 for s in payload.followed):
+            raise HTTPException(400, "Followed plans list exceeds allowed bounds.")
+        prog.followed_plans = list(dict.fromkeys(payload.followed))
+
+    if payload.hidden is not None:
+        if len(payload.hidden) > 1000 or any(len(s) > 100 for s in payload.hidden):
+            raise HTTPException(400, "Hidden plans list exceeds allowed bounds.")
+        prog.hidden_plans = list(dict.fromkeys(payload.hidden))
+
+    if payload.manual is not None:
+        if len(payload.manual) > 10000 or any(len(s) > 200 for s in payload.manual):
+            raise HTTPException(400, "Manual solves list exceeds allowed bounds.")
+        prog.manual_solves = list(dict.fromkeys(payload.manual))
+
+    prog.version += 1
+    prog.updated_at = utc_now()
+    db.commit()
+    db.refresh(prog)
+
+    custom_plans = db.query(UserCustomPlan).filter(UserCustomPlan.user_id == user_id).all()
+    plans_data = [cp.plan_json if isinstance(cp.plan_json, dict) else {} for cp in custom_plans]
+
+    return ProgressResponse(
+        user_id=user_id,
+        followed=prog.followed_plans or [],
+        hidden=prog.hidden_plans or [],
+        manual=prog.manual_solves or [],
+        custom_plans=plans_data,
+        version=prog.version,
+        updated_at=prog.updated_at.isoformat() if prog.updated_at else None,
+    )
+
+
+@app.post("/api/users/{user_id}/plans")
+def save_custom_plan(user_id: int, payload: StudyPlanPayload, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
+    existing_plan = db.query(UserCustomPlan).filter_by(user_id=user_id, slug=payload.slug).first()
+    if not existing_plan:
+        count = db.query(func.count(UserCustomPlan.id)).filter(UserCustomPlan.user_id == user_id).scalar()
+        if count >= 50:
+            raise HTTPException(400, "Maximum of 50 custom plans reached.")
+
+    if len(payload.planSubGroups) > 200:
+        raise HTTPException(400, "Plan subgroups cannot exceed 200.")
+    total_questions = sum(len(g.questions) for g in payload.planSubGroups)
+    if total_questions > 1000:
+        raise HTTPException(400, "A study plan cannot exceed 1000 questions.")
+
+    plan_dict = payload.model_dump()
+
+    if existing_plan:
+        existing_plan.name = payload.name
+        existing_plan.source = payload.source
+        existing_plan.source_url = payload.sourceUrl
+        existing_plan.plan_json = plan_dict
+        existing_plan.updated_at = utc_now()
+    else:
+        new_plan = UserCustomPlan(
+            user_id=user_id,
+            slug=payload.slug,
+            name=payload.name,
+            source=payload.source,
+            source_url=payload.sourceUrl,
+            plan_json=plan_dict,
+            created_at=utc_now(),
+            updated_at=utc_now(),
+        )
+        db.add(new_plan)
+
+    prog = db.query(UserProgress).filter(UserProgress.user_id == user_id).with_for_update().first()
+    if not prog:
+        prog = UserProgress(
+            user_id=user_id,
+            followed_plans=[payload.slug],
+            hidden_plans=[],
+            manual_solves=[],
+            version=1,
+            updated_at=utc_now(),
+        )
+        db.add(prog)
+    else:
+        followed = list(prog.followed_plans or [])
+        if payload.slug not in followed:
+            followed.append(payload.slug)
+        hidden = [s for s in (prog.hidden_plans or []) if s != payload.slug]
+        prog.followed_plans = followed
+        prog.hidden_plans = hidden
+        prog.version += 1
+        prog.updated_at = utc_now()
+
+    db.commit()
+    return plan_dict
+
+
+@app.delete("/api/users/{user_id}/plans/{slug}")
+def delete_custom_plan(user_id: int, slug: str, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
+    STARTER_PLANS = {"strivers-a2z", "top-sql-50", "top-interview-150", "leetcode-75"}
+
+    db.query(UserCustomPlan).filter_by(user_id=user_id, slug=slug).delete()
+
+    prog = db.query(UserProgress).filter(UserProgress.user_id == user_id).with_for_update().first()
+    if not prog:
+        prog = UserProgress(
+            user_id=user_id,
+            followed_plans=[],
+            hidden_plans=[slug] if slug in STARTER_PLANS else [],
+            manual_solves=[],
+            version=1,
+            updated_at=utc_now(),
+        )
+        db.add(prog)
+    else:
+        prog.followed_plans = [s for s in (prog.followed_plans or []) if s != slug]
+        if slug in STARTER_PLANS:
+            hidden = list(prog.hidden_plans or [])
+            if slug not in hidden:
+                hidden.append(slug)
+            prog.hidden_plans = hidden
+        else:
+            prog.hidden_plans = [s for s in (prog.hidden_plans or []) if s != slug]
+        prog.version += 1
+        prog.updated_at = utc_now()
+
+    db.commit()
+    return {"ok": True, "slug": slug}
+
+
+@app.post("/api/users/{user_id}/plans/restore-starters")
+def restore_starter_plans(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
+    STARTER_PLANS = {"strivers-a2z", "top-sql-50", "top-interview-150", "leetcode-75"}
+    prog = db.query(UserProgress).filter(UserProgress.user_id == user_id).with_for_update().first()
+    if prog:
+        prog.hidden_plans = [s for s in (prog.hidden_plans or []) if s not in STARTER_PLANS]
+        prog.version += 1
+        prog.updated_at = utc_now()
+        db.commit()
+    return {"ok": True}
+
 
 
 def _active_dates(db: Session, user_id: int) -> set[date]:

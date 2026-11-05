@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api, GroupResponse, GroupMember, RecentSolve } from "../lib/api";
 import { getStored, setStored } from "../storage";
-import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, ProgressState, StudyPlan, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, readProgress, parsePlanInput, fetchStudyPlan, addStudyPlan, removeStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, questionCodeforcesSlug, automaticQuestion, mergeSolvedHistory, visiblePlans, restoreStarterPlans } from "./data";
+import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, ProgressState, StudyPlan, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, readProgress, readStudyPlan, parsePlanInput, fetchStudyPlan, addStudyPlan, removeStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, questionCodeforcesSlug, automaticQuestion, mergeSolvedHistory, visiblePlans, restoreStarterPlans } from "./data";
 import { fetchSolvedHistory, SolvedHistory } from "./history";
 import { planFromLinks, requestImportAccess } from "./importer";
 import { PlanView, ProgressView, readProgressView, emptyPlanView } from "./view";
@@ -117,9 +117,52 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
       const selectedPlan = plans.some(plan => plan.slug === restored.selected) ? restored.selected : saved.followed.find(slug => plans.some(plan => plan.slug === slug)) || plans[0]?.slug || "";
       setState(saved);
       setView({ ...restored, selected: selectedPlan });
+
+      api.getProgress(userId).then(serverProg => {
+        if (!active) return;
+        setState(current => {
+          if (!current) return current;
+          const serverCustomPlans: StudyPlan[] = (serverProg.custom_plans || [])
+            .map(readStudyPlan)
+            .filter((p): p is StudyPlan => p !== null && !STUDY_PLANS.some(b => b.slug === p.slug));
+
+          const planMap = new Map<string, StudyPlan>();
+          for (const p of serverCustomPlans) planMap.set(p.slug, p);
+          for (const p of current.customPlans) {
+            if (!planMap.has(p.slug)) {
+              planMap.set(p.slug, p);
+              void api.saveCustomPlan(userId, p).catch(() => {});
+            }
+          }
+          const mergedCustomPlans = Array.from(planMap.values());
+          const isServerPopulated = serverProg.version > 1 || serverProg.followed.length > 0 || serverProg.hidden.length > 0 || serverProg.manual.length > 0;
+          const mergedFollowed = isServerPopulated ? serverProg.followed : current.followed;
+          const mergedHidden = isServerPopulated ? serverProg.hidden : current.hiddenPlans;
+          const mergedManual = isServerPopulated
+            ? [...new Set([...serverProg.manual, ...current.manual])]
+            : current.manual;
+
+          if (!isServerPopulated && (current.followed.length > 0 || current.manual.length > 0 || current.hiddenPlans.length > 0)) {
+            void api.updateProgress(userId, {
+              followed: current.followed,
+              hidden: current.hiddenPlans,
+              manual: current.manual,
+            }).catch(() => {});
+          }
+
+          return {
+            ...current,
+            customPlans: mergedCustomPlans,
+            followed: mergedFollowed,
+            hiddenPlans: mergedHidden,
+            manual: mergedManual,
+          };
+        });
+      }).catch(() => {});
     });
     return () => { active = false; };
-  }, [key]);
+  }, [key, userId]);
+
   useEffect(() => { if (state) void setStored(key, JSON.stringify(state)); }, [key, state]);
   useEffect(() => { if (view) void setStored(`${key}_view`, JSON.stringify(view)); }, [key, view]);
   const loaded = state !== null && view !== null;
@@ -224,6 +267,7 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
       if (request !== importRequest.current) return;
       setState(previous => previous ? addStudyPlan(history ? mergeSolvedHistory(previous, history.slugs, history.syncedAt) : previous, imported) : previous);
       selectPlan(imported.slug);
+      void api.saveCustomPlan(userId, imported).catch(() => {});
       setNotice(!hasLeetCode ? `Following ${imported.name}. External-item completion is saved with the plan.` : history ? `Following ${imported.name}. Progress synced with your solved history.` : `Following ${imported.name}. Saved solves are shown; older solves will appear when automatic LeetCode syncing succeeds.`);
       setPlanInput(""); setPastedLinks(""); setImportName(""); setImportPreview(null); setAddOpen(false);
     } catch (err) {
@@ -238,23 +282,29 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
     setState(previous => previous ? removeStudyPlan(previous, plan.slug) : previous);
     selectPlan(remaining[0]?.slug || "");
     setNotice(`${plan.name} removed. Your solved questions are kept if you add it again.`);
+    void api.deleteCustomPlan(userId, plan.slug).catch(() => {});
   }
   function restoreStarters() {
     setState(previous => previous ? restoreStarterPlans(previous) : previous);
     selectPlan(STUDY_PLANS[0].slug);
     setNotice("Starter plans restored. Your saved progress is still here.");
+    void api.restoreStarters(userId).catch(() => {});
   }
   async function toggleFollow() {
     if (!plan) return;
     if (!following && plan.planSubGroups.some(group => group.questions.some(q => questionLeetcodeSlug(q)))) await syncHistory(true);
-    setState(prev => prev && visiblePlans(prev).some(p => p.slug === plan.slug) ? { ...prev, followed: following ? prev.followed.filter(s => s !== plan.slug) : [...new Set([...prev.followed, plan.slug])] } : prev);
+    const nextFollowed = following ? state!.followed.filter(s => s !== plan.slug) : [...new Set([...state!.followed, plan.slug])];
+    setState(prev => prev && visiblePlans(prev).some(p => p.slug === plan.slug) ? { ...prev, followed: nextFollowed } : prev);
     setNotice(following ? `${plan.name} removed from following. Your progress is saved.` : `Following ${plan.name}. Your saved progress is applied.`);
+    void api.updateProgress(userId, { followed: nextFollowed }).catch(() => {});
   }
   function toggleExternalItem(slug: string) {
     const question = plan?.planSubGroups.flatMap(group => group.questions).find(q => q.titleSlug === slug);
     if (!question || automaticQuestion(question, state!)) return;
-    setState(previous => previous ? { ...previous, manual: previous.manual.includes(slug) ? previous.manual.filter(s => s !== slug) : [...previous.manual, slug] } : previous);
+    const nextManual = state!.manual.includes(slug) ? state!.manual.filter(s => s !== slug) : [...state!.manual, slug];
+    setState(previous => previous ? { ...previous, manual: nextManual } : previous);
     setNotice("External-item completion saved.");
+    void api.updateProgress(userId, { manual: nextManual }).catch(() => {});
   }
   const visibleGroups = plan?.planSubGroups.map(g => ({ ...g, questions: g.questions.filter(q =>
     q.title.toLowerCase().includes(search.toLowerCase()) && (filter === "all" || (filter === "external" ? !automaticQuestion(q, state) : filter === "done" ? questionSolved(q, state) : !questionSolved(q, state)))) })).filter(g => g.questions.length) || [];

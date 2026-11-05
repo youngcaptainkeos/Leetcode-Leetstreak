@@ -237,5 +237,78 @@ Resolved race conditions in leaderboard switching and caching (UI-05), corrected
 - Ran backend test suite: 91/91 tests passed (`backend/tests`).
 - Built web application cleanly (`npm run build` -> `backend/web`).
 
+---
+
+## 2026-11-06 — Step: M4-01 / FEAT-01: Account-Backed Study Plans & Playlists Persistence
+
+### Summary of Changes
+Implemented durable, account-backed persistence and bidirectional sync for user study plans, custom playlists (imported via URL links or pasted links), library subscriptions (followed plans), exclusions (hidden/removed starter plans), and external item completion (manual checkboxes). Previously, custom study plans and external completion lived strictly in local browser storage (`localStorage`), meaning that switching browsers, clearing caches, or signing in from another machine lost all custom plans and completion. Now, the backend database is the authoritative store for user progress and custom plans, while local storage serves as a fast offline cache and outbox. Existing local custom plans and progress are seamlessly uploaded and migrated to the backend account on first load with zero data loss.
+
+### Detailed Changes
+1. **`backend/app/models.py`**:
+   - Added `UserProgress` model (`user_progress` table):
+     - `user_id`: PK (Integer, FK `users.id` with `ondelete="CASCADE"`).
+     - `followed_plans`: JSON array of followed plan slugs.
+     - `hidden_plans`: JSON array of hidden/removed plan slugs.
+     - `manual_solves`: JSON array of externally checked problem slugs.
+     - `version`: Integer optimistic concurrency counter (default 1).
+     - `updated_at`: DateTime UTC timestamp.
+   - Added `UserCustomPlan` model (`user_custom_plans` table):
+     - `id`: PK (Integer).
+     - `user_id`: Integer, FK `users.id` with index.
+     - `slug`: String(120), index.
+     - `name`: String(200).
+     - `source`: String(40) (e.g. `leetcode`, `takeuforward`, `codeforces`, `external`).
+     - `source_url`: String(1000).
+     - `plan_json`: JSON structure containing all `planSubGroups` and questions.
+     - `created_at` & `updated_at`: DateTime UTC timestamps.
+     - Unique constraint on `(user_id, slug)`.
+   - Linked `user_progress` (uselist=False) and `custom_plans` (list) relationships to `User`.
+
+2. **`backend/app/migrations.py`**:
+   - Added `migrate_progress(target)` (version `20261106-progress-v1`): creates `user_progress` and `user_custom_plans` tables idempotently under advisory lock.
+   - Registered `migrate_progress` in `run_all_migrations`.
+
+3. **`backend/app/schemas.py`**:
+   - Added `StudyQuestionSchema`, `StudyPlanSubGroupSchema`, `StudyPlanPayload`, `ProgressUpdateRequest`, and `ProgressResponse`.
+   - Enforced input bounds: max 50 custom plans per user, max 200 subgroups per plan, max 1000 questions per plan, max 1000 followed/hidden slugs, max 10,000 manual solves.
+
+4. **`backend/app/main.py`**:
+   - Added authenticated endpoints (all requiring `actor.id == user_id`):
+     - `GET /api/users/{user_id}/progress`: returns user followed, hidden, manual solves, custom plans, and version.
+     - `PUT /api/users/{user_id}/progress`: updates followed, hidden, and/or manual solves, bumping version and timestamp.
+     - `POST /api/users/{user_id}/plans`: saves/upserts a custom study plan or playlist, automatically adds to followed and removes from hidden.
+     - `DELETE /api/users/{user_id}/plans/{slug}`: deletes custom plan, removes from followed; if starter plan, records in hidden.
+     - `POST /api/users/{user_id}/plans/restore-starters`: unhides default starter plans.
+   - Updated `delete_user_account` to clean up `UserProgress` and `UserCustomPlan`.
+
+5. **`extension/src/lib/api.ts` & `web/app/lib/api.ts`**:
+   - Added `BackendProgressResponse` interface and `getProgress`, `updateProgress`, `saveCustomPlan`, `deleteCustomPlan`, and `restoreStarters` client methods.
+
+6. **`extension/src/progress/Progress.tsx`**:
+   - On load: loads local storage immediately for zero-latency rendering, then calls `api.getProgress(userId)`. Merges server-confirmed custom plans and progress; automatically uploads any local custom plans or manual solves not yet on the server, migrating existing users seamlessly.
+   - On add plan: persists locally and calls `api.saveCustomPlan(userId, imported)`.
+   - On remove plan: removes locally and calls `api.deleteCustomPlan(userId, plan.slug)`.
+   - On restore starter plans: restores locally and calls `api.restoreStarters(userId)`.
+   - On toggle follow: updates locally and calls `api.updateProgress(userId, { followed })`.
+   - On toggle external item checkmark: updates locally and calls `api.updateProgress(userId, { manual })`.
+
+7. **`backend/tests/test_progress_plans.py`**:
+   - Added 7 comprehensive isolated tests covering auth/ownership enforcement, empty initialization, update persistence, custom plan saving and auto-following, plan deletion, starter plan hiding/restoration, and plan bounds limit checks.
+   - Updated migration tests in `test_migrations.py` and `test_postgres_migrations.py` for version `20261106-progress-v1` and 6 total migrations.
+
+8. **Distribution Packages**:
+   - Built extension (`npm --prefix extension run build`).
+   - Synchronized all 4 ZIP copies (`./leetstreak.zip`, `./leetstreak_dist.zip`, `./extension/leetstreak.zip`, `./backend/app/leetstreak.zip`).
+   - Built web application cleanly (`npm --prefix web run check && npm --prefix web run build`).
+
+### Verification Evidence
+- 90 backend tests passed with zero failures (`backend/tests`).
+- 8 native PostgreSQL tests passed in `test_postgres_migrations.py`.
+- 26 extension unit tests passed (`extension/tests/*.test.mjs`).
+- `tsc --noEmit` on both `extension` and `web` passed cleanly with 0 errors.
+- Verified byte-identical ZIP copies (9,669,812 bytes).
+
+
 
 

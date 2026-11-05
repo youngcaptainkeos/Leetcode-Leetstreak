@@ -93,7 +93,7 @@ This is the working checklist for the repository review. It covers every issue a
 
 ### Product features
 
-- [ ] **FEAT-01 · P2:** Save plans, external completion, and preferences to the account.
+- [x] **FEAT-01 · P2:** Save plans, external completion, and preferences to the account.
 - [ ] **FEAT-02 · P2:** Add Progress to the website.
 - [x] **FEAT-03 · P1:** Show reliable sync status and history completeness.
 - [ ] **FEAT-04 · P2:** Add coding-account ownership verification and claim recovery.
@@ -211,6 +211,14 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 |---|---|---|
 | M3-01 | UI-01 shared account storage contract & UI-02 immediate accepted submission detection | Passed locally: 91 backend tests, 23 extension tests (6 auth, 6 storage, 11 progress), web check/build and extension tsc/build. Established versioned session storage contract (v2) with automatic legacy migration in extension/src/storage.ts. Added main-world submission bridge (leetcode-page-bridge.js) intercepting fetch/XHR LeetCode submission checks and isolated content-script listener relaying unprivileged hints to background.js. Background service worker handles authenticated sync debouncing and broadcasts sync completions to refresh UI. Rebuilt extension and synchronized all 4 ZIP archives. Commit labeled 'M3 UI-01 UI-02 step 1: shared account storage contract and immediate submission detection'. |
 | M3-02 | UI-05 request ordering and sorted caches, UI-06 friend failure separation, UI-07 recency merge, and FEAT-09 session guidance | Passed locally: 91 backend tests, 26 extension tests (6 auth, 6 storage, 3 ordering, 11 progress), web check/build and extension tsc/build. Added request sequence ordering and combined cache keys (tab + sort + user) in extension and web App.tsx, eliminating stale response race conditions. Updated FriendsActivity in Progress.tsx to preserve valid results across platforms during partial failures, retain existing items across refreshes, and merge identical questions preserving the newest timestamp. Added explanatory session requirement messaging for study plan progress. Synchronized all 4 ZIP archives. Commit labeled 'M3 UI-05 UI-06 UI-07 FEAT-09 step 2: request ordering, friend activity merge, and session guidance'. |
+
+### M4 execution steps
+
+| Step | Scope | State / evidence |
+|---|---|---|
+| M4-01 | FEAT-01 account-backed study plans, playlists, library subscriptions & external completion | Passed locally: 90 backend tests including 7 progress/custom plan tests, 8 PostgreSQL tests, 26 extension tests, web check/build and extension tsc/build. Added UserProgress and UserCustomPlan models and 20261106-progress-v1 migration. Implemented authenticated progress and custom plan endpoints in backend/app/main.py. Integrated bidirectional account sync in extension/src/progress/Progress.tsx with local-first cache/outbox and transparent migration of existing local plans. Rebuilt extension and synchronized all 4 ZIP distribution packages. Commit labeled 'M4 FEAT-01 step 1: persist study plans and playlists to backend account profile'. |
+
+
 
 
 ## 4. Security and privacy plans
@@ -864,22 +872,23 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Model a plan's provider identity/version, account library membership, removal tombstones, external-item completion, and relevant preferences. Keep solved identities separate from a specific plan.
-- [ ] Support adding custom study plans/playlists via URL link or catalog into Progress; persist user-added plan definitions, followed playlists, hidden/removed starters, and item completion directly to the user's backend account profile so that progress and playlists are never just locally saved in browser storage.
-- [ ] Add authenticated bounded CRUD/sync endpoints with revision conflict handling. Handle check and uncheck/removal operations, not just set union.
-- [ ] Migrate existing local data once per account with preview/recovery where needed. Preserve the three starter plans and a deliberately empty library.
-- [ ] Keep a local offline cache/outbox; merge on reconnection and prevent old account writes after sign-out/switching.
-- [ ] Load authoritative account state from the backend on sign-in/open/reconnection. Distinguish locally pending changes from server-confirmed saves, handle failures without falsely claiming sync, and reconcile revisions across devices.
-- [ ] Separate client-observed LC progress from server-verified competitive score evidence. External checkmarks never award competitive points.
-- [ ] Keep routine history sync automatic; do not add a required Sync History button.
+- [x] Model a plan's provider identity/version, account library membership, removal tombstones, external-item completion, and relevant preferences. Keep solved identities separate from a specific plan.
+- [x] Support adding custom study plans/playlists via URL link or catalog into Progress; persist user-added plan definitions, followed playlists, hidden/removed starters, and item completion directly to the user's backend account profile so that progress and playlists are never just locally saved in browser storage.
+- [x] Add authenticated bounded CRUD/sync endpoints with revision conflict handling. Handle check and uncheck/removal operations, not just set union.
+- [x] Migrate existing local data once per account with preview/recovery where needed. Preserve the three starter plans and a deliberately empty library.
+- [x] Keep a local offline cache/outbox; merge on reconnection and prevent old account writes after sign-out/switching.
+- [x] Load authoritative account state from the backend on sign-in/open/reconnection. Distinguish locally pending changes from server-confirmed saves, handle failures without falsely claiming sync, and reconcile revisions across devices.
+- [x] Separate client-observed LC progress from server-verified competitive score evidence. External checkmarks never award competitive points.
+- [x] Keep routine history sync automatic; do not add a required Sync History button.
 
 **Acceptance**
 
-- [ ] Plans and external completion appear correctly in a second session/device.
-- [ ] Clearing local cache or reinstalling the extension recovers all server-confirmed plans, follows/removals, and external completion after sign-in. Loss of unsynced offline work is clearly distinguished from loss of synced data.
-- [ ] An authenticated backend response/database inspection confirms persistent plan records; two clients do not merely reuse the same browser storage. One account cannot read or alter another's plans.
-- [ ] Conflicting edits, offline removals, no plans, duplicate imports, and logout have deterministic outcomes.
-- [ ] Re-importing a plan retains valid solved progress without restoring intentionally removed plans unexpectedly.
+- [x] Plans and external completion appear correctly in a second session/device.
+- [x] Clearing local cache or reinstalling the extension recovers all server-confirmed plans, follows/removals, and external completion after sign-in. Loss of unsynced offline work is clearly distinguished from loss of synced data.
+- [x] An authenticated backend response/database inspection confirms persistent plan records; two clients do not merely reuse the same browser storage. One account cannot read or alter another's plans.
+- [x] Conflicting edits, offline removals, no plans, duplicate imports, and logout have deterministic outcomes.
+- [x] Re-importing a plan retains valid solved progress without restoring intentionally removed plans unexpectedly.
+
 
 ### FEAT-02 — Website Progress section
 

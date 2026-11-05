@@ -49,6 +49,8 @@ class User(Base):
     daily_activity = relationship("DailyActivity", back_populates="user", cascade="all, delete-orphan")
     solves = relationship("Solve", back_populates="user", cascade="all, delete-orphan")
     memberships = relationship("GroupMember", back_populates="user", cascade="all, delete-orphan")
+    user_progress = relationship("UserProgress", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    custom_plans = relationship("UserCustomPlan", back_populates="user", cascade="all, delete-orphan")
 
 
 class DailyActivity(Base):
@@ -221,3 +223,40 @@ class ScoreSnapshot(Base):
     captured_at = Column(DateTime, nullable=False, default=utc_now)
     reason = Column(String(40), nullable=False)
     payload = Column(JSON, nullable=False)
+
+
+class UserProgress(Base):
+    """User study plan subscriptions, exclusions, and external completions."""
+    __tablename__ = "user_progress"
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    followed_plans = Column(JSON, nullable=False, default=list)
+    hidden_plans = Column(JSON, nullable=False, default=list)
+    manual_solves = Column(JSON, nullable=False, default=list)
+    version = Column(Integer, nullable=False, default=1)
+    updated_at = Column(DateTime, nullable=False, default=utc_now)
+
+    user = relationship("User", back_populates="user_progress")
+
+
+class UserCustomPlan(Base):
+    """User-imported or custom-created study plans and playlists."""
+    __tablename__ = "user_custom_plans"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    slug = Column(String(120), nullable=False, index=True)
+    name = Column(String(200), nullable=False)
+    source = Column(String(40), nullable=True)
+    source_url = Column(String(1000), nullable=True)
+    plan_json = Column(JSON, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=utc_now)
+    updated_at = Column(DateTime, nullable=False, default=utc_now)
+
+    user = relationship("User", back_populates="custom_plans")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "slug", name="uq_user_custom_plan_slug"),
+        Index("ix_user_custom_plans_user_slug", "user_id", "slug"),
+    )
+

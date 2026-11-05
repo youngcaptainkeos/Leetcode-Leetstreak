@@ -79,6 +79,17 @@ export interface DashboardResponse {
   show_global_leaderboard?: boolean;
 }
 
+export interface BackendProgressResponse {
+  user_id: number;
+  followed: string[];
+  hidden: string[];
+  manual: string[];
+  custom_plans: any[];
+  version: number;
+  updated_at?: string | null;
+}
+
+
 export interface LeaderboardEntry {
   codeforces_count?: number;
   codeforces_points?: number;
@@ -311,6 +322,25 @@ export const api = {
   pollNow: () => request<{ polled: Record<string, number> }>("/admin/poll-now", { method: "POST" }),
   checkExtensionVersion: checkExtensionVersion,
   getAppConfig: getAppConfig,
+  getProgress: (userId: number) => request<BackendProgressResponse>(`/users/${userId}/progress`),
+  updateProgress: (userId: number, payload: { followed?: string[]; hidden?: string[]; manual?: string[]; base_version?: number }) =>
+    request<BackendProgressResponse>(`/users/${userId}/progress`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  saveCustomPlan: (userId: number, plan: any) =>
+    request<any>(`/users/${userId}/plans`, {
+      method: "POST",
+      body: JSON.stringify(plan),
+    }),
+  deleteCustomPlan: (userId: number, slug: string) =>
+    request<{ ok: boolean; slug: string }>(`/users/${userId}/plans/${slug}`, {
+      method: "DELETE",
+    }),
+  restoreStarters: (userId: number) =>
+    request<{ ok: boolean }>(`/users/${userId}/plans/restore-starters`, {
+      method: "POST",
+    }),
 };
 
 

@@ -190,6 +190,21 @@ def migrate_tracking(target):
         connection.execute(versions.insert().values(version=version))
 
 
+def migrate_progress(target):
+    """
+    User progress and custom study plans/playlists persistence.
+    Version: 20261106-progress-v1
+    """
+    from .models import UserProgress, UserCustomPlan
+    with migration_connection(target) as connection:
+        version = "20261106-progress-v1"
+        if connection.execute(versions.select().where(versions.c.version == version)).first():
+            return
+        for model in (UserProgress, UserCustomPlan):
+            model.__table__.create(connection, checkfirst=True)
+        connection.execute(versions.insert().values(version=version))
+
+
 def run_all_migrations(target):
     """
     Run all pending migrations in an atomic transaction under advisory lock on PostgreSQL.
@@ -201,4 +216,5 @@ def run_all_migrations(target):
         migrate_auth(connection)
         migrate_display_preference(connection)
         migrate_tracking(connection)
+        migrate_progress(connection)
 
