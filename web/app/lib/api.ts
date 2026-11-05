@@ -1,4 +1,3 @@
-import type { PlatformMetrics } from "../Metrics";
 import { getStored } from "../storage";
 export const API_BASE = "/api";
 
@@ -52,7 +51,6 @@ export interface RecentSolve {
 }
 
 export interface DashboardResponse {
-  platform_stats?: Partial<Record<"all" | "leetcode" | "codeforces", PlatformMetrics>>;
   codeforces_last_sync?: string;
   codeforces_sync_error?: string;
   codeforces_count?: number;
@@ -288,8 +286,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ from_user_id: fromUserId, target_user_ids: targetUserIds }),
     }),
-  recentSolves: (userId: number, limit = 10, platform: "all" | "leetcode" | "codeforces" = "all") =>
-    request<RecentSolve[]>(`/users/${userId}/recent-solves?limit=${limit}&platform=${platform}`),
+  recentSolves: (userId: number, limit = 10) =>
+    request<RecentSolve[]>(`/users/${userId}/recent-solves?limit=${limit}`),
   pollNow: () => request<{ polled: Record<string, number> }>("/admin/poll-now", { method: "POST" }),
   checkExtensionVersion: checkExtensionVersion,
   getAppConfig: getAppConfig,

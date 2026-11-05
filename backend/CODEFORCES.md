@@ -101,20 +101,3 @@ progress-bar does not deploy the production backend. Apply through the existing
 Render release flow when this feature is merged; do not manually edit a user's
 production account or import scores on their behalf. All changes are additive
 except replacing CF history when its owner updates their linked CF handle.
-
-## Platform-specific metrics
-
-Dashboard responses include platform_stats for all, leetcode, and codeforces.
-Each provides source-specific earned points, streak, today/week/month counts,
-lifetime total, and a seven-day calendar. CF reports rated/unrated counts rather
-than assigning LC difficulty categories to CF ratings. LC category counts remain
-LC-only; combined lifetime totals add CF unique solves. Point filters show the
-actual platform contribution without recalculating awarded streak bonuses.
-
-Both clients use the same compact metrics panel for the owner and inspected
-profiles. A profile request always uses that profile's user ID, clears stale data,
-and ignores responses after closing or switching profiles. Failed requests show
-an unavailable state instead of invented counts. Recent-solves accepts
-platform=all|leetcode|codeforces and applies the filter before its limit. This
-avoids omitting CF solves just because newer LC solves filled the combined list.
-The selector controls the stats card and inspected profile.

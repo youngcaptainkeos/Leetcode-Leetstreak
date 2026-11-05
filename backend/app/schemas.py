@@ -92,24 +92,7 @@ class DayCount(BaseModel):
     problems_solved: int
 
 
-class PlatformMetrics(BaseModel):
-    current_streak: int = 0
-    today_count: int = 0
-    weekly_total: int = 0
-    monthly_total: int = 0
-    total_solved: int = 0
-    points: float = 0
-    easy_count: int = 0
-    medium_count: int = 0
-    hard_count: int = 0
-    codeforces_count: int = 0
-    rated_count: int = 0
-    unrated_count: int = 0
-    last_7_days: List[DayCount] = Field(default_factory=list)
-
-
 class DashboardResponse(BaseModel):
-    platform_stats: Dict[str, PlatformMetrics] = Field(default_factory=dict)
     codeforces_last_sync: Optional[datetime] = None
     codeforces_sync_error: Optional[str] = None
     codeforces_count: int = 0

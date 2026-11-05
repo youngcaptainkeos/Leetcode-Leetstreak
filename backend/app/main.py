@@ -35,7 +35,7 @@ from .streak import current_streak
 from .scheduler import start_scheduler, poll_all_users, poll_user
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
 from .point_calculator import compute_solve_points_breakdown, compute_codeforces_points_breakdown, recalculate_user_points
-from .platforms import daily_counts, solve_url, platform_metrics
+from .platforms import daily_counts, solve_url
 from .codeforces_client import fetch_profile, CodeforcesError
 from .codeforces_sync import background_codeforces_sync, user_sync_lock
 from .platform_migration import migrate_platforms
@@ -479,7 +479,6 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
     today_row = next((d for d in last_7 if d.date == today), None)
 
     return DashboardResponse(
-        platform_stats=platform_metrics(db, user, today, week_start, month_start),
         codeforces_last_sync=user.codeforces_last_sync.replace(tzinfo=timezone.utc) if user.codeforces_last_sync else None, codeforces_sync_error=user.codeforces_sync_error,
         codeforces_count=cf_count, codeforces_points=round(float(cf_points), 2), leetcode_points=round((user.points or 0) - round(float(cf_points), 2), 2), points=user.points or 0,
         id=user.id,
@@ -934,25 +933,25 @@ def _time_ago(dt: datetime) -> str:
 
 
 @app.get("/api/users/{user_id}/recent-solves", response_model=List[RecentSolveSchema])
-async def get_user_recent_solves(user_id: int, limit: int = Query(10, ge=1, le=100), platform: str = Query("all", pattern="^(all|leetcode|codeforces)$"), db: Session = Depends(get_db)):
+async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     solves = (
         db.query(Solve)
-        .filter(Solve.user_id == user_id, *([Solve.platform == platform] if platform != "all" else []))
+        .filter(Solve.user_id == user_id)
         .order_by(Solve.solved_at.desc())
         .limit(limit)
         .all()
     )
 
-    if not solves and platform != "codeforces":
+    if not solves:
         # Fallback: poll LeetCode on demand if solves ledger is empty
         await poll_user(db, user)
         solves = (
             db.query(Solve)
-            .filter(Solve.user_id == user_id, *([Solve.platform == platform] if platform != "all" else []))
+            .filter(Solve.user_id == user_id)
             .order_by(Solve.solved_at.desc())
             .limit(limit)
             .all()
