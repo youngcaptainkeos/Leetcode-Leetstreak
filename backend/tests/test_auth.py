@@ -69,6 +69,30 @@ class TokenTests(unittest.TestCase):
         with patch.dict(os.environ, {"APP_ENV": "development", "ALLOW_EPHEMERAL_JWT": "true"}, clear=True):
             self.assertNotEqual(config.load_jwt_secret(), config.load_jwt_secret())
 
+    def test_key_rotation_invalidates_prior_tokens(self):
+        token = auth.create_access_token(1)
+        self.assertEqual(auth.decode_access_token(token)["sub"], "1")
+        new_secret = "rotated-new-secret-key-that-is-at-least-32-chars-long"
+        with patch.object(auth, "JWT_SECRET", new_secret):
+            with self.assertRaises(ValueError) as ctx:
+                auth.decode_access_token(token)
+            self.assertIn("Invalid token", str(ctx.exception))
+        # After restoring original secret, token is valid again
+        self.assertEqual(auth.decode_access_token(token)["sub"], "1")
+
+    def test_session_version_claim(self):
+        token_v0 = auth.create_access_token(1, session_version=0)
+        self.assertEqual(auth.decode_access_token(token_v0)["ver"], 0)
+        token_v2 = auth.create_access_token(1, session_version=2)
+        self.assertEqual(auth.decode_access_token(token_v2)["ver"], 2)
+
+    def test_key_length_boundaries(self):
+        with patch.dict(os.environ, {"JWT_SECRET": "a" * 31, "APP_ENV": "production"}, clear=True):
+            with self.assertRaises(RuntimeError):
+                config.load_jwt_secret()
+        with patch.dict(os.environ, {"JWT_SECRET": "a" * 32, "APP_ENV": "production"}, clear=True):
+            self.assertEqual(config.load_jwt_secret(), "a" * 32)
+
 
 if __name__ == "__main__":
     unittest.main()

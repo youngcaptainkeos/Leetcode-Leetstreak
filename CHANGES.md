@@ -4,6 +4,35 @@ This document records all changes made during the autonomous execution of the Le
 
 ---
 
+## 2026-11-06 — Step: OPS-02 / M5 Step 6: Stable Signing Keys, Session Predictability & Key Management
+
+### Summary of Changes
+Completed full operational key management, session stability, and rotation policies. Declared `JWT_SECRET` with `generateValue: true`, `ADMIN_SECRET` with `sync: false`, and `APP_ENV=production` in `render.yaml`. Published comprehensive operator documentation in `docs/KEY_MANAGEMENT.md` detailing key generation, rotation procedures, planned sign-out effects across extension and web clients, per-user targeted session version revocation, and hosting verification. Added automated unit tests in `backend/tests/test_auth.py` verifying HMAC-SHA256 signature rejection on key rotation, session version claims, and strict minimum 32-byte secret validation.
+
+### Detailed Changes
+1. **Hosting Blueprint Configuration (`render.yaml`)**:
+   - Declared `JWT_SECRET` with `generateValue: true` to ensure Render automatically provisions and retains a persistent, cryptographically secure 256-bit signing key across deployments.
+   - Declared `ADMIN_SECRET` with `sync: false` to require dashboard management without committing secrets to repository files.
+   - Declared `APP_ENV: production` to prevent accidental ephemeral fallback.
+
+2. **Key Management & Rotation Guide (`docs/KEY_MANAGEMENT.md`)**:
+   - Specified cryptographic entropy requirements (at least 32 bytes / 256 bits).
+   - Documented step-by-step fleet-wide key rotation procedure and its client impact (HTTP 401 Unauthorized returned on old tokens; extension and web clients cleanly clear cached credentials, show actionable session expired messages, and prompt for re-authentication).
+   - Documented targeted per-user session revocation via `User.session_version` without disturbing other active users.
+   - Detailed Render dashboard configuration verification.
+
+3. **Automated Key & Session Tests (`backend/tests/test_auth.py`)**:
+   - `test_key_rotation_invalidates_prior_tokens`: Verifies that rotating `JWT_SECRET` causes existing tokens to fail signature validation with `Invalid token signature`, while restoring the secret restores token validity.
+   - `test_session_version_claim`: Validates that tokens carry and decode explicit session versions (`ver`).
+   - `test_key_length_boundaries`: Validates fail-closed behavior on secrets below 32 bytes (31 bytes raises `RuntimeError`, 32 bytes succeeds).
+
+### Verification Evidence
+- `backend/tests/test_auth.py` passed with 10 unit tests in 0.004s.
+- `scripts/check_hygiene.py` passed with 0 secret leaks and clean artifacts.
+- `./scripts/run_checks.sh` full 7-stage suite passed.
+
+---
+
 ## 2026-11-06 — Step: OPS-07 / M5 Step 5: Untracked Environments, Clean Staging & Automated Packaging
 
 ### Summary of Changes

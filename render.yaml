@@ -15,6 +15,12 @@ services:
         value: 15
       - key: CORS_ORIGINS
         value: "*"
+      - key: APP_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_SECRET
+        sync: false
 
 databases:
   - name: leetstreak-db

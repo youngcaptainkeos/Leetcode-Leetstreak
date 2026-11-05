@@ -740,16 +740,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Require a stable, strong production key through hosting secrets; allow an explicit development-only ephemeral mode with clear behavior.
-- [ ] Declare the required variable without committing a value and validate configuration at startup.
-- [ ] Document safe rotation, planned sign-out effects, and deployment verification. Verify actual hosting configuration privately rather than assuming YAML reflects it.
-- [ ] Ensure client session handling distinguishes unauthorized/expired access from network/provider failures.
+- [x] Require a stable, strong production key through hosting secrets; allow an explicit development-only ephemeral mode with clear behavior.
+- [x] Declare the required variable without committing a value and validate configuration at startup.
+- [x] Document safe rotation, planned sign-out effects, and deployment verification. Verify actual hosting configuration privately rather than assuming YAML reflects it.
+- [x] Ensure client session handling distinguishes unauthorized/expired access from network/provider failures.
 
 **Acceptance**
 
-- [ ] A restart with the same key preserves valid sessions; key rotation/revocation rejects them as intended.
-- [ ] Production cannot silently start with an ephemeral or missing key.
-- [ ] No real key appears in code, examples, logs, archives, or history added by this work.
+- [x] A restart with the same key preserves valid sessions; key rotation/revocation rejects them as intended.
+- [x] Production cannot silently start with an ephemeral or missing key.
+- [x] No real key appears in code, examples, logs, archives, or history added by this work.
 
 ### OPS-03 — Startup, migrations, and expensive reconciliation
 
