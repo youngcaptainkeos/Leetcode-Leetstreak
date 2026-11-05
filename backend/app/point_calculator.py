@@ -19,11 +19,13 @@ from sqlalchemy.orm import Session
 
 from .contest_ratings import get_contest_rating
 from datetime import date, timezone
-from .models import User, Solve, DailyActivity, DailyChallenge, PointAward
+from typing import Callable
+from sqlalchemy import func
+from .models import User, Solve, DailyActivity, DailyChallenge, PointAward, JobCheckpoint
 from .streak import current_streak, IST
 from .tracking import capture_score_baseline
 from .scoring import calculate_points, rounded, SCORING_VERSION
-from .timekeeping import ist_date, ist_today
+from .timekeeping import ist_date, ist_today, utc_now
 
 logger = logging.getLogger("codestreak.points")
 
@@ -291,18 +293,98 @@ def recalculate_user_points(
     return final_total
 
 
-async def recalculate_all_users_points(db: Session) -> int:
+class ReconciliationResult(dict):
+    """Result dictionary that also evaluates as an integer for backwards compatibility."""
+    def __int__(self):
+        return int(self.get("total_processed", 0))
+
+    def __index__(self):
+        return int(self.get("total_processed", 0))
+
+
+async def recalculate_all_users_points(
+    db: Session,
+    batch_size: int = 50,
+    job_name: str = "reconcile-points-v2",
+    resume: bool = True,
+    force: bool = False,
+    on_progress: Optional[Callable[[int, int, int], None]] = None,
+) -> ReconciliationResult:
     """
-    Updates total points for all users in the database.
+    Updates total points for all users in bounded batches with progress checkpoints and restart recovery.
     """
     from .leetcode_client import fetch_today_daily_challenge_slug
+
+    checkpoint = db.query(JobCheckpoint).filter(JobCheckpoint.job_name == job_name).first()
+    if checkpoint:
+        if checkpoint.status == "completed" and not force:
+            logger.info("Reconciliation job %s already completed (%d users).", job_name, checkpoint.total_processed)
+            return ReconciliationResult({
+                "job_name": job_name,
+                "status": "already_completed",
+                "total_processed": checkpoint.total_processed,
+                "batches": 0,
+            })
+        if force:
+            checkpoint.last_processed_id = 0
+            checkpoint.total_processed = 0
+            checkpoint.status = "running"
+            checkpoint.batch_size = batch_size
+            checkpoint.started_at = utc_now()
+            checkpoint.completed_at = None
+            db.commit()
+        elif resume and checkpoint.status in ("running", "failed", "pending"):
+            checkpoint.status = "running"
+            checkpoint.batch_size = batch_size
+            db.commit()
+    else:
+        checkpoint = JobCheckpoint(
+            job_name=job_name,
+            last_processed_id=0,
+            batch_size=batch_size,
+            total_processed=0,
+            status="running",
+            started_at=utc_now(),
+        )
+        db.add(checkpoint)
+        db.commit()
+
+    total_users = db.query(func.count(User.id)).scalar() or 0
     today_daily_slug = await fetch_today_daily_challenge_slug()
-    users = db.query(User).all()
-    count = 0
-    for u in users:
-        recalculate_user_points(u, db, today_daily_slug=today_daily_slug)
-        count += 1
-    db.commit()
-    logger.info("Recalculated points for %d users.", count)
-    return count
+
+    batches_count = 0
+    while True:
+        batch = (
+            db.query(User)
+            .filter(User.id > checkpoint.last_processed_id)
+            .order_by(User.id)
+            .limit(batch_size)
+            .all()
+        )
+        if not batch:
+            checkpoint.status = "completed"
+            checkpoint.completed_at = utc_now()
+            db.commit()
+            break
+
+        for u in batch:
+            recalculate_user_points(u, db, today_daily_slug=today_daily_slug)
+
+        checkpoint.last_processed_id = batch[-1].id
+        checkpoint.total_processed += len(batch)
+        checkpoint.updated_at = utc_now()
+        db.commit()
+        batches_count += 1
+
+        if on_progress:
+            on_progress(checkpoint.total_processed, total_users, batch[-1].id)
+
+    logger.info("Reconciliation complete for %s: %d users processed in %d batches.", job_name, checkpoint.total_processed, batches_count)
+    return ReconciliationResult({
+        "job_name": job_name,
+        "status": checkpoint.status,
+        "total_processed": checkpoint.total_processed,
+        "batches": batches_count,
+    })
+
 

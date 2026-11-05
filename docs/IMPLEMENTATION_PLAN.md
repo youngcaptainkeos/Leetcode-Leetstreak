@@ -762,8 +762,8 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 **Implementation**
 
 - [x] Move schema changes into ordered, versioned, repeatable migrations with explicit failure behavior and backup/recovery instructions.
-- [ ] Backfill challenge archives incrementally using stored coverage/checkpoints; fetch missing months only.
-- [ ] Run all-user point reconciliation as an explicit versioned job, in bounded batches with progress and restart recovery.
+- [x] Backfill challenge archives incrementally using stored coverage/checkpoints; fetch missing months only.
+- [x] Run all-user point reconciliation as an explicit versioned job, in bounded batches with progress and restart recovery.
 - [x] Separate basic liveness from readiness. Startup should validate local configuration/schema and avoid waiting on years of provider requests.
 - [x] Remove unconditional historical repair statements from normal startup after migrating their intended data safely.
 
@@ -771,7 +771,7 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 - [x] Restarting does not refetch the full archive or revalue all accounts.
 - [x] Migration failure is visible and cannot leave a falsely healthy incompatible service.
-- [ ] Interrupted backfills resume without duplicate awards or lost coverage.
+- [x] Interrupted backfills resume without duplicate awards or lost coverage.
 
 ### OPS-04 — Cross-process job coordination
 

@@ -261,6 +261,21 @@ def migrate_leases(target):
         connection.execute(versions.insert().values(version=version))
 
 
+def migrate_checkpoints(target):
+    """
+    Resumable background jobs, batch progress, and reconciliation checkpoints.
+    Version: 20261106-checkpoints-v1
+    """
+    from .models import JobCheckpoint
+
+    with migration_connection(target) as connection:
+        version = "20261106-checkpoints-v1"
+        if connection.execute(versions.select().where(versions.c.version == version)).first():
+            return
+        JobCheckpoint.__table__.create(connection, checkfirst=True)
+        connection.execute(versions.insert().values(version=version))
+
+
 def run_all_migrations(target):
     """
     Run all pending migrations in an atomic transaction under advisory lock on PostgreSQL.
@@ -276,5 +291,7 @@ def run_all_migrations(target):
         migrate_verification(connection)
         migrate_friendships(connection)
         migrate_leases(connection)
+        migrate_checkpoints(connection)
+
 
 

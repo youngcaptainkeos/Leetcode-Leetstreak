@@ -4,6 +4,42 @@ This document records all changes made during the autonomous execution of the Le
 
 ---
 
+## 2026-11-06 — Step: OPS-03 / M5 Step 7: Incremental Challenge Archive Backfill & Resumable Bounded Point Reconciliation
+
+### Summary of Changes
+Completed the remaining operational requirements of OPS-03: incremental daily challenge backfill with month-level coverage checks, and bounded all-user point reconciliation with persistent progress checkpointing and restart recovery. Added migration `20261106-checkpoints-v1` introducing table `job_checkpoints`. Created `backend/app/challenge_archive.py` with `is_month_covered()` and `backfill_daily_challenges_archive(incremental=True)` committing per-month to prevent redundant fetches. Upgraded `backend/app/point_calculator.py` with batch-bounded user reconciliation (`batch_size=50`) checkpointing `last_processed_id` per batch. Built two explicit CLI operator tools: `scripts/backfill_challenges.py` and `scripts/reconcile_points.py`. Added unit test suites `backend/tests/test_challenge_archive.py` and `backend/tests/test_point_reconciliation.py`.
+
+### Detailed Changes
+1. **Database Migration `20261106-checkpoints-v1` (`backend/app/migrations.py` & `backend/app/models.py`)**:
+   - Created `JobCheckpoint` model and table `job_checkpoints` (`job_name`, `last_processed_id`, `batch_size`, `total_processed`, `status`, `metadata_json`, `started_at`, `updated_at`, `completed_at`).
+   - Added migration function `migrate_checkpoints` registered in `run_all_migrations`.
+   - Updated migration tests in `backend/tests/test_migrations.py` and `backend/tests/test_postgres_migrations.py` to reflect 10 registered migrations under PostgreSQL advisory lock.
+
+2. **Incremental Challenge Archive Backfill (`backend/app/challenge_archive.py` & `scripts/backfill_challenges.py`)**:
+   - `is_month_covered()` checks if all expected challenge days for a past or current month are already stored in `daily_challenges`.
+   - `backfill_daily_challenges_archive()` scans from `start_year` (default: 2024), skips covered months, fetches only missing months from LeetCode GraphQL, and commits per month so interrupted runs resume cleanly from the next missing month without re-fetching.
+   - Created CLI script `scripts/backfill_challenges.py` supporting `--start-year`, `--dry-run`, and `--force`.
+
+3. **Bounded All-User Point Reconciliation (`backend/app/point_calculator.py` & `scripts/reconcile_points.py`)**:
+   - Upgraded `recalculate_all_users_points()` to process users in bounded batches (default: 50) using `last_processed_id` cursor pagination.
+   - Commits each batch to database and updates checkpoint; an interrupted job resumes from `last_processed_id` without recalculating already-completed batches.
+   - Returns `ReconciliationResult` with integer coercion for backwards compatibility.
+   - Guard against duplicate runs (`status="already_completed"`) unless `--force` is specified.
+   - Created CLI script `scripts/reconcile_points.py` supporting `--job-name`, `--batch-size`, `--force`, and `--status`.
+
+4. **Testing & Verification (`backend/tests/test_challenge_archive.py` & `backend/tests/test_point_reconciliation.py`)**:
+   - Added 4 unit tests in `test_challenge_archive.py` covering past, current, and future month coverage, incremental skipping, and forced refetches.
+   - Added 3 unit tests in `test_point_reconciliation.py` covering batch checkpointing, `already_completed` guard, and simulated interruption/resumption without re-running prior batches.
+
+### Verification Evidence
+- `backend/tests/test_challenge_archive.py`: 4 tests passed.
+- `backend/tests/test_point_reconciliation.py`: 3 tests passed.
+- `backend/tests/test_migrations.py`: 10 migrations verified.
+- `backend/tests/test_postgres_migrations.py`: 10 migrations verified on PostgreSQL.
+- Full 7-stage verification suite `./scripts/run_checks.sh` passed cleanly with 0 errors.
+
+---
+
 ## 2026-11-06 — Step: OPS-02 / M5 Step 6: Stable Signing Keys, Session Predictability & Key Management
 
 ### Summary of Changes

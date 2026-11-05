@@ -302,3 +302,19 @@ class JobLease(Base):
         Index("ix_job_leases_expiry", "resource_key", "expires_at"),
     )
 
+
+class JobCheckpoint(Base):
+    """Tracks resumable background jobs, batch progress, and reconciliation checkpoints."""
+    __tablename__ = "job_checkpoints"
+
+    job_name = Column(String(100), primary_key=True)
+    last_processed_id = Column(Integer, nullable=False, default=0)
+    batch_size = Column(Integer, nullable=False, default=50)
+    total_processed = Column(Integer, nullable=False, default=0)
+    status = Column(String(20), nullable=False, default="pending")  # "pending", "running", "completed", "failed"
+    metadata_json = Column(JSON, nullable=False, default=dict)
+    started_at = Column(DateTime, nullable=False, default=utc_now)
+    updated_at = Column(DateTime, nullable=False, default=utc_now, onupdate=utc_now)
+    completed_at = Column(DateTime, nullable=True)
+
+
