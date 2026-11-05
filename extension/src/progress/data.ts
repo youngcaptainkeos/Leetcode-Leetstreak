@@ -19,8 +19,8 @@ export interface PracticeSnapshot {
   submissions: Submission[];
   checkedAt: number;
 }
-export interface ProgressState { followed: string[]; manual: string[]; observed: string[]; customPlans: StudyPlan[]; hiddenPlans: string[]; defaultsVersion: number }
-export const emptyProgress = (): ProgressState => ({ followed: [], manual: [], observed: [], customPlans: [], hiddenPlans: [], defaultsVersion: DEFAULTS_VERSION });
+export interface ProgressState { followed: string[]; manual: string[]; observed: string[]; customPlans: StudyPlan[]; hiddenPlans: string[]; defaultsVersion: number; lastFullSyncAt: number | null }
+export const emptyProgress = (): ProgressState => ({ followed: [], manual: [], observed: [], customPlans: [], hiddenPlans: [], defaultsVersion: DEFAULTS_VERSION, lastFullSyncAt: null });
 
 export function parsePlanSlug(input: string): string {
   let slug = input.trim();
@@ -70,8 +70,23 @@ export function questionUrl(question: StudyQuestion): string {
   return question.url && isSafeSourceUrl(question.url) ? question.url : `https://leetcode.com/problems/${question.titleSlug}/`;
 }
 
+export function questionLeetcodeSlug(question: StudyQuestion): string | null {
+  if (question.kind === "learning") return null;
+  if (question.leetcodeSlug) return question.leetcodeSlug;
+  if (question.url) {
+    const url = new URL(question.url);
+    return ["leetcode.com", "www.leetcode.com"].includes(url.hostname) ? url.pathname.match(/^\/problems\/([a-z0-9-]+)\/?$/)?.[1] || null : null;
+  }
+  return question.titleSlug.startsWith("tuf-") ? null : question.titleSlug;
+}
+
 export function questionSolved(question: StudyQuestion, state: Pick<ProgressState, "manual" | "observed">): boolean {
-  return state.manual.includes(question.titleSlug) || state.observed.includes(question.leetcodeSlug || question.titleSlug);
+  const slug = questionLeetcodeSlug(question);
+  return slug !== null ? state.observed.includes(slug) : state.manual.includes(question.titleSlug);
+}
+
+export function mergeSolvedHistory(state: ProgressState, slugs: string[], syncedAt: number): ProgressState {
+  return { ...state, observed: [...new Set([...state.observed, ...slugs])], lastFullSyncAt: syncedAt };
 }
 
 export function readStudyPlan(value: unknown): StudyPlan | null {
@@ -128,7 +143,7 @@ export function readProgress(raw: string | null): ProgressState {
     const available = new Set([...STUDY_PLANS, ...customPlans].map(p => p.slug));
     const hiddenPlans = strings(parsed.hiddenPlans).filter(slug => available.has(slug) &&
       !(migrateDefaults && STUDY_PLANS.some(p => p.slug === slug)));
-    return { followed: strings(parsed.followed).filter(slug => available.has(slug) && !hiddenPlans.includes(slug)), manual: strings(parsed.manual), observed: strings(parsed.observed), customPlans, hiddenPlans, defaultsVersion: migrateDefaults ? DEFAULTS_VERSION : parsed.defaultsVersion };
+    return { followed: strings(parsed.followed).filter(slug => available.has(slug) && !hiddenPlans.includes(slug)), manual: strings(parsed.manual), observed: strings(parsed.observed), customPlans, hiddenPlans, defaultsVersion: migrateDefaults ? DEFAULTS_VERSION : parsed.defaultsVersion, lastFullSyncAt: Number.isFinite(parsed.lastFullSyncAt) && parsed.lastFullSyncAt > 0 && parsed.lastFullSyncAt <= Date.now() + 300000 ? parsed.lastFullSyncAt : null };
   } catch { return emptyProgress(); }
 }
 
@@ -178,8 +193,9 @@ function validSubmissions(rows: Submission[]): Submission[] {
 
 export function planCounts(plan: StudyPlan, state: Pick<ProgressState, "manual" | "observed">) {
   const questions = [...new Map(plan.planSubGroups.flatMap(g => g.questions).map(q => [q.titleSlug, q])).values()];
+  const tracked = questions.filter(q => questionLeetcodeSlug(q) !== null);
   const done = questions.filter(q => questionSolved(q, state)).length;
-  return { done, total: questions.length, percent: questions.length ? Math.round(done / questions.length * 1000) / 10 : 0, next: questions.find(q => !questionSolved(q, state)) };
+  return { done, total: questions.length, automatic: tracked.length, external: questions.length - tracked.length, percent: questions.length ? Math.round(done / questions.length * 1000) / 10 : 0, next: questions.find(q => !questionSolved(q, state)) };
 }
 
 async function graphql<T>(query: string, variables: Record<string, unknown>, label = "public activity"): Promise<T> {

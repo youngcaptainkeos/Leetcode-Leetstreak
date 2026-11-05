@@ -16,14 +16,14 @@ test("bundled plans contain complete, unique official question lists", () => {
   }
 });
 
-test("manual and automatic progress count each question once and select the next unsolved question", () => {
+test("LeetCode progress counts verified solves and ignores old manual checkmarks", () => {
   const plan = STUDY_PLANS.find(p => p.slug === "top-sql-50");
   const slugs = plan.planSubGroups.flatMap(g => g.questions).map(q => q.titleSlug);
   const state = { followed: [plan.slug], manual: [slugs[0], slugs[1]], observed: [slugs[0], slugs[2], "unrelated-question"] };
   const count = planCounts(plan, state);
-  assert.equal(count.done, 3);
-  assert.equal(count.percent, 6);
-  assert.equal(count.next.titleSlug, slugs[3]);
+  assert.equal(count.done, 2);
+  assert.equal(count.percent, 4);
+  assert.equal(count.next.titleSlug, slugs[1]);
   const completed = planCounts(plan, { ...state, observed: slugs });
   assert.equal(completed.done, 50);
   assert.equal(completed.percent, 100);
@@ -41,14 +41,14 @@ test("corrupt saved state is recoverable and progress is separated by account an
 test("new users get three starters; removing all survives reload and restoration keeps solved history", () => {
   let state = readProgress(null);
   assert.deepEqual(visiblePlans(state).map(p => p.slug), ["strivers-a2z-dsa-sheet", "top-sql-50", "top-interview-150"]);
-  state = { ...state, manual: ["big-countries"], observed: ["two-sum"], followed: ["top-sql-50"] };
+  state = { ...state, manual: ["big-countries"], observed: ["two-sum", "big-countries"], followed: ["top-sql-50"] };
   for (const plan of STUDY_PLANS) state = removeStudyPlan(state, plan.slug);
   const restoredSession = readProgress(JSON.stringify(state));
   assert.equal(visiblePlans(restoredSession).length, 0);
   assert.deepEqual(restoredSession.followed, []);
   assert.deepEqual(restoredSession.manual, ["big-countries"]);
   assert.equal(visiblePlans(restoreStarterPlans(restoredSession)).length, 3);
-  assert.deepEqual(restoreStarterPlans(restoredSession).observed, ["two-sum"]);
+  assert.deepEqual(restoreStarterPlans(restoredSession).observed, ["two-sum", "big-countries"]);
   const reAdded = addStudyPlan(restoredSession, STUDY_PLANS.find(p => p.slug === "top-sql-50"));
   assert.equal(visiblePlans(reAdded).length, 1);
   assert.equal(planCounts(visiblePlans(reAdded)[0], reAdded).done, 1);

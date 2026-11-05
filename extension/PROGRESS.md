@@ -13,14 +13,23 @@ unsolved problem. Public question lists were retrieved from LeetCode's
 - https://leetcode.com/studyplan/leetcode-75/
 - https://leetcode.com/studyplan/top-interview-150/
 
-Recent public accepted submissions are checked when the popup opens, each minute
-while it remains open, and after Sync or Refresh. Observed accepted questions are
-remembered and count toward every plan containing them. Older questions outside
-the public recent-submissions window can be checked off manually. Automatic
-completion is never represented as a complete import of private LeetCode history.
-Followed plans, observed solves, and manual checkmarks are stored locally for each
-LeetStreak account and linked LeetCode handle. Removing a followed plan preserves
-its progress. This local progress does not sync between browsers or devices.
+LeetCode-linked items use automatic completion, with no editable checkboxes.
+Complete solved history is imported from the matching LeetCode account signed in
+within the same browser. The extension checks account identity before and after
+fetching all accepted-question pages and only saves a complete, valid result.
+History sync runs on opening (cached for 15 minutes), with an explicit **Sync
+history** action; adding or following a plan also requests a sync. Saved solves
+immediately apply to every plan, including newly added plans.
+
+Recent public accepted submissions are also checked on opening, every minute
+while open, and after Sync or Refresh. Failed full-history imports keep saved
+progress and offer an actionable retry rather than treating recent activity as
+complete history. Older manual checkmarks on LeetCode-linked items no longer
+count as verified solves.
+
+Followed plans, verified solve slugs, full-sync timestamps, and external-item
+checkmarks are stored locally for each LeetStreak account and linked LeetCode
+handle. This progress does not sync between browsers or devices.
 
 ## Add, remove, and restore plans
 
@@ -57,8 +66,9 @@ paid lesson content, login state, cookies, or user progress are imported.
 The snapshot date and source link appear on the plan. Future sheet changes require
 updating this snapshot in an extension release.
 
-Questions with a public LeetCode problem link are matched to observed accepted
-LeetCode submissions. Other questions and lessons are completed manually. The
+Questions with a public LeetCode problem link are matched to saved, verified
+LeetCode solves. The remaining external questions and lessons have completion
+checkboxes and external links; their checkmarks persist independently of syncing. The
 same LeetCode problem can complete multiple items if the source sheet references
 it more than once. Questions open their LeetCode link where supplied, otherwise
 the public takeUforward article or the source sheet.
@@ -82,10 +92,26 @@ Dismissal lasts for that challenge date. A completed challenge is remembered for
 the day even if it falls out of the public recent-submissions window. If the public
 check fails, a retry message is shown rather than claiming the question is unsolved.
 
-These features call LeetCode's public GraphQL endpoint with `credentials: omit`,
-using the extension's existing LeetCode host permission. They require no new
-backend endpoints, database changes, credentials, or permissions. The website and
-production service are unchanged by this branch.
+## Startup preference
+
+In **Account Settings → Preferences → Startup tab**, choose **Progress**,
+**Leaderboards**, or **Last used**. The choice is saved per LeetStreak account
+and applies when reopening the extension.
+
+## Browser session and privacy
+
+Public activity and plan metadata use `credentials: omit`. Complete historical
+progress uses the browser's existing LeetCode session, sent only to LeetCode's
+read-only GraphQL endpoint. A small content-script bridge on an open LeetCode tab
+supports browsers that block cross-site session requests; otherwise the extension
+tries the request directly. After updating the extension, refresh an existing
+LeetCode tab to load the bridge. Sign in there using the linked handle, then
+choose **Sync history**.
+
+No cookies or session tokens are read, stored, or sent to the LeetStreak backend.
+Only question slugs and the sync time are saved locally. No new host permissions,
+backend endpoints, or database changes are required. The website and production
+service are unchanged by this branch.
 
 ## Build and try it
 

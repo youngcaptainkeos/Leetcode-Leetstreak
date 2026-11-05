@@ -14,6 +14,7 @@ import {
 import { getStored, setStored, clearStored } from "./storage";
 import { DailyReminder, ProgressPanel, usePractice } from "./progress/Progress";
 import { PRACTICE_REFRESH } from "./progress/data";
+import { StartupTab, readStartupTab, resolveStartupTab, startupTabKey } from "./progress/preferences";
 
 type View = "loading" | "onboarding" | "dashboard";
 type BoardTab = "global" | "friends" | number; // "global", "friends", or groupId
@@ -621,12 +622,17 @@ function Dashboard({
   const [tabBoards, setTabBoards] = useState<Record<string, LeaderboardResponse>>({});
   const [boardLoading, setBoardLoading] = useState<boolean>(false);
   const [menu, setMenu] = useState<"leaderboards" | "progress">("leaderboards");
+  const [startupTab, setStartupTab] = useState<StartupTab>("last");
   const practice = usePractice(dash?.leetcode_username || "");
 
   useEffect(() => {
     let active = true;
-    getStored(`codestreak_menu_${userId}`).then(value => {
-      if (active && value === "progress") setMenu("progress");
+    Promise.all([getStored(startupTabKey(userId)), getStored(`codestreak_menu_${userId}`)]).then(([saved, lastUsed]) => {
+      if (active) {
+        const preference = readStartupTab(saved);
+        setStartupTab(preference);
+        setMenu(resolveStartupTab(preference, lastUsed));
+      }
     });
     return () => { active = false; };
   }, [userId]);
@@ -1912,6 +1918,14 @@ function Dashboard({
             <div className="settings-section">
               <div className="settings-section-title">PREFERENCES</div>
               <div className="settings-card">
+                <div className="settings-row">
+                  <div className="settings-row-text"><span className="settings-row-label">Startup tab</span><span className="settings-row-caption">Choose what opens with the extension</span></div>
+                  <select className="startup-tab-select" aria-label="Startup tab" value={startupTab} onChange={e => {
+                    const preference = readStartupTab(e.target.value);
+                    setStartupTab(preference);
+                    void setStored(startupTabKey(userId), preference);
+                  }}><option value="last">Last used</option><option value="progress">Progress</option><option value="leaderboards">Leaderboards</option></select>
+                </div>
                 <div className="settings-row">
                   <div className="settings-row-text">
                     <span className="settings-row-label">🌐 Global Leaderboard</span>

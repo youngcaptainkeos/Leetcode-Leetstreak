@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { GroupResponse, GroupMember } from "../lib/api";
 import { getStored, setStored } from "../storage";
-import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, ProgressState, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, readProgress, parsePlanInput, fetchStudyPlan, addStudyPlan, removeStudyPlan, questionUrl, questionSolved, visiblePlans, restoreStarterPlans } from "./data";
+import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, ProgressState, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, readProgress, parsePlanInput, fetchStudyPlan, addStudyPlan, removeStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, mergeSolvedHistory, visiblePlans, restoreStarterPlans } from "./data";
+import { fetchSolvedHistory, SolvedHistory } from "./history";
 import "./Progress.css";
 
 export function usePractice(username: string) {
@@ -74,8 +75,15 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   const [planInput, setPlanInput] = useState("");
   const [addingPlan, setAddingPlan] = useState(false);
   const [planError, setPlanError] = useState("");
+  const [historySyncing, setHistorySyncing] = useState(false);
+  const [historyMessage, setHistoryMessage] = useState("");
+  const [historyError, setHistoryError] = useState("");
   const importRequest = useRef(0);
-  useEffect(() => () => { importRequest.current++; }, []);
+  const historyRequest = useRef<AbortController | null>(null);
+  const historyPromise = useRef<Promise<SolvedHistory | null> | null>(null);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  useEffect(() => () => { importRequest.current++; historyRequest.current?.abort(); }, []);
   useEffect(() => {
     let active = true;
     getStored(key).then(raw => { if (active) { const saved = readProgress(raw); setState(saved); setSelected(saved.followed[0] || STUDY_PLANS[0].slug); } });
@@ -83,6 +91,46 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   }, [key]);
   useEffect(() => { if (state) void setStored(key, JSON.stringify(state)); }, [key, state]);
   const loaded = state !== null;
+  async function syncHistory(force = false): Promise<SolvedHistory | null> {
+    const saved = stateRef.current;
+    if (!force && saved?.lastFullSyncAt && Date.now() - saved.lastFullSyncAt < 15 * 60000) {
+      return { slugs: saved.observed, syncedAt: saved.lastFullSyncAt };
+    }
+    if (historyPromise.current) return historyPromise.current;
+    const controller = new AbortController();
+    historyRequest.current = controller;
+    setHistorySyncing(true); setHistoryError(""); setHistoryMessage("Syncing your solved history…");
+    const task = (async () => {
+      try {
+        const result = await fetchSolvedHistory(username, (done, total) => {
+          if (!controller.signal.aborted) setHistoryMessage(`Syncing solved history: ${done}/${total}`);
+        }, controller.signal);
+        if (controller.signal.aborted) return null;
+        setState(previous => previous ? mergeSolvedHistory(previous, result.slugs, result.syncedAt) : previous);
+        setHistoryMessage(`${result.slugs.length} solved LeetCode questions synced.`);
+        return result;
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          setHistoryMessage("");
+          setHistoryError(err instanceof Error && err.name === "AbortError" ? "LeetCode took too long to respond. Retry to sync your history." : err instanceof Error ? err.message : "Could not sync solved history. Your saved progress is unchanged.");
+        }
+        return null;
+      } finally {
+        if (!controller.signal.aborted) setHistorySyncing(false);
+        if (historyRequest.current === controller) { historyRequest.current = null; historyPromise.current = null; }
+      }
+    })();
+    historyPromise.current = task;
+    return task;
+  }
+  useEffect(() => {
+    if (!loaded) return;
+    void syncHistory();
+    const refresh = () => { void syncHistory(); };
+    window.addEventListener(PRACTICE_REFRESH, refresh);
+    window.addEventListener("online", refresh);
+    return () => { window.removeEventListener(PRACTICE_REFRESH, refresh); window.removeEventListener("online", refresh); };
+  }, [loaded, username]);
   useEffect(() => {
     if (!loaded || !snapshot) return;
     setState(prev => prev ? { ...prev, observed: [...new Set([...prev.observed, ...snapshot.submissions.map(s => s.titleSlug)])] } : prev);
@@ -91,7 +139,6 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   if (!state) return <div className="centered muted">Loading your progress…</div>;
   const library = visiblePlans(state);
   const plan = library.find(p => p.slug === selected) || library[0] || null;
-  const automatic = new Set(state.observed);
   const count = plan ? planCounts(plan, state) : null;
   const following = plan ? state.followed.includes(plan.slug) : false;
   function selectPlan(slug: string) {
@@ -110,10 +157,11 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
       const { slug } = parsePlanInput(planInput);
       const existing = [...STUDY_PLANS, ...(state?.customPlans || [])].find(p => p.slug === slug);
       const imported = existing || await fetchStudyPlan(slug);
+      const history = await syncHistory(true);
       if (request !== importRequest.current) return;
-      setState(previous => previous ? addStudyPlan(previous, imported) : previous);
+      setState(previous => previous ? addStudyPlan(history ? mergeSolvedHistory(previous, history.slugs, history.syncedAt) : previous, imported) : previous);
       selectPlan(imported.slug);
-      setNotice(`Following ${imported.name}. Your plan is saved in this browser.`);
+      setNotice(history ? `Following ${imported.name}. Progress synced with your solved history.` : `Following ${imported.name}. Saved solves are shown; complete the LeetCode history sync to include older solves.`);
       setPlanInput(""); setAddOpen(false);
     } catch (err) {
       if (request === importRequest.current) setPlanError(err instanceof Error ? err.message : "Could not add this study plan. Please try again.");
@@ -133,30 +181,31 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
     selectPlan(STUDY_PLANS[0].slug);
     setNotice("Starter plans restored. Your saved progress is still here.");
   }
-  function toggleFollow() {
+  async function toggleFollow() {
     if (!plan) return;
-    setState(prev => prev ? { ...prev, followed: following ? prev.followed.filter(s => s !== plan.slug) : [...prev.followed, plan.slug] } : prev);
-    setNotice(following ? `${plan.name} removed from following. Your progress is saved.` : `Following ${plan.name}. One question at a time!`);
+    if (!following) await syncHistory(true);
+    setState(prev => prev && visiblePlans(prev).some(p => p.slug === plan.slug) ? { ...prev, followed: following ? prev.followed.filter(s => s !== plan.slug) : [...new Set([...prev.followed, plan.slug])] } : prev);
+    setNotice(following ? `${plan.name} removed from following. Your progress is saved.` : `Following ${plan.name}. Progress uses verified LeetCode solves.`);
   }
-  function toggleSolved(slug: string) {
-    if (!state || !plan) return;
-    const manual = state.manual.includes(slug) ? state.manual.filter(s => s !== slug) : [...state.manual, slug];
-    const next = { ...state, manual };
-    const result = planCounts(plan, next);
-    setState(next);
-    setNotice(result.done === result.total ? `✦ ${plan.name} complete! Every question, done.` : `${result.done} of ${result.total} completed. Progress saved.`);
+  function toggleExternalItem(slug: string) {
+    const question = plan?.planSubGroups.flatMap(group => group.questions).find(q => q.titleSlug === slug);
+    if (!question || questionLeetcodeSlug(question)) return;
+    setState(previous => previous ? { ...previous, manual: previous.manual.includes(slug) ? previous.manual.filter(s => s !== slug) : [...previous.manual, slug] } : previous);
+    setNotice("External-item completion saved.");
   }
   const visibleGroups = plan?.planSubGroups.map(g => ({ ...g, questions: g.questions.filter(q =>
-    q.title.toLowerCase().includes(search.toLowerCase()) && (filter === "all" || (filter === "done" ? questionSolved(q, state) : !questionSolved(q, state)))) })).filter(g => g.questions.length) || [];
+    q.title.toLowerCase().includes(search.toLowerCase()) && (filter === "all" || (filter === "external" ? !questionLeetcodeSlug(q) : filter === "done" ? questionSolved(q, state) : !questionSolved(q, state)))) })).filter(g => g.questions.length) || [];
   return <div className="progress-panel" id="progress-panel" role="tabpanel" aria-labelledby="progress-menu">
     {active && <FriendsActivity key={`${userId}-${username}`} userId={userId} groups={groups} />}
     <div className="section-header study-plans-heading"><h2 className="section-title">Study plans</h2><button className="chip-btn" aria-expanded={addOpen} aria-controls="add-study-plan" onClick={() => { if (addOpen) closeImporter(); else { setAddOpen(true); setPlanError(""); } }}>{addOpen ? "Close" : "+ Add plan"}</button></div>
+    <div className="history-sync-row"><span role="status">{historySyncing ? historyMessage : state.lastFullSyncAt ? `History saved · ${new Date(state.lastFullSyncAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : "Complete history not synced yet"}</span><button className="chip-btn" disabled={historySyncing} onClick={() => { void syncHistory(true); }}>{historySyncing ? "Syncing…" : "Sync history"}</button></div>
+    {historyError && <p className="progress-error" role="status">{historyError} <a href="https://leetcode.com/" target="_blank" rel="noreferrer">Open LeetCode ↗</a></p>}
     {addOpen && <form className="plan-import-form" id="add-study-plan" onSubmit={handleAddPlan}>
       <label htmlFor="study-plan-link">Study-plan or sheet link</label>
       <input id="study-plan-link" type="text" value={planInput} onChange={e => setPlanInput(e.target.value)} placeholder="Paste your study-plan link…" maxLength={500} autoFocus aria-describedby="plan-import-help" disabled={addingPlan} />
       <p className="progress-note" id="plan-import-help">Supports LeetCode study plans and Striver’s A2Z sheet from takeUforward. Plans are saved in this browser.</p>
       <a href="https://leetcode.com/studyplan/" target="_blank" rel="noreferrer">Browse LeetCode study plans ↗</a>
-      <div className="plan-import-actions"><button className="chip-btn" type="submit" disabled={addingPlan || !planInput.trim()}>{addingPlan ? "Adding…" : "Add & follow"}</button><button className="chip-btn" type="button" onClick={closeImporter}>Cancel</button></div>
+      <div className="plan-import-actions"><button className="chip-btn" type="submit" disabled={addingPlan || !planInput.trim()}>{addingPlan ? "Adding & syncing…" : "Add & follow"}</button><button className="chip-btn" type="button" onClick={closeImporter}>Cancel</button></div>
       {planError && <p className="progress-error" role="alert">{planError}</p>}
     </form>}
     <div className="progress-notice" role="status" aria-live="polite">{notice}</div>
@@ -165,19 +214,19 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
       <span><strong>{p.name}</strong><small>{state.followed.includes(p.slug) ? "Following · " : ""}{c.done}/{c.total} {p.source === "takeuforward" ? "completed" : "solved"}</small></span><span className="plan-mini-meter" aria-hidden="true"><i style={{ width: `${c.percent}%` }} /></span><b>{c.percent}%</b>
     </button>; })}</div>
     {plan && count && <section className="study-plan-detail" aria-label={`${plan.name} progress`}>
-      <div className="study-plan-top"><div><h3>{plan.name}</h3><a href={plan.sourceUrl || `https://leetcode.com/studyplan/${plan.slug}/`} target="_blank" rel="noreferrer">View on {plan.source === "takeuforward" ? "takeUforward" : "LeetCode"} ↗</a></div><button className={`chip-btn ${following ? "is-following" : ""}`} aria-pressed={following} onClick={toggleFollow}>{following ? "✓ Following" : "+ Follow plan"}</button></div>
-      <div className="plan-progress-label"><strong>{count.done}<span> / {count.total} completed</span></strong><b>{count.percent}%</b></div>
+      <div className="study-plan-top"><div><h3>{plan.name}</h3><a href={plan.sourceUrl || `https://leetcode.com/studyplan/${plan.slug}/`} target="_blank" rel="noreferrer">View on {plan.source === "takeuforward" ? "takeUforward" : "LeetCode"} ↗</a></div><button className={`chip-btn ${following ? "is-following" : ""}`} aria-pressed={following} disabled={historySyncing && !following} onClick={toggleFollow}>{following ? "✓ Following" : "+ Follow plan"}</button></div>
+      <div className="plan-progress-label"><strong>{count.done}<span> / {count.total} {plan.source === "takeuforward" ? "completed" : "solved"}</span></strong><b>{count.percent}%</b></div>
       <div className="plan-progress-track" role="progressbar" aria-label={`${plan.name} completion`} aria-valuenow={count.done} aria-valuemin={0} aria-valuemax={count.total}><div style={{ width: `${count.percent}%` }} /></div>
-      {count.next ? <a className="plan-continue" href={questionUrl(count.next)} target="_blank" rel="noreferrer"><span>UP NEXT<strong>{count.next.title}</strong></span><span aria-hidden="true">↗</span></a> : <p className="plan-complete">✦ Plan complete. Enjoy that milestone!</p>}
-      <p className="progress-note">{plan.source === "takeuforward" ? `Public sheet snapshot: ${plan.snapshotDate}. Linked LeetCode problems sync automatically. Lessons and other problems are marked manually.` : "Recent public accepted solves are checked automatically. Mark older solves yourself."} Checkmarks and followed plans are saved in this browser for this account.</p>
+      {count.next ? <a className="plan-continue" href={questionUrl(count.next)} target="_blank" rel="noreferrer"><span>{state.lastFullSyncAt || !questionLeetcodeSlug(count.next) ? "UP NEXT" : "NOT YET VERIFIED"}<strong>{count.next.title}</strong></span><span aria-hidden="true">↗</span></a> : <p className="plan-complete">{count.total ? "✦ Plan complete. Enjoy that milestone!" : "This plan has no items to track."}</p>}
+      <p className="progress-note">{plan.source === "takeuforward" ? `Public sheet snapshot: ${plan.snapshotDate}. ${count.automatic} linked LeetCode problems sync automatically. The ${count.external} other items have external links and completion checkboxes.` : "Progress comes from your synced LeetCode solved history."} Progress is saved for this account and applied when you add a plan.</p>
       {error && <p className="progress-error" role="status">Automatic checking is unavailable. Your saved progress is still here.</p>}
       <div className="plan-question-controls"><button className="chip-btn" aria-expanded={showQuestions} aria-controls="plan-question-list" onClick={() => setShowQuestions(value => !value)}>{showQuestions ? "Hide questions ↑" : "Show questions ↓"}</button>{showQuestions && <button className="chip-btn" onClick={() => { const allOpen = visibleGroups.every(g => expandedGroups.includes(g.name)); setExpandedGroups(allOpen ? [] : visibleGroups.map(g => g.name)); }}>{visibleGroups.length > 0 && visibleGroups.every(g => expandedGroups.includes(g.name)) ? "Collapse all" : "Expand all"}</button>}<button className="chip-btn plan-remove" aria-label={`Remove ${plan.name} from your plans`} title="Remove plan; keep solved history" onClick={handleRemovePlan}>Remove plan</button></div>
-      {showQuestions && <div id="plan-question-list"><div className="plan-tools"><input type="search" aria-label="Search plan questions" placeholder="Find a question…" value={search} onChange={e => { setSearch(e.target.value); if (e.target.value) setExpandedGroups(plan.planSubGroups.map(g => g.name)); }} /><select aria-label="Filter plan questions" value={filter} onChange={e => setFilter(e.target.value)}><option value="all">All questions</option><option value="todo">To do</option><option value="done">Completed</option></select></div>
+      {showQuestions && <div id="plan-question-list"><div className="plan-tools"><input type="search" aria-label="Search plan questions" placeholder="Find a question…" value={search} onChange={e => { setSearch(e.target.value); if (e.target.value) setExpandedGroups(plan.planSubGroups.map(g => g.name)); }} /><select aria-label="Filter plan questions" value={filter} onChange={e => setFilter(e.target.value)}><option value="all">All questions</option><option value="todo">To do</option><option value="done">Completed</option>{count.external > 0 && <option value="external">External items</option>}</select></div>
       <div className="plan-question-groups">{visibleGroups.length ? visibleGroups.map(group => <details key={`${plan.slug}-${group.name}`} open={expandedGroups.includes(group.name)} onToggle={e => { const open = e.currentTarget.open; setExpandedGroups(previous => open ? previous.includes(group.name) ? previous : [...previous, group.name] : previous.includes(group.name) ? previous.filter(name => name !== group.name) : previous); }}>
         <summary>{group.name}<span>{group.questions.filter(q => questionSolved(q, state)).length}/{group.questions.length}</span></summary>
         <ul>{group.questions.map(q => <li key={q.titleSlug} className={questionSolved(q, state) ? "question-done" : ""}>
-          <input type="checkbox" checked={questionSolved(q, state)} disabled={automatic.has(q.leetcodeSlug || q.titleSlug)} aria-label={`${q.title}${automatic.has(q.leetcodeSlug || q.titleSlug) ? ": automatically detected as solved" : ": mark complete"}`} onChange={() => toggleSolved(q.titleSlug)} />
-          <a href={questionUrl(q)} target="_blank" rel="noreferrer">{q.title}<small className={`question-difficulty ${q.difficulty.toLowerCase()}`}>{q.difficulty.toLowerCase()}{automatic.has(q.leetcodeSlug || q.titleSlug) ? " · auto" : ""}</small></a><span aria-hidden="true">↗</span>
+          {questionLeetcodeSlug(q) ? <span className={`question-sync-status ${questionSolved(q, state) ? "is-solved" : ""}`} role="img" aria-label={`${q.title}: ${questionSolved(q, state) ? "solved on LeetCode" : "not found in synced solves"}`}>{questionSolved(q, state) ? "✓" : "○"}</span> : <input type="checkbox" checked={questionSolved(q, state)} aria-label={`${q.title}: completed externally`} onChange={() => toggleExternalItem(q.titleSlug)} />}
+          <a href={questionUrl(q)} target="_blank" rel="noreferrer">{q.title}<small className={`question-difficulty ${q.difficulty.toLowerCase()}`}>{q.difficulty.toLowerCase()} · {questionLeetcodeSlug(q) ? questionSolved(q, state) ? "synced" : state.lastFullSyncAt ? "not solved" : "not verified" : "external item"}</small></a><span aria-hidden="true">↗</span>
         </li>)}</ul>
       </details>) : <p className="progress-note">No questions match this filter.</p>}</div></div>}
     </section>}
