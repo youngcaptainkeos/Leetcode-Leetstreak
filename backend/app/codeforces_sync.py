@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from .codeforces_client import fetch_accepted_history, CodeforcesError
 from .models import User, Solve, PlatformActivity
 from .point_calculator import recalculate_user_points
+from .timekeeping import IST, ist_date
+from .tracking import record_acceptance
 
 logger = logging.getLogger("codestreak.codeforces")
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -52,24 +54,51 @@ async def sync_codeforces_user(db: Session, user: User) -> int:
         for slug, row in incoming.items():
             solve = existing.get(slug)
             solved_at = datetime.fromtimestamp(row["timestamp"], timezone.utc).replace(tzinfo=None)
+            acc_event = record_acceptance(
+                db,
+                user_id,
+                platform="codeforces",
+                account_version=user.codeforces_account_version,
+                submission_id=str(row["submission_id"]),
+                title_slug=slug,
+                accepted_at=datetime.fromtimestamp(row["timestamp"], timezone.utc),
+                evidence_kind="provider_full",
+                first_solve_verified=True,
+            )
             if solve is None:
-                solve = Solve(user_id=user_id, title_slug=slug, platform="codeforces", is_daily=False, scoring_version="cf-linear-v1", solved_at=solved_at)
+                solve = Solve(
+                    user_id=user_id,
+                    title_slug=slug,
+                    platform="codeforces",
+                    is_daily=False,
+                    scoring_version="cf-linear-v1",
+                    solved_at=solved_at,
+                    first_solve_at=solved_at,
+                    first_solve_verified=True,
+                    account_version=user.codeforces_account_version,
+                )
                 db.add(solve)
+                db.flush()
                 added += 1
             elif not full and solve.solved_at < solved_at:
                 # An older first AC is outside this incremental scan's window.
                 if row["rating"] is not None:
                     solve.problem_rating = row["rating"]
+                acc_event.solve_id = solve.id
                 continue
             solve.title = row["title"]
             solve.solved_at = solved_at
+            solve.first_solve_at = solved_at
+            solve.first_solve_verified = True
+            solve.account_version = user.codeforces_account_version
             solve.source_handle = handle
             solve.source_submission_id = row["submission_id"]
             solve.problem_rating = row["rating"]
             solve.problem_url = row["url"]
             solve.difficulty = "Rated" if row["rating"] is not None else "Unrated"
+            acc_event.solve_id = solve.id
         db.flush()
-        counts = Counter(s.solved_at.replace(tzinfo=timezone.utc).astimezone(IST).date() for s in db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").all())
+        counts = Counter(ist_date(s.first_solve_at or s.solved_at) for s in db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").all())
         db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id, PlatformActivity.platform == "codeforces").delete()
         for day, count in counts.items():
             db.add(PlatformActivity(user_id=user_id, platform="codeforces", date=day, problems_solved=count))

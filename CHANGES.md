@@ -38,3 +38,41 @@ Addressed the critical OPS-03 startup/migration prerequisite before activating t
 ### Verification Evidence
 - 81 backend tests passed with zero failures (`backend/tests`), covering both SQLite and native PostgreSQL 16.
 - Concurrent migrations verified under thread pool execution against PostgreSQL advisory locks.
+
+---
+
+## 2026-11-06 — Step: M2-04 / DATA-02/03/04/09: Accepted Evidence Ingestion, Repeat Deduplication & Revision Awards
+
+### Summary of Changes
+Connected runtime syncing (`backend/app/scheduler.py` and `backend/app/codeforces_sync.py`) to the evidence and tracking pipeline. Ingested all AC submissions into `AcceptedSubmission`, eliminated the invalid calendar-to-solve conversion (DATA-03), deduplicated repeated submissions of the same problem into a single `Solve` ledger entry, enforced first-solve-only streaks in IST, and implemented revision awards (2 × streak multiplier after 7 elapsed days from first solve or last rewarded revision, with unrewarded attempts leaving the cooldown anchor intact). Clarified FEAT-01 in the implementation plan to ensure study plan playlists added by link are persisted directly to the backend profile rather than merely kept in local browser storage.
+
+### Detailed Changes
+1. **`backend/app/scheduler.py` (`poll_user`)**:
+   - Switched day boundaries to `ist_date` and `ist_today()`.
+   - Removed the blanket `submission_calendar` to `DailyActivity` population that falsely marked active calendar days as solved questions (DATA-03).
+   - Ingests each AC submission via `record_acceptance` with `evidence_kind="public_recent"`, `account_version=user.leetcode_account_version`.
+   - First-time solves create the unique `Solve` row with `first_solve_at = utc_storage(accepted_at)`, `first_solve_verified = True`, `account_version = user.leetcode_account_version`.
+   - Repeat acceptances of already solved questions link their `AcceptedSubmission.solve_id` without creating duplicate `Solve` entries or inflating new-question counts.
+   - Evaluates repeat acceptances for 7-day revision eligibility (`revision_due(accepted_at, anchor_time)`). When >= 7 elapsed days, records a `PointAward` of `kind="revision"` with `points = revision_points(streak_on_date)` (DATA-09). Unrewarded attempts do not reset the anchor.
+   - Updates `DailyActivity` strictly from verified first solves of distinct LeetCode problems on each IST date.
+
+2. **`backend/app/codeforces_sync.py` (`sync_codeforces_user`)**:
+   - Ingests each Codeforces AC submission via `record_acceptance` with `evidence_kind="provider_full"`, `first_solve_verified=True`.
+   - Sets `solve.first_solve_at = solved_at`, `solve.first_solve_verified = True`, `solve.account_version = user.codeforces_account_version`.
+   - Synchronizes `PlatformActivity` based on IST first solve dates.
+
+3. **`docs/IMPLEMENTATION_PLAN.md`**:
+   - Explicitly updated FEAT-01 implementation details to specify adding custom study plans/playlists via URL link or catalog into Progress, persisting user library choices and item completion directly to their authenticated backend account profile so that study plans and playlists are never just locally saved in browser storage.
+   - Added M2-04 verification entry to the implementation step sequence table.
+
+4. **`backend/tests/test_tracking_sync.py`**:
+   - Added 5 new tests covering:
+     1. First solve creation, evidence recording, and IST daily count population.
+     2. Repeat submission deduplication (does not add duplicate solve or extend streak).
+     3. Calendar activity alone without verified accepts does not create solved question counts (DATA-03).
+     4. 7-day revision eligibility, cooldown anchor preservation across unrewarded attempts, and recurring awards (DATA-09).
+     5. Codeforces sync evidence recording and first solve metadata.
+
+### Verification Evidence
+- 86 backend tests passed with zero failures (`backend/tests`).
+- Regression verified against both SQLite and local PostgreSQL test instances.
