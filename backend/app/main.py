@@ -360,6 +360,7 @@ async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest,
     if new_username.lower() != (user.leetcode_username or "").lower():
         capture_score_baseline(db, user.id)
         user.leetcode_account_version += 1
+        user.leetcode_last_sync = None
         user.leetcode_verified_at = None
         clear_tracking(db, user_id, "leetcode")
         db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "leetcode").delete()
@@ -407,6 +408,8 @@ async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequ
     async with user_sync_lock(user_id):
         db.refresh(user, with_for_update=True)
         if not user.codeforces_username or user.codeforces_username.lower() != handle.lower():
+            capture_score_baseline(db, user_id)
+            user.codeforces_account_version += 1
             clear_tracking(db, user_id, "codeforces")
             db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").delete()
             db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id, PlatformActivity.platform == "codeforces").delete()
@@ -568,6 +571,7 @@ async def confirm_handle_verification(
     now_utc = utc_now()
 
     if platform == "leetcode":
+        generation = user.leetcode_account_version
         token = user.leetcode_verification_token
         expires_at = user.leetcode_verification_expires_at
         handle = user.leetcode_pending_handle or user.leetcode_username
@@ -586,7 +590,16 @@ async def confirm_handle_verification(
                 detail=f"Verification code '{token}' not found on LeetCode profile for '{handle}'. Make sure you saved your profile changes and try again.",
             )
 
-        owner = db.query(User).filter(func.lower(User.leetcode_username) == handle.lower(), User.id != user_id).first()
+        db.refresh(user, with_for_update=True)
+        current_handle = user.leetcode_pending_handle or user.leetcode_username
+        if (user.leetcode_verification_token != token or current_handle != handle
+                or user.leetcode_account_version != generation
+                or user.leetcode_verification_expires_at is None
+                or utc_now() > user.leetcode_verification_expires_at):
+            raise HTTPException(status_code=409, detail="Verification changed or expired while checking the provider. Please start again.")
+        owner = db.query(User).filter(func.lower(User.leetcode_username) == handle.lower(), User.id != user_id).populate_existing().with_for_update().first()
+        if owner and owner.leetcode_verified_at:
+            raise HTTPException(status_code=409, detail="That LeetCode handle is already claimed and verified by another user.")
         if owner:
             owner.leetcode_username = f"claimed_{owner.id}_{secrets.token_hex(3)}"
             owner.leetcode_verified_at = None
@@ -611,6 +624,7 @@ async def confirm_handle_verification(
         )
 
     elif platform == "codeforces":
+        generation = user.codeforces_account_version
         token = user.codeforces_verification_token
         expires_at = user.codeforces_verification_expires_at
         handle = user.codeforces_pending_handle or user.codeforces_username
@@ -629,7 +643,16 @@ async def confirm_handle_verification(
                 detail=f"Verification code '{token}' not found on Codeforces profile for '{handle}'. Make sure you saved changes in Settings -> Social and try again.",
             )
 
-        owner = db.query(User).filter(func.lower(User.codeforces_username) == handle.lower(), User.id != user_id).first()
+        db.refresh(user, with_for_update=True)
+        current_handle = user.codeforces_pending_handle or user.codeforces_username
+        if (user.codeforces_verification_token != token or current_handle != handle
+                or user.codeforces_account_version != generation
+                or user.codeforces_verification_expires_at is None
+                or utc_now() > user.codeforces_verification_expires_at):
+            raise HTTPException(status_code=409, detail="Verification changed or expired while checking the provider. Please start again.")
+        owner = db.query(User).filter(func.lower(User.codeforces_username) == handle.lower(), User.id != user_id).populate_existing().with_for_update().first()
+        if owner and owner.codeforces_verified_at:
+            raise HTTPException(status_code=409, detail="That Codeforces handle is already claimed and verified by another user.")
         if owner:
             owner.codeforces_username = None
             owner.codeforces_verified_at = None

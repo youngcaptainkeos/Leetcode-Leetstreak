@@ -40,8 +40,11 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True, alrea
 
 
 async def _poll_user_inner(db: Session, user: User, sync_codeforces: bool = True) -> int:
+    requested_handle = user.leetcode_username
+    generation = user.leetcode_account_version
+    db.commit()  # Release the connection while waiting for provider responses.
     try:
-        data = await fetch_leetcode_user_data(user.leetcode_username)
+        data = await fetch_leetcode_user_data(requested_handle)
     except LeetCodeError as e:
         logger.warning("LeetCode fetch failed for %s: %s", user.leetcode_username, e)
         return await sync_codeforces_user(db, user, already_leased=True) if sync_codeforces and user.codeforces_username else 0
@@ -55,6 +58,8 @@ async def _poll_user_inner(db: Session, user: User, sync_codeforces: bool = True
             db.commit()
 
     db.refresh(user, with_for_update=True)
+    if user.leetcode_username != requested_handle or user.leetcode_account_version != generation:
+        return 0  # The response belongs to an account that has since been replaced.
 
     capture_score_baseline(db, user.id)
     previous_sync = user.leetcode_last_sync

@@ -90,6 +90,9 @@ jobs:
         run: |
           npm --prefix web run check
 
+      - name: TypeScript Check (Extension)
+        run: extension/node_modules/.bin/tsc --noEmit -p extension/tsconfig.json
+
       - name: Run Client Unit Tests
         run: |
           node --test extension/tests/*.test.mjs

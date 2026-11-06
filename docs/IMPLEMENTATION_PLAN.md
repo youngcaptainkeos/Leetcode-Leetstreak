@@ -17,7 +17,7 @@ This is the working checklist for the repository review. It covers every issue a
 - Keep personal details, real test addresses, account exports, credentials, and raw production logs out of this document and its completion evidence.
 - Evidence should identify the check and outcome without including private payloads.
 
-**Current state: 29 of 45 master items remain recorded complete; 13 previously completed claims reopened after the 2026-11-06 code review; 3 original notification items explicitly deferred (UI-03, UI-04, FEAT-07).** Earlier completion claims are implementation reports, not independently verified release evidence. Current fixes remain on `pre-launch`; production deployment, public-history publication and native extension acceptance are not complete. See the review follow-up table below. No production data repair has been executed.
+**Current state: 28 of 45 master items remain recorded complete; 14 previously completed claims reopened after the 2026-11-06 code review; 3 original notification items explicitly deferred (UI-03, UI-04, FEAT-07).** Earlier completion claims are implementation reports, not independently verified release evidence. Current fixes remain on `pre-launch`; production deployment, public-history publication and native extension acceptance are not complete. See the review follow-up table below. No production data repair has been executed.
 
 ### 2026-11-06 review correction and time-boxed follow-ups
 
@@ -28,10 +28,12 @@ Owner requested a 25-minute repair pass and deferral of longer work. These follo
 | REV-01 | Partially repaired; deferred integration | Public recent LeetCode acceptances no longer assert first-solve dates. Unverified history receives base-only credit and cannot contribute to streaks, period rankings or heatmap solves. **Automatic proof of new LeetCode first solves and future live daily-award issuance remain unimplemented**; this is a release blocker, not a policy change. Integrate trustworthy complete provider evidence and issue a single immutable daily award for each eligible official question. Current public-recent sync deliberately cannot award a new daily bonus without that proof. |
 | REV-02 | Safeguards repaired; deferred data operation | Recalculation preserves stored daily/revision amounts, does not infer bonuses from challenge archives, protects uncertain legacy combined daily totals using immutable snapshots, and flags reconciliation. Reads no longer mutate daily eligibility. Review a dry-run recovery report before any existing-user repair; check rows already produced by the earlier pre-launch code for falsely verified dates and miscredited awards. No production repair ran. |
 | REV-03 | Local repair; verification recorded below | Codeforces retains all accepted event IDs, deduplicates question entries, awards only newly observed eligible live revisions, preserves the earliest verified first solve across incremental windows, and includes revisions in stored totals. A newly discovered question in a truncated incremental window remains undated until a full scan proves its first acceptance. |
-| REV-04 | Deferred | Independently test coding-account rename/replacement/claim recovery, simultaneous verification and ownership races, preservation of the receiving account's unrelated data, and live provider failure paths. Existing unit-test passes are not proof of all lifecycle requirements. |
+| REV-04 | Targeted guards repaired; broader lifecycle deferred | Revalidate confirmation tokens, expiry and competing verified ownership after provider waits; reject stale LeetCode provider results after account replacement; increment Codeforces account generation on replacement. Independently test coding-account rename/replacement/claim recovery, simultaneous verification and ownership races, preservation of the receiving account's unrelated data, and live provider failure paths. Existing unit-test passes are not proof of all lifecycle requirements. |
 | REV-05 | Deferred release checkpoint | Native installed-extension/content-script verification, fresh-clone reproducibility, final privacy/history ref review and explicit shared-history publication approval, production rollout and public artifact checksum. An unchecked manual checklist or a private history rehearsal does not satisfy these gates. |
 | REV-06 | Deferred | Exercise sync work exceeding lease TTLs and add renewal/fencing where needed; test provider limits across real processes. Current coordination tests do not prove safety for arbitrarily long provider imports. |
 | REV-07 | Local repair; further UX deferred | Score breakdowns read stored base/daily/revision/protected-credit components; both clients show retained components and unknown-date/legacy notices. Rankings and heatmaps date points by awards, not accumulated question totals. Broader native browser visual acceptance is still required. |
+
+Additional expanded-review findings deferred: **REV-08**, stale release source-revision fallback/client compatibility metadata; **REV-09**, per-worker ZeroTrac cache divergence after globally leased refresh. Details and file coverage are in [ANTIGRAVITY_REVIEW.md](ANTIGRAVITY_REVIEW.md).
 
 The earlier checked detailed criteria for reopened items are historical claims and must be independently revalidated before their master checkbox is closed. The private history rehearsal is not published; prior permission to **prepare** a rewrite is not final permission to publish it.
 
@@ -103,7 +105,7 @@ The earlier checked detailed criteria for reopened items are historical claims a
 - [x] **OPS-02 · P1:** Configure stable signing keys and predictable session behavior.
 - [x] **OPS-03 · P2:** Remove full archive imports and all-user recalculation from startup.
 - [ ] **OPS-04 · P2:** Coordinate sync jobs and provider limits across processes.
-- [x] **OPS-05 · P1:** Make release versions and update metadata accurate.
+- [ ] **OPS-05 · P1:** Make release versions and update metadata accurate.
 - [x] **OPS-06 · P1:** Add regression coverage and continuous checks.
 - [x] **OPS-07 · P2:** Remove tracked environments and simplify generated output management.
 
@@ -1355,3 +1357,14 @@ M1-09 local acceptance: isolated PostgreSQL 16 exercised migration concurrency a
 - Codeforces repeat acceptances remain evidence, not duplicate questions; initial imports cannot mint revision awards and later live repeats follow the recurring seven-day cooldown.
 - Both clients display stored revisions/protected credit and uncertainty labels; no additional multiplier is applied to retained components.
 - Verified locally: 167 backend tests passed, including the configured native PostgreSQL checks; 26 client tests, both TypeScript checks, both builds, four byte-identical extension ZIPs, package/hygiene checks and headless browser login/session smoke tests passed. No real provider accounts or test emails were used. Commit label: `M2 review step 7: preserve awards and require verified activity evidence`. Release, data-repair and history publication are deferred as listed above.
+
+### Review step 8 — account identity response guards
+
+- Reject a verification if its token, target or expiry changed during the provider request, or if a competing owner became verified before confirmation.
+- Discard LeetCode profile responses belonging to a replaced account generation; reset the last-sync boundary when replacing LeetCode and increment the generation when replacing Codeforces.
+- Nineteen initial targeted identity/verification/sync tests passed locally, followed by the full 172-test suite including PostgreSQL. An additional generation-change regression is verified below. Broader simultaneous claim/recovery and recipient-history preservation remain deferred under REV-04; no claim of complete account-lifecycle safety is made.
+- The owner's additional request for every Antigravity changed line is tracked in [ANTIGRAVITY_REVIEW.md](ANTIGRAVITY_REVIEW.md), which enumerates every file in `fd9b051..8e9a07c` and explicitly distinguishes read, targeted, executed and pending coverage.
+
+Step 8 verification: the full 172-test backend suite including PostgreSQL passed before the final generation-change case; all six identity-guard regression tests and the new CI extension type-check command subsequently passed. Final combined suite: **173 backend tests passed, including configured native PostgreSQL checks**, with no skips. CI now explicitly type-checks the extension as well as the website. This remains a branch-only repair; no release or public-history mutation.
+
+Step 8 commit label: `M4 review step 8: reject stale identity responses and track full diff review`. Extension TypeScript CI command and hygiene checks passed; 11 package runtime references resolved. No client runtime changes after step 7, so its reviewed builds and identical ZIPs remain current.
