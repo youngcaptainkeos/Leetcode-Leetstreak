@@ -174,7 +174,7 @@ async def register_user(payload: RegisterRequest, background_tasks: BackgroundTa
         raise HTTPException(status_code=400, detail="An account with this email or Codeforces handle is already registered.")
     db.refresh(user)
 
-    # Ingest full history
+    # Public profile/recent AC sync remains partial history, not first-solve proof.
     await poll_user(db, user, sync_codeforces=False)
     if codeforces_handle:
         background_tasks.add_task(background_codeforces_sync, user.id)
@@ -341,6 +341,12 @@ async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest,
     except LeetCodeError as err:
         raise HTTPException(status_code=400, detail=str(err))
 
+    db.refresh(user, with_for_update=True)
+    if user.leetcode_username.casefold() != new_username.casefold():
+        user.leetcode_account_version += 1
+        user.leetcode_last_sync = None
+        user.leetcode_history_state = "partial"
+        user.leetcode_history_gap = True
     user.leetcode_username = new_username
     user.avatar_url = data.get("avatar_url")
     db.commit()
@@ -375,6 +381,7 @@ async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequ
     async with user_sync_lock(user_id):
         db.refresh(user, with_for_update=True)
         if not user.codeforces_username or user.codeforces_username.lower() != handle.lower():
+            user.codeforces_account_version += 1
             clear_tracking(db, user_id, "codeforces")
             db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").delete()
             db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id, PlatformActivity.platform == "codeforces").delete()

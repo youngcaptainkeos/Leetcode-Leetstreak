@@ -45,3 +45,18 @@ class ProviderIdentityTests(unittest.IsolatedAsyncioTestCase):
             result = await leetcode_client.fetch_leetcode_user_data("test_synthetic")
         self.assertEqual(result["difficulty_counts"], {"Easy": 3, "Medium": 0, "Hard": 0})
         self.assertEqual(result["official_streak"], 2)
+        self.assertTrue(result["recent_submissions_available"])
+
+    async def test_recent_query_errors_are_not_reported_as_successful_empty_history(self):
+        client_type = httpx.AsyncClient
+
+        def respond(request):
+            query = json.loads(request.content)["query"]
+            data = {"data": {"matchedUser": {"username": "demo_lc", "profile": {}, "userCalendar": {}}}} if "userFullProfile" in query else {"errors": [{"message": "synthetic unavailable history"}]}
+            return httpx.Response(200, json=data)
+
+        with patch.object(leetcode_client.httpx, "AsyncClient", side_effect=lambda **kwargs:
+                          client_type(**kwargs, transport=httpx.MockTransport(respond))):
+            result = await leetcode_client.fetch_leetcode_user_data("demo_lc")
+        self.assertFalse(result["recent_submissions_available"])
+        self.assertEqual(result["recent_submissions"], [])

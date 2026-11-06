@@ -5,8 +5,9 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 from .codeforces_client import fetch_accepted_history, CodeforcesError
-from .models import User, Solve, PlatformActivity
+from .models import User, Solve, PlatformActivity, AcceptedSubmission, PointAward
 from .point_calculator import recalculate_user_points
+from .tracking import ProviderAcceptance, capture_score_baseline, ingest_acceptances, validate_acceptances
 
 logger = logging.getLogger("codestreak.codeforces")
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -24,6 +25,8 @@ async def sync_codeforces_user(db: Session, user: User) -> int:
     async with lock:
         db.refresh(user)
         handle, user_id = user.codeforces_username, user.id
+        account_version = user.codeforces_account_version
+        previous_sync = user.codeforces_last_sync
         if not handle:
             return 0
         now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -35,25 +38,41 @@ async def sync_codeforces_user(db: Session, user: User) -> int:
         try:
             history = await fetch_accepted_history(handle, since)
         except CodeforcesError as error:
-            db.refresh(user)
-            user.codeforces_sync_error = str(error)[:300]
-            db.commit()
+            db.refresh(user, with_for_update=True)
+            if user.codeforces_username == handle and user.codeforces_account_version == account_version and user.codeforces_last_sync == previous_sync:
+                user.codeforces_sync_error = str(error)[:300]
+                db.commit()
+            else:
+                db.rollback()
             logger.warning("Codeforces sync unavailable for user %d", user_id)
             return 0
         db.refresh(user, with_for_update=True)
-        if user.codeforces_username != handle:
+        if (user.codeforces_username != handle or user.codeforces_account_version != account_version
+                or user.codeforces_last_sync != previous_sync):
+            db.rollback()
             return 0
+        evidence = [ProviderAcceptance(str(event["submission_id"]), row["slug"],
+                    datetime.fromtimestamp(event["timestamp"], timezone.utc).replace(tzinfo=None))
+                    for row in history for event in row["accepted_submissions"]]
+        validate_acceptances(evidence, "codeforces")
+        capture_score_baseline(db, user_id)
         existing = {s.title_slug: s for s in db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").all()}
         incoming = {row["slug"]: row for row in history}
         added = 0
         for slug, solve in existing.items():
             if slug not in incoming and (full or solve.solved_at.replace(tzinfo=timezone.utc).timestamp() >= since):
+                # Keep raw provider observations after a rejudgement. Revaluing
+                # explicit awards needs R3, not an implicit cascade deletion.
+                if db.query(PointAward.id).filter_by(solve_id=solve.id).first():
+                    raise ValueError("Awarded history requires explicit reconciliation")
+                db.query(AcceptedSubmission).filter_by(solve_id=solve.id).update(
+                    {AcceptedSubmission.solve_id: None, AcceptedSubmission.first_solve_verified: False}, synchronize_session="fetch")
                 db.delete(solve)
         for slug, row in incoming.items():
             solve = existing.get(slug)
             solved_at = datetime.fromtimestamp(row["timestamp"], timezone.utc).replace(tzinfo=None)
             if solve is None:
-                solve = Solve(user_id=user_id, title_slug=slug, platform="codeforces", is_daily=False, scoring_version="cf-linear-v1", solved_at=solved_at)
+                solve = Solve(user_id=user_id, title_slug=slug, platform="codeforces", account_version=account_version, is_daily=False, scoring_version="cf-linear-v1", solved_at=solved_at)
                 db.add(solve)
                 added += 1
             elif not full and solve.solved_at < solved_at:
@@ -69,6 +88,8 @@ async def sync_codeforces_user(db: Session, user: User) -> int:
             solve.problem_url = row["url"]
             solve.difficulty = "Rated" if row["rating"] is not None else "Unrated"
         db.flush()
+        ingest_acceptances(db, user_id, platform="codeforces", account_version=account_version,
+                           expected_handle=handle, submissions=evidence, complete_history=full)
         counts = Counter(s.solved_at.replace(tzinfo=timezone.utc).astimezone(IST).date() for s in db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").all())
         db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id, PlatformActivity.platform == "codeforces").delete()
         for day, count in counts.items():
@@ -86,16 +107,20 @@ async def sync_codeforces_user(db: Session, user: User) -> int:
 async def background_codeforces_sync(user_id: int):
     from .database import SessionLocal
     db = SessionLocal()
+    expected_account = None
     try:
         user = db.query(User).filter(User.id == user_id).first()
         if user:
+            expected_account = (user.codeforces_username, user.codeforces_account_version)
             await sync_codeforces_user(db, user)
     except Exception:
         db.rollback()
         logger.exception("Codeforces background sync failed for user %d", user_id)
-        user = db.query(User).filter(User.id == user_id).first()
-        if user:
+        user = db.query(User).filter(User.id == user_id).populate_existing().with_for_update().first()
+        if user and expected_account == (user.codeforces_username, user.codeforces_account_version):
             user.codeforces_sync_error = "Sync interrupted. Automatic syncing will retry later."
             db.commit()
+        else:
+            db.rollback()
     finally:
         db.close()

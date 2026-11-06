@@ -209,6 +209,7 @@ async def fetch_leetcode_user_data(username: str) -> dict:
 
         # Recent AC submissions for the solves ledger
         recent_submissions = []
+        recent_submissions_available = False
         try:
             ac_resp = await client.post(
                 GRAPHQL_URL,
@@ -217,7 +218,10 @@ async def fetch_leetcode_user_data(username: str) -> dict:
             )
             if ac_resp.status_code == 200:
                 ac_data = ac_resp.json()
-                recent_submissions = (ac_data.get("data") or {}).get("recentAcSubmissionList") or []
+                rows = (ac_data.get("data") or {}).get("recentAcSubmissionList")
+                if not ac_data.get("errors") and isinstance(rows, list):
+                    recent_submissions = rows
+                    recent_submissions_available = True
         except Exception as e:
             logger.warning("Recent AC submissions query failed for %s: %s", username, e)
 
@@ -230,6 +234,7 @@ async def fetch_leetcode_user_data(username: str) -> dict:
             "total_active_days": total_active_days,
             "submission_calendar": parsed_calendar,
             "recent_submissions": recent_submissions,
+            "recent_submissions_available": recent_submissions_available,
         }
 
 

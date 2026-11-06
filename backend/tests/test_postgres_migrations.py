@@ -143,6 +143,43 @@ class PostgresTrackingTests(LocalPostgresTests):
         with self.sessions() as session:
             self.assertEqual(session.query(ScoreSnapshot).one().payload["points"], 17.5)
 
+    def test_concurrent_full_acceptance_batches_link_one_question_and_one_first_proof(self):
+        from app.tracking import ProviderAcceptance, ingest_acceptances
+        from app.models import AcceptedSubmission, Solve, User
+        from datetime import datetime
+        with self.sessions.begin() as session:
+            session.query(User).filter_by(id=1).update({User.codeforces_username: "demo_cf"})
+            session.add(Solve(user_id=1, title_slug="cf-100-a", source_handle="demo_cf",
+                platform="codeforces", solved_at=datetime(2026, 1, 1)))
+
+        def ingest(_):
+            with self.sessions.begin() as session:
+                ingest_acceptances(session, 1, platform="codeforces", account_version=0,
+                    expected_handle="demo_cf", complete_history=True, submissions=[
+                        ProviderAcceptance("100", "cf-100-a", datetime(2026, 1, 1)),
+                        ProviderAcceptance("101", "cf-100-a", datetime(2026, 1, 8))])
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            list(pool.map(ingest, range(4)))
+        with self.sessions() as session:
+            solve = session.query(Solve).one()
+            self.assertEqual(solve.first_solve_at, datetime(2026, 1, 1))
+            self.assertTrue(solve.first_solve_verified)
+            self.assertEqual(session.query(AcceptedSubmission).count(), 2)
+            self.assertEqual(session.query(AcceptedSubmission).filter_by(first_solve_verified=True).count(), 1)
+            self.assertTrue(all(row.solve_id == solve.id for row in session.query(AcceptedSubmission)))
+
+    def test_acceptance_batch_respects_caller_rollback(self):
+        from app.tracking import ProviderAcceptance, ingest_acceptances
+        from app.models import AcceptedSubmission
+        from datetime import datetime
+        with self.sessions() as session:
+            ingest_acceptances(session, 1, platform="leetcode", account_version=0,
+                expected_handle="demo_coder", submissions=[ProviderAcceptance("100", "synthetic-question", datetime(2026, 1, 1))])
+            session.rollback()
+        with self.sessions() as session:
+            self.assertEqual(session.query(AcceptedSubmission).count(), 0)
+
 
 class PostgresStartupTests(LocalPostgresTests):
     def setUp(self):
