@@ -52,7 +52,7 @@ def _base64url_encode(data: bytes) -> str:
 def _base64url_decode(data_str: str) -> bytes:
     if not isinstance(data_str, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", data_str):
         raise ValueError("Invalid token encoding")
-    padding = '=' * (4 - (len(data_str) % 4))
+    padding = '=' * (-len(data_str) % 4)
     return base64.b64decode(data_str + padding, altchars=b'-_', validate=True)
 
 

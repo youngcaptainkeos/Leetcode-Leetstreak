@@ -40,6 +40,12 @@ Every implementation step needs a bounded scope, synthetic acceptance checks and
 
 Next M2 gates: establish stronger LC first-solve evidence without trusting client claims, finish history coverage/status and prove provider-backed rename continuity; add the bounded all-account reconciliation job before release. R3 runtime integration is checked locally, but DATA-01/03/04/05/08 and M2 are not declared complete while those gates remain open.
 
+### Owner testing checkpoint — 2026-11-07
+
+The owner authorized merging the current rebuild into `main` for deployed testing while retaining all existing branches. This is an intermediate testing checkpoint, not completion of M2 or approval for Chrome Web Store publication. The old `pre-launch` review branch remains preserved; further milestone work continues on `pre-launch-rebuild`.
+
+Before the merge, corrected JWT Base64 padding to add zero padding when a segment is already aligned. The previous calculation added four excess characters and failed strict decoding on Python 3.12. All seven existing authentication tests passed on Python 3.12. No signing key or account data changed. Automated GitHub CI is still pending restoration; prior local acceptance results do not constitute a green GitHub workflow. Live LeetCode first-solve/daily proof and the other M2 gates above remain unfinished.
+
 ## 1. How we will use this document
 
 This is the working checklist for the repository review. It covers every issue and proposed feature in that review, plus the requested cleanup for publishing clean public code. It describes future work; creating this document does not fix or verify the application.
