@@ -17,7 +17,7 @@ This is the working checklist for the repository review. It covers every issue a
 - Keep personal details, real test addresses, account exports, credentials, and raw production logs out of this document and its completion evidence.
 - Evidence should identify the check and outcome without including private payloads.
 
-**Current state: 28 of 45 master items remain recorded complete; 14 previously completed claims reopened after the 2026-11-06 code review; 3 original notification items explicitly deferred (UI-03, UI-04, FEAT-07).** Earlier completion claims are implementation reports, not independently verified release evidence. Current fixes remain on `pre-launch`; production deployment, public-history publication and native extension acceptance are not complete. See the review follow-up table below. No production data repair has been executed.
+**Current state: 17 of 45 master items remain recorded complete; expanded review reopened additional unsupported completion claims. Three original notification items remain explicitly deferred (UI-03, UI-04, FEAT-07).** Earlier completion claims are implementation reports, not independently verified release evidence. Current fixes remain on `pre-launch`; production deployment, public-history publication and native extension acceptance are not complete. See the review follow-up table below. No production data repair has been executed.
 
 ### 2026-11-06 review correction and time-boxed follow-ups
 
@@ -95,41 +95,41 @@ The earlier checked detailed criteria for reopened items are historical claims a
 - [x] **UI-02 · P1:** Repair immediate accepted-submission detection.
 - [ ] **UI-03 · P1 · Deferred:** Repair the friend notification page under Manifest V3 when the owner resumes that feature.
 - [ ] **UI-04 · P2 · Deferred:** Correct friend notification selection, deduplication, and platform labels later.
-- [x] **UI-05 · P1:** Prevent stale leaderboard responses and incorrect sorted caches.
-- [x] **UI-06 · P2:** Distinguish friend lookup failures from empty activity.
+- [ ] **UI-05 · P1:** Prevent stale leaderboard responses and incorrect sorted caches.
+- [ ] **UI-06 · P2:** Distinguish friend lookup failures from empty activity.
 - [x] **UI-07 · P2:** Keep the newest friend submission when merging activity sources.
 
 ### Reliability and maintenance
 
 - [x] **OPS-01 · P1:** Report email delivery failures honestly.
 - [x] **OPS-02 · P1:** Configure stable signing keys and predictable session behavior.
-- [x] **OPS-03 · P2:** Remove full archive imports and all-user recalculation from startup.
+- [ ] **OPS-03 · P2:** Remove full archive imports and all-user recalculation from startup.
 - [ ] **OPS-04 · P2:** Coordinate sync jobs and provider limits across processes.
 - [ ] **OPS-05 · P1:** Make release versions and update metadata accurate.
-- [x] **OPS-06 · P1:** Add regression coverage and continuous checks.
+- [ ] **OPS-06 · P1:** Add regression coverage and continuous checks.
 - [x] **OPS-07 · P2:** Remove tracked environments and simplify generated output management.
 
 ### Product features
 
-- [x] **FEAT-01 · P2:** Save plans, external completion, and preferences to the account.
-- [x] **FEAT-02 · P2:** Add Progress to the website.
+- [ ] **FEAT-01 · P2:** Save plans, external completion, and preferences to the account.
+- [ ] **FEAT-02 · P2:** Add Progress to the website.
 - [ ] **FEAT-03 · P1:** Show reliable sync status and history completeness.
 - [ ] **FEAT-04 · P2:** Add coding-account ownership verification and claim recovery.
 - [x] **FEAT-05 · P2:** Allow Codeforces unlinking.
-- [x] **FEAT-06 · P3:** Add weekly/monthly points rankings.
+- [ ] **FEAT-06 · P3:** Add weekly/monthly points rankings.
 - [ ] **FEAT-07 · P2 · Deferred:** Add friend notification preferences and quiet hours when that feature is resumed.
-- [x] **FEAT-08 · P3:** Add searchable history, longer activity views, and exports.
+- [ ] **FEAT-08 · P3:** Add searchable history, longer activity views, and exports.
 - [x] **FEAT-09 · P2:** Explain the browser-session requirement for complete LeetCode plan sync.
-- [x] **FEAT-10 · P2:** Add direct friendships independently of group membership.
+- [ ] **FEAT-10 · P2:** Add direct friendships independently of group membership.
 
 ### Public repository readiness
 
 - [x] **PUB-01 · P1:** Remove real test identities and personal development details.
 - [x] **PUB-02 · P1:** Remove or curate scratch scripts and abandoned experiments.
-- [x] **PUB-03 · P1:** Audit configuration, secrets, logs, and screenshots.
+- [ ] **PUB-03 · P1:** Audit configuration, secrets, logs, and screenshots.
 - [ ] **PUB-04 · P1:** Assess and remediate historical exposure in Git and published assets.
 - [ ] **PUB-05 · P1:** Publish clean extension packages and release artifacts.
-- [x] **PUB-06 · P2:** Rewrite public documentation around supported workflows.
+- [ ] **PUB-06 · P2:** Rewrite public documentation around supported workflows.
 - [ ] **PUB-07 · P1:** Complete a clean-clone and public-release review.
 
 ## 3. Implementation sequence and dependencies
@@ -1368,3 +1368,9 @@ M1-09 local acceptance: isolated PostgreSQL 16 exercised migration concurrency a
 Step 8 verification: the full 172-test backend suite including PostgreSQL passed before the final generation-change case; all six identity-guard regression tests and the new CI extension type-check command subsequently passed. Final combined suite: **173 backend tests passed, including configured native PostgreSQL checks**, with no skips. CI now explicitly type-checks the extension as well as the website. This remains a branch-only repair; no release or public-history mutation.
 
 Step 8 commit label: `M4 review step 8: reject stale identity responses and track full diff review`. Extension TypeScript CI command and hygiene checks passed; 11 package runtime references resolved. No client runtime changes after step 7, so its reviewed builds and identical ZIPs remain current.
+
+### Expanded review — owner extension through 07:10 IST, 2026-11-06
+
+Review only; application code and release artifacts unchanged. [ANTIGRAVITY_REVIEW.md](ANTIGRAVITY_REVIEW.md) records REV-10 through REV-27, priorities, evidence, repair directions and per-file coverage. Eight synthetic reproductions confirm account deletion, account-claim history mixing, stale progress updates, IST search bounds, scanner gaps, missing-metadata credit overlap, actual Striver removal and oversized imports. REV-23 explicitly identifies a defect in the previous repair, rather than attributing it to Antigravity.
+
+Before further reconciliation or release, prioritize REV-10/11/12/13/14/16/23/24 alongside existing REV-01–09. Reopened master items are not fixed by documenting them. Do not infer that every test assertion, generated bundle, external dataset mapping or remaining JSX line has been individually reviewed.
