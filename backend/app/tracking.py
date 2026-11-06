@@ -50,6 +50,7 @@ def capture_score_baseline(db: Session, user_id: int) -> ScoreSnapshot:
         "official_streak": user.official_streak,
         "solves": [{
             "id": solve.id, "platform": solve.platform, "title_slug": solve.title_slug,
+            "account_version": solve.account_version,
             "source_handle": solve.source_handle, "scoring_version": solve.scoring_version,
             "solved_at": solve.solved_at.isoformat(), "is_daily": solve.is_daily,
             "points_earned": safe_number(solve.points_earned), "difficulty": solve.difficulty,
@@ -96,3 +97,30 @@ def record_acceptance(db: Session, user_id: int, *, platform: str, account_versi
     db.add(event)
     db.flush()
     return event
+
+
+def award_live_revision(db: Session, solve: Solve, event: AcceptedSubmission, live_since: datetime | None):
+    """Reward only newly observed live repeats; history imports never mint revisions."""
+    from .timekeeping import revision_due, ist_date
+    from .platforms import daily_counts
+    from .streak import current_streak
+    from .scoring import revision_points, SCORING_VERSION
+    if live_since is None or event.accepted_at < utc_storage(live_since).replace(microsecond=0):
+        return None
+    latest = db.query(PointAward).filter_by(solve_id=solve.id, kind="revision").order_by(PointAward.earned_at.desc()).first()
+    anchor = latest.earned_at if latest else (solve.first_solve_at or solve.solved_at)
+    if anchor is None or not revision_due(event.accepted_at, anchor):
+        return None
+    key = f"revision:{solve.id}:{event.id}"
+    existing = db.query(PointAward).filter_by(award_key=key).first()
+    if existing:
+        return existing
+    streak = current_streak(set(daily_counts(db, [solve.user_id])[solve.user_id]), ist_date(event.accepted_at))
+    award = PointAward(award_key=key, user_id=solve.user_id, solve_id=solve.id,
+                       submission_id=event.id, kind="revision", points=revision_points(streak),
+                       earned_at=event.accepted_at, scoring_version=SCORING_VERSION,
+                       input_snapshot={"streak_days": streak, "anchor_time": anchor.isoformat(),
+                                       "accepted_at": event.accepted_at.isoformat()})
+    db.add(award)
+    db.flush()
+    return award

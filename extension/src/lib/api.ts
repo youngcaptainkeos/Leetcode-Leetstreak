@@ -29,6 +29,9 @@ export interface PointBreakdown {
   contest_rating?: number;
   is_daily: boolean;
   daily_bonus: number;
+  revision_bonus?: number;
+  protected_legacy_credit?: number;
+  score_components_state?: string;
   subtotal?: number;
   streak_days: number;
   streak_multiplier: number;

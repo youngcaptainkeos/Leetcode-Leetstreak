@@ -1130,7 +1130,7 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Dep
         medium_count=user.medium_count or 0,
         hard_count=user.hard_count or 0,
         current_streak=streak,
-        today_count=today_row.problems_solved if today_row else 0,
+        today_count=combined.get(today, 0),
         weekly_total=total_since_date(week_start),
         monthly_total=total_since_date(month_start),
         created_at=user.created_at,
@@ -1166,20 +1166,27 @@ def _compute_leaderboard(
 
         u_ids = [u.id for u in users]
         if u_ids:
-            award_sums = {
-                row[0]: float(row[1])
-                for row in db.query(
+            award_rows = (db.query(
                     PointAward.user_id,
+                    Solve.platform,
                     func.coalesce(func.sum(PointAward.points), 0),
                 )
+                .join(Solve, PointAward.solve_id == Solve.id)
                 .filter(
+                    or_(PointAward.kind == "revision", and_(Solve.first_solve_verified.is_(True), Solve.first_solve_at.isnot(None))),
                     PointAward.user_id.in_(u_ids),
+                    PointAward.kind != "legacy",
                     PointAward.earned_at >= start_dt,
                     PointAward.earned_at < end_dt,
                 )
-                .group_by(PointAward.user_id)
-                .all()
-            }
+                .group_by(PointAward.user_id, Solve.platform)
+                .all())
+            award_sums = defaultdict(float)
+            cf_award_sums = defaultdict(float)
+            for uid, platform, points in award_rows:
+                award_sums[uid] += float(points)
+                if platform == "codeforces":
+                    cf_award_sums[uid] += float(points)
 
             solve_period_rows = (
                 db.query(
@@ -1190,8 +1197,9 @@ def _compute_leaderboard(
                 )
                 .filter(
                     Solve.user_id.in_(u_ids),
-                    func.coalesce(Solve.first_solve_at, Solve.solved_at) >= start_dt,
-                    func.coalesce(Solve.first_solve_at, Solve.solved_at) < end_dt,
+                    Solve.first_solve_verified.is_(True),
+                    Solve.first_solve_at >= start_dt,
+                    Solve.first_solve_at < end_dt,
                 )
                 .group_by(Solve.user_id, Solve.platform)
                 .all()
@@ -1202,12 +1210,16 @@ def _compute_leaderboard(
                 pts_f = float(pts)
                 solve_sums[uid] = solve_sums.get(uid, 0.0) + pts_f
                 if plat == "codeforces":
-                    period_cf_stats[uid] = (count, pts_f)
+                    period_cf_stats[uid] = (count, cf_award_sums.get(uid, 0.0))
 
             for uid in u_ids:
-                u_pts = award_sums.get(uid, solve_sums.get(uid, 0.0))
+                u_pts = award_sums.get(uid, 0.0)
                 period_points_map[uid] = u_pts
-                cf_pts = period_cf_stats.get(uid, (0, 0.0))[1]
+                # Revisions belong to their award date, including when the first
+                # solve was outside this period.
+                cf_count = period_cf_stats.get(uid, (0, 0.0))[0]
+                cf_pts = cf_award_sums.get(uid, 0.0)
+                period_cf_stats[uid] = (cf_count, cf_pts)
                 period_lc_points_map[uid] = max(0.0, u_pts - cf_pts)
 
     # Pre-fetch today's active kudos (IST calendar day)
@@ -1247,12 +1259,12 @@ def _compute_leaderboard(
 
         if period in ("week", "month"):
             user_period_pts = period_points_map.get(user.id, 0.0)
-            points = int(round(user_period_pts))
+            points = round(user_period_pts, 4)
             cf_count = period_cf_stats.get(user.id, (0, 0.0))[0]
             cf_points = round(period_cf_stats.get(user.id, (0, 0.0))[1], 4)
             lc_points = round(period_lc_points_map.get(user.id, 0.0), 4)
         else:
-            points = int(round(user.points or 0.0))
+            points = round(user.points or 0.0, 4)
             cf_count = cf_stats.get(user.id, (0, 0))[0]
             cf_points = round(cf_stats.get(user.id, (0, 0))[1], 4)
             lc_points = round((user.points or 0) - cf_stats.get(user.id, (0, 0))[1], 4)
@@ -2035,53 +2047,26 @@ async def get_user_recent_solves(user_id: int, limit: int = Query(10, ge=1, le=1
             .all()
         )
 
-    today_daily_slug = await fetch_today_daily_challenge_slug()
-    active_dates = _active_dates(db, user_id)
-    daily_slugs_by_date = {
-        r.date: r.title_slug.lower()
-        for r in db.query(DailyChallenge).all()
-    }
-
-    db_changed = False
     results = []
     for s in solves:
-        if s.platform == "codeforces":
-            breakdown_data = compute_codeforces_points_breakdown(s.problem_rating, current_streak(active_dates, s.solved_at.replace(tzinfo=timezone.utc).astimezone(IST).date()))
-            points_val = s.points_earned or 0
-        else:
-            diff = s.difficulty
-            ac = s.ac_rate
-            if not diff or ac is None:
-                info = await fetch_problem_info(s.title_slug)
-                diff = info.get("difficulty") or "Medium"
-                ac = info.get("ac_rate")
-                s.difficulty = diff
-                s.ac_rate = ac
-                db_changed = True
-
-            solve_date = s.solved_at.date() if hasattr(s.solved_at, "date") else s.solved_at
-            scoring_dates = active_dates if user.codeforces_linked_at and s.solved_at >= user.codeforces_linked_at else {row.date for row in db.query(DailyActivity).filter(DailyActivity.user_id == user_id, DailyActivity.problems_solved > 0).all()}
-            streak_date = s.solved_at.replace(tzinfo=timezone.utc).astimezone(IST).date() if user.codeforces_linked_at and s.solved_at >= user.codeforces_linked_at else solve_date
-            streak_on_date = current_streak(scoring_dates, streak_date)
-            is_daily = (
-                bool(getattr(s, "is_daily", False))
-                or bool(today_daily_slug and solve_date == date.today() and s.title_slug.lower() == today_daily_slug.lower())
-                or bool(solve_date in daily_slugs_by_date and s.title_slug.lower() == daily_slugs_by_date[solve_date])
-            )
-            if is_daily and not getattr(s, "is_daily", False):
-                s.is_daily = True
-                db_changed = True
-
-            breakdown_data = compute_solve_points_breakdown(
-                title_slug=s.title_slug,
-                difficulty=diff,
-                ac_rate=ac,
-                is_daily=is_daily,
-                streak_days=streak_on_date,
-            )
-            points_val = breakdown_data["points_earned"]
-        # Report the ledger award; a read must never alter already counted points.
-        breakdown_data["points_earned"] = s.points_earned or 0
+        # Reads display stored component awards; they never infer daily eligibility
+        # or rewrite history based on an archive/current challenge lookup.
+        awards = db.query(PointAward).filter_by(solve_id=s.id).all()
+        amounts = defaultdict(float)
+        for award in awards:
+            amounts[award.kind] += float(award.points)
+        breakdown_data = None
+        if awards:
+            breakdown_data = {
+                "difficulty": s.difficulty, "contest_rating": s.problem_rating,
+                "base_points": amounts["base"], "raw_base_points": amounts["base"],
+                "daily_bonus": amounts["daily"], "revision_bonus": amounts["revision"],
+                "protected_legacy_credit": amounts["legacy"],
+                "score_components_state": s.score_components_state,
+                "is_daily": amounts["daily"] > 0,
+                "subtotal": sum(amounts.values()), "streak_multiplier": 1.0,
+                "points_earned": s.points_earned or 0,
+            }
         points_val = s.points_earned or 0
 
         results.append(
@@ -2094,12 +2079,9 @@ async def get_user_recent_solves(user_id: int, limit: int = Query(10, ge=1, le=1
                 source_handle=s.source_handle, source_submission_id=s.source_submission_id,
                 problem_rating=s.problem_rating, scoring_version=s.scoring_version,
                 points_earned=points_val,
-                breakdown=PointBreakdownSchema(**breakdown_data),
+                breakdown=PointBreakdownSchema(**breakdown_data) if breakdown_data is not None else None,
             )
         )
-
-    if db_changed:
-        db.commit()
 
     return results
 
@@ -2290,7 +2272,10 @@ def get_user_activity_heatmap(
 
     point_rows = (
         db.query(PointAward.earned_at, PointAward.points)
+        .join(Solve, PointAward.solve_id == Solve.id)
         .filter(
+            PointAward.kind != "legacy",
+            or_(PointAward.kind == "revision", and_(Solve.first_solve_verified.is_(True), Solve.first_solve_at.isnot(None))),
             PointAward.user_id == user_id,
             PointAward.earned_at >= start_utc,
             PointAward.earned_at < end_utc,
@@ -2305,11 +2290,12 @@ def get_user_activity_heatmap(
 
     # Platforms and solves active per day
     solve_rows = (
-        db.query(Solve.solved_at, Solve.platform, Solve.points_earned)
+        db.query(Solve.first_solve_at, Solve.platform, Solve.points_earned)
         .filter(
             Solve.user_id == user_id,
-            Solve.solved_at >= start_utc,
-            Solve.solved_at < end_utc,
+            Solve.first_solve_verified.is_(True),
+            Solve.first_solve_at >= start_utc,
+            Solve.first_solve_at < end_utc,
         )
         .all()
     )
@@ -2325,8 +2311,7 @@ def get_user_activity_heatmap(
 
     for d, c in daily_solve_counts.items():
         combined_counts[d] = max(combined_counts.get(d, 0), c)
-        if not daily_points[d]:
-            daily_points[d] = daily_solve_pts[d]
+        # Points are dated by their awards, never by an accumulated solve total.
 
     day_list = []
     active_count = 0

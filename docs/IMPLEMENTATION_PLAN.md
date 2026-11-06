@@ -17,7 +17,23 @@ This is the working checklist for the repository review. It covers every issue a
 - Keep personal details, real test addresses, account exports, credentials, and raw production logs out of this document and its completion evidence.
 - Evidence should identify the check and outcome without including private payloads.
 
-**Current state: 42 of 45 items completed; 3 notification items explicitly deferred (UI-03, UI-04, FEAT-07); all milestone execution and release gates complete on pre-launch.** DATA-09 tracks revision scoring and FEAT-10 tracks direct friendships without shared groups. Only checks explicitly recorded as passed have been performed locally; unchecked criteria and production release checks remain pending. This is a source-based plan, not proof of current production behavior or hosting configuration.
+**Current state: 29 of 45 master items remain recorded complete; 13 previously completed claims reopened after the 2026-11-06 code review; 3 original notification items explicitly deferred (UI-03, UI-04, FEAT-07).** Earlier completion claims are implementation reports, not independently verified release evidence. Current fixes remain on `pre-launch`; production deployment, public-history publication and native extension acceptance are not complete. See the review follow-up table below. No production data repair has been executed.
+
+### 2026-11-06 review correction and time-boxed follow-ups
+
+Owner requested a 25-minute repair pass and deferral of longer work. These follow-ups are separate from the three originally deferred friend notification items.
+
+| ID | State | Scope / remaining work |
+|---|---|---|
+| REV-01 | Partially repaired; deferred integration | Public recent LeetCode acceptances no longer assert first-solve dates. Unverified history receives base-only credit and cannot contribute to streaks, period rankings or heatmap solves. **Automatic proof of new LeetCode first solves and future live daily-award issuance remain unimplemented**; this is a release blocker, not a policy change. Integrate trustworthy complete provider evidence and issue a single immutable daily award for each eligible official question. Current public-recent sync deliberately cannot award a new daily bonus without that proof. |
+| REV-02 | Safeguards repaired; deferred data operation | Recalculation preserves stored daily/revision amounts, does not infer bonuses from challenge archives, protects uncertain legacy combined daily totals using immutable snapshots, and flags reconciliation. Reads no longer mutate daily eligibility. Review a dry-run recovery report before any existing-user repair; check rows already produced by the earlier pre-launch code for falsely verified dates and miscredited awards. No production repair ran. |
+| REV-03 | Local repair; verification recorded below | Codeforces retains all accepted event IDs, deduplicates question entries, awards only newly observed eligible live revisions, preserves the earliest verified first solve across incremental windows, and includes revisions in stored totals. A newly discovered question in a truncated incremental window remains undated until a full scan proves its first acceptance. |
+| REV-04 | Deferred | Independently test coding-account rename/replacement/claim recovery, simultaneous verification and ownership races, preservation of the receiving account's unrelated data, and live provider failure paths. Existing unit-test passes are not proof of all lifecycle requirements. |
+| REV-05 | Deferred release checkpoint | Native installed-extension/content-script verification, fresh-clone reproducibility, final privacy/history ref review and explicit shared-history publication approval, production rollout and public artifact checksum. An unchecked manual checklist or a private history rehearsal does not satisfy these gates. |
+| REV-06 | Deferred | Exercise sync work exceeding lease TTLs and add renewal/fencing where needed; test provider limits across real processes. Current coordination tests do not prove safety for arbitrarily long provider imports. |
+| REV-07 | Local repair; further UX deferred | Score breakdowns read stored base/daily/revision/protected-credit components; both clients show retained components and unknown-date/legacy notices. Rankings and heatmaps date points by awards, not accumulated question totals. Broader native browser visual acceptance is still required. |
+
+The earlier checked detailed criteria for reopened items are historical claims and must be independently revalidated before their master checkbox is closed. The private history rehearsal is not published; prior permission to **prepare** a rewrite is not final permission to publish it.
 
 ### Execution authorization and branch sequence — owner instruction
 
@@ -61,15 +77,15 @@ This is the working checklist for the repository review. It covers every issue a
 
 ### Scoring and data correctness
 
-- [x] **DATA-01 · P1:** Reconcile history when a LeetCode handle changes.
+- [ ] **DATA-01 · P1:** Reconcile history when a LeetCode handle changes.
 - [x] **DATA-02 · P1:** Keep one unique question entry and deduplicate all repeated submissions.
-- [x] **DATA-03 · P1:** Separate submission activity from verified accepted solves.
-- [x] **DATA-04 · P1:** Represent and reconcile incomplete LeetCode history.
+- [ ] **DATA-03 · P1:** Separate submission activity from verified accepted solves.
+- [ ] **DATA-04 · P1:** Represent and reconcile incomplete LeetCode history.
 - [x] **DATA-05 · P1:** Revalue historical base points fairly for all users while retaining earned daily bonuses.
-- [x] **DATA-06 · P1:** Use IST for all product day/week/month/challenge boundaries; retain UTC timestamp storage.
-- [x] **DATA-07 · P1:** Use one calculation for stored points and score breakdowns.
-- [x] **DATA-08 · P2:** Retain earned daily awards separately and prevent retrospective daily bonuses on imported history.
-- [x] **DATA-09 · P2:** Award 2 revision points for an accepted repeat after at least one week, without extending the streak or adding another question entry.
+- [ ] **DATA-06 · P1:** Use IST for all product day/week/month/challenge boundaries; retain UTC timestamp storage.
+- [ ] **DATA-07 · P1:** Use one calculation for stored points and score breakdowns.
+- [ ] **DATA-08 · P2:** Retain earned daily awards separately and prevent retrospective daily bonuses on imported history.
+- [ ] **DATA-09 · P2:** Award 2 revision points for an accepted repeat after at least one week, without extending the streak or adding another question entry.
 
 ### Extension and website behavior
 
@@ -86,7 +102,7 @@ This is the working checklist for the repository review. It covers every issue a
 - [x] **OPS-01 · P1:** Report email delivery failures honestly.
 - [x] **OPS-02 · P1:** Configure stable signing keys and predictable session behavior.
 - [x] **OPS-03 · P2:** Remove full archive imports and all-user recalculation from startup.
-- [x] **OPS-04 · P2:** Coordinate sync jobs and provider limits across processes.
+- [ ] **OPS-04 · P2:** Coordinate sync jobs and provider limits across processes.
 - [x] **OPS-05 · P1:** Make release versions and update metadata accurate.
 - [x] **OPS-06 · P1:** Add regression coverage and continuous checks.
 - [x] **OPS-07 · P2:** Remove tracked environments and simplify generated output management.
@@ -95,8 +111,8 @@ This is the working checklist for the repository review. It covers every issue a
 
 - [x] **FEAT-01 · P2:** Save plans, external completion, and preferences to the account.
 - [x] **FEAT-02 · P2:** Add Progress to the website.
-- [x] **FEAT-03 · P1:** Show reliable sync status and history completeness.
-- [x] **FEAT-04 · P2:** Add coding-account ownership verification and claim recovery.
+- [ ] **FEAT-03 · P1:** Show reliable sync status and history completeness.
+- [ ] **FEAT-04 · P2:** Add coding-account ownership verification and claim recovery.
 - [x] **FEAT-05 · P2:** Allow Codeforces unlinking.
 - [x] **FEAT-06 · P3:** Add weekly/monthly points rankings.
 - [ ] **FEAT-07 · P2 · Deferred:** Add friend notification preferences and quiet hours when that feature is resumed.
@@ -109,10 +125,10 @@ This is the working checklist for the repository review. It covers every issue a
 - [x] **PUB-01 · P1:** Remove real test identities and personal development details.
 - [x] **PUB-02 · P1:** Remove or curate scratch scripts and abandoned experiments.
 - [x] **PUB-03 · P1:** Audit configuration, secrets, logs, and screenshots.
-- [x] **PUB-04 · P1:** Assess and remediate historical exposure in Git and published assets.
-- [x] **PUB-05 · P1:** Publish clean extension packages and release artifacts.
+- [ ] **PUB-04 · P1:** Assess and remediate historical exposure in Git and published assets.
+- [ ] **PUB-05 · P1:** Publish clean extension packages and release artifacts.
 - [x] **PUB-06 · P2:** Rewrite public documentation around supported workflows.
-- [x] **PUB-07 · P1:** Complete a clean-clone and public-release review.
+- [ ] **PUB-07 · P1:** Complete a clean-clone and public-release review.
 
 ## 3. Implementation sequence and dependencies
 
@@ -1177,15 +1193,15 @@ Do not paste discovered sensitive values or identities into public issues, this 
 - [x] Privately inspect reachable history/refs and published surfaces for the categories identified in PUB-01/03. Report locations and exposure classes, not raw sensitive values.
 - [x] Choose the least disruptive sufficient approach: ordinary cleanup for harmless clutter, targeted history sanitization for sensitive content, or a clean public release repository while retaining the original privately where appropriate.
 - [x] Prepare a concrete history-remediation plan, private backup, affected refs, collaborator instructions, and verification procedure. Prepared privately; backup restoration/integrity verified.
-- [x] Obtain explicit approval of the reviewed proposal before rewriting shared history, force-pushing, removing public releases, or replacing a repository.
-- [x] Remove/update owned exposed release artifacts and request provider/cache remediation where applicable. Document that forks, clones, and third-party caches cannot be guaranteed erased.
-- [x] Re-scan the intended public refs/artifacts and record the outcome privately. Avoid promising that all historical traces are gone.
+- [ ] Obtain explicit approval of the reviewed proposal before rewriting shared history, force-pushing, removing public releases, or replacing a repository.
+- [ ] Remove/update owned exposed release artifacts and request provider/cache remediation where applicable. Document that forks, clones, and third-party caches cannot be guaranteed erased.
+- [ ] Re-scan the intended public refs/artifacts and record the outcome privately. Avoid promising that all historical traces are gone.
 
 **Acceptance**
 
 - [x] The owner has reviewed the exposure inventory and selected the public-history strategy.
-- [x] Required credential rotations and owned-surface remediation are complete, with remaining external-copy limitations stated.
-- [x] The intended public refs/assets contain no known unresolved disallowed material; collaborators have safe migration instructions if history changed.
+- [ ] Required credential rotations and owned-surface remediation are complete, with remaining external-copy limitations stated.
+- [ ] The intended public refs/assets contain no known unresolved disallowed material; collaborators have safe migration instructions if history changed.
 
 ### PUB-05 — Clean extension packages and release artifacts
 
@@ -1201,13 +1217,13 @@ Do not paste discovered sensitive values or identities into public issues, this 
 - [x] Exclude scratch tools, personal demonstrations, environment files, databases, debug pages, unintended source maps, and duplicate obsolete assets.
 - [x] Verify `manifest.json` is at the ZIP root, all manifest/HTML references resolve, and version/compatibility metadata matches the release record.
 - [x] Produce one archive and mirror it to required destinations; record/check hashes. Inspect archive entries and decoded text as well as source files.
-- [x] Confirm that the hosted download points to the reviewed artifact during an authorized release; replace/remove obsolete owned artifacts through the approved release process.
+- [ ] Confirm that the hosted download points to the reviewed artifact during an authorized release; replace/remove obsolete owned artifacts through the approved release process.
 
 **Acceptance**
 
 - [x] Archive contents contain only intended runtime assets and no unapproved identity/configuration data.
 - [x] Required ZIP copies are byte-identical, installable, and correspond to the recorded source/version.
-- [x] When released, the downloaded public artifact matches the reviewed checksum.
+- [ ] When released, the downloaded public artifact matches the reviewed checksum.
 
 ### PUB-06 — Public documentation and contributor experience
 
@@ -1246,13 +1262,13 @@ Do not paste discovered sensitive values or identities into public issues, this 
 - [x] Follow public setup instructions, run the authorized checks/builds with synthetic data, and inspect the resulting source/package/Docker contexts.
 - [x] Confirm public refs/history decisions, required attribution, release versions, secret hygiene, and absence of personal test material.
 - [x] Record remaining known limitations, deferred features, backend/client compatibility, rollback procedure, and the final reviewed revision/checksums.
-- [x] Complete the separately authorized release. Verify status and public read-only flows without opening the Render debugger or sending test emails to real recipients.
+- [ ] Complete the separately authorized release. Verify status and public read-only flows without opening the Render debugger or sending test emails to real recipients.
 
 **Acceptance**
 
-- [x] Clean-clone setup and relevant checks succeed using only documented dependencies and fictional/local configuration.
-- [x] The source and generated deliverables meet the public privacy/cleanup checklist.
-- [x] Release state is recorded accurately as local-only, branch-pushed, or deployed-and-verified; unresolved blockers remain unchecked.
+- [ ] Clean-clone setup and relevant checks succeed using only documented dependencies and fictional/local configuration.
+- [ ] The source and generated deliverables meet the public privacy/cleanup checklist.
+- [ ] Release state is recorded accurately as local-only, branch-pushed, or deployed-and-verified; unresolved blockers remain unchecked.
 
 ## 10. Verification and completion record
 
@@ -1331,3 +1347,11 @@ M1-03 (`f9f07a3`) evidence: 22 backend tests passed using synthetic users and a 
 | 2026-11-05 | Added owner-requested FEAT-10 for backend-persisted direct friendships independent of groups (45 total items). Mutual-request/discovery details remain pending. Owner separately authorized merging progress-bar into main and testing the Codeforces integration; pre-launch milestone implementation remains on hold. |
 
 M1-09 local acceptance: isolated PostgreSQL 16 exercised migration concurrency and transactional recovery. Browser checks exposed and now cover a website password-change bug where a session token was written through account-scoped dashboard storage. Both client flows pass with intercepted local APIs and mocked providers; no production accounts or emails were used. Credential invalidation is owner-confirmed, not tested using exposed passwords.
+
+### 2026-11-06 review repair pass — branch only
+
+- Replaced archive-derived daily re-awarding with immutable retained components and protected legacy combined credit.
+- Public-recent LeetCode solves are explicitly undated; verified first-solve records alone drive activity and streak counts. Period points use award dates and preserve fractional ordering.
+- Codeforces repeat acceptances remain evidence, not duplicate questions; initial imports cannot mint revision awards and later live repeats follow the recurring seven-day cooldown.
+- Both clients display stored revisions/protected credit and uncertainty labels; no additional multiplier is applied to retained components.
+- Verified locally: 167 backend tests passed, including the configured native PostgreSQL checks; 26 client tests, both TypeScript checks, both builds, four byte-identical extension ZIPs, package/hygiene checks and headless browser login/session smoke tests passed. No real provider accounts or test emails were used. Commit label: `M2 review step 7: preserve awards and require verified activity evidence`. Release, data-repair and history publication are deferred as listed above.

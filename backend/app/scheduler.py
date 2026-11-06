@@ -16,7 +16,7 @@ from .point_calculator import recalculate_user_points
 from .contest_ratings import refresh_zerotrac_dataset
 from .codeforces_sync import sync_codeforces_user
 from .timekeeping import IST, ist_date, ist_today, utc_storage, revision_due
-from .tracking import record_acceptance
+from .tracking import record_acceptance, capture_score_baseline, award_live_revision
 from .scoring import revision_points, SCORING_VERSION
 from .platforms import daily_counts
 from .streak import current_streak
@@ -55,6 +55,9 @@ async def _poll_user_inner(db: Session, user: User, sync_codeforces: bool = True
             db.commit()
 
     db.refresh(user, with_for_update=True)
+
+    capture_score_baseline(db, user.id)
+    previous_sync = user.leetcode_last_sync
 
     # 1. Update user metadata & difficulty totals
     if data.get("avatar_url"):
@@ -113,9 +116,9 @@ async def _poll_user_inner(db: Session, user: User, sync_codeforces: bool = True
                 difficulty=prob_info.get("difficulty"),
                 ac_rate=prob_info.get("ac_rate"),
                 solved_at=utc_storage(accepted_at),
-                first_solve_at=utc_storage(accepted_at),
-                first_solve_verified=True,
-                is_daily=is_daily_solve,
+                first_solve_at=None,
+                first_solve_verified=False,
+                is_daily=False,
                 account_version=user.leetcode_account_version,
                 score_components_state="points-components-v2",
             )
@@ -128,36 +131,7 @@ async def _poll_user_inner(db: Session, user: User, sync_codeforces: bool = True
             solve = existing_solves[title_slug]
             acc_event.solve_id = solve.id
 
-            # DATA-09: check 7-day revision eligibility from first solve or last rewarded revision
-            latest_revision = (
-                db.query(PointAward)
-                .filter(PointAward.solve_id == solve.id, PointAward.kind == "revision")
-                .order_by(PointAward.earned_at.desc())
-                .first()
-            )
-            anchor_time = latest_revision.earned_at if latest_revision else (solve.first_solve_at or solve.solved_at)
-            if anchor_time and revision_due(accepted_at, anchor_time):
-                award_key = f"revision:{solve.id}:{acc_event.id}"
-                if not db.query(PointAward.id).filter(PointAward.award_key == award_key).first():
-                    active_dates = set(daily_counts(db, [user.id])[user.id])
-                    streak_on_date = current_streak(active_dates, day)
-                    rev_pts = revision_points(streak_on_date)
-                    db.add(PointAward(
-                        award_key=award_key,
-                        user_id=user.id,
-                        solve_id=solve.id,
-                        submission_id=acc_event.id,
-                        kind="revision",
-                        points=rev_pts,
-                        earned_at=utc_storage(accepted_at),
-                        scoring_version=SCORING_VERSION,
-                        input_snapshot={
-                            "streak_days": streak_on_date,
-                            "anchor_time": anchor_time.isoformat(),
-                            "accepted_at": utc_storage(accepted_at).isoformat(),
-                        },
-                    ))
-                    db.flush()
+            award_live_revision(db, solve, acc_event, previous_sync)
 
     # 3. Update DailyActivity strictly from verified first solves of distinct LeetCode problems
     lc_solves = db.query(Solve).filter(
@@ -167,7 +141,7 @@ async def _poll_user_inner(db: Session, user: User, sync_codeforces: bool = True
     counts_by_day = Counter(
         ist_date(s.first_solve_at or s.solved_at)
         for s in lc_solves
-        if (s.first_solve_verified or s.first_solve_at is not None or s.solved_at is not None)
+        if s.first_solve_verified and s.first_solve_at is not None
     )
     db.query(DailyActivity).filter(DailyActivity.user_id == user.id).delete()
     for day, count in counts_by_day.items():
@@ -176,7 +150,7 @@ async def _poll_user_inner(db: Session, user: User, sync_codeforces: bool = True
 
     user.leetcode_last_sync = datetime.now(timezone.utc).replace(tzinfo=None)
     total_known = (user.easy_count or 0) + (user.medium_count or 0) + (user.hard_count or 0)
-    user.leetcode_history_gap = total_known > len(lc_solves)
+    user.leetcode_history_gap = total_known > len(lc_solves) or any(not s.first_solve_verified or s.first_solve_at is None for s in lc_solves)
     user.leetcode_history_state = "partial" if user.leetcode_history_gap else "complete"
 
     recalculate_user_points(user, db, today_daily_slug=today_daily_slug)

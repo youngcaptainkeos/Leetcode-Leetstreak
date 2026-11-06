@@ -7,9 +7,13 @@ def daily_counts(db: Session, user_ids: list[int]) -> dict:
     counts = defaultdict(lambda: defaultdict(int))
     if not user_ids:
         return counts
-    for model in (DailyActivity, PlatformActivity):
-        for row in db.query(model).filter(model.user_id.in_(user_ids), model.problems_solved > 0).all():
-            counts[row.user_id][row.date] += row.problems_solved
+    # Calendar activity and imported timestamps cannot establish first solves.
+    from .timekeeping import ist_date
+    rows = db.query(Solve).filter(Solve.user_id.in_(user_ids),
+                                  Solve.first_solve_verified.is_(True),
+                                  Solve.first_solve_at.isnot(None)).all()
+    for row in rows:
+        counts[row.user_id][ist_date(row.first_solve_at)] += 1
     return counts
 
 

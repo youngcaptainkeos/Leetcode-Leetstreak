@@ -71,6 +71,7 @@ class TestPeriodRankings(unittest.TestCase):
             difficulty="Easy",
             solved_at=now_utc,
             first_solve_at=now_utc,
+            first_solve_verified=True,
             points_earned=15.0,
         )
         self.db.add(solve_b1)
@@ -96,6 +97,7 @@ class TestPeriodRankings(unittest.TestCase):
             difficulty="Medium",
             solved_at=now_utc,
             first_solve_at=now_utc,
+            first_solve_verified=True,
             points_earned=10.0,
         )
         solve_c2 = Solve(
@@ -106,6 +108,7 @@ class TestPeriodRankings(unittest.TestCase):
             difficulty="800",
             solved_at=now_utc,
             first_solve_at=now_utc,
+            first_solve_verified=True,
             points_earned=10.0,
         )
         self.db.add_all([solve_c1, solve_c2])
@@ -141,6 +144,7 @@ class TestPeriodRankings(unittest.TestCase):
             difficulty="Hard",
             solved_at=past_dt,
             first_solve_at=past_dt,
+            first_solve_verified=True,
             points_earned=30.0,
         )
         self.db.add(solve_a_old)
@@ -221,6 +225,7 @@ class TestPeriodRankings(unittest.TestCase):
             difficulty="Medium",
             solved_at=now_utc,
             first_solve_at=now_utc,
+            first_solve_verified=True,
             points_earned=25.0,
         )
         self.db.add(solve)

@@ -22,6 +22,9 @@ class PointBreakdownSchema(BaseModel):
     contest_rating: Optional[float] = None
     is_daily: bool = False
     daily_bonus: float = 0.0
+    revision_bonus: float = 0.0
+    protected_legacy_credit: float = 0.0
+    score_components_state: Optional[str] = None
     subtotal: float = 0.0
     streak_days: int = 0
     streak_multiplier: float = 1.0
@@ -184,7 +187,7 @@ class LeaderboardEntry(BaseModel):
     easy_count: int = 0
     medium_count: int = 0
     hard_count: int = 0
-    points: int = 0
+    points: float = 0
     weekly_total: int
     current_streak: int
     consistency_score: float  # 0-100, active days / 7

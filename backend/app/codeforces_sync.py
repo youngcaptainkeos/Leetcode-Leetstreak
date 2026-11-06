@@ -5,10 +5,10 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 from .codeforces_client import fetch_accepted_history, CodeforcesError
-from .models import User, Solve, PlatformActivity
+from .models import User, Solve, PlatformActivity, PointAward, AcceptedSubmission
 from .point_calculator import recalculate_user_points
 from .timekeeping import IST, ist_date
-from .tracking import record_acceptance
+from .tracking import record_acceptance, capture_score_baseline, award_live_revision
 
 from .leases import user_sync_lease, is_lease_active
 
@@ -52,6 +52,8 @@ async def sync_codeforces_user(db: Session, user: User, already_leased: bool = F
 async def _sync_codeforces_user_inner(db: Session, user: User) -> int:
     db.refresh(user)
     handle, user_id = user.codeforces_username, user.id
+    generation = user.codeforces_account_version
+    previous_sync = user.codeforces_last_sync
     if not handle:
         return 0
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -69,28 +71,20 @@ async def _sync_codeforces_user_inner(db: Session, user: User) -> int:
         logger.warning("Codeforces sync unavailable for user %d", user_id)
         return 0
     db.refresh(user, with_for_update=True)
-    if user.codeforces_username != handle:
+    if user.codeforces_username != handle or user.codeforces_account_version != generation:
         return 0
+    capture_score_baseline(db, user_id)
     existing = {s.title_slug: s for s in db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").all()}
     incoming = {row["slug"]: row for row in history}
     added = 0
     for slug, solve in existing.items():
         if slug not in incoming and (full or solve.solved_at.replace(tzinfo=timezone.utc).timestamp() >= since):
+            db.query(PointAward).filter_by(solve_id=solve.id).delete(synchronize_session=False)
+            db.query(AcceptedSubmission).filter_by(solve_id=solve.id).delete(synchronize_session=False)
             db.delete(solve)
     for slug, row in incoming.items():
         solve = existing.get(slug)
         solved_at = datetime.fromtimestamp(row["timestamp"], timezone.utc).replace(tzinfo=None)
-        acc_event = record_acceptance(
-            db,
-            user_id,
-            platform="codeforces",
-            account_version=user.codeforces_account_version,
-            submission_id=str(row["submission_id"]),
-            title_slug=slug,
-            accepted_at=datetime.fromtimestamp(row["timestamp"], timezone.utc),
-            evidence_kind="provider_full",
-            first_solve_verified=True,
-        )
         if solve is None:
             solve = Solve(
                 user_id=user_id,
@@ -99,32 +93,38 @@ async def _sync_codeforces_user_inner(db: Session, user: User) -> int:
                 is_daily=False,
                 scoring_version="cf-linear-v1",
                 solved_at=solved_at,
-                first_solve_at=solved_at,
-                first_solve_verified=True,
+                first_solve_at=solved_at if full else None,
+                first_solve_verified=full,
                 account_version=user.codeforces_account_version,
             )
             db.add(solve)
             db.flush()
             added += 1
-        elif not full and solve.solved_at < solved_at:
-            # An older first AC is outside this incremental scan's window.
-            if row["rating"] is not None:
-                solve.problem_rating = row["rating"]
-            acc_event.solve_id = solve.id
-            continue
+        # Incremental windows cannot move an established first acceptance forward.
+        if full or solved_at < solve.solved_at:
+            solve.solved_at = solved_at
+        if full:
+            solve.first_solve_at = solved_at
+            solve.first_solve_verified = True
         solve.title = row["title"]
-        solve.solved_at = solved_at
-        solve.first_solve_at = solved_at
-        solve.first_solve_verified = True
         solve.account_version = user.codeforces_account_version
         solve.source_handle = handle
         solve.source_submission_id = row["submission_id"]
         solve.problem_rating = row["rating"]
         solve.problem_url = row["url"]
         solve.difficulty = "Rated" if row["rating"] is not None else "Unrated"
-        acc_event.solve_id = solve.id
+        for event_row in row.get("accepted_submissions", [row]):
+            event_at = datetime.fromtimestamp(event_row["timestamp"], timezone.utc)
+            event = record_acceptance(
+                db, user_id, platform="codeforces", account_version=generation,
+                submission_id=str(event_row["submission_id"]), title_slug=slug,
+                accepted_at=event_at, evidence_kind="provider_full" if full else "provider_live",
+                first_solve_verified=bool(full and event_at.replace(tzinfo=None) == solve.first_solve_at),
+            )
+            event.solve_id = solve.id
+            award_live_revision(db, solve, event, previous_sync)
     db.flush()
-    counts = Counter(ist_date(s.first_solve_at or s.solved_at) for s in db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").all())
+    counts = Counter(ist_date(s.first_solve_at or s.solved_at) for s in db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces", Solve.first_solve_verified.is_(True), Solve.first_solve_at.isnot(None)).all())
     db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id, PlatformActivity.platform == "codeforces").delete()
     for day, count in counts.items():
         db.add(PlatformActivity(user_id=user_id, platform="codeforces", date=day, problems_solved=count))

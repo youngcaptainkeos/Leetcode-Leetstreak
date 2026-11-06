@@ -70,6 +70,9 @@ class TestHistoryAndExports(unittest.TestCase):
             points_earned=20.0,
             scoring_version="leetcode-v2",
         )
+        for solve in (solve1, solve2, solve3, solve4):
+            solve.first_solve_at = solve.solved_at
+            solve.first_solve_verified = True
         self.db.add_all([solve1, solve2, solve3, solve4])
         self.db.flush()
 

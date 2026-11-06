@@ -41,7 +41,7 @@ class ScoreReconciliationTests(unittest.TestCase):
         awards = self.db.query(PointAward).filter_by(user_id=1).all()
         award_kinds = {a.kind for a in awards}
         self.assertIn("base", award_kinds)
-        self.assertIn("daily", award_kinds)
+        self.assertNotIn("daily", award_kinds)  # An old daily flag is not an earned award.
 
         # Scoring version matches SCORING_VERSION
         for a in awards:
@@ -50,7 +50,7 @@ class ScoreReconciliationTests(unittest.TestCase):
         # Solves updated with components state
         for s in [solve1, solve2]:
             self.db.refresh(s)
-            self.assertEqual(s.score_components_state, "points-components-v2")
+            self.assertEqual(s.score_components_state, "base_only_history")
             self.assertGreater(s.points_earned, 0)
 
     def test_reconciliation_is_idempotent(self):

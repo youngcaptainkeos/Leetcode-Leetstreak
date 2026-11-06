@@ -157,140 +157,93 @@ def recalculate_user_points(
     """
     db.flush()
     db.query(User.id).filter(User.id == user.id).with_for_update().one()
-
-    capture_score_baseline(db, user.id)
-
+    baseline = capture_score_baseline(db, user.id)
+    original = {row["id"]: row for row in baseline.payload.get("solves", [])}
     solves = db.query(Solve).filter(Solve.user_id == user.id).all()
-    user_streak = user.official_streak or 0
-
-    daily_slugs_by_date = {
-        r.date: r.title_slug.lower()
-        for r in db.query(DailyChallenge).all()
-    }
-
     from .platforms import daily_counts
-
     active_dates = set(daily_counts(db, [user.id])[user.id])
     total_points = Decimal("0")
     leetcode_solves = [s for s in solves if s.platform == "leetcode"]
 
     for solve in solves:
-        solve_date = ist_date(solve.first_solve_at or solve.solved_at)
-        streak_on_date = current_streak(active_dates, solve_date)
-
-        if solve.platform == "codeforces":
-            calc = calculate_points(platform="codeforces", rating=solve.problem_rating, streak_days=streak_on_date)
-            base_award = calc["base_award"]
-            solve.points_earned = float(base_award)
-            solve.scoring_version = calc["scoring_version"]
-            solve.score_components_state = "points-components-v2"
-
-            award_key = f"base:{solve.id}"
-            award = db.query(PointAward).filter_by(award_key=award_key).first()
-            if not award:
-                award = PointAward(
-                    award_key=award_key,
-                    user_id=user.id,
-                    solve_id=solve.id,
-                    kind="base",
-                    points=base_award,
-                    earned_at=solve.first_solve_at or solve.solved_at,
-                    scoring_version=calc["scoring_version"],
-                    input_snapshot={"rating": solve.problem_rating, "streak_days": streak_on_date},
+        awards = {row.kind: row for row in db.query(PointAward).filter_by(solve_id=solve.id).all()
+                  if row.kind != "revision"}
+        revisions = db.query(PointAward).filter_by(solve_id=solve.id, kind="revision").all()
+        revision_total = sum((row.points for row in revisions), Decimal("0"))
+        verified = bool(solve.first_solve_verified and solve.first_solve_at is not None)
+        earned_at = solve.first_solve_at if verified else None
+        streak_days = current_streak(active_dates, ist_date(earned_at)) if verified else 0
+        old = original.get(solve.id, {})
+        # Old combined daily totals cannot safely be split into base and bonus.
+        # Preserve the original total instead of guessing a bonus during revaluation.
+        protected = awards.get("legacy")
+        old_total = old.get("points_earned")
+        same_identity = (old.get("title_slug") == solve.title_slug and old.get("platform") == solve.platform
+                         and old.get("account_version", 0) == solve.account_version)
+        protect_original = (same_identity and old.get("is_daily") and old.get("scoring_version") != SCORING_VERSION
+                            and isinstance(old_total, (int, float)) and old_total > 0)
+        if protected or protect_original:
+            if not protected:
+                protected = PointAward(
+                    award_key=f"legacy:{solve.id}", user_id=user.id, solve_id=solve.id,
+                    kind="legacy", points=rounded(Decimal(str(old_total))), earned_at=None,
+                    scoring_version=SCORING_VERSION,
+                    input_snapshot={"state": "protected_legacy", "needs_reconciliation": True,
+                                    "source": "tracking-v1"},
                 )
-                db.add(award)
-            else:
-                award.points = base_award
-                award.scoring_version = calc["scoring_version"]
-            total_points += base_award
+                db.add(protected)
+                # A previous reconciliation may have guessed these components.
+                for kind in ("base", "daily"):
+                    if kind in awards:
+                        db.delete(awards[kind])
+            solve.score_components_state = "protected_legacy"
+            solve.points_earned = float(protected.points + revision_total)
+            total_points += protected.points + revision_total
             continue
 
-        slug = (solve.title_slug or "").lower()
-        is_daily = (
-            bool(getattr(solve, "is_daily", False))
-            or bool(today_daily_slug and solve_date == ist_today() and slug == today_daily_slug.lower())
-            or bool(solve_date in daily_slugs_by_date and slug == daily_slugs_by_date[solve_date])
-        )
-        if is_daily and not getattr(solve, "is_daily", False):
-            solve.is_daily = True
-
-        rating = get_contest_rating(solve.title_slug)
+        rating = solve.problem_rating if solve.platform == "codeforces" else get_contest_rating(solve.title_slug)
         raw_diff = solve.difficulty.capitalize() if isinstance(solve.difficulty, str) else None
-        diff = raw_diff if raw_diff in {"Easy", "Medium", "Hard"} else ("Medium" if rating is None else None)
+        # Metadata gaps receive no invented Medium classification. Keep old credit
+        # until provider metadata is available, with no dated ranking award.
+        if solve.platform == "leetcode" and rating is None and raw_diff not in {"Easy", "Medium", "Hard"}:
+            solve.score_components_state = "metadata_incomplete"
+            if "base" in awards:
+                awards["base"].earned_at = None
+            total_points += Decimal(str(solve.points_earned or 0))
+            continue
+        calc = calculate_points(platform=solve.platform, difficulty=raw_diff,
+                                rating=rating, ac_rate=solve.ac_rate if solve.platform == "leetcode" else None,
+                                streak_days=streak_days)
+        base = awards.get("base")
+        if base is None:
+            base = PointAward(award_key=f"base:{solve.id}", user_id=user.id, solve_id=solve.id,
+                              kind="base", points=calc["base_award"], earned_at=earned_at,
+                              scoring_version=SCORING_VERSION, input_snapshot={})
+            db.add(base)
+        base.points = calc["base_award"]
+        base.earned_at = earned_at
+        base.scoring_version = SCORING_VERSION
+        base.input_snapshot = {"difficulty": raw_diff, "rating": rating,
+                               "ac_rate": solve.ac_rate, "streak_days": streak_days}
+        # Existing earned daily/revision amounts are immutable. Reconciliation
+        # never infers eligibility from a challenge archive or today's slug.
+        daily = awards.get("daily")
+        daily_total = daily.points if daily is not None else Decimal("0")
+        solve.points_earned = float(base.points + daily_total + revision_total)
+        solve.scoring_version = SCORING_VERSION
+        solve.score_components_state = SCORING_VERSION if verified else "base_only_history"
+        total_points += base.points + daily_total + revision_total
 
-        calc = calculate_points(
-            platform="leetcode",
-            difficulty=diff,
-            rating=rating,
-            ac_rate=solve.ac_rate,
-            streak_days=streak_on_date,
-            daily_eligible=is_daily,
-        )
-
-        base_award = calc["base_award"]
-        daily_award = calc["daily_award"]
-
-        base_key = f"base:{solve.id}"
-        base_row = db.query(PointAward).filter_by(award_key=base_key).first()
-        if not base_row:
-            base_row = PointAward(
-                award_key=base_key,
-                user_id=user.id,
-                solve_id=solve.id,
-                kind="base",
-                points=base_award,
-                earned_at=solve.first_solve_at or solve.solved_at,
-                scoring_version=calc["scoring_version"],
-                input_snapshot={"difficulty": diff, "rating": rating, "ac_rate": solve.ac_rate, "streak_days": streak_on_date},
-            )
-            db.add(base_row)
-        else:
-            base_row.points = base_award
-            base_row.scoring_version = calc["scoring_version"]
-
-        if daily_award > Decimal("0"):
-            daily_key = f"daily:{solve.id}"
-            daily_row = db.query(PointAward).filter_by(award_key=daily_key).first()
-            if not daily_row:
-                daily_row = PointAward(
-                    award_key=daily_key,
-                    user_id=user.id,
-                    solve_id=solve.id,
-                    kind="daily",
-                    points=daily_award,
-                    earned_at=solve.first_solve_at or solve.solved_at,
-                    scoring_version=calc["scoring_version"],
-                    input_snapshot={"challenge_date": str(solve_date), "streak_days": streak_on_date},
-                )
-                db.add(daily_row)
-            else:
-                daily_row.points = daily_award
-                daily_row.scoring_version = calc["scoring_version"]
-
-        rev_awards = db.query(PointAward).filter_by(solve_id=solve.id, kind="revision").all()
-        rev_total = sum((a.points for a in rev_awards), Decimal("0"))
-
-        solve_pts = base_award + daily_award + rev_total
-        solve.points_earned = float(solve_pts)
-        solve.scoring_version = calc["scoring_version"]
-        solve.score_components_state = "points-components-v2"
-        total_points += solve_pts
-
-    # Unlogged historical LeetCode solves (base credit only: multiplier 1.0, no daily)
-    num_solves_logged = len(leetcode_solves)
-    total_known_solves = (user.easy_count or 0) + (user.medium_count or 0) + (user.hard_count or 0)
+    # Subtract the known questions per difficulty, rather than spreading an
+    # unknown fraction across all categories and changing their base credit.
     legacy_pts = Decimal("0")
-    if total_known_solves > num_solves_logged and total_known_solves > 0:
-        unlogged_ratio = Decimal(str(total_known_solves - num_solves_logged)) / Decimal(str(total_known_solves))
-        unlogged_easy = Decimal(str(user.easy_count or 0)) * unlogged_ratio
-        unlogged_med = Decimal(str(user.medium_count or 0)) * unlogged_ratio
-        unlogged_hard = Decimal(str(user.hard_count or 0)) * unlogged_ratio
-        legacy_pts = rounded(unlogged_easy * Decimal(8) + unlogged_med * Decimal(15) + unlogged_hard * Decimal(24))
-
-    final_total = float(rounded(total_points + legacy_pts))
-    user.points = final_total
+    for category, field, base in (("Easy", "easy_count", 8), ("Medium", "medium_count", 15), ("Hard", "hard_count", 24)):
+        logged = sum(1 for row in leetcode_solves if (row.difficulty or "").lower() == category.lower())
+        missing = max(0, (getattr(user, field) or 0) - logged)
+        legacy_pts += Decimal(missing * base)
+    user.points = float(rounded(total_points + legacy_pts))
     db.flush()
-    return final_total
+    return user.points
 
 
 class ReconciliationResult(dict):

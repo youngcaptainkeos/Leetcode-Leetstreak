@@ -2721,7 +2721,23 @@ function Dashboard({
                 </span>
               </div>
               <div className="breakdown-row">
-                <span className="row-label">Streak Multiplier:</span>
+                <span className="row-label">Revision awards:</span>
+                <span className="row-val">+{selectedSolveBreakdown.breakdown?.revision_bonus || 0} pts</span>
+              </div>
+              {(selectedSolveBreakdown.breakdown?.protected_legacy_credit || 0) > 0 && (
+                <div className="breakdown-row">
+                  <span className="row-label">Protected legacy credit:</span>
+                  <span className="row-val">{selectedSolveBreakdown.breakdown?.protected_legacy_credit} pts</span>
+                </div>
+              )}
+              {selectedSolveBreakdown.breakdown?.score_components_state === 'base_only_history' && (
+                <p className="tiny muted">Historical base credit. First-solve date is unverified; excluded from streaks and period rankings.</p>
+              )}
+              {selectedSolveBreakdown.breakdown?.score_components_state === 'protected_legacy' && (
+                <p className="tiny muted">Previously credited total retained. Its original bonus split needs reconciliation.</p>
+              )}
+              <div className="breakdown-row">
+                <span className="row-label">Additional multiplier:</span>
                 <span className="row-val text-violet">
                   {selectedSolveBreakdown.breakdown?.streak_multiplier || 1.0}× <span className="tiny muted">({selectedSolveBreakdown.breakdown?.streak_days || 0}d streak)</span>
                 </span>
@@ -2732,7 +2748,7 @@ function Dashboard({
             <div className="breakdown-total-card">
               <div className="total-title-group">
                 <div className="total-title">Total Points Earned</div>
-                <div className="tiny muted">(Base + Bonuses) × Streak</div>
+                <div className="tiny muted">Stored base + daily + revision + protected credit</div>
               </div>
               <div className="total-score-badge">
                 ⭐ {selectedSolveBreakdown.points_earned ?? selectedSolveBreakdown.breakdown?.points_earned ?? 0} pts

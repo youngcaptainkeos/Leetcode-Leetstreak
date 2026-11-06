@@ -53,6 +53,7 @@ async def fetch_accepted_history(handle: str, since: Optional[int] = None) -> li
     Pages overlap to tolerate new submissions arriving during pagination.
     """
     accepted = {}
+    events = {}
     seen_submissions = set()
     offset = 1
     for _ in range(500):
@@ -77,6 +78,7 @@ async def fetch_accepted_history(handle: str, since: Optional[int] = None) -> li
             if not isinstance(contest_id, int) or not isinstance(index, str) or not re.fullmatch(r"[A-Za-z0-9]+", index) or not isinstance(timestamp, int) or timestamp <= 0 or timestamp > time.time() + 300:
                 continue
             key = f"cf-{contest_id}-{index.lower()}"
+            events.setdefault(key, []).append({"timestamp": timestamp, "submission_id": row["id"]})
             previous = accepted.get(key)
             if previous and previous["timestamp"] <= timestamp:
                 continue
@@ -88,6 +90,8 @@ async def fetch_accepted_history(handle: str, since: Optional[int] = None) -> li
                 "timestamp": timestamp, "submission_id": row["id"],
             }
         if len(rows) < 1000 or (since is not None and rows and min(r.get("creationTimeSeconds", int(time.time())) for r in rows) < since):
+            for key, problem in accepted.items():
+                problem["accepted_submissions"] = sorted(events[key], key=lambda event: (event["timestamp"], event["submission_id"]))
             return list(accepted.values())
         offset += 900
     raise CodeforcesError("This account needs a larger history import. Saved scores are unchanged.")

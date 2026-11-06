@@ -18,7 +18,7 @@ class TrackingSyncTests(unittest.TestCase):
     tearDown = fixtures.AccessTests.tearDown
     headers = fixtures.AccessTests.headers
 
-    def test_first_solve_creates_solve_and_evidence(self):
+    def test_recent_acceptance_does_not_prove_first_solve(self):
         user = self.db.query(User).filter_by(id=1).one()
         now_ts = int(datetime(2026, 1, 10, 10, 0, tzinfo=timezone.utc).timestamp())
         mock_data = {
@@ -42,8 +42,8 @@ class TrackingSyncTests(unittest.TestCase):
         self.assertEqual(new_count, 1)
         self.assertEqual(self.db.query(Solve).filter_by(user_id=1, title_slug="two-sum").count(), 1)
         solve = self.db.query(Solve).filter_by(user_id=1, title_slug="two-sum").one()
-        self.assertTrue(solve.first_solve_verified)
-        self.assertIsNotNone(solve.first_solve_at)
+        self.assertFalse(solve.first_solve_verified)
+        self.assertIsNone(solve.first_solve_at)
 
         # Evidence record exists
         acc = self.db.query(AcceptedSubmission).filter_by(user_id=1, submission_id="1001").one()
@@ -52,8 +52,8 @@ class TrackingSyncTests(unittest.TestCase):
 
         # DailyActivity exists for that IST date
         day = ist_date(datetime.fromtimestamp(now_ts, tz=timezone.utc))
-        daily = self.db.query(DailyActivity).filter_by(user_id=1, date=day).one()
-        self.assertEqual(daily.problems_solved, 1)
+        self.assertEqual(self.db.query(DailyActivity).filter_by(user_id=1, date=day).count(), 0)
+        self.assertTrue(user.leetcode_history_gap)
 
     def test_repeat_submission_does_not_duplicate_solve_or_streak(self):
         user = self.db.query(User).filter_by(id=1).one()
@@ -105,7 +105,7 @@ class TrackingSyncTests(unittest.TestCase):
         # Streak on day 2 is 0 or 1 (grace period for yesterday), not 2
         active_dates = set(daily_counts(self.db, [user.id])[user.id])
         self.assertNotIn(day2, active_dates)
-        self.assertEqual(current_streak(active_dates, today=day2), 1)
+        self.assertEqual(current_streak(active_dates, today=day2), 0)
 
     def test_calendar_activity_alone_does_not_create_solved_question_counts(self):
         user = self.db.query(User).filter_by(id=1).one()
@@ -181,6 +181,8 @@ class TrackingSyncTests(unittest.TestCase):
                 {"id": "2003", "title": "Problem A", "titleSlug": "prob-a", "timestamp": str(t3)},
             ],
         }
+        user.leetcode_last_sync = utc_storage(base_time + timedelta(days=7))
+        self.db.commit()
         with patch("app.scheduler.fetch_leetcode_user_data", new=AsyncMock(return_value=data3)), \
              patch("app.scheduler.fetch_today_daily_challenge_slug", new=AsyncMock(return_value=None)), \
              patch("app.scheduler.fetch_problem_info", new=AsyncMock(return_value={"difficulty": "Easy", "ac_rate": 50.0})):
