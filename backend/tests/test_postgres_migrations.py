@@ -142,3 +142,104 @@ class PostgresTrackingTests(LocalPostgresTests):
         self.assertEqual(len(set(ids)), 1)
         with self.sessions() as session:
             self.assertEqual(session.query(ScoreSnapshot).one().payload["points"], 17.5)
+
+
+class PostgresStartupTests(LocalPostgresTests):
+    def setUp(self):
+        self.schema = "startup_test_" + uuid.uuid4().hex
+        with self.root_engine.begin() as connection:
+            connection.execute(text(f"CREATE SCHEMA {self.schema}"))
+        self.engine = create_engine(self.root_engine.url, connect_args={"options": f"-csearch_path={self.schema}"})
+
+    def tearDown(self):
+        self.engine.dispose()
+        with self.root_engine.begin() as connection:
+            connection.execute(text(f"DROP SCHEMA {self.schema} CASCADE"))
+
+    def legacy_database(self):
+        from test_migrations import StartupMigrationTests
+        StartupMigrationTests.legacy_database(self)
+
+    def test_legacy_upgrade_preserves_awards_and_unknown_registration_dates(self):
+        from app.migrations import run_migrations
+        self.legacy_database()
+        with self.engine.begin() as connection:
+            connection.execute(text("ALTER TABLE users ADD CONSTRAINT users_leetcode_username_key UNIQUE (leetcode_username)"))
+            connection.execute(text("CREATE UNIQUE INDEX ix_users_leetcode_username ON users (leetcode_username)"))
+        run_migrations(self.engine)
+        run_migrations(self.engine)
+        with self.engine.begin() as connection:
+            self.assertEqual(connection.execute(text("SELECT points, created_at, show_global_leaderboard FROM users")).one(), (42.5, None, False))
+            self.assertEqual(connection.execute(text("SELECT points_earned, is_daily FROM solves ORDER BY id")).all(), [(21.5, True), (8, False)])
+            self.assertEqual(connection.execute(text("SELECT problems_solved FROM daily_activity")).scalar_one(), 8)
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM point_awards")).scalar_one(), 0)
+            # The new default must date future rows without backdating legacy ones.
+            connection.execute(text("INSERT INTO users (id, name, leetcode_username) VALUES (2, 'Another Demo', 'demo_coder')"))
+            self.assertIsNotNone(connection.execute(text("SELECT created_at FROM users WHERE id=2")).scalar_one())
+
+    def test_full_sequence_rollback_after_late_failure_and_retry(self):
+        from unittest.mock import patch
+        from app import migrations
+        self.legacy_database()
+        original = migrations.migrate_tracking
+
+        def fail_after_tracking(connection):
+            original(connection)
+            raise RuntimeError("synthetic migration failure")
+
+        with patch.object(migrations, "migrate_tracking", side_effect=fail_after_tracking):
+            with self.assertRaisesRegex(RuntimeError, "synthetic migration failure"):
+                migrations.run_migrations(self.engine)
+        self.assertNotIn("schema_migrations", inspect(self.engine).get_table_names())
+        self.assertNotIn("created_at", {column["name"] for column in inspect(self.engine).get_columns("users")})
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.execute(text("SELECT points FROM users")).scalar_one(), 42.5)
+        migrations.run_migrations(self.engine)
+
+    def test_concurrent_full_sequence_from_separate_processes(self):
+        import subprocess
+        import sys
+        from pathlib import Path
+        # Each subprocess owns a different pool/connection; only the database
+        # advisory lock can serialize their first bootstrap/version creation.
+        script = """
+import os
+from sqlalchemy import create_engine
+from app.migrations import run_migrations
+engine = create_engine(os.environ['LEETSTREAK_TEST_POSTGRES_URL'],
+    connect_args={'options': '-csearch_path=' + os.environ['LEETSTREAK_TEST_SCHEMA']})
+try:
+    run_migrations(engine)
+finally:
+    engine.dispose()
+"""
+        env = {**os.environ, "LEETSTREAK_TEST_SCHEMA": self.schema,
+               "JWT_SECRET": "synthetic-process-test-key-" + "x" * 40}
+        backend = Path(__file__).resolve().parents[1]
+        processes = [subprocess.Popen([sys.executable, "-c", script], cwd=backend, env=env,
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                     for _ in range(3)]
+        try:
+            for process in processes:
+                stdout, stderr = process.communicate(timeout=30)
+                self.assertEqual(process.returncode, 0, stderr)
+        finally:
+            for process in processes:
+                if process.poll() is None:
+                    process.kill()
+                    process.communicate()
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 6)
+
+    def test_previously_applied_auth_step_is_retained(self):
+        from app.database import Base
+        from app.migrations import run_migrations
+        from app.models import User
+        Base.metadata.create_all(self.engine)
+        migrate_auth(self.engine)
+        with sessionmaker(bind=self.engine).begin() as session:
+            session.add(User(id=1, name="Demo", leetcode_username="demo", email="demo@example.com", session_version=7))
+        run_migrations(self.engine)
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.execute(text("SELECT session_version FROM users")).scalar_one(), 7)
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 6)

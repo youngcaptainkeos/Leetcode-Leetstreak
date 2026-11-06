@@ -26,6 +26,15 @@ The owner approved returning to the last pre-Antigravity checkpoint and rebuildi
 
 Every implementation step needs a bounded scope, synthetic acceptance checks and its own labeled commit/push. Leave unfinished acceptance criteria open. The restart itself changes Git history selection and documentation only; no migration, score reconciliation or production action has run.
 
+### Rebuild execution record
+
+| Step | Scope | State / evidence |
+|---|---|---|
+| R0 | Restore `fd9b051` foundation; preserve old work and review | Completed and pushed as `cdac258`; prior tip `69c6a6c` preserved. Application code matched the checkpoint; no database/deployment changes. |
+| R1 | OPS-03 startup/migration foundation | Local acceptance passed: 86 backend tests with no skips, including 11 native PostgreSQL checks and separate-process concurrent startup. One transactional versioned runner replaces import/startup DDL; failures abort startup; readiness probes database availability; scheduler no longer runs provider jobs immediately. Old points/daily flags/activity and unknown registration dates retained. Documentation: `backend/MIGRATIONS.md`. No client source, package, production database or hosting changes. Bounded backfill/reconciliation jobs and cross-process provider scheduling remain pending; OPS-03 is not complete. |
+
+Next bounded implementation step: R2 / M2 ingestion, using accepted-event evidence and idempotent award identities. Runtime legacy scoring remains unmodified until that integration is independently verified.
+
 ## 1. How we will use this document
 
 This is the working checklist for the repository review. It covers every issue and proposed feature in that review, plus the requested cleanup for publishing clean public code. It describes future work; creating this document does not fix or verify the application.
@@ -760,16 +769,16 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 
 **Implementation**
 
-- [ ] Move schema changes into ordered, versioned, repeatable migrations with explicit failure behavior and backup/recovery instructions.
+- [x] Move schema changes into ordered, versioned, repeatable migrations with explicit failure behavior and backup/recovery instructions. R1 verified locally; production upgrade remains a release checkpoint.
 - [ ] Backfill challenge archives incrementally using stored coverage/checkpoints; fetch missing months only.
 - [ ] Run all-user point reconciliation as an explicit versioned job, in bounded batches with progress and restart recovery.
-- [ ] Separate basic liveness from readiness. Startup should validate local configuration/schema and avoid waiting on years of provider requests.
+- [x] Separate basic liveness from readiness. Startup validates local configuration/schema without waiting on provider requests; readiness probes database availability. Hosting probe configuration remains a release checkpoint.
 - [ ] Remove unconditional historical repair statements from normal startup after migrating their intended data safely.
 
 **Acceptance**
 
-- [ ] Restarting does not refetch the full archive or revalue all accounts.
-- [ ] Migration failure is visible and cannot leave a falsely healthy incompatible service.
+- [x] Restarting does not refetch the full archive or revalue all accounts. Verified locally in R1; periodic runtime sync remains separate.
+- [x] Migration failure is visible and cannot leave a falsely healthy incompatible service. Failure prevents serving; the separate readiness endpoint returns 503 until ready.
 - [ ] Interrupted backfills resume without duplicate awards or lost coverage.
 
 ### OPS-04 — Cross-process job coordination

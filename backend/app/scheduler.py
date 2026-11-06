@@ -181,14 +181,12 @@ def start_scheduler() -> AsyncIOScheduler:
         "interval",
         minutes=POLL_INTERVAL_MINUTES,
         id="poll_all_users",
-        next_run_time=datetime.now(),  # run once immediately on startup
     )
     scheduler.add_job(
         refresh_zerotrac_dataset,
         "interval",
         weeks=1,
         id="refresh_zerotrac_dataset",
-        next_run_time=datetime.now(),  # run once immediately on startup, then weekly
     )
     scheduler.start()
     return scheduler

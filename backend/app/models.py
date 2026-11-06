@@ -44,7 +44,7 @@ class User(Base):
     last_notified_commit = Column(String(40), default="legacy")
     global_leaderboard_enabled = Column(Boolean, default=True, nullable=False)
     show_global_leaderboard = Column(Boolean, default=True, server_default="true", nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime, default=utc_now, server_default=func.now())
 
     daily_activity = relationship("DailyActivity", back_populates="user", cascade="all, delete-orphan")
     solves = relationship("Solve", back_populates="user", cascade="all, delete-orphan")
