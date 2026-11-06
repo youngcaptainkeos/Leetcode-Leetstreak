@@ -20,3 +20,7 @@ Thumbs.db
 
 # Generated website bundle (built in Docker for deployment)
 backend/web/
+
+# Local development environments and private operational evidence
+/test_env/
+/private-audit

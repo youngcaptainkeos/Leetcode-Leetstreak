@@ -1,10 +1,24 @@
 from datetime import date, datetime
 from typing import List, Optional, Dict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
+import re
+
+
+def validate_new_password(value: str) -> str:
+    if len(value) < 15 or len(value) > 100:
+        raise ValueError("Use a password or passphrase with 15 to 100 characters.")
+    if value.lower() in {"123456789012345", "passwordpassword", "qwertyqwertyqwerty"}:
+        raise ValueError("Choose a less common password or passphrase.")
+    return value
 
 
 class PointBreakdownSchema(BaseModel):
-    difficulty: Optional[str] = "Medium"
+    difficulty: Optional[str] = None
+    base_award: float = 0
+    daily_award: float = 0
+    revision_award: float = 0
+    legacy_credit: float = 0
+    score_state: str = "unreconciled"
     raw_base_points: float = 0.0
     ac_rate: Optional[float] = None
     ac_multiplier: float = 1.0
@@ -20,6 +34,8 @@ class PointBreakdownSchema(BaseModel):
 
 
 class RecentSolveSchema(BaseModel):
+    first_solve_verified: bool = False
+    first_solve_at: Optional[datetime] = None
     title_slug: str
     title: str
     solved_at: datetime
@@ -40,8 +56,25 @@ class RegisterRequest(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     leetcode_username: str = Field(min_length=1, max_length=80)
     email: str = Field(min_length=3, max_length=120)
-    password: str = Field(min_length=4, max_length=100)
+    password: str = Field(min_length=15, max_length=100)
     global_leaderboard_enabled: bool = True
+    show_global_leaderboard: Optional[bool] = None
+
+    _password_policy = field_validator("password")(validate_new_password)
+
+    @model_validator(mode="after")
+    def consistent_display_choice(self):
+        if "global_leaderboard_enabled" in self.model_fields_set and self.show_global_leaderboard is not None and self.global_leaderboard_enabled != self.show_global_leaderboard:
+            raise ValueError("Conflicting Global display preferences.")
+        return self
+
+    @field_validator("email")
+    @classmethod
+    def email_format(cls, value):
+        value = value.strip().lower()
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", value):
+            raise ValueError("Enter a valid email address.")
+        return value
 
 
 class LoginRequest(BaseModel):
@@ -55,8 +88,15 @@ class ForgotPasswordInitiateRequest(BaseModel):
 
 class ForgotPasswordVerifyRequest(BaseModel):
     email_or_username: str = Field(min_length=1, max_length=120)
-    otp: str = Field(min_length=6, max_length=6)
-    new_password: str = Field(min_length=4, max_length=100)
+    otp: str = Field(pattern=r"^[0-9]{6}$")
+    new_password: str = Field(min_length=15, max_length=100)
+    _password_policy = field_validator("new_password")(validate_new_password)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=100)
+    new_password: str = Field(min_length=15, max_length=100)
+    _password_policy = field_validator("new_password")(validate_new_password)
 
 
 class UpdateUsernameRequest(BaseModel):
@@ -68,7 +108,16 @@ class UpdateCodeforcesRequest(BaseModel):
 
 
 class UpdateSettingsRequest(BaseModel):
-    global_leaderboard_enabled: bool
+    global_leaderboard_enabled: Optional[bool] = Field(default=None, deprecated=True)
+    show_global_leaderboard: Optional[bool] = None
+
+    @model_validator(mode="after")
+    def consistent_display_choice(self):
+        if self.show_global_leaderboard is None and self.global_leaderboard_enabled is None:
+            raise ValueError("Choose whether to show the Global leaderboard.")
+        if self.show_global_leaderboard is not None and self.global_leaderboard_enabled is not None and self.show_global_leaderboard != self.global_leaderboard_enabled:
+            raise ValueError("Conflicting Global display preferences.")
+        return self
 
 
 class DeleteAccountRequest(BaseModel):
@@ -85,6 +134,7 @@ class RegisterResponse(BaseModel):
     token_type: str = "bearer"
     created_at: Optional[datetime] = None
     global_leaderboard_enabled: bool = True
+    show_global_leaderboard: bool = True
 
 
 class DayCount(BaseModel):
@@ -93,6 +143,9 @@ class DayCount(BaseModel):
 
 
 class DashboardResponse(BaseModel):
+    history_incomplete: bool = True
+    historical_base_points: float = 0
+    score_needs_review: bool = False
     codeforces_last_sync: Optional[datetime] = None
     codeforces_sync_error: Optional[str] = None
     codeforces_count: int = 0
@@ -113,7 +166,8 @@ class DashboardResponse(BaseModel):
     monthly_total: int
     created_at: Optional[datetime] = None
     last_7_days: List[DayCount]
-    global_leaderboard_enabled: bool = True
+    global_leaderboard_enabled: Optional[bool] = None
+    show_global_leaderboard: Optional[bool] = None
 
 
 class LeaderboardEntry(BaseModel):
@@ -129,7 +183,7 @@ class LeaderboardEntry(BaseModel):
     easy_count: int = 0
     medium_count: int = 0
     hard_count: int = 0
-    points: int = 0
+    points: float = 0
     weekly_total: int
     current_streak: int
     consistency_score: float  # 0-100, active days / 7
@@ -163,6 +217,16 @@ class GroupCreateRequest(BaseModel):
 class GroupJoinRequest(BaseModel):
     code: str = Field(min_length=4, max_length=20)
     user_id: int
+
+
+class GroupTransferRequest(BaseModel):
+    new_owner_id: int = Field(gt=0)
+
+
+class ReleaseBroadcastRequest(BaseModel):
+    model_config = {"extra": "forbid"}
+    release_id: str = Field(min_length=1, max_length=40, pattern=r"^[a-z0-9-]+$")
+    dry_run: bool = True
 
 
 class GroupMemberSchema(BaseModel):

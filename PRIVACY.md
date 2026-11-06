@@ -24,7 +24,7 @@ LeetStreak exists solely to track public LeetCode problem-solving activity, calc
 
 ### B. Information Synchronized Automatically
 * **Public Solve Records:** Problem titles, difficulty levels (Easy, Medium, Hard), acceptance rates, and submission timestamps retrieved from LeetCode’s public GraphQL endpoints.
-* **Leaderboard Preferences:** Whether you have opted into the public Global Leaderboard or chosen private friends-only mode.
+* **Leaderboard Display Preference:** Whether the Global leaderboard is shown on your own home page. All registered users participate in Global rankings regardless of this preference. Other signed-in users can view coding profiles and statistics; private group membership and invite codes require appropriate group access.
 * **Social Interactions:** Kudos counts sent and received across 24-hour cycles.
 
 ### C. Information We DO NOT Collect

@@ -9,11 +9,13 @@ from sqlalchemy.orm import Session
 
 from .config import POLL_INTERVAL_MINUTES
 from .database import SessionLocal
-from .models import User, Solve, DailyActivity, DailyChallenge
+from .models import User, Solve, DailyActivity, DailyChallenge, ProviderCalendar
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_monthly_daily_challenges, fetch_problem_info, LeetCodeError
 from .point_calculator import recalculate_user_points
 from .contest_ratings import refresh_zerotrac_dataset
 from .codeforces_sync import sync_codeforces_user
+from .tracking import ProviderAcceptance, capture_score_baseline, ingest_acceptances, validate_acceptances
+from .timekeeping import utc_now
 
 logger = logging.getLogger("codestreak.scheduler")
 
@@ -40,22 +42,45 @@ async def backfill_daily_challenges_archive(db: Session):
 
 
 async def poll_user(db: Session, user: User, sync_codeforces: bool = True) -> int:
-    """Fetch complete LeetCode profile, calendar history, and recent AC submissions for one user."""
+    """Fetch public profile and recent ACs; recent history is never first-solve proof."""
+    db.refresh(user)
+    handle, user_id = user.leetcode_username, user.id
+    account_version, previous_sync = user.leetcode_account_version, user.leetcode_last_sync
+    sync_started = utc_now()
+    db.commit()  # Release the connection before provider requests.
     try:
-        data = await fetch_leetcode_user_data(user.leetcode_username)
-    except LeetCodeError as e:
-        logger.warning("LeetCode fetch failed for %s: %s", user.leetcode_username, e)
+        data = await fetch_leetcode_user_data(handle)
+        provider_handle = data.get("username")
+        if not isinstance(provider_handle, str) or provider_handle.casefold() != handle.casefold():
+            raise LeetCodeError("Provider account identity did not match")
+        if not data.get("recent_submissions_available", False):
+            raise LeetCodeError("Recent accepted history is unavailable")
+        submissions = data.get("recent_submissions")
+        if not isinstance(submissions, list):
+            raise LeetCodeError("Invalid recent accepted history")
+        evidence = []
+        for sub in submissions:
+            if (not isinstance(sub, dict) or not isinstance(sub.get("id"), (str, int))
+                    or isinstance(sub.get("id"), bool)
+                    or not isinstance(sub.get("timestamp"), (str, int))
+                    or isinstance(sub.get("timestamp"), bool)
+                    or not str(sub["timestamp"]).isascii() or not str(sub["timestamp"]).isdigit()):
+                raise LeetCodeError("Invalid accepted submission evidence")
+            evidence.append(ProviderAcceptance(str(sub["id"]), sub.get("titleSlug"),
+                datetime.fromtimestamp(int(sub["timestamp"]), timezone.utc).replace(tzinfo=None)))
+        validate_acceptances(evidence, "leetcode")
+        # All slow metadata calls happen before acquiring the account write lock.
+        problem_info = {slug: await fetch_problem_info(slug) for slug in {row.title_slug for row in evidence}}
+    except (LeetCodeError, ValueError, OverflowError, OSError):
+        logger.warning("LeetCode accepted history unavailable for user %d", user_id)
         return await sync_codeforces_user(db, user) if sync_codeforces and user.codeforces_username else 0
 
-    today_daily_slug = await fetch_today_daily_challenge_slug()
-    if today_daily_slug:
-        today_date = date.today()
-        existing_dc = db.query(DailyChallenge).filter(DailyChallenge.date == today_date).first()
-        if not existing_dc:
-            db.add(DailyChallenge(date=today_date, title_slug=today_daily_slug))
-            db.commit()
-
     db.refresh(user, with_for_update=True)
+    if (user.leetcode_username != handle or user.leetcode_account_version != account_version
+            or user.leetcode_last_sync != previous_sync):
+        db.rollback()
+        return 0
+    capture_score_baseline(db, user_id)
 
     # 1. Update user metadata & difficulty totals
     if data.get("avatar_url"):
@@ -66,50 +91,42 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True) -> in
     user.hard_count = diffs.get("Hard", 0)
     user.official_streak = data.get("official_streak", 0)
 
-    # 2. Sync full submission calendar into DailyActivity (active days default to 1 solve)
-    cal_map = data.get("submission_calendar") or {}
-    existing_daily = {
-        r.date: r for r in db.query(DailyActivity).filter(DailyActivity.user_id == user.id).all()
-    }
-
-    for day, solve_count in cal_map.items():
-        if solve_count > 0:
-            if day in existing_daily:
-                # If currently 0 or bloated submission count (>1 without solves ledger match), normalize
-                if existing_daily[day].problems_solved == 0:
-                    existing_daily[day].problems_solved = 1
-            else:
-                new_row = DailyActivity(user_id=user.id, date=day, problems_solved=1)
-                db.add(new_row)
-                existing_daily[day] = new_row
+    # Provider calendars count attempts, not unique accepted questions.
+    calendars = {row.date: row for row in db.query(ProviderCalendar).filter_by(
+        user_id=user_id, platform="leetcode", account_version=account_version).all()}
+    for day, count in (data.get("submission_calendar") or {}).items():
+        if type(day) is not date or type(count) is not int or count < 0:
+            continue
+        row = calendars.get(day)
+        if row is None:
+            row = ProviderCalendar(user_id=user_id, platform="leetcode", account_version=account_version, date=day)
+            db.add(row)
+        row.submission_count = count
+        row.source = "leetcode_submission_calendar"
+        row.coverage = "provider_partial"
+        row.observed_at = sync_started
 
     # 3. Dedup recent AC submissions into Solves ledger & update daily count from actual AC solves
     new_count = 0
-    submissions = data.get("recent_submissions") or []
     
     existing_solves = {
-        r[0] for r in db.query(Solve.title_slug).filter(Solve.user_id == user.id).all()
+        r[0] for r in db.query(Solve.title_slug).filter(Solve.user_id == user.id, Solve.platform == "leetcode").all()
     }
-    solves_by_date = {}
 
-    for sub in submissions:
+    for sub in sorted(submissions, key=lambda row: (int(row["timestamp"]), int(row["id"]))):
         title_slug = sub["titleSlug"]
         solved_at = datetime.fromtimestamp(int(sub["timestamp"]), tz=timezone.utc).replace(tzinfo=None)
         day = datetime.fromtimestamp(int(sub["timestamp"]), tz=IST).date()
 
         if title_slug not in existing_solves:
             existing_solves.add(title_slug)
-            prob_info = await fetch_problem_info(title_slug)
+            prob_info = problem_info[title_slug]
 
-            is_daily_solve = bool(
-                today_daily_slug
-                and title_slug.lower() == today_daily_slug.lower()
-                and day == date.today()
-            )
+            is_daily_solve = False  # Recent ACs cannot prove a live first solve.
 
             new_solve = Solve(
                 user_id=user.id,
-                platform="leetcode", source_handle=user.leetcode_username,
+                platform="leetcode", source_handle=handle, account_version=account_version,
                 problem_url=f"https://leetcode.com/problems/{title_slug}/",
                 title_slug=title_slug,
                 title=sub.get("title"),
@@ -121,17 +138,11 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True) -> in
             db.add(new_solve)
             new_count += 1
 
-        solves_by_date[day] = solves_by_date.get(day, 0) + 1
-
-    for day, ac_count in solves_by_date.items():
-        if day in existing_daily:
-            existing_daily[day].problems_solved = max(existing_daily[day].problems_solved, ac_count)
-        else:
-            new_row = DailyActivity(user_id=user.id, date=day, problems_solved=ac_count)
-            db.add(new_row)
-            existing_daily[day] = new_row
-
-    recalculate_user_points(user, db, today_daily_slug=today_daily_slug)
+    db.flush()
+    ingest_acceptances(db, user_id, platform="leetcode", account_version=account_version,
+                       expected_handle=handle, submissions=evidence)
+    user.leetcode_last_sync = sync_started
+    recalculate_user_points(user, db, revision_windows={"leetcode": previous_sync})
     db.commit()
     if sync_codeforces and user.codeforces_username:
         new_count += await sync_codeforces_user(db, user)
@@ -181,14 +192,12 @@ def start_scheduler() -> AsyncIOScheduler:
         "interval",
         minutes=POLL_INTERVAL_MINUTES,
         id="poll_all_users",
-        next_run_time=datetime.now(),  # run once immediately on startup
     )
     scheduler.add_job(
         refresh_zerotrac_dataset,
         "interval",
         weeks=1,
         id="refresh_zerotrac_dataset",
-        next_run_time=datetime.now(),  # run once immediately on startup, then weekly
     )
     scheduler.start()
     return scheduler

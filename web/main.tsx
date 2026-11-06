@@ -42,7 +42,7 @@ function Home({ signedIn }: { signedIn: boolean }) {
       <div className="web-feature-grid">
         <article><span className="web-feature-icon purple">LC</span><h3>LeetCode</h3><p>Contest problems use ZeroTrac rating ÷ 100. Otherwise, Easy starts at 8 points, Medium at 15, and Hard at 24, adjusted by acceptance rate.</p></article>
         <article><span className="web-feature-icon green">CF</span><h3>Codeforces</h3><p>Base points = 8 + 0.012 × (problem rating − 800). A 1400-rated problem earns 15.2 base points; 1800 earns 20; 2200 earns 24.8. Connect your public handle in account settings to sync automatically.</p></article>
-        <article><span className="web-feature-icon orange">✦</span><h3>Reward consistency</h3><p>The streak multiplier adds up to 10%. Codeforces awards points once per unique, final accepted problem. Unrated Codeforces problems count as activity with 0 points. The +5 daily challenge bonus applies only to LeetCode.</p><span className="web-feature-tag">CF scale is provisional · based on matched problems</span></article>
+        <article><span className="web-feature-icon orange">✦</span><h3>Reward consistency</h3><p>Verified first solves build streaks, with a multiplier up to 1.10×. Revisions earn 2 × that multiplier after a recurring seven-day cooldown, without extending streaks. Imported history earns no retrospective bonuses. Existing daily credit is retained; new LeetCode daily awards await live first-solve verification.</p><span className="web-feature-tag">CF scale is provisional · based on matched problems</span></article>
       </div>
     </section>
     <section className="web-get-started"><div><span className="web-eyebrow">LESS SETUP. MORE SOLVING.</span><h2>From your first login<br />to your next milestone.</h2></div><ol><li><span>01</span><div><h3>Create your account</h3><p>Use your email and public LeetCode username.</p></div></li><li><span>02</span><div><h3>Let your progress catch up</h3><p>Sync your activity and see your current streak.</p></div></li><li><span>03</span><div><h3>Show up again tomorrow</h3><p>Solve a problem. Build your streak. Repeat.</p></div></li></ol></section>
@@ -62,8 +62,14 @@ function Website() {
     if (!userId && path === "/dashboard") navigate("/login", true);
   }, [path, userId, isHome]);
 
-  function onRegistered(id: number) {
-    setSessionUserId(id);
+  useEffect(() => {
+    const expired = () => { setSessionUserId(null); navigate("/login", true); };
+    window.addEventListener("leetstreak:auth-expired", expired);
+    return () => window.removeEventListener("leetstreak:auth-expired", expired);
+  }, []);
+
+  function onRegistered(id: number, token?: string) {
+    setSessionUserId(id, token);
     navigate("/dashboard", true);
   }
   function onLogout() {

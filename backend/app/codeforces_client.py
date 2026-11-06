@@ -1,5 +1,6 @@
 """Public Codeforces metadata only; no passwords, API keys, or source code."""
 import asyncio
+import math
 import re
 import time
 from typing import Optional
@@ -55,42 +56,61 @@ async def fetch_accepted_history(handle: str, since: Optional[int] = None) -> li
     A complete scan also reconciles rejudgements and keeps reruns idempotent.
     Pages overlap to tolerate new submissions arriving during pagination.
     """
+    handle = normalize_handle(handle)
     accepted = {}
-    seen_submissions = set()
+    seen_submissions = {}
     offset = 1
     for _ in range(500):
         rows = await codeforces_request("user.status", {"handle": handle, "from": offset, "count": 1000})
         if not isinstance(rows, list):
             raise CodeforcesError("Codeforces returned an invalid submission list. Saved scores are unchanged.")
         for row in rows:
-            if not isinstance(row, dict) or not isinstance(row.get("id"), int):
+            if (not isinstance(row, dict) or type(row.get("id")) is not int or row["id"] <= 0
+                    or type(row.get("creationTimeSeconds")) is not int
+                    or not 0 < row["creationTimeSeconds"] <= time.time() + 300):
                 raise CodeforcesError("Codeforces returned an invalid submission. Saved scores are unchanged.")
             if row["id"] in seen_submissions:
+                if seen_submissions[row["id"]] != row:
+                    raise CodeforcesError("Codeforces history changed during import. Automatic syncing will retry later.")
                 continue
-            seen_submissions.add(row["id"])
+            seen_submissions[row["id"]] = row
             if row.get("verdict") != "OK" or row.get("testset") != "TESTS":
                 continue
             author = row.get("author", {})
+            if not isinstance(author, dict):
+                raise CodeforcesError("Codeforces returned invalid author evidence.")
             members = author.get("members", [])
-            if author.get("ghost") or author.get("teamId") or len(members) != 1 or members[0].get("handle", "").lower() != handle.lower():
+            if (not isinstance(members, list) or not members
+                    or any(not isinstance(member, dict) or not isinstance(member.get("handle"), str) for member in members)):
+                raise CodeforcesError("Codeforces returned invalid author evidence.")
+            if (author.get("ghost") or author.get("teamId") or len(members) != 1
+                    or members[0]["handle"].lower() != handle.lower()):
                 continue
             problem = row.get("problem", {})
+            if not isinstance(problem, dict):
+                raise CodeforcesError("Codeforces returned invalid problem evidence.")
             contest_id, index = problem.get("contestId"), problem.get("index")
             timestamp = row.get("creationTimeSeconds")
-            if not isinstance(contest_id, int) or not isinstance(index, str) or not re.fullmatch(r"[A-Za-z0-9]+", index) or not isinstance(timestamp, int) or timestamp <= 0 or timestamp > time.time() + 300:
-                continue
+            if type(contest_id) is not int or contest_id <= 0 or not isinstance(index, str) or not re.fullmatch(r"[A-Za-z0-9]+", index):
+                raise CodeforcesError("Codeforces returned an unsupported problem identity. Saved history is unchanged.")
             key = f"cf-{contest_id}-{index.lower()}"
             previous = accepted.get(key)
-            if previous and previous["timestamp"] <= timestamp:
-                continue
+            event = {"submission_id": row["id"], "timestamp": timestamp}
+            if previous:
+                previous["accepted_submissions"].append(event)
+                if (previous["timestamp"], previous["submission_id"]) <= (timestamp, row["id"]):
+                    continue
             rating = problem.get("rating")
             accepted[key] = {
                 "slug": key, "title": str(problem.get("name") or f"{contest_id}{index}")[:300],
                 "url": f"https://codeforces.com/{'gym' if contest_id >= 100000 else 'contest'}/{contest_id}/problem/{index}",
-                "rating": rating if isinstance(rating, (int, float)) and 800 <= rating <= 5000 else None,
+                "rating": rating if type(rating) in (int, float) and math.isfinite(rating) and 800 <= rating <= 5000 else None,
                 "timestamp": timestamp, "submission_id": row["id"],
+                "accepted_submissions": previous["accepted_submissions"] if previous else [event],
             }
         if len(rows) < 1000 or (since is not None and rows and min(r.get("creationTimeSeconds", int(time.time())) for r in rows) < since):
-            return list(accepted.values())
+            for problem in accepted.values():
+                problem["accepted_submissions"].sort(key=lambda event: (event["timestamp"], event["submission_id"]))
+            return sorted(accepted.values(), key=lambda problem: problem["slug"])
         offset += 900
     raise CodeforcesError("This account needs a larger history import. Saved scores are unchanged.")

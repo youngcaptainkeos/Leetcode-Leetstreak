@@ -6,6 +6,46 @@ Scope: backend, extension, website, data correctness, operations, and public rep
 
 Pre-scheduling decisions: [DECISIONS.md](DECISIONS.md) records accepted requirements, pending recommendations across M1–M6, and feasibility investigations. The owner's latest accepted rules below supersede earlier recommendations. Unanswered choices remain pending.
 
+## Restart checkpoint — 2026-11-06
+
+The owner approved returning to the last pre-Antigravity checkpoint and rebuilding in small steps after reviewing the integration defects.
+
+- Active rebuild branch: `pre-launch-rebuild`, created from `fd9b051` (M2 shared score-component arithmetic).
+- Preserved review tip: `69c6a6c`, retained on `pre-launch` and `archive/pre-launch-antigravity-review`. No shared branch reset or force push is part of this restart.
+- [The archived review](ANTIGRAVITY_REVIEW.md) records defects in the abandoned implementation and subsequent repairs. Its file references and test results describe that older branch, **not** the rebuilt checkout.
+- Keep the accepted product decisions, M1 implementation and M2-01 through M2-03. This is an unfinished foundation; prior local checks are historical evidence, not a fresh certification of this checkout.
+- Later Antigravity features and follow-up repair code are absent. Reuse individual ideas only after source review and acceptance checks; do not carry over completion claims or wholesale commits.
+- New step commits and pushes target `origin/pre-launch-rebuild`, superseding the earlier `origin/pre-launch` execution target. Production merges, deployment, public-history publication and store upload remain separate checkpoints.
+
+### Restart sequence
+
+1. **R1 / OPS-03 startup safety:** inspect existing migration/startup paths, make schema setup versioned and atomic, remove automatic bulk archive imports and all-user score recalculation from startup. Verify with isolated synthetic databases; do not launch this checkout against production configuration. Maintenance commands and distributed scheduling remain later steps.
+2. **R2 / M2 ingestion:** connect accepted-event evidence to the existing unique-question and award foundations. Prove replay idempotency, account-generation isolation and recurring revision eligibility. Do not infer first-solve dates from public recent submissions.
+3. **R3 / M2 reconciliation:** preserve earned daily/revision components and uncertain legacy credit, avoid overlap with aggregate estimates, then connect read APIs and both clients to the same component totals.
+4. Continue M2 sync completeness and account replacement, then M3–M6 in dependency order. Use the archived defect list as regression requirements, including canonical starter IDs, two-device writes, complete plan progress, account deletion and ownership replacement.
+
+Every implementation step needs a bounded scope, synthetic acceptance checks and its own labeled commit/push. Leave unfinished acceptance criteria open. The restart itself changes Git history selection and documentation only; no migration, score reconciliation or production action has run.
+
+### Rebuild execution record
+
+| Step | Scope | State / evidence |
+|---|---|---|
+| R0 | Restore `fd9b051` foundation; preserve old work and review | Completed and pushed as `cdac258`; prior tip `69c6a6c` preserved. Application code matched the checkpoint; no database/deployment changes. |
+| R1 | OPS-03 startup/migration foundation | Pushed as `4ce920c`. Local acceptance passed: 86 backend tests with no skips, including 11 native PostgreSQL checks and separate-process concurrent startup. One transactional versioned runner replaces import/startup DDL; failures abort startup; readiness probes database availability; scheduler no longer runs provider jobs immediately. Old points/daily flags/activity and unknown registration dates retained. Documentation: `backend/MIGRATIONS.md`. No client source, package, production database or hosting changes. Bounded backfill/reconciliation jobs and cross-process provider scheduling remain pending; OPS-03 is not complete. |
+| R2 | DATA-02/03/09 accepted evidence and revision eligibility | Connected both provider sync paths to replay-safe accepted-event batches; CF repeats retained, full-scan first proof separated from incremental/public-recent observations, stale handle/generation/checkpoint results rejected. Revision proposals enforce recurring seven-day cooldowns, live-window limits and proved-first-solve IST streak multipliers without granting points. Pre-reconciliation baselines retained. Local acceptance passed: 120 backend tests with no skips, including 13 native PostgreSQL checks. Production sync paths, provider page replay/filtering, stale-account races, actual handle-update routes, exact recurring cooldowns, caller rollback and concurrent PostgreSQL batches covered. Commit label: `Rebuild R2 DATA-02 DATA-09: retain accepted evidence and plan safe revisions`. Details: `backend/TRACKING.md`. No client/package/deployment changes; scoring, daily protection, account-history replacement and verified-only activity integration remain R3 work. |
+
+| R3a | DATA-05/07/08 protected reconciliation foundation | Pushed as `7d26bd5`. Local acceptance: 132 backend tests passed with no skips, including 14 native PostgreSQL checks. Added explicit account history estimates, immutable generation-aware baseline details, protected unknown daily totals, exact retained components, conservative unclassified-slot reservation and replay-safe revision writes. Regression covers the old 10 + 8 overlap and later metadata enrichment. New reconciliation module is staged; legacy runtime scoring is not switched in this substep. Runtime/API/client wiring follows R3b. |
+
+| R3b | DATA-01/03/05/07/08/09 runtime/API/client scoring | Local acceptance: 147 backend tests passed with no skips, including 16 native PostgreSQL checks; 17 client checks, both TypeScript checks/builds and both local browser login/preference/password/revocation flows passed with zero page errors. Runtime sync applies replay-safe revision awards and revalues bases while retaining daily/revision amounts. Verified first solves alone drive streaks/counts; raw calendars have source/coverage storage. Reads return exact stored components without remote lookups or mutation. Different-handle replacement preserves the other platform and private transition snapshots. Both clients disclose unknown dates and protected credit. Four package copies synchronized (29 runtime files, 12 manifest/HTML references resolved; SHA-256 `77ce19e19a2fe79013c61e93c38d1cf5ae9ba5e43781b1629702b1a74b006d17`). New credit/calendar tables have deny-by-default Data API grants/RLS. Live LC first-solve/daily proof, non-case rename proof, fuller coverage status and bounded all-account rollout remain open release gates. No production deployment or native extension acceptance claimed. |
+
+Next M2 gates: establish stronger LC first-solve evidence without trusting client claims, finish history coverage/status and prove provider-backed rename continuity; add the bounded all-account reconciliation job before release. R3 runtime integration is checked locally, but DATA-01/03/04/05/08 and M2 are not declared complete while those gates remain open.
+
+### Owner testing checkpoint — 2026-11-07
+
+The owner authorized merging the current rebuild into `main` for deployed testing while retaining all existing branches. This is an intermediate testing checkpoint, not completion of M2 or approval for Chrome Web Store publication. The old `pre-launch` review branch remains preserved; further milestone work continues on `pre-launch-rebuild`.
+
+Before the merge, corrected JWT Base64 padding to add zero padding when a segment is already aligned. The previous calculation added four excess characters and failed strict decoding on Python 3.12. All seven existing authentication tests passed on Python 3.12. No signing key or account data changed. Automated GitHub CI is still pending restoration; prior local acceptance results do not constitute a green GitHub workflow. Live LeetCode first-solve/daily proof and the other M2 gates above remain unfinished.
+
 ## 1. How we will use this document
 
 This is the working checklist for the repository review. It covers every issue and proposed feature in that review, plus the requested cleanup for publishing clean public code. It describes future work; creating this document does not fix or verify the application.
@@ -17,16 +57,17 @@ This is the working checklist for the repository review. It covers every issue a
 - Keep personal details, real test addresses, account exports, credentials, and raw production logs out of this document and its completion evidence.
 - Evidence should identify the check and outcome without including private payloads.
 
-**Current state: 0 of 45 items completed; 3 notification items explicitly deferred.** DATA-09 tracks revision scoring and FEAT-10 tracks direct friendships without shared groups. All acceptance checks below are planned, not already performed. This is a source-based plan, not proof of current production behavior or hosting configuration.
+**Current state: 0 of 45 items completed; 3 notification items explicitly deferred.** DATA-09 tracks revision scoring and FEAT-10 tracks direct friendships without shared groups. Only checks explicitly recorded as passed have been performed locally; unchecked criteria and production release checks remain pending. This is a source-based plan, not proof of current production behavior or hosting configuration.
 
-### Execution hold and branch sequence — owner instruction
+### Execution authorization and branch sequence — owner instruction
 
-- Milestone implementation remains on hold. The owner's subsequent instruction authorizes merging the current `progress-bar` integration into `main` and testing Codeforces, including its normal auto-deployment. That integration release does not authorize starting the planned pre-launch fixes or implementing direct friendships now.
-- Finish the existing Codeforces/plan integration on `progress-bar` first. The currently reported account-connection problem is deliberately excluded from this tracker; the owner will request that work separately.
-- When the owner proceeds with release work, merge the completed integration into `main` first. Then create a new branch named exactly `pre-launch` from that updated `main`, and perform the milestone fixes there.
-- On `pre-launch`, make a separate clearly labeled commit after each completed implementation step, not just one commit per milestone. Include milestone/task/step identifiers, for example `M2 DATA-09 step 1: add revision award ledger`.
+- The owner has authorized implementation on `pre-launch` with a clearly labeled commit/push and progress notification after every successful step. The integration merge/deployment to `main` completed at `269e06f`; production releases of milestone fixes remain separate checkpoints.
+- The existing Codeforces/plan integration was merged and checked separately; it is not counted as completing any pre-launch checklist item.
+- Branch `pre-launch` was created from updated `origin/main` (`269e06f`) for milestone work. Do not merge fixes into production without the agreed release checkpoint.
+- On `pre-launch`, make a separate clearly labeled commit after each completed implementation step, not just one commit per milestone. Include milestone/task/step identifiers, for example `M2 DATA-09 step 1: add revision award ledger`. Notify the owner after each successful step through the agreed private notification destination; never record that destination or credentials in this public repository.
 - Push each completed step's commit to `origin/pre-launch` and record the revision, checks, and status here. Follow dependencies when a step spans multiple tasks; do not label unfinished/unverified work as fixed.
 - A push to `pre-launch` is not a production release. Production merges/deployments remain explicit release checkpoints.
+- Chrome Web Store upload is deferred until all planned fixes and release checks are complete, as requested on 2026-11-05. Prepare the final reviewed ZIP, listing assets and privacy/permission disclosures at that checkpoint; do not upload the current development build.
 
 ### Priorities
 
@@ -148,11 +189,11 @@ The earlier proposal to treat the signup toggle as a privacy opt-out is supersed
 |---|---|
 | Streak | Only the first accepted solve of a previously unsolved platform problem contributes to the streak. Repeats, revisions, failed attempts, sync/import time, and manual checkboxes do not extend it. A failed attempt followed by the first acceptance is still a first solve; “first” does not require acceptance on the first submission attempt. |
 | Unique questions | Multiple submissions of the same platform question always produce one question entry and one lifetime unique-solve count. Repeat-event evidence may exist privately for award eligibility, not as duplicate solved-question entries. |
-| Revision | An accepted repeat after at least one week can earn 2 extra revision points. It never adds another question entry or extends the streak. Record it as a separate award component. Cooldown recurrence/anchor and multiplier/stacking details remain open below. |
+| Revision | An accepted repeat after at least one week can earn 2 extra revision points. It never adds another question entry or extends the streak. Record it as a separate award component. Owner confirmed recurring eligibility seven days after the first solve or last rewarded revision; unrewarded attempts do not restart the clock. Revision awards apply the streak multiplier to the 2-point base. A daily bonus can be earned on each different official daily question first solved that IST day; repeats receive revision awards only. |
 | Time | All product boundaries and displayed activity dates follow IST, including daily, weekly, monthly, streak, revision eligibility, and LeetStreak daily awards. Timestamp storage can remain UTC. Do not silently retain a UTC-reset exception in product behavior. |
 | Formula changes | Recalculate previous questions for all users under the same new base-point formula/version, rather than leaving older users on a frozen base scale. Preserve source inputs and revaluation history for audit/recovery. |
 | Earned daily points | Retain existing earned daily award amounts separately from the base points being revalued. Do not try to reconstruct or overwrite earned bonuses from incomplete old challenge archives. |
-| New-user history | Initial/imported historical questions receive base points only, with no retroactive daily bonuses. Whether new users may earn daily bonuses on future live solves remains a clarification, not an inferred ban or grant. |
+| New-user history | Initial/imported historical questions receive base points only, with no retroactive daily bonuses. Owner confirmed new users can earn daily bonuses on future live solves. |
 | Handle change | Recalculate for a genuinely different linked coding account; preserve history for a proven rename of the same account. A matching display name/avatar or similar history is not sufficient proof of identity. |
 | Friend notifications | Known nonworking feature deferred until explicitly resumed. Preserve its backlog details without spending current milestone work on alert delivery or preference design. Inline daily reminders and friends activity remain in scope. |
 | Git workflow | Finish current integration, merge it into `main`, then branch `pre-launch`. Commit and push each clearly labeled completed step on `pre-launch` once implementation is requested. No such action is authorized by this planning edit. |
@@ -165,15 +206,41 @@ These are proposed defaults, not changes already made to user data or decisions 
 
 | Decision | Proposed default | Affected items |
 |---|---|---|
-| Revision cooldown | Decide whether revisions recur every week, and whether eligibility measures seven elapsed days since the first solve, last acceptance, or last rewarded revision. Do not assume these are equivalent. | DATA-09 |
-| Revision arithmetic and display | Clarify whether 2 is an exact unmultiplied award, whether it stacks with a daily bonus, and whether to show a separate revision subtotal inside the existing question entry. Repeats never count as new questions or streak days. | DATA-02, DATA-07–09 |
-| Daily eligibility for new users | Clarify whether “new users get base points only” applies to imported history only, or also excludes their future live daily solves; also settle repeated-daily eligibility. No retroactive imported daily bonuses either way. | DATA-08 |
-| IST daily question selection | Provider question publication may not align with IST midnight. Specify which question is pinned to each LeetStreak IST day before implementing challenge mapping/reminders; no silent UTC fallback. | DATA-06, DATA-08 |
-| Incomplete historical bases | Apply formula changes equally to all known questions. Where exact historical identities/inputs are unavailable, report coverage and agree a consistent estimate/fallback rather than silently freezing old base credit or inventing exact scores. | DATA-04–05 |
+| Revision arithmetic | Cooldown is confirmed: recurring seven days since first solve/last rewarded revision; unrewarded acceptances do not restart it. Owner confirmed the streak multiplier applies to the 2-point revision base. Repeated questions are revision-only; different first-time daily questions can each earn a daily bonus within one IST day. | DATA-09 |
+| Revision arithmetic and display | Revision awards use 2 × the applicable streak multiplier. Repeated questions receive revision credit only, without a daily award; display the revision component inside the existing question entry. Repeats never count as new questions or streak days. | DATA-02, DATA-07–09 |
+| Daily eligibility for new users | Accepted: imported history gets base points only; future live solves can earn daily bonuses. Daily bonuses apply to each different official daily question first solved that IST day; no retroactive daily or repeat-daily awards. | DATA-08 |
+| IST daily question selection | Accepted: follow the current official challenge even if it changes within the IST day. Product day boundaries remain IST. Record challenge changes with observation timestamps rather than pinning one slug per day. | DATA-06, DATA-08 |
+| Incomplete historical bases | Accepted fallback: apply current base-only credit for old LeetCode questions with unproved first-solve dates; mark history incomplete and exclude those dates from streak/period rankings. If an old daily bonus cannot be reliably separated from its stored combined score, preserve that credited total as protected legacy credit and flag reconciliation rather than guessing. | DATA-04–05 |
 | Unlinking | Remove the disconnected platform's active contribution to scores/activity after explicit confirmation; preserve only the minimal private audit/recovery data allowed by the chosen retention policy. | FEAT-05 |
 | Unverified ownership | Label existing self-declared accounts; do not silently lock legitimate users out or award verified status without evidence. | FEAT-04 |
 | Plan conflicts | Merge unique plans and solve identities; resolve external check/uncheck conflicts through explicit revision/version rules. | FEAT-01 |
 | Public history cleanup | Rotate exposed credentials first. Choose targeted history cleanup or a clean public release repository only after a private exposure inventory. | PUB-04 |
+
+### M1 execution steps
+
+Each row is a separate commit/push checkpoint. Local/branch completion is not production completion.
+
+| Step | Scope | State / evidence |
+|---|---|---|
+| M1-01 | SEC-01 route inventory + OPS-02 key configuration/JWT validation foundation | Passed locally: 7 synthetic token/configuration tests; route map in `backend/ACCESS_CONTROL.md`. Branch commit: `M1 SEC-01 OPS-02 step 1: require stable keys and validate tokens`. Hosting configuration/release still pending. |
+| M1-02 | SEC-01 account/group permissions + client session compatibility | Passed locally: 17 backend tests, 3 client session tests, 11 existing progress tests, both type checks/builds; archives synchronized. Owner transfer API added; UI work remains in M1-06. Branch commit: `M1 SEC-01 step 2: enforce account and group permissions`. Not deployed. |
+| M1-03 | SEC-02 fail-closed administration | Passed locally: 22 backend tests; every admin route guarded, production test-email route removed, reviewed release previews and durable duplicate-job guards. Commit labeled `M1 SEC-02 step 3`. Awaiting release; interrupted mail jobs require operator review. |
+| M1-04 | OPS-01 honest email outcomes | Passed locally: 28 backend tests, including mocked acceptance/rejection/failure/timeout, redacted logs, escaped templates, offloaded SMTP, and accepted-only release state updates. Commit labeled `M1 OPS-01 step 4`. No real messages sent; awaiting release. |
+| M1-05 | SEC-03 recovery abuse limits, password policy, session revocation | Backend/local checks passed: 37 tests including recovery, revocation, and additive SQLite migration. Password/reset UI copy and client types updated; password-management settings UI follows M1-06. 3 client session checks, both type checks/builds passed; archives synchronized. Commit labeled `M1 SEC-03 step 5`. Production PostgreSQL migration/release remains pending. |
+| M1-06 | SEC-04 Global display-only preference and group/profile behavior | Passed locally: 42 backend + 5 client session/preference tests, both type checks/builds; packages synchronized. Global preference migration, profile field restrictions, transfer/password/session controls implemented. Commit labeled `M1 SEC-04 step 6`; not deployed; full browser visual/release verification remains pending. |
+| M1-07 | SEC-05 synthetic fixture isolation + PUB-01–03 current-source cleanup | Passed locally: 44 backend tests, extension build and package inspection. Removed fabricated provider responses, obsolete notification demonstrations/pages, five scratch scripts and tracked installed environment (local environment retained). Current-source scan reviewed reserved example addresses/provider sender and route-path false positives; packages synchronized and obsolete assets absent. Donation QR/controls explicitly approved public on 2026-11-05. Historical exposure and production fixture records remain separate pending work; not deployed. |
+| M1-08 | PUB-04 private exposure inventory and concrete remediation proposal | Inventory/proposal prepared for owner review: 662 historical text blobs, 145 ZIP versions, five remote branches plus one tag, GitHub published collections and primary hosted artifact reviewed; private backup restored and integrity checked. Owner approved private rewrite preparation. Rehearsal prepared in isolated protected storage: six refs verified, 521 retained files compared, 869 reachable blobs scanned, approved donation/support assets retained, reviewed packages restored on rehearsal pre-launch and 44 backend tests passed. Local checkout restored after a tool invocation error; remote refs confirmed unchanged. Credential checkpoint closed based on owner confirmation: Supabase password changed and old Render credentials revoked. Final shared-history publication approval remains open. Secondary host timed out; wiki inaccessible; coverage limits recorded privately. No public history rewrite or production change. |
+| M1-09 | OPS-06 local PostgreSQL and browser acceptance | Passed locally: 48 backend tests including four native PostgreSQL checks; six client session/preference tests and 11 progress checks; both type checks/builds. Browser login, persisted display preference, password change and revoked-session return to sign-in pass for website and popup preview with no runtime errors. Fixed concurrent migration-registry creation and website token-refresh storage. Synthetic screenshots visually reviewed; native extension acceptance follows M3. Production release and public-history publication remain separate checkpoints. |
+
+
+### M2 execution steps
+
+| Step | Scope | State / evidence |
+|---|---|---|
+| M2-01 | DATA-06 shared clock and period boundaries | Passed locally: 54 backend tests including six new boundary/cooldown checks and four PostgreSQL migration checks. Dashboard and streak helpers use one IST clock; shared UTC storage conversion, Sunday-start weeks, exclusive period ends and seven-day elapsed cooldown helpers added. Ingestion, award migration and client date conversion remain later steps; DATA-06 is not yet complete. |
+| M2-02 | DATA-02/04/05/08 evidence and award storage | Passed locally: 63 backend tests, including concurrent PostgreSQL migration/event replay/baseline capture, old-point preservation, repeat-event idempotency, stale-account rejection, unique precise award identities and immutable baseline capture. Added account generations, explicit unknown first-solve state, accepted-event/award tables and private score snapshots. Migration does not revalue or reconstruct legacy daily awards. Account deletion/reset also clear private evidence. Runtime ingestion, scoring and UI integration remain later steps. |
+| M2-03 | DATA-07/08/09 shared component arithmetic | Passed locally: 71 backend tests, including eight arithmetic checks covering exact component totals, retained credits, invalid metadata and existing base scales. Deterministic Decimal engine added for new ledger integration: existing LC and CF base formulas, capped streak multiplier, multiplied revision awards, explicit retained daily/revision components and four-place half-up rounding. Stored-component totals must match exactly. Runtime calculator migration and read-API integration remain separate steps; no legacy scores are revalued by this module. |
+
 
 ## 4. Security and privacy plans
 
@@ -187,10 +254,10 @@ These are proposed defaults, not changes already made to user data or decisions 
 
 **Implementation**
 
-- [ ] Inventory every route: explicitly public, authenticated self-service, group-member, group-owner, or admin. Include dashboard/profile reads, solve history, sync, settings, deletion, group codes, and kudos.
+- [x] Inventory every route: explicitly public, authenticated self-service, group-member, group-owner, or admin. Include dashboard/profile reads, solve history, sync, settings, deletion, group codes, and kudos.
 - [ ] Add a shared authenticated-user dependency. Validate signature, required expiry/subject, supported algorithm, account existence, and session version; malformed tokens must return controlled errors.
-- [ ] Derive actor identity from the token. Retained legacy ID fields must match the actor and must never establish authorization.
-- [ ] Add reusable self/member/owner checks. Use transactions for group creation/membership changes and handle duplicate/racing requests.
+- [x] Derive actor identity from the token. Retained legacy ID fields must match the actor and must never establish authorization.
+- [x] Add reusable self/member/owner checks. Use transactions for group creation/membership changes and handle duplicate/racing requests.
 - [ ] Update both clients and background requests. Clear invalid sessions and request sign-in rather than treating a cached numeric ID as authentication.
 - [ ] Publish a coordinated compatibility change for old clients; do not retain unauthenticated writes as a fallback.
 
@@ -210,17 +277,17 @@ These are proposed defaults, not changes already made to user data or decisions 
 
 **Implementation**
 
-- [ ] Remove the fallback secret. Missing/empty configuration must disable administrative actions or prevent production startup, according to the documented deployment policy.
-- [ ] Apply one fail-closed admin dependency to every admin route, including test/broadcast/poll routes. Use constant-time secret comparison or an explicitly authorized admin identity.
-- [ ] Remove test-email endpoints from production, or limit them to an authenticated development/admin workflow with approved destinations.
-- [ ] Restrict broadcast inputs to a validated release record; validate HTTPS download destinations and bound input sizes.
-- [ ] Add limits and audit events for administrative jobs without logging secrets or recipient lists. Coalesce duplicate poll/broadcast jobs.
+- [x] Remove the fallback secret. Missing/empty configuration must disable administrative actions or prevent production startup, according to the documented deployment policy.
+- [x] Apply one fail-closed admin dependency to every admin route, including test/broadcast/poll routes. Use constant-time secret comparison or an explicitly authorized admin identity.
+- [x] Remove test-email endpoints from production, or limit them to an authenticated development/admin workflow with approved destinations.
+- [x] Restrict broadcast inputs to a validated release record; validate HTTPS download destinations and bound input sizes.
+- [x] Add limits and audit events for administrative jobs without logging secrets or recipient lists. Coalesce duplicate poll/broadcast jobs.
 
 **Acceptance**
 
-- [ ] No admin route succeeds anonymously or with a missing, blank, invalid, or obsolete credential.
-- [ ] Unauthorized attempts send no email, mutate no records, and start no sync job.
-- [ ] Valid administration is auditable; errors do not expose configuration values.
+- [x] No admin route succeeds anonymously or with a missing, blank, invalid, or obsolete credential.
+- [x] Unauthorized attempts send no email, mutate no records, and start no sync job.
+- [x] Valid administration is auditable; errors do not expose configuration values.
 
 ### SEC-03 — Password recovery, passwords, and session revocation
 
@@ -232,18 +299,18 @@ These are proposed defaults, not changes already made to user data or decisions 
 
 **Implementation**
 
-- [ ] Return a generic initiation response and remove full-email disclosure. Make account lookup unambiguous; duplicate LeetCode handles must not reset an arbitrary account.
-- [ ] Add persisted request cooldowns, expiry, failed-attempt counters, and per-account/source abuse limits. Do not keep the only limiter in process memory.
-- [ ] Store an OTP verifier rather than plaintext; invalidate previous codes on resend and consume a valid code atomically once.
-- [ ] Define and enforce the same stronger password policy at registration and reset. Preserve existing users' login compatibility until they change passwords.
-- [ ] Add an account session version or equivalent revocation mechanism; password reset invalidates prior tokens.
-- [ ] Add authenticated password change and session-revocation UI where required to complete account management. Keep passwords/codes out of persisted drafts and logs.
+- [x] Return a generic initiation response and remove full-email disclosure. Make account lookup unambiguous; duplicate LeetCode handles must not reset an arbitrary account.
+- [x] Add persisted request cooldowns, expiry, failed-attempt counters, and per-account/source abuse limits. Do not keep the only limiter in process memory.
+- [x] Store an OTP verifier rather than plaintext; invalidate previous codes on resend and consume a valid code atomically once.
+- [x] Define and enforce the same stronger password policy at registration and reset. Preserve existing users' login compatibility until they change passwords.
+- [x] Add an account session version or equivalent revocation mechanism; password reset invalidates prior tokens.
+- [x] Add authenticated password change and session-revocation UI where required to complete account management. Keep passwords/codes out of persisted drafts and logs.
 
 **Acceptance**
 
-- [ ] Existing/nonexistent-account reset requests do not disclose private identity data.
-- [ ] Cooldown, attempt exhaustion, expiry, resend, and concurrent reuse behave correctly.
-- [ ] Old tokens fail after a successful reset; new credentials work in both clients.
+- [x] Existing/nonexistent-account reset requests do not disclose private identity data.
+- [x] Cooldown, attempt exhaustion, expiry, resend, and concurrent reuse behave correctly.
+- [x] Old tokens fail after a successful reset; new credentials work in both clients.
 
 ### SEC-04 — Global display preference, profile access, and private groups
 
@@ -255,23 +322,23 @@ These are proposed defaults, not changes already made to user data or decisions 
 
 **Implementation**
 
-- [ ] Inventory every use of `global_leaderboard_enabled` in backend queries, schemas, signup/settings, navigation, caches, documentation, and both clients. Separate ranking eligibility from display preferences.
-- [ ] Introduce an unambiguous preference such as `show_global_leaderboard`. Migrate each existing true/false value to the corresponding display choice while including every registered user in Global ranking calculations. Document/deprecate the old field for compatible clients; never reset every display preference to true.
-- [ ] Remove participation filters tied to this preference. Global rank, points, period rankings, and inclusion in other people's boards must not change when someone toggles their own Global view.
-- [ ] Hide/show the Global leaderboard navigation and section on that user's homepage/dashboard. When switching it off while Global is selected, move to Friends or another available view. When reopening either client, respect the persisted preference and ignore stale cached Global selection.
-- [ ] Rename signup/settings copy to “Show Global leaderboard,” with an explanation that all users still participate. Remove “hidden publicly,” “friends-only mode,” and equivalent privacy promises tied to this setting.
-- [ ] Write an endpoint-by-viewer permission matrix: public coding profile fields, authenticated account-only fields, group-member data, owner actions, and administrator actions. Accessible profile links must open complete coding stats/recent solves regardless of the profile owner's Global display setting. Keep credential, email, reset, and private settings data separate.
-- [ ] Restrict private-group membership, codes, and group views to authorized members/owners. Implement owner transfer or group deletion before an owner leaves; define safe behavior when the owner deletes their account.
-- [ ] Invalidate private caches after account/membership changes. Feed inclusion and profile access must not be suppressed by the Global display toggle. Friend notifications still follow membership and notification settings; exports still follow account authorization.
+- [x] Inventory every use of `global_leaderboard_enabled` in backend queries, schemas, signup/settings, navigation, caches, documentation, and both clients. Separate ranking eligibility from display preferences.
+- [x] Introduce an unambiguous preference such as `show_global_leaderboard`. Migrate each existing true/false value to the corresponding display choice while including every registered user in Global ranking calculations. Document/deprecate the old field for compatible clients; never reset every display preference to true.
+- [x] Remove participation filters tied to this preference. Global rank, points, period rankings, and inclusion in other people's boards must not change when someone toggles their own Global view.
+- [x] Hide/show the Global leaderboard navigation and section on that user's homepage/dashboard. When switching it off while Global is selected, move to Friends or another available view. When reopening either client, respect the persisted preference and ignore stale cached Global selection.
+- [x] Rename signup/settings copy to “Show Global leaderboard,” with an explanation that all users still participate. Remove “hidden publicly,” “friends-only mode,” and equivalent privacy promises tied to this setting.
+- [x] Write an endpoint-by-viewer permission matrix: public coding profile fields, authenticated account-only fields, group-member data, owner actions, and administrator actions. Accessible profile links must open complete coding stats/recent solves regardless of the profile owner's Global display setting. Keep credential, email, reset, and private settings data separate.
+- [x] Restrict private-group membership, codes, and group views to authorized members/owners. Implement owner transfer or group deletion before an owner leaves; define safe behavior when the owner deletes their account.
+- [x] Invalidate private caches after account/membership changes. Feed inclusion and profile access must not be suppressed by the Global display toggle. Friend notifications still follow membership and notification settings; exports still follow account authorization.
 
 **Acceptance**
 
-- [ ] With Global display off, a user remains ranked and inspectable from another user's Global leaderboard; points/rank eligibility do not change because of the toggle.
-- [ ] The user's own homepage/dashboard hides the Global view in both clients, persists the choice, and does not reopen a stale Global tab. Re-enabling restores access to that view.
-- [ ] Clicking an accessible profile opens its coding stats, activity, points, and recent solves whether its owner has Global display on or off. Private account data remains inaccessible.
-- [ ] Nonmembers cannot read a private group's membership, code, or leaderboard.
-- [ ] Members retain intended access; leaving/removal takes effect on subsequent requests and cached UI. An owner cannot leave a group without completing the agreed ownership-transfer/deletion flow.
-- [ ] Signup/settings/help copy cannot be read as opting out of participation or hiding the account from other people.
+- [x] With Global display off, a user remains ranked and inspectable from another user's Global leaderboard; points/rank eligibility do not change because of the toggle.
+- [x] The user's own homepage/dashboard hides the Global view in both clients, persists the choice, and does not reopen a stale Global tab. Re-enabling restores access to that view.
+- [x] Clicking an accessible profile opens its coding stats, activity, points, and recent solves whether its owner has Global display on or off. Private account data remains inaccessible.
+- [x] Nonmembers cannot read a private group's membership, code, or leaderboard.
+- [x] Members retain intended access; leaving/removal takes effect on subsequent requests and cached UI. An owner cannot leave a group without completing the agreed ownership-transfer/deletion flow.
+- [x] Signup/settings/help copy cannot be read as opting out of participation or hiding the account from other people.
 
 ### SEC-05 — Remove fabricated-profile production behavior
 
@@ -352,9 +419,9 @@ These are proposed defaults, not changes already made to user data or decisions 
 
 **Implementation**
 
-- [ ] Store provider calendar activity separately from verified accepted-question activity, with source and completeness metadata.
-- [ ] Remove the “calendar activity means one solved question” conversion.
-- [ ] Derive qualifying streak days only from first accepted solves of previously unsolved questions on either linked platform. Repeated acceptances, revision awards, and failed attempts never qualify.
+- [x] Store provider calendar activity separately from verified accepted-question activity, with source and completeness metadata. R3b uses a source-labelled partial provider calendar; legacy rows remain audit data.
+- [x] Remove the “calendar activity means one solved question” conversion. R3b qualifying activity is derived from proved first solves only.
+- [x] Derive qualifying streak days only from proved first accepted solves on either linked platform. R3b excludes repeats, revisions, calendars and failed attempts; stronger LC proof remains open.
 - [ ] Keep calendar/recent-repeat activity separate from new-question streak evidence. A newly imported record uses its known accepted date, never its import date, and a repeat's timestamp must not be misrepresented as a first solve.
 - [ ] Reconcile existing rows conservatively. Do not turn missing evidence into either a fabricated accepted solve or proof that someone did no work.
 
@@ -471,7 +538,7 @@ These are proposed defaults, not changes already made to user data or decisions 
 - [ ] Store earned daily award amounts in a dedicated component/event keyed by account/provider identity/platform/IST challenge date, with question, evidence, source, and rule version.
 - [ ] Extract known already-earned daily amounts before altering bases; retain their exact awarded component. For rows where the old daily component cannot be established confidently, prepare a private impact report and seek a policy choice rather than silently losing or inventing points.
 - [ ] Initial/imported historical questions receive base-only credit. Do not infer historical daily eligibility from a solved slug, archive match, current streak, or import time; a newly registered account must not gain retroactive daily points.
-- [ ] Preserve future daily eligibility and repeated-daily handling as explicit open decisions. Do not turn the historical-import rule into an unapproved lifetime ban for new users, or assume the earlier repeat-daily proposal is accepted.
+- [x] Set future/repeated daily eligibility: new users can earn live daily bonuses; each different official daily question first solved that IST day can earn one. There is no across-question daily cap. Repeats earn revision credit only. Implementation remains pending below.
 - [ ] Once those decisions are made, record eligible live awards idempotently. A repeated daily never adds a second unique base award or extends the first-solve-only streak; any overlap with revision points follows the agreed stacking rule.
 - [ ] Update help, breakdowns, reminders, and migrations to distinguish current base credit, retained earned daily points, revision credit, and unknown historical evidence.
 
@@ -487,13 +554,13 @@ These are proposed defaults, not changes already made to user data or decisions 
 
 **Files:** `backend/app/models.py`, provider ingestion/sync clients, `point_calculator.py`, score schemas; question/profile/help displays in both clients.
 
-**Depends on:** DATA-02–04, DATA-06–07, OPS-03 migration infrastructure. Settle cooldown anchor/recurrence and daily-bonus stacking before implementation.
+**Depends on:** DATA-02–04, DATA-06–07, OPS-03 migration infrastructure. Use the confirmed recurring seven-day first-solve/last-reward anchor; owner confirmed the streak multiplier applies and repeats do not earn daily bonuses.
 
 **Implementation**
 
-- [ ] Record the original accepted problem identity and sufficient subsequent accepted-event timestamps/IDs to prove eligible revisions. Resolve whether rewards recur and whether the seven-day anchor is first solve, last acceptance, or last rewarded revision.
+- [ ] Record the original accepted problem identity and sufficient subsequent accepted-event timestamps/IDs to prove eligible revisions. Rewards recur at least seven days after the first solve or last rewarded revision. Unrewarded attempts do not restart the clock.
 - [ ] Record a separate revision award for 2 points linked to the original question entry; never duplicate the solve row, increment new-question counts, or extend the streak.
-- [ ] Confirm whether 2 is an exact flat amount or subject to any multiplier and whether a revision may also earn a daily bonus. Do not silently apply existing base/streak arithmetic to it.
+- [x] Confirm revision arithmetic: multiply the 2-point base by the applicable streak multiplier. Repeated questions do not also earn a daily bonus.
 - [ ] Add transactional uniqueness/idempotency so repeated polls, concurrent syncs, and replayed submissions cannot reward the same revision twice. Define which event wins when several eligible acceptances arrive in one batch.
 - [ ] Do not award historical revisions from initial imported history without an explicitly approved backfill policy. Missing repeated-acceptance data means incomplete evidence, not permission to synthesize events.
 - [ ] Show any revision credit within the existing question entry and score breakdown, with clear separation from base/daily points. Document cooldown behavior in help and website scoring.
@@ -671,16 +738,16 @@ These are proposed defaults, not changes already made to user data or decisions 
 
 **Implementation**
 
-- [ ] Return structured dispatch outcomes: accepted by provider, unavailable, rejected, or failed. Do not claim inbox delivery merely because a provider accepted a request.
-- [ ] Restrict no-send/log-only transport to explicit development mode; never log OTPs or private message bodies.
-- [ ] Keep public reset responses generic while recording private delivery failure for operations/retry. Mark update delivery only after genuine provider acceptance.
-- [ ] Bound retries and make broadcasts idempotent. Sanitize interpolated content and avoid blocking the async server with synchronous SMTP work.
+- [x] Return structured dispatch outcomes: accepted by provider, unavailable, rejected, or failed. Do not claim inbox delivery merely because a provider accepted a request.
+- [x] Restrict no-send/log-only transport to explicit development mode; never log OTPs or private message bodies.
+- [x] Keep public reset responses generic while recording private delivery failure for operations/retry. Mark update delivery only after genuine provider acceptance.
+- [x] Bound retries and make broadcasts idempotent. Sanitize interpolated content and avoid blocking the async server with synchronous SMTP work.
 
 **Acceptance**
 
-- [ ] Missing configuration, rejection, timeout, and failed fallback cannot produce a successful delivery record.
-- [ ] Provider acceptance produces the expected state without duplicate sends on retries.
-- [ ] Error logs contain actionable status without credentials, OTPs, or recipient dumps.
+- [x] Missing configuration, rejection, timeout, and failed fallback cannot produce a successful delivery record.
+- [x] Provider acceptance produces the expected state without duplicate sends on retries.
+- [x] Error logs contain actionable status without credentials, OTPs, or recipient dumps.
 
 ### OPS-02 — Stable signing keys and sessions
 
@@ -713,16 +780,16 @@ These are proposed defaults, not changes already made to user data or decisions 
 
 **Implementation**
 
-- [ ] Move schema changes into ordered, versioned, repeatable migrations with explicit failure behavior and backup/recovery instructions.
+- [x] Move schema changes into ordered, versioned, repeatable migrations with explicit failure behavior and backup/recovery instructions. R1 verified locally; production upgrade remains a release checkpoint.
 - [ ] Backfill challenge archives incrementally using stored coverage/checkpoints; fetch missing months only.
 - [ ] Run all-user point reconciliation as an explicit versioned job, in bounded batches with progress and restart recovery.
-- [ ] Separate basic liveness from readiness. Startup should validate local configuration/schema and avoid waiting on years of provider requests.
+- [x] Separate basic liveness from readiness. Startup validates local configuration/schema without waiting on provider requests; readiness probes database availability. Hosting probe configuration remains a release checkpoint.
 - [ ] Remove unconditional historical repair statements from normal startup after migrating their intended data safely.
 
 **Acceptance**
 
-- [ ] Restarting does not refetch the full archive or revalue all accounts.
-- [ ] Migration failure is visible and cannot leave a falsely healthy incompatible service.
+- [x] Restarting does not refetch the full archive or revalue all accounts. Verified locally in R1; periodic runtime sync remains separate.
+- [x] Migration failure is visible and cannot leave a falsely healthy incompatible service. Failure prevents serving; the separate readiness endpoint returns 503 until ready.
 - [ ] Interrupted backfills resume without duplicate awards or lost coverage.
 
 ### OPS-04 — Cross-process job coordination
@@ -1062,7 +1129,7 @@ Do not paste discovered sensitive values or identities into public issues, this 
 - [ ] Privately inventory test addresses, personal names/handles, local paths, phone/payment details, screenshots, user exports, and hardcoded sample accounts in tracked/releasable files.
 - [ ] Replace examples with clearly fictional identities such as `Demo Coder` and `coder@example.com`. Use reserved example addresses, never a real inbox disguised as test data.
 - [ ] Remove hardcoded personal notification demonstrations; use safe synthetic fixtures in isolated tests or a development-only preview.
-- [ ] Distinguish intentional public product contact/donation details from accidental personal data; retain intentional details only after the owner explicitly confirms that public exposure is intended.
+- [x] Distinguish intentional public product contact/donation details from accidental personal data. Owner explicitly approved the donation QR/payment assets and controls remaining public on 2026-11-05; the illustrated username guide is synthetic.
 - [ ] Check assets and generated output as well as readable source. Rebuild affected artifacts after cleanup.
 
 **Acceptance**
@@ -1127,7 +1194,8 @@ Do not paste discovered sensitive values or identities into public issues, this 
 
 - [ ] Privately inspect reachable history/refs and published surfaces for the categories identified in PUB-01/03. Report locations and exposure classes, not raw sensitive values.
 - [ ] Choose the least disruptive sufficient approach: ordinary cleanup for harmless clutter, targeted history sanitization for sensitive content, or a clean public release repository while retaining the original privately where appropriate.
-- [ ] Prepare a concrete history-remediation plan, private backup, affected refs, collaborator instructions, and verification procedure. Obtain explicit approval before rewriting shared history, force-pushing, removing public releases, or replacing a repository.
+- [x] Prepare a concrete history-remediation plan, private backup, affected refs, collaborator instructions, and verification procedure. Prepared privately; backup restoration/integrity verified.
+- [ ] Obtain explicit approval of the reviewed proposal before rewriting shared history, force-pushing, removing public releases, or replacing a repository.
 - [ ] Remove/update owned exposed release artifacts and request provider/cache remediation where applicable. Document that forks, clones, and third-party caches cannot be guaranteed erased.
 - [ ] Re-scan the intended public refs/artifacts and record the outcome privately. Avoid promising that all historical traces are gone.
 
@@ -1210,7 +1278,8 @@ For each item, record the following when work begins/completes. Do not place rea
 
 | Item | State | Implementation commit/PR | Verification evidence | Release state | Remaining work |
 |---|---|---|---|---|---|
-| Example only | Not started / In progress / Awaiting verification / Awaiting release / Complete / Deferred | Revision or PR link | Check name, environment, date, result | Local / Feature branch / Production verified | Specific blocker or none |
+| M1-01 | Awaiting release | `f90fb47` | 7 synthetic auth/configuration tests passed | pre-launch | Production key configuration and coordinated release pending |
+| M1-02 | Passed locally; awaiting release | `f200400` | 17 backend + 3 client session + 11 progress tests; type checks/builds passed | pre-launch | Session revocation follows M1-05; owner-transfer UI follows M1-06 |
 
 ### Shared definition of done
 
@@ -1222,6 +1291,8 @@ For each item, record the following when work begins/completes. Do not place rea
 - Extension packages or website output are rebuilt only when their corresponding application changes require it.
 - Required deployment verification is complete, or the item remains explicitly awaiting release.
 - The master checkbox is updated, and any new follow-up has a distinct ID rather than being silently forgotten.
+
+M1-03 (`f9f07a3`) evidence: 22 backend tests passed using synthetic users and a temporary database; no emails or production jobs were sent. Administrative configuration/release remains pending.
 
 ## 11. Coverage map back to the review
 
@@ -1276,3 +1347,5 @@ For each item, record the following when work begins/completes. Do not place rea
 | 2026-11-05 | Recorded owner evaluation: first-time accepted questions alone qualify for streaks; one entry per question; revision repeats after at least a week may earn 2 points; all product boundaries use IST; formula changes revalue past base awards for everyone while retaining earned daily amounts; imported new-user history gets base points only; proven renames retain history and different accounts are recalculated. Added DATA-09 (44 total items), deferred UI-03/UI-04/FEAT-07, and recorded the main-then-pre-launch branch sequence with labeled per-step commits/pushes. Ambiguous cooldown/daily details remain open. Documentation only. |
 | 2026-11-05 | Confirmed mandatory backend persistence/sync for user plans, follows/removals, imported definitions, and external completion; local storage serves only as cache/outbox. Added cache-clear/reinstall and cross-account acceptance checks. No application or Git branch operations performed. |
 | 2026-11-05 | Added owner-requested FEAT-10 for backend-persisted direct friendships independent of groups (45 total items). Mutual-request/discovery details remain pending. Owner separately authorized merging progress-bar into main and testing the Codeforces integration; pre-launch milestone implementation remains on hold. |
+
+M1-09 local acceptance: isolated PostgreSQL 16 exercised migration concurrency and transactional recovery. Browser checks exposed and now cover a website password-change bug where a session token was written through account-scoped dashboard storage. Both client flows pass with intercepted local APIs and mocked providers; no production accounts or emails were used. Credential invalidation is owner-confirmed, not tested using exposed passwords.

@@ -1,5 +1,6 @@
 """Additive migration for existing PostgreSQL and local SQLite installations."""
 from sqlalchemy import inspect, text
+from .migrations import migration_connection, versions
 
 
 def migrate_platforms(engine):
@@ -7,7 +8,10 @@ def migrate_platforms(engine):
         "users": {"codeforces_username": "VARCHAR(80)", "codeforces_linked_at": "TIMESTAMP", "codeforces_last_sync": "TIMESTAMP", "codeforces_last_full_sync": "TIMESTAMP", "codeforces_sync_error": "VARCHAR(300)"},
         "solves": {"platform": "VARCHAR(20) NOT NULL DEFAULT 'leetcode'", "source_handle": "VARCHAR(80)", "source_submission_id": "BIGINT", "problem_rating": "DOUBLE PRECISION", "problem_url": "VARCHAR(500)", "scoring_version": "VARCHAR(40) NOT NULL DEFAULT 'leetcode-v1'"},
     }
-    with engine.begin() as conn:
+    with migration_connection(engine) as conn:
+        version = "20261106-platforms-v1"
+        if conn.execute(versions.select().where(versions.c.version == version)).first():
+            return
         for table, additions in columns.items():
             existing = {column["name"] for column in inspect(conn).get_columns(table)}
             for name, definition in additions.items():
@@ -17,3 +21,4 @@ def migrate_platforms(engine):
         conn.execute(text("CREATE INDEX IF NOT EXISTS ix_solves_user_platform ON solves (user_id, platform)"))
         conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_users_codeforces_handle ON users (lower(codeforces_username)) WHERE codeforces_username IS NOT NULL"))
         conn.execute(text("UPDATE solves SET source_handle = (SELECT leetcode_username FROM users WHERE users.id = solves.user_id) WHERE platform = 'leetcode' AND source_handle IS NULL"))
+        conn.execute(versions.insert().values(version=version))

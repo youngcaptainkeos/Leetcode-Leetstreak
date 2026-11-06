@@ -97,7 +97,7 @@ PRIVACY_HTML = f"""<!DOCTYPE html>
       <h3>B. Information Synchronized Automatically</h3>
       <ul>
         <li><strong>Public Solve Records:</strong> Problem titles, difficulty levels (Easy, Medium, Hard), acceptance rates, and submission timestamps retrieved from LeetCode's public GraphQL endpoints.</li>
-        <li><strong>Leaderboard Preferences:</strong> Whether you have opted into the public Global Leaderboard or chosen private friends-only mode.</li>
+        <li><strong>Leaderboard Display Preference:</strong> Whether Global rankings are shown on your own home page. All registered users participate regardless of this choice. Other signed-in users can view coding profiles and statistics; private group membership and invite codes require appropriate group access.</li>
         <li><strong>Social Interactions:</strong> Kudos counts sent and received across 24-hour cycles.</li>
       </ul>
 

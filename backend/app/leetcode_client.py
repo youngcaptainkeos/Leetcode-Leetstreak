@@ -9,6 +9,7 @@ Fetches:
 """
 import json
 import logging
+import math
 from datetime import datetime, date, timezone, timedelta
 from typing import Optional, Dict, Any, List
 import httpx
@@ -164,20 +165,6 @@ async def fetch_leetcode_user_data(username: str) -> dict:
     - Official LeetCode streak and total active days
     - Recent accepted submissions
     """
-    uname_clean = username.strip().lower()
-    if uname_clean.startswith("tester_") or uname_clean.startswith("test_"):
-        today = datetime.now(IST).date()
-        return {
-            "username": username,
-            "avatar_url": None,
-            "real_name": username.replace("_", " ").title(),
-            "difficulty_counts": {"Easy": 20, "Medium": 12, "Hard": 4},
-            "official_streak": 5,
-            "total_active_days": 10,
-            "calendar": {today - timedelta(days=i): 1 for i in range(5)},
-            "recent_submissions": [],
-        }
-
     async with httpx.AsyncClient(timeout=12, follow_redirects=True) as client:
         p_resp = await client.post(
             GRAPHQL_URL,
@@ -223,6 +210,7 @@ async def fetch_leetcode_user_data(username: str) -> dict:
 
         # Recent AC submissions for the solves ledger
         recent_submissions = []
+        recent_submissions_available = False
         try:
             ac_resp = await client.post(
                 GRAPHQL_URL,
@@ -231,7 +219,10 @@ async def fetch_leetcode_user_data(username: str) -> dict:
             )
             if ac_resp.status_code == 200:
                 ac_data = ac_resp.json()
-                recent_submissions = (ac_data.get("data") or {}).get("recentAcSubmissionList") or []
+                rows = (ac_data.get("data") or {}).get("recentAcSubmissionList")
+                if not ac_data.get("errors") and isinstance(rows, list):
+                    recent_submissions = rows
+                    recent_submissions_available = True
         except Exception as e:
             logger.warning("Recent AC submissions query failed for %s: %s", username, e)
 
@@ -244,6 +235,7 @@ async def fetch_leetcode_user_data(username: str) -> dict:
             "total_active_days": total_active_days,
             "submission_calendar": parsed_calendar,
             "recent_submissions": recent_submissions,
+            "recent_submissions_available": recent_submissions_available,
         }
 
 
@@ -267,7 +259,7 @@ async def fetch_problem_info(title_slug: str) -> dict:
     Caches results in memory to minimize GraphQL calls.
     """
     if not title_slug:
-        return {"difficulty": "Medium", "ac_rate": None}
+        return {"difficulty": None, "ac_rate": None}
 
     slug = title_slug.strip().lower()
     if slug in _PROBLEM_INFO_CACHE:
@@ -284,7 +276,7 @@ async def fetch_problem_info(title_slug: str) -> dict:
                 data = resp.json()
                 q = (data.get("data") or {}).get("question")
                 if q:
-                    diff = q.get("difficulty") or "Medium"
+                    diff = q.get("difficulty") if q.get("difficulty") in {"Easy", "Medium", "Hard"} else None
                     ac_rate = None
                     stats_raw = q.get("stats")
                     if stats_raw:
@@ -293,16 +285,18 @@ async def fetch_problem_info(title_slug: str) -> dict:
                             ac_str = str(stats_dict.get("acRate", "")).replace("%", "").strip()
                             if ac_str:
                                 ac_rate = float(ac_str)
+                                if not math.isfinite(ac_rate) or not 0 <= ac_rate <= 100:
+                                    ac_rate = None
                         except Exception:
                             pass
                     info = {"difficulty": diff, "ac_rate": ac_rate}
-                    _PROBLEM_INFO_CACHE[slug] = info
+                    if diff is not None and ac_rate is not None:
+                        _PROBLEM_INFO_CACHE[slug] = info
                     return info
     except Exception as e:
         logger.warning("Failed to fetch problem info for %s: %s", slug, e)
 
-    default_info = {"difficulty": "Medium", "ac_rate": None}
-    _PROBLEM_INFO_CACHE[slug] = default_info
+    default_info = {"difficulty": None, "ac_rate": None}
     return default_info
 
 

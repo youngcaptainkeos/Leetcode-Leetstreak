@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import secrets
+import re
 from datetime import datetime, timedelta, timezone
 
 from .config import JWT_SECRET, JWT_EXPIRATION_DAYS
@@ -49,11 +50,13 @@ def _base64url_encode(data: bytes) -> str:
 
 
 def _base64url_decode(data_str: str) -> bytes:
-    padding = '=' * (4 - (len(data_str) % 4))
-    return base64.urlsafe_b64decode(data_str + padding)
+    if not isinstance(data_str, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", data_str):
+        raise ValueError("Invalid token encoding")
+    padding = '=' * (-len(data_str) % 4)
+    return base64.b64decode(data_str + padding, altchars=b'-_', validate=True)
 
 
-def create_access_token(user_id: int) -> str:
+def create_access_token(user_id: int, session_version: int = 0) -> str:
     """Create a signed JWT access token for user_id."""
     header = {"alg": "HS256", "typ": "JWT"}
     now = datetime.now(timezone.utc)
@@ -61,6 +64,7 @@ def create_access_token(user_id: int) -> str:
     payload = {
         "sub": str(user_id),
         "user_id": user_id,
+        "ver": session_version,
         "iat": int(now.timestamp()),
         "exp": int(exp.timestamp())
     }
@@ -74,7 +78,9 @@ def create_access_token(user_id: int) -> str:
 
 
 def decode_access_token(token: str) -> dict:
-    """Decode and verify JWT access token."""
+    """Verify the expected algorithm and required claims; reject malformed input."""
+    if not isinstance(token, str) or len(token) > 8192:
+        raise ValueError("Invalid token")
     parts = token.split('.')
     if len(parts) != 3:
         raise ValueError("Invalid token format")
@@ -86,10 +92,27 @@ def decode_access_token(token: str) -> dict:
     if not secrets.compare_digest(signature, expected_signature):
         raise ValueError("Invalid token signature")
 
-    payload_bytes = _base64url_decode(parts[1])
-    payload = json.loads(payload_bytes.decode('utf-8'))
-
-    if payload.get("exp") and int(datetime.now(timezone.utc).timestamp()) > payload["exp"]:
-        raise ValueError("Token expired")
-
-    return payload
+    try:
+        header = json.loads(_base64url_decode(parts[0]))
+        payload = json.loads(_base64url_decode(parts[1]))
+        if not isinstance(header, dict) or header.get("alg") != "HS256" or header.get("typ") != "JWT" or header.get("crit"):
+            raise ValueError("Invalid token header")
+        if not isinstance(payload, dict):
+            raise ValueError("Invalid token claims")
+        subject = payload.get("sub")
+        if not isinstance(subject, str) or not re.fullmatch(r"[1-9][0-9]{0,9}", subject):
+            raise ValueError("Invalid token subject")
+        if type(payload.get("user_id")) is not int or payload["user_id"] != int(subject):
+            raise ValueError("Inconsistent token identity")
+        if type(payload.get("ver", 0)) is not int or payload.get("ver", 0) < 0:
+            raise ValueError("Invalid session version")
+        if type(payload.get("exp")) is not int or type(payload.get("iat")) is not int:
+            raise ValueError("Missing token timestamps")
+        now = int(datetime.now(timezone.utc).timestamp())
+        if payload["exp"] <= now or payload["iat"] > now + 30 or payload["exp"] <= payload["iat"]:
+            raise ValueError("Expired or invalid token timestamps")
+        if "nbf" in payload and (type(payload["nbf"]) is not int or payload["nbf"] > now):
+            raise ValueError("Token not yet valid")
+        return payload
+    except (ValueError, TypeError, UnicodeError, OverflowError) as error:
+        raise ValueError("Invalid or expired access token") from error

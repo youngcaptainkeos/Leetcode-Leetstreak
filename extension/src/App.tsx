@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   api,
+  showGlobalLeaderboard,
   DashboardResponse,
   LeaderboardResponse,
   LeaderboardEntry,
@@ -10,6 +11,7 @@ import {
   AppConfigResponse,
   DynamicMenuItem,
   checkExtensionVersion,
+  AUTH_EXPIRED,
 } from "./lib/api";
 import { getStored, setStored, clearStored } from "./storage";
 import { DailyReminder, ProgressPanel, usePractice } from "./progress/Progress";
@@ -31,7 +33,8 @@ export default function App() {
   useEffect(() => {
     (async () => {
       const stored = await getStored("codestreak_user_id");
-      if (stored) {
+      const token = await getStored("codestreak_access_token");
+      if (stored && token && Number.isSafeInteger(Number(stored)) && Number(stored) > 0) {
         setUserId(Number(stored));
         setView("dashboard");
       } else {
@@ -82,6 +85,12 @@ export default function App() {
         console.warn("Update check error:", err);
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    const expired = () => { void handleLogout(); setError("Your session expired. Please sign in again."); };
+    window.addEventListener(AUTH_EXPIRED, expired);
+    return () => window.removeEventListener(AUTH_EXPIRED, expired);
   }, []);
 
   async function handleRegistered(id: number) {
@@ -265,8 +274,9 @@ function Onboarding({
     try {
       const res = await api.login(username.trim(), password);
       await clearStored(AUTH_STORAGE_KEYS);
+      if (!res.access_token) throw new Error("Please update the app and sign in again.");
+      await setStored("codestreak_access_token", res.access_token);
       onRegistered(res.id);
-      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Login failed.");
     } finally {
@@ -282,8 +292,9 @@ function Onboarding({
     try {
       const res = await api.register(name.trim(), username.trim(), email.trim(), password, enableGlobalLeaderboard, signupCodeforces);
       await clearStored(AUTH_STORAGE_KEYS);
+      if (!res.access_token) throw new Error("Please update the app and sign in again.");
+      await setStored("codestreak_access_token", res.access_token);
       onRegistered(res.id);
-      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Registration failed.");
     } finally {
@@ -298,12 +309,12 @@ function Onboarding({
     onError(null);
     try {
       const res = await api.initiateForgotPassword(username.trim());
-      setSentEmail(res.email);
+      setSentEmail("your registered email");
       setForgotStep(2);
-      setSuccessMsg(`Sent 6-digit code to ${res.email}`);
+      setSuccessMsg(res.message);
       await setStored("codestreak_auth_mode", "forgot");
       await setStored("codestreak_forgot_step", "2");
-      await setStored("codestreak_sent_email", res.email);
+      await clearStored(["codestreak_sent_email"]);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Could not send reset code.");
     } finally {
@@ -321,8 +332,9 @@ function Onboarding({
       setPassword(newPassword);
       const res = await api.login(username.trim(), newPassword);
       await clearStored(AUTH_STORAGE_KEYS);
+      if (!res.access_token) throw new Error("Please update the app and sign in again.");
+      await setStored("codestreak_access_token", res.access_token);
       onRegistered(res.id);
-      if (res.access_token) await setStored("codestreak_access_token", res.access_token);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Verification failed.");
     } finally {
@@ -456,7 +468,9 @@ function Onboarding({
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 4 characters"
+                placeholder="At least 15 characters"
+                minLength={15}
+                maxLength={100}
                 required
               />
             </label>
@@ -468,8 +482,8 @@ function Onboarding({
               tabIndex={0}
               title={
                 enableGlobalLeaderboard
-                  ? "Click to disable global leaderboard participation"
-                  : "Click to enable global leaderboard participation"
+                  ? "Hide Global leaderboard on your home page"
+                  : "Show Global leaderboard on your home page"
               }
               onKeyDown={(e) => {
                 if (e.key === " " || e.key === "Enter") {
@@ -482,12 +496,12 @@ function Onboarding({
                 <span className="auth-leaderboard-icon">🌐</span>
                 <div className="auth-leaderboard-text">
                   <span className="auth-leaderboard-title">
-                    Participate in Global Leaderboard
+                    Show Global leaderboard
                   </span>
                   <span className="auth-leaderboard-desc">
                     {enableGlobalLeaderboard
-                      ? "Public leaderboard enabled"
-                      : "Off (friends & squads only)"}
+                      ? "Shown here; everyone participates"
+                      : "Hidden here; you still participate"}
                   </span>
                 </div>
               </div>
@@ -561,7 +575,9 @@ function Onboarding({
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="New password"
+                    placeholder="At least 15 characters"
+                    minLength={15}
+                    maxLength={100}
                     required
                   />
                 </label>
@@ -684,7 +700,7 @@ function Dashboard({
       }
 
       let activeTabKey = "global";
-      if (cachedDashObj && cachedDashObj.global_leaderboard_enabled === false) {
+      if (cachedDashObj && !showGlobalLeaderboard(cachedDashObj)) {
         activeTabKey = "friends";
         setSelectedTab("friends");
       } else if (storedTab) {
@@ -733,6 +749,12 @@ function Dashboard({
 
   // Settings & Coffee Modal States
   const [showSettings, setShowSettings] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [changedPassword, setChangedPassword] = useState("");
+  const [securityBusy, setSecurityBusy] = useState(false);
+  const [transferTarget, setTransferTarget] = useState("");
+  const [transferBusy, setTransferBusy] = useState(false);
+  useEffect(() => { if (!showSettings) { setCurrentPassword(""); setChangedPassword(""); } }, [showSettings]);
   const [settingsPage, setSettingsPage] = useState<"general" | "accounts">("general");
   const [showCoffeeModal, setShowCoffeeModal] = useState(false);
   const [showUsernameHelpModal, setShowUsernameHelpModal] = useState(false);
@@ -837,21 +859,50 @@ function Dashboard({
     return () => clearInterval(interval);
   }, [dash?.codeforces_username, dash?.codeforces_last_sync, dash?.codeforces_sync_error, selectedTab]);
 
+  async function handleChangePassword(event: React.FormEvent) {
+    event.preventDefault();
+    setSecurityBusy(true); setSettingsMsg(null);
+    try {
+      const result = await api.changePassword(userId, currentPassword, changedPassword);
+      await setStored("codestreak_access_token", result.access_token);
+      setCurrentPassword(""); setChangedPassword("");
+      setSettingsMsg("Password changed. Your other sessions have been signed out.");
+    } catch (error) { setSettingsMsg(error instanceof Error ? error.message : "Could not change password."); }
+    finally { setSecurityBusy(false); }
+  }
+
+  async function handleRevokeSessions() {
+    setSecurityBusy(true); setSettingsMsg(null);
+    try { await api.revokeSessions(userId); onResetUser(); }
+    catch (error) { setSettingsMsg(error instanceof Error ? error.message : "Could not sign out sessions."); }
+    finally { setSecurityBusy(false); }
+  }
+
+  async function handleTransferGroup() {
+    if (!activeGroup || !transferTarget) return;
+    const selected = activeGroup.members.find(member => String(member.id) === transferTarget);
+    if (!selected || !window.confirm(`Transfer ownership to ${selected.name}? They will control group management.`)) return;
+    setTransferBusy(true);
+    try { await api.transferGroup(activeGroup.id, selected.id); setTransferTarget(""); await loadData(selectedTab); }
+    catch (error) { setError(error instanceof Error ? error.message : "Could not transfer ownership."); }
+    finally { setTransferBusy(false); }
+  }
+
   async function handleToggleGlobalLeaderboard() {
     if (!dash) return;
-    const currentEnabled = dash.global_leaderboard_enabled !== false;
+    const currentEnabled = showGlobalLeaderboard(dash);
     const nextState = !currentEnabled;
     setTogglingLeaderboard(true);
     setSettingsMsg(null);
     try {
-      await api.updateSettings(userId, { global_leaderboard_enabled: nextState });
-      const updatedDash = { ...dash, global_leaderboard_enabled: nextState };
+      await api.updateSettings(userId, { show_global_leaderboard: nextState });
+      const updatedDash = { ...dash, show_global_leaderboard: nextState };
       setDash(updatedDash);
       setStored("codestreak_cached_dash", JSON.stringify(updatedDash));
       setSettingsMsg(
         nextState
-          ? "Global Leaderboard enabled! 🌐"
-          : "Global Leaderboard disabled! In friends-only mode. 👥"
+          ? "Global view shown. Everyone still participates."
+          : "Global view hidden here. You still participate."
       );
       setTimeout(() => setSettingsMsg(null), 3000);
 
@@ -915,7 +966,7 @@ function Dashboard({
 
       setDash(dashRes);
       window.dispatchEvent(new Event(PRACTICE_REFRESH));
-      if (dashRes.global_leaderboard_enabled === false && tab === "global") {
+      if (!showGlobalLeaderboard(dashRes) && tab === "global") {
         changeTab("friends");
         return;
       }
@@ -1366,6 +1417,9 @@ function Dashboard({
           <span className="streak-count">{dash.current_streak}</span>
         </div>
         <div className="streak-label">DAY STREAK</div>
+        {dash.history_incomplete && <p className="tiny muted">Counts and streak use verified first solves. Historical dates are incomplete.</p>}
+        {(dash.historical_base_points ?? 0) > 0 && <p className="tiny muted">Includes {dash.historical_base_points} base-only estimated history points.</p>}
+        {dash.score_needs_review && <p className="tiny muted">Some historical credit needs reconciliation.</p>}
 
         <div className="stat-row">
           <Stat label="Today" value={dash.today_count} />
@@ -1436,7 +1490,7 @@ function Dashboard({
 
         {/* Board Switcher Tabs */}
         <div className="tab-bar-container">
-          {dash?.global_leaderboard_enabled !== false && (
+          {showGlobalLeaderboard(dash) && (
             <button
               className={`tab-btn ${selectedTab === "global" ? "active" : ""}`}
               onClick={() => changeTab("global")}
@@ -1537,6 +1591,11 @@ function Dashboard({
             )}
           </div>
         )}
+
+        {activeGroup?.creator_id === userId && activeGroup.members.some(member => member.id !== userId) && <div className="group-transfer-row">
+          <select aria-label="New group owner" value={transferTarget} onChange={event => setTransferTarget(event.target.value)}><option value="">Choose a new owner</option>{activeGroup.members.filter(member => member.id !== userId).map(member => <option key={member.id} value={member.id}>{member.name}</option>)}</select>
+          <button type="button" className="chip-btn" disabled={!transferTarget || transferBusy} onClick={handleTransferGroup}>{transferBusy ? "Transferring…" : "Transfer ownership"}</button>
+        </div>}
 
         {/* Leaderboard List */}
         <ul className="leaderboard">
@@ -1733,6 +1792,8 @@ function Dashboard({
               <>
                 {friendDash ? <>
                   <div className="section-title text-center mb-1">QUESTIONS SOLVED</div>
+                  {friendDash?.history_incomplete && <p className="tiny muted">Verified first solves only; historical dates are incomplete.</p>}
+                  {friendDash?.score_needs_review && <p className="tiny muted">Some historical credit needs reconciliation.</p>}
                   <div className="stat-row">
                     <Stat label="Today" value={friendDash.today_count} />
                     <Stat label="This Week" value={friendDash.weekly_total} />
@@ -1939,24 +2000,24 @@ function Dashboard({
                 </div>
                 <div className="settings-row">
                   <div className="settings-row-text">
-                    <span className="settings-row-label">Global leaderboard</span>
+                    <span className="settings-row-label">Show Global leaderboard</span>
                     <span className="settings-row-caption">
-                      {dash?.global_leaderboard_enabled !== false
-                        ? "Visible publicly on global rankings"
-                        : "Hidden publicly (friends-only mode)"}
+                      {showGlobalLeaderboard(dash)
+                        ? "Shown on your home page; everyone participates"
+                        : "Hidden here; you still participate"}
                     </span>
                   </div>
                   <label
                     className="settings-switch"
                     title={
-                      dash?.global_leaderboard_enabled !== false
-                        ? "Click to disable global leaderboard"
-                        : "Click to enable global leaderboard"
+                      showGlobalLeaderboard(dash)
+                        ? "Hide Global leaderboard on your home page"
+                        : "Show Global leaderboard on your home page"
                     }
                   >
                     <input
                       type="checkbox"
-                      checked={dash?.global_leaderboard_enabled !== false}
+                      checked={showGlobalLeaderboard(dash)}
                       onChange={handleToggleGlobalLeaderboard}
                       disabled={togglingLeaderboard}
                     />
@@ -1965,6 +2026,19 @@ function Dashboard({
                 </div>
               </div>
             </div>
+
+            <section className="settings-section" aria-label="Account security">
+              <div className="settings-section-title">Security</div>
+              <div className="settings-card">
+                <form className="settings-security-form" onSubmit={handleChangePassword}>
+                  <label className="settings-security-label">Current password<div className="settings-input-wrapper"><input className="settings-text-input" type="password" autoComplete="current-password" value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} required maxLength={100} /></div></label>
+                  <label className="settings-security-label">New password<div className="settings-input-wrapper"><input className="settings-text-input" type="password" autoComplete="new-password" value={changedPassword} onChange={event => setChangedPassword(event.target.value)} required minLength={15} maxLength={100} placeholder="At least 15 characters" /></div></label>
+                  <button className="chip-btn settings-action-btn" type="submit" disabled={securityBusy}>{securityBusy ? "Please wait…" : "Change password"}</button>
+                </form>
+                <span className="settings-input-hint">Changing your password signs out other sessions. Passwords stay only in this open form.</span>
+                <button type="button" className="chip-btn" disabled={securityBusy} onClick={handleRevokeSessions}>Sign out all devices</button>
+              </div>
+            </section>
 
             {/* Section: DANGER ZONE */}
             <div className="settings-section danger-section">
@@ -2053,7 +2127,7 @@ function Dashboard({
                     </button>
                   </div>
                   <span className="settings-input-hint">
-                    Syncs your public LeetCode solves and streak.
+                    A different handle replaces LeetCode history and retains Codeforces credit. Case-only edits keep history.
                   </span>
                 </form>
                 <button
@@ -2270,70 +2344,26 @@ function Dashboard({
             </div>
 
             <p className="tiny muted">Source: {selectedSolveBreakdown.platform === "codeforces" ? "Codeforces" : "LeetCode"}{selectedSolveBreakdown.source_handle ? ` · @${selectedSolveBreakdown.source_handle}` : ""}{selectedSolveBreakdown.source_submission_id ? ` · submission ${selectedSolveBreakdown.source_submission_id}` : ""}</p>
-            {/* Base Problem Score Card */}
+            {selectedSolveBreakdown.first_solve_verified === false && <p className="tiny muted">The first-solve date is unproved. This question does not add a streak day.</p>}
+            {selectedSolveBreakdown.breakdown?.score_state === "legacy_protected" && <p className="tiny muted">Existing legacy credit is protected because its original bonus split is uncertain.</p>}
+            {selectedSolveBreakdown.breakdown?.score_state === "metadata_missing" && <p className="tiny muted">Question metadata is incomplete. Existing credit is retained until it can be reconciled.</p>}
+            {selectedSolveBreakdown.breakdown?.score_state === "history_review" && <p className="tiny muted">This question is missing from the latest public history. Its credit is retained for review.</p>}
             <div className="breakdown-card">
-              <div className="breakdown-card-header">
-                <span className="card-label">1. Base Problem Score</span>
-                {selectedSolveBreakdown.platform === "codeforces" || selectedSolveBreakdown.breakdown?.contest_rating ? (
-                  <span className="badge-contest">{selectedSolveBreakdown.platform === "codeforces" ? selectedSolveBreakdown.breakdown?.contest_rating ? `Codeforces rating ${Math.round(selectedSolveBreakdown.breakdown.contest_rating)}` : "Codeforces · Unrated" : `ZeroTrac Elo ${Math.round(selectedSolveBreakdown.breakdown?.contest_rating || 0)}`}</span>
-                ) : (
-                  <span className="badge-diff">{selectedSolveBreakdown.breakdown?.difficulty || "Medium"} Category</span>
-                )}
-              </div>
-
-              {selectedSolveBreakdown.platform === "codeforces" || selectedSolveBreakdown.breakdown?.contest_rating ? (
-                <div className="breakdown-row">
-                  <span className="row-label">{selectedSolveBreakdown.platform === "codeforces" ? "Base: 8 + 0.012 × (rating − 800)" : "Contest Base Points (Elo / 100):"}</span>
-                  <span className="row-val main-val">{selectedSolveBreakdown.breakdown?.base_points} pts</span>
-                </div>
-              ) : (
-                <>
-                  <div className="breakdown-row">
-                    <span className="row-label">Category Base Points ({selectedSolveBreakdown.breakdown?.difficulty || "Medium"}):</span>
-                    <span className="row-val">{selectedSolveBreakdown.breakdown?.raw_base_points ?? selectedSolveBreakdown.breakdown?.base_points ?? 0} pts</span>
-                  </div>
-                  <div className="breakdown-row">
-                    <span className="row-label">Acceptance Rate Adjustment:</span>
-                    <span className={`row-val ${(selectedSolveBreakdown.breakdown?.ac_adjustment || 0) >= 0 ? "text-green" : "text-red"}`}>
-                      {(selectedSolveBreakdown.breakdown?.ac_adjustment || 0) >= 0 ? "+" : ""}
-                      {selectedSolveBreakdown.breakdown?.ac_adjustment ?? 0} pts
-                      {selectedSolveBreakdown.breakdown?.ac_rate !== undefined && selectedSolveBreakdown.breakdown?.ac_rate !== null && (
-                        <span className="tiny muted"> ({selectedSolveBreakdown.breakdown.ac_rate}% AC)</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="breakdown-subtotal-line">
-                    <span className="row-label font-bold">Effective Base Score:</span>
-                    <span className="row-val font-bold">{selectedSolveBreakdown.breakdown?.base_points} pts</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Bonuses & Multipliers Card */}
-            <div className="breakdown-card">
-              <div className="breakdown-card-header">
-                <span className="card-label">2. Bonuses & Multipliers</span>
-              </div>
-              <div className="breakdown-row">
-                <span className="row-label">Daily Challenge Bonus:</span>
-                <span className={`row-val ${(selectedSolveBreakdown.breakdown?.daily_bonus || 0) > 0 ? "text-amber" : "text-muted"}`}>
-                  +{(selectedSolveBreakdown.breakdown?.daily_bonus || 0)} pts
-                </span>
-              </div>
-              <div className="breakdown-row">
-                <span className="row-label">Streak Multiplier:</span>
-                <span className="row-val text-violet">
-                  {selectedSolveBreakdown.breakdown?.streak_multiplier || 1.0}× <span className="tiny muted">({selectedSolveBreakdown.breakdown?.streak_days || 0}d streak)</span>
-                </span>
-              </div>
+              <div className="breakdown-card-header"><span className="card-label">Credited points</span></div>
+              {selectedSolveBreakdown.breakdown?.base_award === undefined ? <p className="tiny muted">Detailed credit is unavailable for this entry.</p> : <>
+                <div className="breakdown-row"><span className="row-label">Base award:</span><span className="row-val">{selectedSolveBreakdown.breakdown.base_award} pts</span></div>
+                <div className="breakdown-row"><span className="row-label">Retained daily awards:</span><span className="row-val text-amber">{selectedSolveBreakdown.breakdown.daily_award ?? 0} pts</span></div>
+                <div className="breakdown-row"><span className="row-label">Revision awards:</span><span className="row-val text-violet">{selectedSolveBreakdown.breakdown.revision_award ?? 0} pts</span></div>
+                {(selectedSolveBreakdown.breakdown.legacy_credit ?? 0) > 0 && <div className="breakdown-row"><span className="row-label">Protected legacy credit:</span><span className="row-val">{selectedSolveBreakdown.breakdown.legacy_credit} pts</span></div>}
+                {(selectedSolveBreakdown.breakdown.base_award ?? 0) > 0 && <p className="tiny muted">Base includes its {selectedSolveBreakdown.breakdown.streak_multiplier ?? 1}× multiplier. Retained awards are not multiplied again.</p>}
+              </>}
             </div>
 
             {/* Total Score Box */}
             <div className="breakdown-total-card">
               <div className="total-title-group">
                 <div className="total-title">Total Points Earned</div>
-                <div className="tiny muted">(Base + Bonuses) × Streak</div>
+                <div className="tiny muted">Total credit for this question</div>
               </div>
               <div className="total-score-badge">
                 ⭐ {selectedSolveBreakdown.points_earned ?? selectedSolveBreakdown.breakdown?.points_earned ?? 0} pts
@@ -2453,12 +2483,13 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
     { id: "codeforces", title: "Codeforces points", hint: "Rating-based points · automatic sync", content: <>
       <p className="help-text">Base points = <code>8 + 0.012 × (rating − 800)</code>.</p>
       <ul className="help-bullet-list"><li>800 rating → 8 points</li><li>1400 → 15.2 points</li><li>1800 → 20 points</li><li>2200 → 24.8 points</li></ul>
-      <p className="help-text">Connect your handle at signup or in Settings. Each unique, final accepted problem earns points once. Unrated problems count as activity but earn 0 points. The scale is provisional, calibrated against similar LeetCode problems.</p>
+      <p className="help-text">Connect your handle at signup or in Settings. Each unique, final accepted problem earns points once. Unrated accepted problems earn 0 base points. Only verified first solves count toward streaks. The scale is provisional, calibrated against similar LeetCode problems.</p>
     </> },
-    { id: "daily", title: "Daily challenge bonus", hint: "+5 points · LeetCode only", content: <p className="help-text">Solve LeetCode’s daily challenge on its challenge date to earn <strong>+5 points</strong> before the streak multiplier. This bonus does not apply to Codeforces.</p> },
+    { id: "daily", title: "Daily challenge bonus", hint: "Existing credit retained", content: <p className="help-text">A verified live first solve of the current official LeetCode challenge is eligible for <strong>5 × the streak multiplier</strong>. Imported history and repeats never earn this bonus. Live LeetCode first-solve verification is not available in this build; existing earned credit is retained.</p> },
+    { id: "revision", title: "Revision points", hint: "Recurring seven-day cooldown", content: <p className="help-text">An accepted repeat can earn <strong>2 × the streak multiplier</strong> at least seven days after its proved first solve or last rewarded revision. Unrewarded attempts do not reset the clock. Initial history imports earn no revisions. Revisions never add a question, streak day or daily bonus.</p> },
     { id: "streak", title: "Streak multiplier", hint: "Up to +10%", content: <>
       <p className="help-text">The multiplier is <code>1 + 0.10 × min(streak days, 30) ÷ 30</code>, capped at <strong>1.10×</strong>.</p>
-      <p className="help-text">Final points = <strong>(base + eligible bonus) × multiplier</strong>. For example, a CF 1800 problem earns 20 base points, or 22 at the maximum multiplier.</p>
+      <p className="help-text">Base awards use this multiplier. Previously earned daily and revision amounts are retained without multiplying them again. For example, a CF 1800 problem earns 20 base points, or 22 at the maximum multiplier.</p>
     </> },
   ];
   return <div className="modal-overlay points-help-overlay" onClick={onClose}>

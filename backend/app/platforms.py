@@ -4,12 +4,18 @@ from .models import DailyActivity, PlatformActivity, Solve
 
 
 def daily_counts(db: Session, user_ids: list[int]) -> dict:
+    from .models import User
+    from .reconciliation import proved_date
+    from .timekeeping import ist_date, utc_now
     counts = defaultdict(lambda: defaultdict(int))
     if not user_ids:
         return counts
-    for model in (DailyActivity, PlatformActivity):
-        for row in db.query(model).filter(model.user_id.in_(user_ids), model.problems_solved > 0).all():
-            counts[row.user_id][row.date] += row.problems_solved
+    now = utc_now()
+    for solve, user in db.query(Solve, User).join(User, User.id == Solve.user_id).filter(
+            Solve.user_id.in_(user_ids), Solve.first_solve_verified.is_(True), Solve.first_solve_at.isnot(None)).all():
+        instant = proved_date(user, solve)
+        if instant is not None and instant <= now:
+            counts[user.id][ist_date(instant)] += 1
     return counts
 
 

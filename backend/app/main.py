@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 import secrets
 
 logger = logging.getLogger("codestreak.main")
@@ -8,7 +9,7 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional, Dict, Set
 
-from fastapi import FastAPI, HTTPException, Depends, Query, Header, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, Query, Header, BackgroundTasks, Request
 from fastapi.responses import Response, FileResponse, HTMLResponse
 from .legal_pages import PRIVACY_HTML, TERMS_HTML
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,7 +21,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .config import CORS_ORIGINS, ADMIN_SECRET
 from .database import Base, engine, get_db, SessionLocal
-from .models import User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge
+from .models import AccountCredit, AdminOperation, User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
 from .email_service import send_otp_email, send_update_notification_email
 from .schemas import (
@@ -29,51 +30,33 @@ from .schemas import (
     GroupResponse, GroupListResponse, GroupMemberSchema, RecentSolveSchema, PointBreakdownSchema,
     LoginRequest, ForgotPasswordInitiateRequest, ForgotPasswordVerifyRequest,
     KudosToggleRequest, KudosAllRequest, UpdateUsernameRequest, UpdateSettingsRequest, ActivityFeedItemSchema,
-    DynamicMenuItem, AppConfigResponse, DeleteAccountRequest, SyncRequest, UpdateCodeforcesRequest,
+    DynamicMenuItem, AppConfigResponse, DeleteAccountRequest, SyncRequest, UpdateCodeforcesRequest, GroupTransferRequest, ReleaseBroadcastRequest, ChangePasswordRequest,
 )
 from .streak import current_streak
+from .timekeeping import IST, ist_today, week_start as product_week_start, month_start as product_month_start, period_bounds
 from .scheduler import start_scheduler, poll_all_users, poll_user
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
-from .point_calculator import compute_solve_points_breakdown, compute_codeforces_points_breakdown, recalculate_user_points
+from .point_calculator import recalculate_user_points
+from .reconciliation import current_account, stored_breakdown
 from .platforms import daily_counts, solve_url
 from .codeforces_client import fetch_profile, CodeforcesError
 from .codeforces_sync import background_codeforces_sync, user_sync_lock
-from .platform_migration import migrate_platforms
+from .security import current_user, require_self, member_group, owned_group
+from .releases import RELEASE_NOTICES
+from .migrations import run_migrations
+from .recovery import consume_limit, recovery_account, otp_verifier, clear_reset, utcnow
+from .tracking import clear_tracking, capture_score_baseline
 
 
 def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Secret")):
-    if ADMIN_SECRET and x_admin_secret != ADMIN_SECRET:
+    if len(ADMIN_SECRET.encode("utf-8")) < 32 or not x_admin_secret or not secrets.compare_digest(x_admin_secret.encode("utf-8"), ADMIN_SECRET.encode("utf-8")):
         raise HTTPException(status_code=403, detail="Forbidden: Invalid Admin Secret Header")
     return True
 
-from sqlalchemy import text, func
-
 logging.basicConfig(level=logging.INFO)
 
-try:
-    Base.metadata.create_all(bind=engine)
-    with engine.connect() as conn:
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(120);"))
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(200);"))
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(6);"))
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP;"))
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS points DOUBLE PRECISION DEFAULT 0.0;"))
-        conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS points_earned DOUBLE PRECISION DEFAULT 0.0;"))
-        conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS difficulty VARCHAR(20);"))
-        conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS ac_rate DOUBLE PRECISION;"))
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_notified_commit VARCHAR(40) DEFAULT 'legacy';"))
-        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS global_leaderboard_enabled BOOLEAN DEFAULT TRUE;"))
-        # Drop unique constraint on leetcode_username if present
-        conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_leetcode_username_key;"))
-        conn.execute(text("DROP INDEX IF EXISTS ix_users_leetcode_username;"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_leetcode_username ON users (leetcode_username);"))
-        conn.commit()
-except Exception as migration_err:
-    logging.warning("Auto-migration executed with warning: %s", migration_err)
-
-migrate_platforms(engine)
-
 app = FastAPI(title="LeetStreak API")
+app.state.schema_ready = False
 
 origins = ["*"] if CORS_ORIGINS.strip() == "*" else [o.strip() for o in CORS_ORIGINS.split(",")]
 app.add_middleware(
@@ -90,53 +73,33 @@ _scheduler = None
 @app.on_event("startup")
 async def on_startup():
     global _scheduler
-    try:
-        with engine.begin() as conn:
-            conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_leetcode_username_key;"))
-            conn.execute(text("CREATE TABLE IF NOT EXISTS kudos (id SERIAL PRIMARY KEY, from_user_id INTEGER NOT NULL, to_user_id INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"))
-            conn.execute(text("ALTER TABLE solves ADD COLUMN IF NOT EXISTS is_daily BOOLEAN DEFAULT FALSE;"))
-            conn.execute(text("CREATE TABLE IF NOT EXISTS daily_challenges (date DATE PRIMARY KEY, title_slug VARCHAR(200) NOT NULL);"))
-            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS global_leaderboard_enabled BOOLEAN DEFAULT TRUE;"))
-            conn.execute(text("UPDATE solves SET is_daily = TRUE WHERE LOWER(title_slug) = 'image-overlap';"))
-            conn.execute(text("INSERT INTO daily_challenges (date, title_slug) VALUES ('2026-09-13', 'image-overlap') ON CONFLICT DO NOTHING;"))
-    except Exception as e:
-        logger.warning("Startup table migration warning: %s", e)
-
-    db = SessionLocal()
-    try:
-        # Initialize created_at for any existing users if null
-        existing_users_without_date = db.query(User).filter(User.created_at.is_(None)).all()
-        for u in existing_users_without_date:
-            u.created_at = datetime.now()
-
-        # Ensure global_leaderboard_enabled is not null for any existing users
-        null_gl_users = db.query(User).filter(User.global_leaderboard_enabled.is_(None)).all()
-        for u in null_gl_users:
-            u.global_leaderboard_enabled = True
-
-        bloated_rows = db.query(DailyActivity).filter(DailyActivity.problems_solved > 1).all()
-        for r in bloated_rows:
-            solves_count = db.query(Solve).filter(
-                Solve.user_id == r.user_id, Solve.platform == "leetcode",
-                func.date(Solve.solved_at) == r.date
-            ).count()
-            r.problems_solved = max(1, solves_count)
-
-        # Backfill full daily challenge history from LeetCode GraphQL
-        from .scheduler import backfill_daily_challenges_archive
-        await backfill_daily_challenges_archive(db)
-
-        # Recalculate points for all existing users with new scoring rules
-        from .point_calculator import recalculate_all_users_points
-        await recalculate_all_users_points(db)
-
-    except Exception as e:
-        logger.warning("Startup activity cleanup failed: %s", e)
-        db.rollback()
-    finally:
-        db.close()
-
+    app.state.schema_ready = False
+    # Exceptions must propagate: never serve a partially migrated schema.
+    await asyncio.to_thread(run_migrations, engine)
     _scheduler = start_scheduler()
+    app.state.schema_ready = True
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    global _scheduler
+    app.state.schema_ready = False
+    if _scheduler is not None:
+        _scheduler.shutdown(wait=False)
+        _scheduler = None
+
+
+@app.get("/api/ready")
+def readiness():
+    if not app.state.schema_ready:
+        raise HTTPException(status_code=503, detail="Service is not ready")
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except Exception:
+        # Do not return connection strings, credentials or driver diagnostics.
+        raise HTTPException(status_code=503, detail="Database is unavailable") from None
+    return {"status": "ready"}
 
 
 @app.get("/api/health")
@@ -160,7 +123,9 @@ def _generate_group_code(length: int = 6) -> str:
 
 
 @app.post("/api/users/register", response_model=RegisterResponse)
-async def register_user(payload: RegisterRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def register_user(payload: RegisterRequest, background_tasks: BackgroundTasks, request: Request, db: Session = Depends(get_db)):
+    consume_limit(db, "register-peer", request.client.host if request.client else "unknown", 20, 3600)
+    consume_limit(db, "register-address", payload.email, 5, 3600)
     try:
         data = await fetch_leetcode_user_data(payload.leetcode_username)
     except LeetCodeError as err:
@@ -198,8 +163,9 @@ async def register_user(payload: RegisterRequest, background_tasks: BackgroundTa
         email=clean_email,
         password_hash=hash_password(payload.password),
         avatar_url=data.get("avatar_url"),
-        global_leaderboard_enabled=payload.global_leaderboard_enabled,
-        created_at=datetime.now(),
+        global_leaderboard_enabled=payload.show_global_leaderboard if payload.show_global_leaderboard is not None else payload.global_leaderboard_enabled,
+        show_global_leaderboard=payload.show_global_leaderboard if payload.show_global_leaderboard is not None else payload.global_leaderboard_enabled,
+        created_at=utcnow(),
     )
     db.add(user)
     try:
@@ -209,12 +175,12 @@ async def register_user(payload: RegisterRequest, background_tasks: BackgroundTa
         raise HTTPException(status_code=400, detail="An account with this email or Codeforces handle is already registered.")
     db.refresh(user)
 
-    # Ingest full history
+    # Public profile/recent AC sync remains partial history, not first-solve proof.
     await poll_user(db, user, sync_codeforces=False)
     if codeforces_handle:
         background_tasks.add_task(background_codeforces_sync, user.id)
 
-    token = create_access_token(user.id)
+    token = create_access_token(user.id, user.session_version)
     return RegisterResponse(
         id=user.id,
         name=user.name,
@@ -224,13 +190,16 @@ async def register_user(payload: RegisterRequest, background_tasks: BackgroundTa
         access_token=token,
         token_type="bearer",
         created_at=user.created_at,
-        global_leaderboard_enabled=user.global_leaderboard_enabled if user.global_leaderboard_enabled is not None else True,
+        global_leaderboard_enabled=user.show_global_leaderboard,
+        show_global_leaderboard=user.show_global_leaderboard,
     )
 
 
 @app.post("/api/users/login", response_model=RegisterResponse)
-def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
+def login_user(payload: LoginRequest, request: Request, db: Session = Depends(get_db)):
     query_str = payload.leetcode_username.strip().lower()
+    consume_limit(db, "login-peer", request.client.host if request.client else "unknown", 60, 900)
+    consume_limit(db, "login-account", query_str, 10, 900)
     matching_users = (
         db.query(User)
         .filter((func.lower(User.email) == query_str) | (func.lower(User.leetcode_username) == query_str))
@@ -246,7 +215,7 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
     if not matched_user:
         raise HTTPException(status_code=400, detail="Invalid username/email or password.")
 
-    token = create_access_token(matched_user.id)
+    token = create_access_token(matched_user.id, matched_user.session_version)
     return RegisterResponse(
         id=matched_user.id,
         name=matched_user.name,
@@ -256,57 +225,100 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
         access_token=token,
         token_type="bearer",
         created_at=matched_user.created_at,
-        global_leaderboard_enabled=matched_user.global_leaderboard_enabled if matched_user.global_leaderboard_enabled is not None else True,
+        global_leaderboard_enabled=matched_user.show_global_leaderboard,
+        show_global_leaderboard=matched_user.show_global_leaderboard,
     )
+
+
+async def deliver_reset(user_id: int, request_id: str, address: str, name: str, code: str):
+    result = await send_otp_email(address, name, code)
+    if not result:
+        with SessionLocal() as db:
+            user = db.query(User).filter_by(id=user_id).with_for_update().first()
+            if user and user.otp_request_id == request_id:
+                clear_reset(user)
+                db.commit()
+        logger.warning("Password reset delivery not accepted; code invalidated.")
 
 
 @app.post("/api/users/forgot-password/initiate")
-async def initiate_forgot_password(payload: ForgotPasswordInitiateRequest, db: Session = Depends(get_db)):
-    query_str = payload.email_or_username.strip().lower()
-    user = (
-        db.query(User)
-        .filter((func.lower(User.leetcode_username) == query_str) | (func.lower(User.email) == query_str))
-        .first()
-    )
+def initiate_forgot_password(payload: ForgotPasswordInitiateRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    identifier = payload.email_or_username.strip().lower()
+    consume_limit(db, "reset-request-peer", request.client.host if request.client else "unknown", 20, 900)
+    consume_limit(db, "reset-request-account", identifier, 3, 3600)
+    message = {"status": "request_received", "message": "If a unique matching account exists, a reset code will be sent to its registered email. If a username is shared, use your email address."}
+    user = recovery_account(db, identifier)
     if not user:
-        raise HTTPException(status_code=404, detail="No account found with that email or username.")
-
-    if not user.email:
-        raise HTTPException(status_code=400, detail="This account does not have an email address associated with it.")
-
-    otp_code = "".join(secrets.choice(string.digits) for _ in range(6))
-    user.reset_otp = otp_code
-    user.otp_expires_at = datetime.now() + timedelta(minutes=15)
+        return message
+    db.refresh(user, with_for_update=True)
+    now = utcnow()
+    if user.otp_last_requested_at and now - user.otp_last_requested_at < timedelta(seconds=60):
+        return message
+    clear_reset(user)
+    code = "".join(secrets.choice(string.digits) for _ in range(6))
+    user.otp_request_id = secrets.token_hex(24)
+    user.reset_otp_hash = otp_verifier(user.id, user.otp_request_id, code)
+    user.otp_expires_at = now + timedelta(minutes=15)
+    user.otp_last_requested_at = now
     db.commit()
-
-    await send_otp_email(user.email, user.leetcode_username, otp_code)
-    return {"status": "otp_sent", "email": user.email}
+    background_tasks.add_task(deliver_reset, user.id, user.otp_request_id, user.email, user.name, code)
+    return message
 
 
 @app.post("/api/users/forgot-password/verify")
-def verify_forgot_password(payload: ForgotPasswordVerifyRequest, db: Session = Depends(get_db)):
-    query_str = payload.email_or_username.strip().lower()
-    user = (
-        db.query(User)
-        .filter((func.lower(User.leetcode_username) == query_str) | (func.lower(User.email) == query_str))
-        .first()
-    )
-    if not user or user.reset_otp != payload.otp.strip():
-        raise HTTPException(status_code=400, detail="Invalid or incorrect 6-digit OTP code.")
-
-    if not user.otp_expires_at or user.otp_expires_at < datetime.now():
-        raise HTTPException(status_code=400, detail="OTP code has expired. Please request a new code.")
-
+def verify_forgot_password(payload: ForgotPasswordVerifyRequest, request: Request, db: Session = Depends(get_db)):
+    identifier = payload.email_or_username.strip().lower()
+    consume_limit(db, "reset-verify-peer", request.client.host if request.client else "unknown", 100, 900)
+    consume_limit(db, "reset-verify-account", identifier, 10, 900)
+    user = recovery_account(db, identifier)
+    denied = HTTPException(400, "Invalid or expired reset code. Request a new code if needed.")
+    if not user:
+        raise denied
+    db.refresh(user, with_for_update=True)
+    if not user.reset_otp_hash or not user.otp_request_id or not user.otp_expires_at or user.otp_expires_at <= utcnow() or user.otp_attempts >= 5:
+        clear_reset(user)
+        db.commit()
+        raise denied
+    user.otp_attempts += 1
+    expected = otp_verifier(user.id, user.otp_request_id, payload.otp)
+    if not secrets.compare_digest(user.reset_otp_hash, expected):
+        if user.otp_attempts >= 5:
+            clear_reset(user)
+        db.commit()
+        raise denied
     user.password_hash = hash_password(payload.new_password)
-    user.reset_otp = None
-    user.otp_expires_at = None
+    user.session_version += 1
+    clear_reset(user)
     db.commit()
-
     return {"status": "password_reset_success"}
 
 
+@app.post("/api/users/{user_id}/change-password")
+def change_password(user_id: int, payload: ChangePasswordRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
+    consume_limit(db, "change-password", str(actor.id), 5, 900)
+    db.refresh(actor, with_for_update=True)
+    if not verify_password(payload.current_password, actor.password_hash):
+        raise HTTPException(400, "Current password is incorrect.")
+    actor.password_hash = hash_password(payload.new_password)
+    actor.session_version += 1
+    clear_reset(actor)
+    db.commit()
+    return {"status": "password_changed", "access_token": create_access_token(actor.id, actor.session_version)}
+
+
+@app.post("/api/users/{user_id}/revoke-sessions")
+def revoke_sessions(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
+    db.refresh(actor, with_for_update=True)
+    actor.session_version += 1
+    db.commit()
+    return {"status": "sessions_revoked"}
+
+
 @app.post("/api/users/{user_id}/sync")
-async def sync_user(user_id: int, db: Session = Depends(get_db)):
+async def sync_user(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -315,7 +327,8 @@ async def sync_user(user_id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/api/users/{user_id}/leetcode-username")
-async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest, db: Session = Depends(get_db)):
+async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -324,13 +337,39 @@ async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest,
     if not new_username:
         raise HTTPException(status_code=400, detail="LeetCode username cannot be empty.")
 
+    expected = (user.leetcode_username, user.leetcode_account_version)
+    db.commit()
     try:
         data = await fetch_leetcode_user_data(new_username)
     except LeetCodeError as err:
         raise HTTPException(status_code=400, detail=str(err))
+    canonical = data.get("username")
+    if not isinstance(canonical, str) or canonical.casefold() != new_username.casefold():
+        raise HTTPException(status_code=400, detail="The provider did not confirm that LeetCode username.")
 
-    user.leetcode_username = new_username
+    db.refresh(user, with_for_update=True)
+    if (user.leetcode_username, user.leetcode_account_version) != expected:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Your coding account changed. Refresh before trying again.")
+    if user.leetcode_username.casefold() != canonical.casefold():
+        capture_score_baseline(db, user_id)
+        capture_score_baseline(db, user_id,
+            snapshot_key=f"replacement:{user_id}:leetcode:{user.leetcode_account_version}", reason="account-replacement")
+        clear_tracking(db, user_id, "leetcode")
+        db.query(Solve).filter_by(user_id=user_id, platform="leetcode").delete(synchronize_session=False)
+        db.query(DailyActivity).filter_by(user_id=user_id).delete(synchronize_session=False)
+        user.leetcode_account_version += 1
+        user.leetcode_last_sync = None
+        user.leetcode_history_state = "partial"
+        user.leetcode_history_gap = True
+        counts = data.get("difficulty_counts") or {}
+        user.easy_count = counts.get("Easy", 0)
+        user.medium_count = counts.get("Medium", 0)
+        user.hard_count = counts.get("Hard", 0)
+        user.official_streak = data.get("official_streak", 0)
+    user.leetcode_username = canonical
     user.avatar_url = data.get("avatar_url")
+    recalculate_user_points(user, db)
     db.commit()
 
     await poll_user(db, user)
@@ -344,15 +383,8 @@ async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest,
 
 
 @app.put("/api/users/{user_id}/codeforces-username")
-async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequest, background_tasks: BackgroundTasks, authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    try:
-        if not authorization or not authorization.startswith("Bearer "):
-            raise ValueError("Missing token")
-        identity = decode_access_token(authorization[7:])
-        if int(identity.get("sub", -1)) != user_id:
-            raise ValueError("Wrong account")
-    except (ValueError, TypeError, KeyError):
-        raise HTTPException(status_code=401, detail="Please log out and sign in again before linking a coding account.")
+async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -370,6 +402,12 @@ async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequ
     async with user_sync_lock(user_id):
         db.refresh(user, with_for_update=True)
         if not user.codeforces_username or user.codeforces_username.lower() != handle.lower():
+            capture_score_baseline(db, user_id)
+            capture_score_baseline(db, user_id,
+                snapshot_key=f"replacement:{user_id}:codeforces:{user.codeforces_account_version}", reason="account-replacement")
+            user.codeforces_account_version += 1
+            user.codeforces_linked_at = utcnow()
+            clear_tracking(db, user_id, "codeforces")
             db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").delete()
             db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id, PlatformActivity.platform == "codeforces").delete()
             user.codeforces_last_sync = None
@@ -388,24 +426,28 @@ async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequ
 
 
 @app.put("/api/users/{user_id}/settings")
-def update_user_settings(user_id: int, payload: UpdateSettingsRequest, db: Session = Depends(get_db)):
+def update_user_settings(user_id: int, payload: UpdateSettingsRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    user.global_leaderboard_enabled = payload.global_leaderboard_enabled
+    user.show_global_leaderboard = payload.show_global_leaderboard if payload.show_global_leaderboard is not None else payload.global_leaderboard_enabled
+    user.global_leaderboard_enabled = user.show_global_leaderboard
     db.commit()
     db.refresh(user)
 
     return {
         "status": "settings_updated",
         "user_id": user_id,
-        "global_leaderboard_enabled": user.global_leaderboard_enabled,
+        "global_leaderboard_enabled": user.show_global_leaderboard,
+        "show_global_leaderboard": user.show_global_leaderboard,
     }
 
 
 @app.post("/api/users/{user_id}/delete-account")
-def delete_user_account(user_id: int, payload: DeleteAccountRequest, db: Session = Depends(get_db)):
+def delete_user_account(user_id: int, payload: DeleteAccountRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -413,6 +455,10 @@ def delete_user_account(user_id: int, payload: DeleteAccountRequest, db: Session
     if not user.password_hash or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Incorrect password. Account deletion failed.")
 
+    if db.query(Group.id).filter(Group.creator_id == actor.id).first():
+        raise HTTPException(409, "Transfer ownership or delete your groups before deleting your account.")
+
+    clear_tracking(db, user_id)
     db.query(GroupMember).filter(GroupMember.user_id == user_id).delete()
     db.query(DailyActivity).filter(DailyActivity.user_id == user_id).delete()
     db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id).delete()
@@ -430,35 +476,29 @@ def _active_dates(db: Session, user_id: int) -> set[date]:
     return set(daily_counts(db, [user_id])[user_id])
 
 
-IST = timezone(timedelta(hours=5, minutes=30))
-
-
 def get_ist_today() -> date:
     """Returns today's date in Indian Standard Time (IST, UTC+5:30)."""
-    return datetime.now(IST).date()
+    return ist_today()
 
 
 def get_current_week_start(today: date) -> date:
     """Returns Sunday 00:00:00 (start of current week). Resets weekly counter every Sunday 12:00 AM."""
-    days_since_sunday = (today.weekday() + 1) % 7
-    return today - timedelta(days=days_since_sunday)
+    return product_week_start(today)
 
 
 def get_current_month_start(today: date) -> date:
     """Returns 1st of the current calendar month 00:00:00. Resets monthly counter on the 1st of every month."""
-    return date(today.year, today.month, 1)
+    return product_month_start(today)
 
 
 def get_ist_today_start() -> datetime:
     """Returns midnight (00:00:00) of current calendar day in Indian Standard Time (IST, UTC+5:30) converted to naive UTC for DB comparison."""
-    now_ist = datetime.now(IST)
-    midnight_ist = datetime(now_ist.year, now_ist.month, now_ist.day)
-    utc_midnight = midnight_ist - timedelta(hours=5, minutes=30)
-    return utc_midnight.replace(tzinfo=None)
+    start, _ = period_bounds("today", get_ist_today())
+    return start
 
 
-@app.get("/api/users/{user_id}/dashboard", response_model=DashboardResponse)
-def get_dashboard(user_id: int, db: Session = Depends(get_db)):
+@app.get("/api/users/{user_id}/dashboard", response_model=DashboardResponse, response_model_exclude_none=True)
+def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -478,9 +518,14 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
 
     today_row = next((d for d in last_7 if d.date == today), None)
 
+    estimate = db.query(AccountCredit).filter_by(user_id=user.id, platform="leetcode", account_version=user.leetcode_account_version, kind="historical_base").first()
+    needs_review = db.query(Solve.id).filter(Solve.user_id == user.id, Solve.score_components_state.in_(["legacy", "legacy_protected", "metadata_missing", "history_review"])).first() is not None
     return DashboardResponse(
-        codeforces_last_sync=user.codeforces_last_sync.replace(tzinfo=timezone.utc) if user.codeforces_last_sync else None, codeforces_sync_error=user.codeforces_sync_error,
-        codeforces_count=cf_count, codeforces_points=round(float(cf_points), 2), leetcode_points=round((user.points or 0) - round(float(cf_points), 2), 2), points=user.points or 0,
+        history_incomplete=user.leetcode_history_gap or any(not row.first_solve_verified for row in db.query(Solve).filter_by(user_id=user.id).all()),
+        historical_base_points=float(estimate.points) if estimate else 0,
+        score_needs_review=needs_review,
+        codeforces_last_sync=user.codeforces_last_sync.replace(tzinfo=timezone.utc) if user.codeforces_last_sync else None, codeforces_sync_error=user.codeforces_sync_error if actor.id == user_id else None,
+        codeforces_count=cf_count, codeforces_points=round(float(cf_points), 4), leetcode_points=round((user.points or 0) - float(cf_points), 4), points=user.points or 0,
         id=user.id,
         name=user.name,
         leetcode_username=user.leetcode_username,
@@ -495,7 +540,8 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db)):
         monthly_total=total_since_date(month_start),
         created_at=user.created_at,
         last_7_days=last_7,
-        global_leaderboard_enabled=user.global_leaderboard_enabled if user.global_leaderboard_enabled is not None else True,
+        global_leaderboard_enabled=user.show_global_leaderboard if actor.id == user_id else None,
+        show_global_leaderboard=user.show_global_leaderboard if actor.id == user_id else None,
     )
 
 
@@ -538,7 +584,7 @@ def _compute_leaderboard(
         active_days_this_week = len(week_rows)
         consistency = (active_days_this_week / days_in_week_so_far) * 100
         is_active_today = today in active_dates
-        points = int(round(user.points or 0.0))
+        points = float(user.points or 0.0)
         raw.append({
             "user": user,
             "weekly_total": weekly_total,
@@ -616,13 +662,12 @@ def get_global_leaderboard(
     sort_by: str = Query("points", pattern="^(points|streak)$"),
     limit: Optional[int] = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
 ):
-    # Global Leaderboard includes users who have global leaderboard enabled
-    users = (
-        db.query(User)
-        .filter((User.global_leaderboard_enabled == True) | (User.global_leaderboard_enabled.is_(None)))
-        .all()
-    )
+    require_self(actor, user_id)
+    user_id = actor.id
+    # Every account participates; the preference controls only the viewer's UI.
+    users = db.query(User).all()
     return _compute_leaderboard(db, users, requester_id=user_id, sort_by=sort_by, limit=limit)
 
 
@@ -632,7 +677,10 @@ def get_friends_leaderboard(
     sort_by: str = Query("points", pattern="^(points|streak)$"),
     limit: Optional[int] = Query(None, ge=1, le=100),
     db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
 ):
+    require_self(actor, user_id)
+    user_id = actor.id
     # Aggregated leaderboard of all unique friends who share at least one group with user_id
     my_group_ids = [
         m.group_id for m in db.query(GroupMember.group_id).filter(GroupMember.user_id == user_id).all()
@@ -650,7 +698,8 @@ def get_friends_leaderboard(
 
 # Group Endpoints
 @app.post("/api/groups", response_model=GroupResponse)
-def create_group(payload: GroupCreateRequest, db: Session = Depends(get_db)):
+def create_group(payload: GroupCreateRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, payload.user_id)
     user = db.query(User).filter(User.id == payload.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -658,12 +707,14 @@ def create_group(payload: GroupCreateRequest, db: Session = Depends(get_db)):
     code = _generate_group_code()
     group = Group(name=payload.name, code=code, creator_id=user.id)
     db.add(group)
-    db.commit()
-    db.refresh(group)
-
-    membership = GroupMember(group_id=group.id, user_id=user.id)
-    db.add(membership)
-    db.commit()
+    try:
+        db.flush()
+        db.add(GroupMember(group_id=group.id, user_id=actor.id))
+        db.commit()
+        db.refresh(group)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Could not create the group. Please retry.")
 
     return GroupResponse(
         id=group.id,
@@ -684,7 +735,8 @@ def create_group(payload: GroupCreateRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/api/groups/join", response_model=GroupResponse)
-def join_group(payload: GroupJoinRequest, db: Session = Depends(get_db)):
+def join_group(payload: GroupJoinRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, payload.user_id)
     user = db.query(User).filter(User.id == payload.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -701,7 +753,12 @@ def join_group(payload: GroupJoinRequest, db: Session = Depends(get_db)):
     )
     if not existing_mem:
         db.add(GroupMember(group_id=group.id, user_id=user.id))
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            if not db.query(GroupMember.id).filter_by(group_id=group.id, user_id=actor.id).first():
+                raise HTTPException(409, "Could not join the group. Please retry.")
 
     members = (
         db.query(User)
@@ -730,7 +787,8 @@ def join_group(payload: GroupJoinRequest, db: Session = Depends(get_db)):
 
 
 @app.get("/api/groups/my-groups/{user_id}", response_model=GroupListResponse)
-def get_my_groups(user_id: int, db: Session = Depends(get_db)):
+def get_my_groups(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, user_id)
     groups = (
         db.query(Group)
         .join(GroupMember, GroupMember.group_id == Group.id)
@@ -777,13 +835,14 @@ def get_my_groups(user_id: int, db: Session = Depends(get_db)):
 
 
 @app.delete("/api/groups/{group_id}/members/{user_id}")
-def remove_group_member(group_id: int, user_id: int, requester_id: int, db: Session = Depends(get_db)):
-    group = db.query(Group).filter(Group.id == group_id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
-
-    if group.creator_id != requester_id and user_id != requester_id:
-        raise HTTPException(status_code=403, detail="Only the group owner or member themselves can remove from group.")
+def remove_group_member(group_id: int, user_id: int, requester_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, requester_id)
+    group = member_group(db, actor, group_id)
+    db.refresh(group, with_for_update=True)
+    if group.creator_id != actor.id and user_id != actor.id:
+        raise HTTPException(403, "Only the group owner can remove another member.")
+    if group.creator_id == user_id:
+        raise HTTPException(409, "Transfer ownership or delete the group before leaving.")
 
     mem = (
         db.query(GroupMember)
@@ -797,14 +856,20 @@ def remove_group_member(group_id: int, user_id: int, requester_id: int, db: Sess
     return {"status": "removed", "group_id": group_id, "user_id": user_id}
 
 
-@app.delete("/api/groups/{group_id}")
-def delete_group(group_id: int, requester_id: int, db: Session = Depends(get_db)):
-    group = db.query(Group).filter(Group.id == group_id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
+@app.post("/api/groups/{group_id}/transfer")
+def transfer_group(group_id: int, payload: GroupTransferRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    group = owned_group(db, actor, group_id)
+    if not db.query(GroupMember.id).filter_by(group_id=group_id, user_id=payload.new_owner_id).first():
+        raise HTTPException(400, "The new owner must already belong to the group.")
+    group.creator_id = payload.new_owner_id
+    db.commit()
+    return {"status": "transferred", "group_id": group_id, "creator_id": group.creator_id}
 
-    if group.creator_id != requester_id:
-        raise HTTPException(status_code=403, detail="Only the group creator can delete this group.")
+
+@app.delete("/api/groups/{group_id}")
+def delete_group(group_id: int, requester_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, requester_id)
+    group = owned_group(db, actor, group_id)
 
     # Delete all member associations first
     db.query(GroupMember).filter(GroupMember.group_id == group_id).delete()
@@ -822,10 +887,11 @@ def get_group_leaderboard(
     sort_by: str = Query("points", pattern="^(points|streak)$"),
     limit: Optional[int] = Query(None, ge=1, le=100),
     db: Session = Depends(get_db),
+    actor: User = Depends(current_user),
 ):
-    group = db.query(Group).filter(Group.id == group_id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
+    require_self(actor, user_id)
+    user_id = actor.id
+    group = member_group(db, actor, group_id)
 
     users = (
         db.query(User)
@@ -837,9 +903,14 @@ def get_group_leaderboard(
 
 
 @app.post("/api/kudos/kudos-all")
-def kudos_all_users(payload: KudosAllRequest, db: Session = Depends(get_db)):
+def kudos_all_users(payload: KudosAllRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, payload.from_user_id)
     from_id = payload.from_user_id
-    targets = [tid for tid in (payload.target_user_ids or []) if tid != from_id]
+    targets = sorted({tid for tid in (payload.target_user_ids or []) if tid != actor.id})
+    if len(targets) > 100:
+        raise HTTPException(400, "Choose at most 100 users.")
+    if targets and db.query(User.id).filter(User.id.in_(targets)).count() != len(targets):
+        raise HTTPException(400, "One or more target accounts no longer exist.")
     if not targets:
         return {"status": "ok", "updated_count": 0}
 
@@ -868,7 +939,8 @@ def kudos_all_users(payload: KudosAllRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/api/kudos/{to_user_id}")
-def toggle_kudos(to_user_id: int, payload: KudosToggleRequest, db: Session = Depends(get_db)):
+def toggle_kudos(to_user_id: int, payload: KudosToggleRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    require_self(actor, payload.from_user_id)
     from_id = payload.from_user_id
     if from_id == to_user_id:
         raise HTTPException(status_code=400, detail="You cannot give kudos to yourself.")
@@ -933,7 +1005,7 @@ def _time_ago(dt: datetime) -> str:
 
 
 @app.get("/api/users/{user_id}/recent-solves", response_model=List[RecentSolveSchema])
-async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = Depends(get_db)):
+async def get_user_recent_solves(user_id: int, limit: int = Query(10, ge=1, le=100), db: Session = Depends(get_db), actor: User = Depends(current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -946,64 +1018,11 @@ async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = De
         .all()
     )
 
-    if not solves:
-        # Fallback: poll LeetCode on demand if solves ledger is empty
-        await poll_user(db, user)
-        solves = (
-            db.query(Solve)
-            .filter(Solve.user_id == user_id)
-            .order_by(Solve.solved_at.desc())
-            .limit(limit)
-            .all()
-        )
-
-    today_daily_slug = await fetch_today_daily_challenge_slug()
-    active_dates = _active_dates(db, user_id)
-    daily_slugs_by_date = {
-        r.date: r.title_slug.lower()
-        for r in db.query(DailyChallenge).all()
-    }
-
-    db_changed = False
     results = []
     for s in solves:
-        if s.platform == "codeforces":
-            breakdown_data = compute_codeforces_points_breakdown(s.problem_rating, current_streak(active_dates, s.solved_at.replace(tzinfo=timezone.utc).astimezone(IST).date()))
-            points_val = s.points_earned or 0
-        else:
-            diff = s.difficulty
-            ac = s.ac_rate
-            if not diff or ac is None:
-                info = await fetch_problem_info(s.title_slug)
-                diff = info.get("difficulty") or "Medium"
-                ac = info.get("ac_rate")
-                s.difficulty = diff
-                s.ac_rate = ac
-                db_changed = True
-
-            solve_date = s.solved_at.date() if hasattr(s.solved_at, "date") else s.solved_at
-            scoring_dates = active_dates if user.codeforces_linked_at and s.solved_at >= user.codeforces_linked_at else {row.date for row in db.query(DailyActivity).filter(DailyActivity.user_id == user_id, DailyActivity.problems_solved > 0).all()}
-            streak_date = s.solved_at.replace(tzinfo=timezone.utc).astimezone(IST).date() if user.codeforces_linked_at and s.solved_at >= user.codeforces_linked_at else solve_date
-            streak_on_date = current_streak(scoring_dates, streak_date)
-            is_daily = (
-                bool(getattr(s, "is_daily", False))
-                or bool(today_daily_slug and solve_date == date.today() and s.title_slug.lower() == today_daily_slug.lower())
-                or bool(solve_date in daily_slugs_by_date and s.title_slug.lower() == daily_slugs_by_date[solve_date])
-            )
-            if is_daily and not getattr(s, "is_daily", False):
-                s.is_daily = True
-                db_changed = True
-
-            breakdown_data = compute_solve_points_breakdown(
-                title_slug=s.title_slug,
-                difficulty=diff,
-                ac_rate=ac,
-                is_daily=is_daily,
-                streak_days=streak_on_date,
-            )
-            points_val = breakdown_data["points_earned"]
-        # Report the ledger award; a read must never alter already counted points.
-        breakdown_data["points_earned"] = s.points_earned or 0
+        if not current_account(user, s):
+            continue
+        breakdown_data = stored_breakdown(db, s)
         points_val = s.points_earned or 0
 
         results.append(
@@ -1016,18 +1035,17 @@ async def get_user_recent_solves(user_id: int, limit: int = 10, db: Session = De
                 source_handle=s.source_handle, source_submission_id=s.source_submission_id,
                 problem_rating=s.problem_rating, scoring_version=s.scoring_version,
                 points_earned=points_val,
+                first_solve_verified=s.first_solve_verified,
+                first_solve_at=s.first_solve_at.replace(tzinfo=timezone.utc) if s.first_solve_at else None,
                 breakdown=PointBreakdownSchema(**breakdown_data),
             )
         )
-
-    if db_changed:
-        db.commit()
 
     return results
 
 
 @app.get("/api/users/{user_id}/codeforces-solves")
-def codeforces_solved_questions(user_id: int, db: Session = Depends(get_db)):
+def codeforces_solved_questions(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -1036,7 +1054,7 @@ def codeforces_solved_questions(user_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/api/feed/recent-solves", response_model=List[ActivityFeedItemSchema])
-async def get_global_recent_solves(limit: int = 15, db: Session = Depends(get_db)):
+async def get_global_recent_solves(limit: int = Query(15, ge=1, le=100), db: Session = Depends(get_db), actor: User = Depends(current_user)):
     """Returns the latest solved questions from all users across the platform in chronological order."""
     solves = (
         db.query(Solve, User)
@@ -1066,16 +1084,55 @@ async def get_global_recent_solves(limit: int = 15, db: Session = Depends(get_db
     return feed
 
 
-@app.post("/api/admin/poll-now")
-async def poll_now():
-    """Manually trigger a poll of all users (backwards compatible for legacy extension clients)."""
-    results = await poll_all_users()
-    return {"polled": results}
+def claim_admin_operation(db: Session, key: str, *, repeat_after: int | None = None):
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    row = db.query(AdminOperation).filter_by(operation_key=key).with_for_update().first()
+    if row:
+        if row.state == "running":
+            raise HTTPException(409, "This job is already running or needs operator recovery.")
+        if repeat_after is None:
+            raise HTTPException(409, "This release job was already submitted. Review its outcome before retrying.")
+        if (now - row.started_at).total_seconds() < repeat_after:
+            raise HTTPException(429, "Wait before starting another all-user sync.")
+        row.state, row.started_at, row.finished_at = "running", now, None
+    else:
+        db.add(AdminOperation(operation_key=key, state="running", started_at=now))
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "This job was already submitted.")
+    logger.info("Administrative job started: %s", key)
+
+
+def finish_admin_operation(key: str, state: str):
+    with SessionLocal() as db:
+        row = db.query(AdminOperation).filter_by(operation_key=key).first()
+        if row:
+            row.state = state
+            row.finished_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            db.commit()
+    logger.info("Administrative job finished: %s (%s)", key, state)
+
+
+@app.post("/api/admin/poll-now", dependencies=[Depends(verify_admin_secret)])
+async def poll_now(db: Session = Depends(get_db)):
+    claim_admin_operation(db, "poll-all", repeat_after=60)
+    try:
+        results = await poll_all_users()
+    except Exception:
+        finish_admin_operation("poll-all", "failed")
+        raise HTTPException(503, "All-user sync failed. Review the job status before retrying.")
+    finish_admin_operation("poll-all", "completed")
+    return {"status": "completed", "accounts_polled": len(results)}
 
 
 @app.post("/api/admin/reset-db", dependencies=[Depends(verify_admin_secret)])
 def reset_db(db: Session = Depends(get_db)):
     """Clears all database records for fresh user registrations."""
+    clear_tracking(db)
+    db.query(Kudos).delete()
+    db.query(PlatformActivity).delete()
     db.query(Solve).delete()
     db.query(DailyActivity).delete()
     db.query(GroupMember).delete()
@@ -1102,7 +1159,7 @@ def debug_users(db: Session = Depends(get_db)):
     ]
 
 
-@app.get("/api/admin/init-user-dates", dependencies=[Depends(verify_admin_secret)])
+@app.post("/api/admin/init-user-dates", dependencies=[Depends(verify_admin_secret)])
 def init_user_dates(db: Session = Depends(get_db)):
     """Backfills created_at timestamp for existing users."""
     users = db.query(User).all()
@@ -1122,6 +1179,10 @@ def delete_user_by_id(user_id: int, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    if db.query(Group.id).filter(Group.creator_id == user_id).first():
+        raise HTTPException(409, "Resolve owned groups before deleting this account.")
+    clear_tracking(db, user_id)
+    db.query(Kudos).filter((Kudos.from_user_id == user_id) | (Kudos.to_user_id == user_id)).delete()
     db.query(Solve).filter(Solve.user_id == user_id).delete()
     db.query(DailyActivity).filter(DailyActivity.user_id == user_id).delete()
     db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id).delete()
@@ -1200,72 +1261,44 @@ async def send_and_update_user_commit(
             if u:
                 u.last_notified_commit = commit_id
                 db.commit()
-                logging.info(f"Updated user {user_id} ({username}) last_notified_commit to '{commit_id}'")
-        except Exception as e:
-            logging.error(f"Failed to update last_notified_commit for user {user_id}: {e}")
+                logging.info("Release notification accepted for account %d", user_id)
+        except Exception:
+            db.rollback()
+            logging.error("Release delivery state could not be saved for account %d", user_id)
+            return False
         finally:
             db.close()
+    return success
 
 
-@app.post("/api/admin/broadcast-update-email")
-async def broadcast_update_email(
-    background_tasks: BackgroundTasks,
-    commit_id: str = "09d1cfc",
-    release_notes: str = "Cleaned up username guide instructions and layout with clear steps and spacious formatting.",
-    download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip",
-    db: Session = Depends(get_db)
-):
-    """
-    Broadcasts update notification email with a styled 'Download Update Package' CTA button to registered users.
-    Upon successful delivery, updates user's last_notified_commit in the database to the target commit_id.
-    """
-    users = db.query(User).filter(User.email.isnot(None), User.email != "").all()
-    count = 0
-    for user in users:
-        if user.last_notified_commit != commit_id:
-            display_name = user.name.strip() if (user.name and user.name.strip()) else "Coder"
-            background_tasks.add_task(
-                send_and_update_user_commit,
-                user_id=user.id,
-                to_email=user.email,
-                username=display_name,
-                commit_id=commit_id,
-                release_notes=release_notes,
-                download_url=download_url
-            )
-            count += 1
-
-    return {
-        "status": "success",
-        "queued_emails": count,
-        "commit_id": commit_id,
-        "message": f"Queued update emails with download package button to {count} registered users. Database records will update to commit '{commit_id}' upon delivery."
-    }
+async def broadcast_release(release_id: str, recipients: list[int]):
+    notice = RELEASE_NOTICES[release_id]
+    accepted = True
+    try:
+        for user_id in recipients:
+            with SessionLocal() as db:
+                user = db.query(User).filter_by(id=user_id).first()
+                if not user or user.last_notified_commit == release_id:
+                    continue
+                address, name = user.email, (user.name or "Coder").strip() or "Coder"
+            result = await send_and_update_user_commit(user_id, address, name, release_id, notice.notes, notice.download_url)
+            accepted = bool(result) and accepted
+        finish_admin_operation("broadcast:" + release_id, "completed" if accepted else "failed")
+    except Exception:
+        finish_admin_operation("broadcast:" + release_id, "failed")
+        logger.error("Release broadcast interrupted; operator review required.")
 
 
-@app.post("/api/admin/test-update-email")
-async def test_update_email(
-    to_email: str,
-    username: str = "Developer",
-    commit_id: str = "09d1cfc",
-    release_notes: str = "Cleaned up username guide instructions and layout with clear steps and spacious formatting.",
-    download_url: str = "https://codestreak-api.onrender.com/downloads/leetstreak.zip"
-):
-    """
-    Sends a test update notification email with 'Download Update Package' CTA button to a specific email address.
-    """
-    success = await send_update_notification_email(
-        to_email=to_email,
-        username=username,
-        commit_id=commit_id,
-        release_notes=release_notes,
-        download_url=download_url
-    )
-    return {
-        "status": "sent" if success else "failed",
-        "to_email": to_email,
-        "commit_id": commit_id
-    }
+@app.post("/api/admin/broadcast-update-email", dependencies=[Depends(verify_admin_secret)])
+def broadcast_update_email(payload: ReleaseBroadcastRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    if payload.release_id not in RELEASE_NOTICES:
+        raise HTTPException(400, "Choose a reviewed release ID.")
+    ids = [row[0] for row in db.query(User.id).filter(User.email.isnot(None), User.email != "", User.last_notified_commit != payload.release_id).all()]
+    if payload.dry_run:
+        return {"status": "preview", "eligible_accounts": len(ids), "release_id": payload.release_id}
+    claim_admin_operation(db, "broadcast:" + payload.release_id)
+    background_tasks.add_task(broadcast_release, payload.release_id, ids)
+    return {"status": "queued", "eligible_accounts": len(ids), "release_id": payload.release_id}
 
 
 # ==========================================================================

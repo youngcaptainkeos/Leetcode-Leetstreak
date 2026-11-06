@@ -10,7 +10,8 @@ export interface RegisterResponse {
   access_token?: string;
   token_type?: string;
   created_at?: string;
-  global_leaderboard_enabled?: boolean;
+  global_leaderboard_enabled?: boolean; // Deprecated display-only alias.
+  show_global_leaderboard?: boolean;
 }
 
 export interface DayCount {
@@ -19,6 +20,11 @@ export interface DayCount {
 }
 
 export interface PointBreakdown {
+  base_award?: number;
+  daily_award?: number;
+  revision_award?: number;
+  legacy_credit?: number;
+  score_state?: string;
   difficulty?: string;
   raw_base_points?: number;
   ac_rate?: number;
@@ -35,6 +41,8 @@ export interface PointBreakdown {
 }
 
 export interface RecentSolve {
+  first_solve_verified?: boolean;
+  first_solve_at?: string | null;
   title_slug: string;
   title: string;
   solved_at: string;
@@ -51,6 +59,9 @@ export interface RecentSolve {
 }
 
 export interface DashboardResponse {
+  history_incomplete?: boolean;
+  historical_base_points?: number;
+  score_needs_review?: boolean;
   codeforces_last_sync?: string;
   codeforces_sync_error?: string;
   codeforces_count?: number;
@@ -71,7 +82,8 @@ export interface DashboardResponse {
   monthly_total: number;
   created_at?: string;
   last_7_days: DayCount[];
-  global_leaderboard_enabled?: boolean;
+  global_leaderboard_enabled?: boolean; // Deprecated display-only alias.
+  show_global_leaderboard?: boolean;
 }
 
 export interface LeaderboardEntry {
@@ -170,6 +182,12 @@ export interface GroupListResponse {
   groups: GroupResponse[];
 }
 
+export const AUTH_EXPIRED = "leetstreak:auth-expired";
+
+export class ApiError extends Error {
+  constructor(message: string, public status: number) { super(message); this.name = "ApiError"; }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = await getStored("codestreak_access_token");
   const res = await fetch(`${API_BASE}${path}`, {
@@ -178,16 +196,20 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || `Request failed (${res.status})`);
+    if (res.status === 401 && !path.startsWith("/users/login") && !path.startsWith("/users/register") && !path.startsWith("/users/forgot-password")) {
+      if ((await getStored("codestreak_access_token")) === token) window.dispatchEvent(new Event(AUTH_EXPIRED));
+    }
+    const detail = typeof body.detail === "string" ? body.detail : Array.isArray(body.detail) ? body.detail.map((item: { msg?: string }) => item.msg || "Invalid input").join(". ") : `Request failed (${res.status})`;
+    throw new ApiError(detail, res.status);
   }
   return res.json();
 }
 
 export const api = {
-  register: (name: string, leetcode_username: string, email: string, password: string, global_leaderboard_enabled: boolean = true, codeforces_username?: string) =>
+  register: (name: string, leetcode_username: string, email: string, password: string, show_global_leaderboard: boolean = true, codeforces_username?: string) =>
     request<RegisterResponse>("/users/register", {
       method: "POST",
-      body: JSON.stringify({ name, leetcode_username, email, password, global_leaderboard_enabled, ...(codeforces_username?.trim() ? { codeforces_username: codeforces_username.trim() } : {}) }),
+      body: JSON.stringify({ name, leetcode_username, email, password, show_global_leaderboard, ...(codeforces_username?.trim() ? { codeforces_username: codeforces_username.trim() } : {}) }),
     }),
   login: (leetcode_username: string, password: string) =>
     request<RegisterResponse>("/users/login", {
@@ -195,7 +217,7 @@ export const api = {
       body: JSON.stringify({ leetcode_username, password }),
     }),
   initiateForgotPassword: (email_or_username: string) =>
-    request<{ status: string; email: string }>("/users/forgot-password/initiate", {
+    request<{ status: string; message: string }>("/users/forgot-password/initiate", {
       method: "POST",
       body: JSON.stringify({ email_or_username }),
     }),
@@ -220,7 +242,7 @@ export const api = {
     request<{ status: string; codeforces_username: string }>(`/users/${userId}/codeforces-username`, {
       method: "PUT", body: JSON.stringify({ codeforces_username }),
     }),
-  updateSettings: (userId: number, settings: { global_leaderboard_enabled: boolean }) =>
+  updateSettings: (userId: number, settings: { show_global_leaderboard: boolean }) =>
     request<{ status: string; user_id: number; global_leaderboard_enabled: boolean }>(
       `/users/${userId}/settings`,
       {
@@ -228,6 +250,9 @@ export const api = {
         body: JSON.stringify(settings),
       }
     ),
+  changePassword: (userId: number, current_password: string, new_password: string) =>
+    request<{ status: string; access_token: string }>(`/users/${userId}/change-password`, { method: "POST", body: JSON.stringify({ current_password, new_password }) }),
+  revokeSessions: (userId: number) => request<{ status: string }>(`/users/${userId}/revoke-sessions`, { method: "POST" }),
   deleteAccount: (userId: number, password: string) =>
     request<{ status: string; message: string }>(`/users/${userId}/delete-account`, {
       method: "POST",
@@ -255,6 +280,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ user_id: userId, code }),
     }),
+  transferGroup: (groupId: number, new_owner_id: number) => request<{ status: string }>(`/groups/${groupId}/transfer`, { method: "POST", body: JSON.stringify({ new_owner_id }) }),
   removeMember: (groupId: number, memberUserId: number, requesterUserId: number) =>
     request<{ status: string }>(
       `/groups/${groupId}/members/${memberUserId}?requester_id=${requesterUserId}`,
@@ -294,3 +320,7 @@ export const api = {
   getAppConfig: getAppConfig,
 };
 
+
+export function showGlobalLeaderboard(profile?: { show_global_leaderboard?: boolean; global_leaderboard_enabled?: boolean } | null): boolean {
+  return profile?.show_global_leaderboard ?? profile?.global_leaderboard_enabled ?? true;
+}
