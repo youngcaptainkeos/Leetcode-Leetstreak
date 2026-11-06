@@ -9,6 +9,7 @@ Fetches:
 """
 import json
 import logging
+import math
 from datetime import datetime, date, timezone, timedelta
 from typing import Optional, Dict, Any, List
 import httpx
@@ -258,7 +259,7 @@ async def fetch_problem_info(title_slug: str) -> dict:
     Caches results in memory to minimize GraphQL calls.
     """
     if not title_slug:
-        return {"difficulty": "Medium", "ac_rate": None}
+        return {"difficulty": None, "ac_rate": None}
 
     slug = title_slug.strip().lower()
     if slug in _PROBLEM_INFO_CACHE:
@@ -275,7 +276,7 @@ async def fetch_problem_info(title_slug: str) -> dict:
                 data = resp.json()
                 q = (data.get("data") or {}).get("question")
                 if q:
-                    diff = q.get("difficulty") or "Medium"
+                    diff = q.get("difficulty") if q.get("difficulty") in {"Easy", "Medium", "Hard"} else None
                     ac_rate = None
                     stats_raw = q.get("stats")
                     if stats_raw:
@@ -284,16 +285,18 @@ async def fetch_problem_info(title_slug: str) -> dict:
                             ac_str = str(stats_dict.get("acRate", "")).replace("%", "").strip()
                             if ac_str:
                                 ac_rate = float(ac_str)
+                                if not math.isfinite(ac_rate) or not 0 <= ac_rate <= 100:
+                                    ac_rate = None
                         except Exception:
                             pass
                     info = {"difficulty": diff, "ac_rate": ac_rate}
-                    _PROBLEM_INFO_CACHE[slug] = info
+                    if diff is not None and ac_rate is not None:
+                        _PROBLEM_INFO_CACHE[slug] = info
                     return info
     except Exception as e:
         logger.warning("Failed to fetch problem info for %s: %s", slug, e)
 
-    default_info = {"difficulty": "Medium", "ac_rate": None}
-    _PROBLEM_INFO_CACHE[slug] = default_info
+    default_info = {"difficulty": None, "ac_rate": None}
     return default_info
 
 

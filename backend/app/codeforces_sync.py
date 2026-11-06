@@ -64,7 +64,15 @@ async def sync_codeforces_user(db: Session, user: User) -> int:
                 # Keep raw provider observations after a rejudgement. Revaluing
                 # explicit awards needs R3, not an implicit cascade deletion.
                 if db.query(PointAward.id).filter_by(solve_id=solve.id).first():
-                    raise ValueError("Awarded history requires explicit reconciliation")
+                    # Absence from public history is not proof of a revoked AC
+                    # (e.g. a Gym can become unavailable). Retain credit, flag
+                    # the gap, and keep syncing other questions.
+                    solve.first_solve_verified = False
+                    solve.first_solve_at = None
+                    solve.score_components_state = "history_review"
+                    db.query(AcceptedSubmission).filter_by(solve_id=solve.id).update(
+                        {AcceptedSubmission.first_solve_verified: False}, synchronize_session="fetch")
+                    continue
                 db.query(AcceptedSubmission).filter_by(solve_id=solve.id).update(
                     {AcceptedSubmission.solve_id: None, AcceptedSubmission.first_solve_verified: False}, synchronize_session="fetch")
                 db.delete(solve)
@@ -90,16 +98,11 @@ async def sync_codeforces_user(db: Session, user: User) -> int:
         db.flush()
         ingest_acceptances(db, user_id, platform="codeforces", account_version=account_version,
                            expected_handle=handle, submissions=evidence, complete_history=full)
-        counts = Counter(s.solved_at.replace(tzinfo=timezone.utc).astimezone(IST).date() for s in db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").all())
-        db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id, PlatformActivity.platform == "codeforces").delete()
-        for day, count in counts.items():
-            db.add(PlatformActivity(user_id=user_id, platform="codeforces", date=day, problems_solved=count))
-        db.flush()
         user.codeforces_last_sync = now
         if full:
             user.codeforces_last_full_sync = now
         user.codeforces_sync_error = None
-        recalculate_user_points(user, db)
+        recalculate_user_points(user, db, revision_windows={"codeforces": previous_sync})
         db.commit()
         return added
 

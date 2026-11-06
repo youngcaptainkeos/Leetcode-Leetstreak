@@ -20,6 +20,11 @@ export interface DayCount {
 }
 
 export interface PointBreakdown {
+  base_award?: number;
+  daily_award?: number;
+  revision_award?: number;
+  legacy_credit?: number;
+  score_state?: string;
   difficulty?: string;
   raw_base_points?: number;
   ac_rate?: number;
@@ -36,6 +41,8 @@ export interface PointBreakdown {
 }
 
 export interface RecentSolve {
+  first_solve_verified?: boolean;
+  first_solve_at?: string | null;
   title_slug: string;
   title: string;
   solved_at: string;
@@ -52,6 +59,9 @@ export interface RecentSolve {
 }
 
 export interface DashboardResponse {
+  history_incomplete?: boolean;
+  historical_base_points?: number;
+  score_needs_review?: boolean;
   codeforces_last_sync?: string;
   codeforces_sync_error?: string;
   codeforces_count?: number;

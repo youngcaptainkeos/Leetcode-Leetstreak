@@ -60,3 +60,18 @@ class ProviderIdentityTests(unittest.IsolatedAsyncioTestCase):
             result = await leetcode_client.fetch_leetcode_user_data("demo_lc")
         self.assertFalse(result["recent_submissions_available"])
         self.assertEqual(result["recent_submissions"], [])
+
+    async def test_missing_problem_metadata_is_not_medium_and_is_retried(self):
+        client_type = httpx.AsyncClient
+        responses = [None, {"difficulty": "Hard", "stats": json.dumps({"acRate": "nan"})}]
+
+        def respond(request):
+            return httpx.Response(200, json={"data": {"question": responses.pop(0)}})
+
+        with patch.object(leetcode_client.httpx, "AsyncClient", side_effect=lambda **kwargs:
+                          client_type(**kwargs, transport=httpx.MockTransport(respond))):
+            first = await leetcode_client.fetch_problem_info("synthetic-retry-metadata")
+            second = await leetcode_client.fetch_problem_info("synthetic-retry-metadata")
+        self.assertIsNone(first["difficulty"])
+        self.assertEqual(second["difficulty"], "Hard")
+        self.assertIsNone(second["ac_rate"])

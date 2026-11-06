@@ -68,6 +68,7 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
     classified = Counter()
     unclassified_paid = 0
     for solve in solves:
+        history_review = solve.score_components_state == "history_review"
         awards = db.query(PointAward).filter_by(solve_id=solve.id).all()
         bases = [row for row in awards if row.kind == "base"]
         if len(bases) > 1:
@@ -131,7 +132,7 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
         solve.points_earned = float(points)
         solve.scoring_version = SCORING_VERSION
         solve.is_daily = combined or any(row.kind == "daily" and row.points > 0 for row in awards)
-        solve.score_components_state = "legacy_protected" if combined else ("metadata_missing" if result is None else ("verified" if first else "base_only"))
+        solve.score_components_state = "legacy_protected" if combined else ("history_review" if history_review else ("metadata_missing" if result is None else ("verified" if first else "base_only")))
         total += points
         if solve.platform == "leetcode":
             if solve.difficulty in {"Easy", "Medium", "Hard"}:
@@ -173,10 +174,12 @@ def stored_breakdown(db: Session, solve: Solve) -> dict:
     awards = db.query(PointAward).filter_by(solve_id=solve.id).all()
     components = {kind: rounded(sum((number(row.points) for row in awards if row.kind == kind), Decimal(0)))
                   for kind in ("base", "daily", "revision", "legacy")}
+    if not awards:
+        components["legacy"] = number(solve.points_earned or 0)
     base = next((row for row in awards if row.kind == "base"), None)
     inputs = base.input_snapshot if base else {}
     return {**inputs, "difficulty": solve.difficulty, "is_daily": solve.is_daily,
         "base_award": components["base"], "daily_award": components["daily"],
         "daily_bonus": components["daily"], "revision_award": components["revision"],
-        "legacy_credit": components["legacy"], "score_state": solve.score_components_state,
+        "legacy_credit": components["legacy"], "score_state": solve.score_components_state if awards else "unreconciled",
         "points_earned": rounded(sum(components.values())) if awards else number(solve.points_earned or 0)}

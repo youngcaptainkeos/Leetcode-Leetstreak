@@ -201,6 +201,32 @@ class PostgresTrackingTests(LocalPostgresTests):
             self.assertEqual(session.query(PointAward).one().points, 10)
             self.assertEqual(session.query(ScoreSnapshot).count(), 1)
 
+    def test_concurrent_revision_reconciliation_awards_the_acceptance_once(self):
+        from app.models import PointAward, Solve, User
+        from app.reconciliation import reconcile_user
+        from app.tracking import ProviderAcceptance, ingest_acceptances
+        from datetime import datetime
+        with self.sessions.begin() as session:
+            user = session.get(User, 1)
+            user.codeforces_username = "demo_cf"
+            session.add(Solve(user_id=1, platform="codeforces", source_handle="demo_cf", title_slug="cf-100-a",
+                              solved_at=datetime(2026, 1, 1), problem_rating=800))
+            session.flush()
+            ingest_acceptances(session, 1, platform="codeforces", account_version=0, expected_handle="demo_cf", complete_history=True,
+                submissions=[ProviderAcceptance("100", "cf-100-a", datetime(2026, 1, 1)),
+                             ProviderAcceptance("101", "cf-100-a", datetime(2026, 1, 8))])
+            reconcile_user(user, session)
+
+        def reconcile(_):
+            with self.sessions.begin() as session:
+                return reconcile_user(session.get(User, 1), session, revision_windows={"codeforces": datetime(2026, 1, 2)})
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            self.assertEqual(list(pool.map(reconcile, range(4))), [10.0267] * 4)
+        with self.sessions() as session:
+            self.assertEqual(session.query(PointAward).filter_by(kind="revision").count(), 1)
+            self.assertEqual(session.query(Solve).count(), 1)
+
 
 class PostgresStartupTests(LocalPostgresTests):
     def setUp(self):
@@ -287,7 +313,7 @@ finally:
                     process.kill()
                     process.communicate()
         with self.engine.connect() as connection:
-            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 7)
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 9)
 
     def test_previously_applied_auth_step_is_retained(self):
         from app.database import Base
@@ -300,4 +326,12 @@ finally:
         run_migrations(self.engine)
         with self.engine.connect() as connection:
             self.assertEqual(connection.execute(text("SELECT session_version FROM users")).scalar_one(), 7)
-            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 7)
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 9)
+
+    def test_new_credit_and_calendar_tables_default_to_private_data_api_access(self):
+        from app.migrations import run_migrations
+        run_migrations(self.engine)
+        with self.engine.connect() as connection:
+            flags = connection.execute(text("SELECT c.relname, c.relrowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=:schema AND c.relname IN ('account_credits','provider_calendar')"), {"schema": self.schema}).all()
+            self.assertEqual(dict(flags), {"account_credits": True, "provider_calendar": True})
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM pg_policies WHERE schemaname=:schema AND tablename IN ('account_credits','provider_calendar')"), {"schema": self.schema}).scalar_one(), 0)

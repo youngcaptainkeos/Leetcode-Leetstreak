@@ -24,6 +24,17 @@ Versions, in execution order:
 | `20261105-global-display-v1` | Preserve the old display preference once |
 | `20261105-tracking-v1` | Existing evidence/award storage foundation |
 | `20261106-credits-v1` | Explicit account-level historical base estimates; no automatic revaluation |
+| `20261106-provider-calendar-v1` | Unverified provider calendars separate from qualifying solve activity |
+| `20261106-credit-privacy-v1` | Deny-by-default Data API access to new credit/calendar tables using PostgreSQL RLS |
+
+New credit/calendar tables enable PostgreSQL RLS without public policies and
+revoke table privileges from PUBLIC and existing `anon`/`authenticated` roles.
+The custom-auth API accesses these through its private database connection,
+using the table owner or an appropriately privileged backend role. Do not expose
+these tables directly with end-user database credentials. Native tests check
+RLS/policy metadata; no live hosted Data API audit is claimed. See the
+[Supabase RLS guidance](https://supabase.com/docs/guides/database/postgres/row-level-security)
+for the distinction between grants and row policies.
 
 Execution order is explicit, not sorted by version name. Previously applied
 versions keep their identities and are skipped. After the steps run, every
@@ -59,9 +70,9 @@ legacy constraint and the old standalone unique lookup index are handled.
 Full archive imports, the hardcoded historical daily patch, calendar-count
 cleanup and all-user score recalculation no longer run at startup. Bounded,
 resumable maintenance commands remain unfinished OPS-03 work. Do not invoke
-the old unbounded helper functions as an operational substitute. Runtime
-per-account sync still uses the legacy scoring paths pending M2 integration;
-this startup step does not certify tracking or scoring correctness.
+the old unbounded helper functions as an operational substitute. R3 per-account sync uses component reconciliation. Bounded all-account rollout,
+stronger LC first-solve evidence and live daily issuance remain release gates;
+startup and profile reads do not perform historical score repair.
 
 ## Before release and recovery
 

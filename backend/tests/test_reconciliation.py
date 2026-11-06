@@ -147,3 +147,38 @@ class ReconciliationTests(unittest.TestCase):
         row = self.solve(account_version=1, source_handle="another_demo", is_daily=False)
         self.assertEqual(reconcile_user(self.user, self.db), 8)
         self.assertEqual(row.score_components_state, "base_only")
+
+    def test_protected_combined_total_does_not_pay_existing_revision_twice(self):
+        row = self.solve(is_daily=True, points_earned=19.5)
+        self.db.add(PointAward(award_key="synthetic-old-revision", user_id=1, solve_id=row.id,
+            kind="revision", points=2, scoring_version="synthetic-v1"))
+        self.assertEqual(reconcile_user(self.user, self.db), 19.5)
+        self.assertEqual(stored_breakdown(self.db, row)["legacy_credit"], Decimal("17.5000"))
+
+    def test_missing_metadata_total_does_not_pay_existing_revision_twice(self):
+        row = self.solve(difficulty=None, ac_rate=None, points_earned=10)
+        self.user.easy_count = 1
+        self.db.add(PointAward(award_key="synthetic-old-revision", user_id=1, solve_id=row.id,
+            kind="revision", points=2, scoring_version="synthetic-v1"))
+        self.assertEqual(reconcile_user(self.user, self.db), 10)
+        self.assertEqual(stored_breakdown(self.db, row)["legacy_credit"], Decimal("8.0000"))
+
+    def test_daily_archive_and_current_slug_do_not_create_a_bonus(self):
+        from app.models import DailyChallenge
+        from app.point_calculator import recalculate_user_points
+        from app.tracking import capture_score_baseline
+        capture_score_baseline(self.db, 1)
+        row = self.solve(is_daily=True, points_earned=0)
+        self.db.add(DailyChallenge(date=row.solved_at.date(), title_slug=row.title_slug))
+        self.assertEqual(recalculate_user_points(self.user, self.db, today_daily_slug=row.title_slug), 8)
+        self.assertFalse(row.is_daily)
+        self.assertEqual(self.db.query(PointAward).filter_by(kind="daily").count(), 0)
+
+    def test_caller_rollback_undoes_new_components_and_estimates(self):
+        self.solve(is_daily=True, points_earned=17.5)
+        self.db.commit()
+        reconcile_user(self.user, self.db)
+        self.db.rollback()
+        self.assertEqual(self.db.query(PointAward).count(), 0)
+        self.assertEqual(self.db.query(AccountCredit).count(), 0)
+        self.assertEqual(self.db.query(ScoreSnapshot).count(), 0)

@@ -43,42 +43,69 @@ changes existing account history.
 - A full scan finding an earlier acceptance updates the first-date marker and
   leaves exactly one first-proof event for that question/generation.
 - If CF rejudgement removes an unawarded question, its raw observations remain
-  detached from the deleted question. Explicitly awarded history fails closed
-  until R3 reconciliation can treat its components safely.
+  detached from the deleted question. Credited questions missing from the public scan remain as flagged, unproved
+  history; absence alone does not prove a revoked acceptance. R3 continues
+  syncing other questions and restores first-date proof if a full scan later
+  returns the question.
 
-## Revision proposals, not rewards yet
+## Revision awards — R3 integration
 
-`revision_candidates` returns proposals only. It does not write awards or change
-displayed totals. Eligibility requires a proved first-solve date, matching
-current account identity/generation, and an accepted repeat after the supplied
-last-successful-sync boundary. Initial import has no boundary and earns no
-retrospective revisions.
+`revision_candidates` plans eligible rewards; runtime reconciliation applies
+those proposals under the account lock using unique event-based award keys.
+Amounts use `2 × streak multiplier`, never add a question or streak day, and
+are retained exactly through later base revaluation. Imports without a prior
+successful-sync boundary receive no retrospective revisions. Unrewarded attempts
+do not restart the recurring seven-day cooldown. Unknown prior reward dates
+block eligibility instead of guessing. Native PostgreSQL checks exercise
+concurrent reconciliation of the same accepted event.
 
-The first proposal is due after seven elapsed days from the first solve or last
-rewarded revision. Each subsequent proposal assumes the preceding one will be
-awarded, then advances that seven-day anchor. Unrewarded attempts do not restart
-the cooldown. A previous reward with an unknown date blocks proposals rather
-than guessing. Each proposal uses the existing `2 × streak multiplier` formula;
-the streak is calculated from proved unique first solves on either platform,
-as of the acceptance instant in IST. Calendar days, repeats and later solves
-cannot inflate that multiplier.
+Both provider sync functions now call the same component reconciler. Score
+breakdowns read stored components without provider requests or write side
+effects. Both clients display base, daily, revision and protected legacy credit,
+plus incomplete-history notices. Calendar attempts are stored separately in
+`provider_calendar` with provider source and partial-coverage metadata. Streaks
+and period solve counts derive only from proved unique first solves.
 
-R3 must apply eligible proposals under the account lock, use unique replay-safe
-award keys, preserve their actual amounts and publish consistent totals to both
-clients. A caller must not treat proposals themselves as paid rewards.
+## Protected history and incomplete metadata
 
-## Release blockers still open
+Base amounts revalue under the current formula. Explicit daily/revision awards
+retain their credited amounts and dates. A legacy daily row without a reliable
+component split keeps its combined total as protected credit and is flagged for
+review, rather than reconstructing a +5 bonus. Unknown question metadata never
+defaults to Medium. Existing credit is retained provisionally; once valid
+metadata arrives, a temporary metadata credit can be replaced by its current
+base. Protected uncertain daily totals remain protected.
 
-The runtime calculator and legacy activity tables remain in use. They still
-require R3's protected-credit reconciliation, no-retrospective-daily enforcement,
-verified-only streak/count integration and matching read-API breakdowns. Proven
-LC live first solves/daily eligibility need stronger history evidence. The full
-handle-replacement/rename lifecycle is DATA-01 work: generation guards prevent
-stale writes but do not clear/reconcile a replaced LC account's old history.
-Backend plan persistence is also a later milestone.
+`account_credits` records base-only historical estimates separately from question
+awards, with inputs and unknown-date labels. Classified named questions consume
+one slot from their category. Already-credited unclassified questions reserve
+remaining slots conservatively (Hard, then Medium, then Easy), preventing the
+confirmed aggregate/per-question overlap. A zero-credit unknown question can be
+covered by an anonymous estimate until metadata resolves it. These estimates
+never establish streak days, dated rankings or retrospective bonuses.
 
-This branch must not be released as complete scoring or account-replacement
-support on the strength of R2's evidence tests. All provider tests are mocked,
-and database tests use synthetic accounts in disposable local databases. No
-real provider account, production database, client bundle or hosted deployment
-is changed by this checkpoint.
+Different coding handles replace that platform's history, account credit,
+evidence and awards; the other platform stays intact. Private immutable
+transition snapshots are captured first, and generation checks reject stale
+requests. Case-only changes retain history. Provider-backed proof of other
+same-account renames remains FEAT-04 work; similarity is not identity proof.
+
+## Remaining release gates
+
+- Public LC recent acceptances still cannot prove a historical or live first
+  solve. Stronger LC first-solve evidence and future live daily issuance remain
+  open DATA-03/04/08 work. Imported history receives no daily bonus; existing
+  earned credit is retained. No retrospective archive-based bonus is inferred.
+- The all-account, bounded/resumable reconciliation job and release-wide formula
+  rollout remain OPS-03/DATA-05 gates. Runtime sync revalues one account at a time;
+  startup and profile reads do not silently rewrite all accounts.
+- More complete history coverage/status, provider ownership/rename proof,
+  backend plan persistence and distributed job coordination remain their planned
+  milestones. An omitted public CF question is flagged, not declared definitely
+  unsolved or automatically stripped of retained awards.
+- Browser checks cover the local website and popup preview, not a natively
+  installed extension or production deployment. Build/package checks are local.
+
+All provider checks use mocked responses and database checks use synthetic
+accounts in disposable local databases. No real provider account or production
+database is mutated by the rebuild checkpoints.

@@ -13,7 +13,12 @@ def validate_new_password(value: str) -> str:
 
 
 class PointBreakdownSchema(BaseModel):
-    difficulty: Optional[str] = "Medium"
+    difficulty: Optional[str] = None
+    base_award: float = 0
+    daily_award: float = 0
+    revision_award: float = 0
+    legacy_credit: float = 0
+    score_state: str = "unreconciled"
     raw_base_points: float = 0.0
     ac_rate: Optional[float] = None
     ac_multiplier: float = 1.0
@@ -29,6 +34,8 @@ class PointBreakdownSchema(BaseModel):
 
 
 class RecentSolveSchema(BaseModel):
+    first_solve_verified: bool = False
+    first_solve_at: Optional[datetime] = None
     title_slug: str
     title: str
     solved_at: datetime
@@ -136,6 +143,9 @@ class DayCount(BaseModel):
 
 
 class DashboardResponse(BaseModel):
+    history_incomplete: bool = True
+    historical_base_points: float = 0
+    score_needs_review: bool = False
     codeforces_last_sync: Optional[datetime] = None
     codeforces_sync_error: Optional[str] = None
     codeforces_count: int = 0
@@ -173,7 +183,7 @@ class LeaderboardEntry(BaseModel):
     easy_count: int = 0
     medium_count: int = 0
     hard_count: int = 0
-    points: int = 0
+    points: float = 0
     weekly_total: int
     current_streak: int
     consistency_score: float  # 0-100, active days / 7

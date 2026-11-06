@@ -21,7 +21,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .config import CORS_ORIGINS, ADMIN_SECRET
 from .database import Base, engine, get_db, SessionLocal
-from .models import AdminOperation, User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge
+from .models import AccountCredit, AdminOperation, User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
 from .email_service import send_otp_email, send_update_notification_email
 from .schemas import (
@@ -36,7 +36,8 @@ from .streak import current_streak
 from .timekeeping import IST, ist_today, week_start as product_week_start, month_start as product_month_start, period_bounds
 from .scheduler import start_scheduler, poll_all_users, poll_user
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
-from .point_calculator import compute_solve_points_breakdown, compute_codeforces_points_breakdown, recalculate_user_points
+from .point_calculator import recalculate_user_points
+from .reconciliation import current_account, stored_breakdown
 from .platforms import daily_counts, solve_url
 from .codeforces_client import fetch_profile, CodeforcesError
 from .codeforces_sync import background_codeforces_sync, user_sync_lock
@@ -44,7 +45,7 @@ from .security import current_user, require_self, member_group, owned_group
 from .releases import RELEASE_NOTICES
 from .migrations import run_migrations
 from .recovery import consume_limit, recovery_account, otp_verifier, clear_reset, utcnow
-from .tracking import clear_tracking
+from .tracking import clear_tracking, capture_score_baseline
 
 
 def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Secret")):
@@ -164,7 +165,7 @@ async def register_user(payload: RegisterRequest, background_tasks: BackgroundTa
         avatar_url=data.get("avatar_url"),
         global_leaderboard_enabled=payload.show_global_leaderboard if payload.show_global_leaderboard is not None else payload.global_leaderboard_enabled,
         show_global_leaderboard=payload.show_global_leaderboard if payload.show_global_leaderboard is not None else payload.global_leaderboard_enabled,
-        created_at=datetime.now(),
+        created_at=utcnow(),
     )
     db.add(user)
     try:
@@ -336,19 +337,39 @@ async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest,
     if not new_username:
         raise HTTPException(status_code=400, detail="LeetCode username cannot be empty.")
 
+    expected = (user.leetcode_username, user.leetcode_account_version)
+    db.commit()
     try:
         data = await fetch_leetcode_user_data(new_username)
     except LeetCodeError as err:
         raise HTTPException(status_code=400, detail=str(err))
+    canonical = data.get("username")
+    if not isinstance(canonical, str) or canonical.casefold() != new_username.casefold():
+        raise HTTPException(status_code=400, detail="The provider did not confirm that LeetCode username.")
 
     db.refresh(user, with_for_update=True)
-    if user.leetcode_username.casefold() != new_username.casefold():
+    if (user.leetcode_username, user.leetcode_account_version) != expected:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Your coding account changed. Refresh before trying again.")
+    if user.leetcode_username.casefold() != canonical.casefold():
+        capture_score_baseline(db, user_id)
+        capture_score_baseline(db, user_id,
+            snapshot_key=f"replacement:{user_id}:leetcode:{user.leetcode_account_version}", reason="account-replacement")
+        clear_tracking(db, user_id, "leetcode")
+        db.query(Solve).filter_by(user_id=user_id, platform="leetcode").delete(synchronize_session=False)
+        db.query(DailyActivity).filter_by(user_id=user_id).delete(synchronize_session=False)
         user.leetcode_account_version += 1
         user.leetcode_last_sync = None
         user.leetcode_history_state = "partial"
         user.leetcode_history_gap = True
-    user.leetcode_username = new_username
+        counts = data.get("difficulty_counts") or {}
+        user.easy_count = counts.get("Easy", 0)
+        user.medium_count = counts.get("Medium", 0)
+        user.hard_count = counts.get("Hard", 0)
+        user.official_streak = data.get("official_streak", 0)
+    user.leetcode_username = canonical
     user.avatar_url = data.get("avatar_url")
+    recalculate_user_points(user, db)
     db.commit()
 
     await poll_user(db, user)
@@ -381,7 +402,11 @@ async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequ
     async with user_sync_lock(user_id):
         db.refresh(user, with_for_update=True)
         if not user.codeforces_username or user.codeforces_username.lower() != handle.lower():
+            capture_score_baseline(db, user_id)
+            capture_score_baseline(db, user_id,
+                snapshot_key=f"replacement:{user_id}:codeforces:{user.codeforces_account_version}", reason="account-replacement")
             user.codeforces_account_version += 1
+            user.codeforces_linked_at = utcnow()
             clear_tracking(db, user_id, "codeforces")
             db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").delete()
             db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id, PlatformActivity.platform == "codeforces").delete()
@@ -493,9 +518,14 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Dep
 
     today_row = next((d for d in last_7 if d.date == today), None)
 
+    estimate = db.query(AccountCredit).filter_by(user_id=user.id, platform="leetcode", account_version=user.leetcode_account_version, kind="historical_base").first()
+    needs_review = db.query(Solve.id).filter(Solve.user_id == user.id, Solve.score_components_state.in_(["legacy", "legacy_protected", "metadata_missing", "history_review"])).first() is not None
     return DashboardResponse(
+        history_incomplete=user.leetcode_history_gap or any(not row.first_solve_verified for row in db.query(Solve).filter_by(user_id=user.id).all()),
+        historical_base_points=float(estimate.points) if estimate else 0,
+        score_needs_review=needs_review,
         codeforces_last_sync=user.codeforces_last_sync.replace(tzinfo=timezone.utc) if user.codeforces_last_sync else None, codeforces_sync_error=user.codeforces_sync_error if actor.id == user_id else None,
-        codeforces_count=cf_count, codeforces_points=round(float(cf_points), 2), leetcode_points=round((user.points or 0) - round(float(cf_points), 2), 2), points=user.points or 0,
+        codeforces_count=cf_count, codeforces_points=round(float(cf_points), 4), leetcode_points=round((user.points or 0) - float(cf_points), 4), points=user.points or 0,
         id=user.id,
         name=user.name,
         leetcode_username=user.leetcode_username,
@@ -554,7 +584,7 @@ def _compute_leaderboard(
         active_days_this_week = len(week_rows)
         consistency = (active_days_this_week / days_in_week_so_far) * 100
         is_active_today = today in active_dates
-        points = int(round(user.points or 0.0))
+        points = float(user.points or 0.0)
         raw.append({
             "user": user,
             "weekly_total": weekly_total,
@@ -988,64 +1018,11 @@ async def get_user_recent_solves(user_id: int, limit: int = Query(10, ge=1, le=1
         .all()
     )
 
-    if not solves:
-        # Fallback: poll LeetCode on demand if solves ledger is empty
-        await poll_user(db, user)
-        solves = (
-            db.query(Solve)
-            .filter(Solve.user_id == user_id)
-            .order_by(Solve.solved_at.desc())
-            .limit(limit)
-            .all()
-        )
-
-    today_daily_slug = await fetch_today_daily_challenge_slug()
-    active_dates = _active_dates(db, user_id)
-    daily_slugs_by_date = {
-        r.date: r.title_slug.lower()
-        for r in db.query(DailyChallenge).all()
-    }
-
-    db_changed = False
     results = []
     for s in solves:
-        if s.platform == "codeforces":
-            breakdown_data = compute_codeforces_points_breakdown(s.problem_rating, current_streak(active_dates, s.solved_at.replace(tzinfo=timezone.utc).astimezone(IST).date()))
-            points_val = s.points_earned or 0
-        else:
-            diff = s.difficulty
-            ac = s.ac_rate
-            if not diff or ac is None:
-                info = await fetch_problem_info(s.title_slug)
-                diff = info.get("difficulty") or "Medium"
-                ac = info.get("ac_rate")
-                s.difficulty = diff
-                s.ac_rate = ac
-                db_changed = True
-
-            solve_date = s.solved_at.date() if hasattr(s.solved_at, "date") else s.solved_at
-            scoring_dates = active_dates if user.codeforces_linked_at and s.solved_at >= user.codeforces_linked_at else {row.date for row in db.query(DailyActivity).filter(DailyActivity.user_id == user_id, DailyActivity.problems_solved > 0).all()}
-            streak_date = s.solved_at.replace(tzinfo=timezone.utc).astimezone(IST).date() if user.codeforces_linked_at and s.solved_at >= user.codeforces_linked_at else solve_date
-            streak_on_date = current_streak(scoring_dates, streak_date)
-            is_daily = (
-                bool(getattr(s, "is_daily", False))
-                or bool(today_daily_slug and solve_date == date.today() and s.title_slug.lower() == today_daily_slug.lower())
-                or bool(solve_date in daily_slugs_by_date and s.title_slug.lower() == daily_slugs_by_date[solve_date])
-            )
-            if is_daily and not getattr(s, "is_daily", False):
-                s.is_daily = True
-                db_changed = True
-
-            breakdown_data = compute_solve_points_breakdown(
-                title_slug=s.title_slug,
-                difficulty=diff,
-                ac_rate=ac,
-                is_daily=is_daily,
-                streak_days=streak_on_date,
-            )
-            points_val = breakdown_data["points_earned"]
-        # Report the ledger award; a read must never alter already counted points.
-        breakdown_data["points_earned"] = s.points_earned or 0
+        if not current_account(user, s):
+            continue
+        breakdown_data = stored_breakdown(db, s)
         points_val = s.points_earned or 0
 
         results.append(
@@ -1058,12 +1035,11 @@ async def get_user_recent_solves(user_id: int, limit: int = Query(10, ge=1, le=1
                 source_handle=s.source_handle, source_submission_id=s.source_submission_id,
                 problem_rating=s.problem_rating, scoring_version=s.scoring_version,
                 points_earned=points_val,
+                first_solve_verified=s.first_solve_verified,
+                first_solve_at=s.first_solve_at.replace(tzinfo=timezone.utc) if s.first_solve_at else None,
                 breakdown=PointBreakdownSchema(**breakdown_data),
             )
         )
-
-    if db_changed:
-        db.commit()
 
     return results
 

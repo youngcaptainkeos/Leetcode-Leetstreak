@@ -235,3 +235,18 @@ class AccountCredit(Base):
     scoring_version = Column(String(40), nullable=False)
     input_snapshot = Column(JSON, nullable=False)
     __table_args__ = (UniqueConstraint("user_id", "platform", "account_version", "kind", name="uq_account_credit"),)
+
+
+class ProviderCalendar(Base):
+    """Unverified provider submission activity; never a unique-solve count."""
+    __tablename__ = "provider_calendar"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    platform = Column(String(20), nullable=False)
+    account_version = Column(Integer, nullable=False)
+    date = Column(Date, nullable=False)
+    submission_count = Column(Integer, nullable=False)
+    source = Column(String(40), nullable=False)
+    coverage = Column(String(30), nullable=False)
+    observed_at = Column(DateTime, nullable=False)
+    __table_args__ = (UniqueConstraint("user_id", "platform", "account_version", "date", name="uq_provider_calendar"),)

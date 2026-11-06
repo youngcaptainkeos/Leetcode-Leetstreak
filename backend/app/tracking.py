@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from sqlalchemy.orm import Session
 
-from .models import AcceptedSubmission, AccountCredit, DailyActivity, PlatformActivity, ScoreSnapshot, Solve, User, PointAward
+from .models import AcceptedSubmission, AccountCredit, ProviderCalendar, DailyActivity, PlatformActivity, ScoreSnapshot, Solve, User, PointAward
 from .timekeeping import utc_storage, utc_now, ist_date, revision_due
 from .scoring import revision_points
 from .streak import current_streak
@@ -26,17 +26,21 @@ def clear_tracking(db: Session, user_id: int | None = None, platform: str | None
     events = db.query(AcceptedSubmission)
     snapshots = db.query(ScoreSnapshot)
     credits = db.query(AccountCredit)
+    calendars = db.query(ProviderCalendar)
     solves = db.query(Solve.id)
     if user_id is not None:
         awards = awards.filter(PointAward.user_id == user_id)
         events = events.filter(AcceptedSubmission.user_id == user_id)
         snapshots = snapshots.filter(ScoreSnapshot.user_id == user_id)
         credits = credits.filter(AccountCredit.user_id == user_id)
+        calendars = calendars.filter(ProviderCalendar.user_id == user_id)
         solves = solves.filter(Solve.user_id == user_id)
     if platform is not None:
         awards = awards.filter(PointAward.solve_id.in_(solves.filter(Solve.platform == platform)))
         events = events.filter(AcceptedSubmission.platform == platform)
         credits = credits.filter(AccountCredit.platform == platform)
+        calendars = calendars.filter(ProviderCalendar.platform == platform)
+    calendars.delete(synchronize_session=False)
     credits.delete(synchronize_session=False)
     awards.delete(synchronize_session=False)
     events.delete(synchronize_session=False)
@@ -44,15 +48,15 @@ def clear_tracking(db: Session, user_id: int | None = None, platform: str | None
         snapshots.delete(synchronize_session=False)
 
 
-def capture_score_baseline(db: Session, user_id: int) -> ScoreSnapshot:
+def capture_score_baseline(db: Session, user_id: int, *, snapshot_key: str | None = None, reason: str = "tracking-v1") -> ScoreSnapshot:
     """Call before reconciliation, in the caller's transaction; never overwrite."""
     user = db.query(User).filter(User.id == user_id).populate_existing().with_for_update().one()
-    key = f"tracking-v1:{user.id}"
+    key = snapshot_key or f"tracking-v1:{user.id}"
     existing = db.query(ScoreSnapshot).filter_by(snapshot_key=key).first()
     if existing:
         return existing
     solves = db.query(Solve).filter_by(user_id=user.id).order_by(Solve.id).all()
-    snapshot = ScoreSnapshot(snapshot_key=key, user_id=user.id, reason="tracking-v1", payload={
+    snapshot = ScoreSnapshot(snapshot_key=key, user_id=user.id, reason=reason, payload={
         "format_version": 2,
         "accounts": {platform: {"handle": getattr(user, platform + "_username"),
                                   "version": getattr(user, platform + "_account_version")}
@@ -201,6 +205,8 @@ def ingest_acceptances(db: Session, user_id: int, *, platform: str,
                 if solve:
                     solve.first_solve_at = first.accepted_at
                     solve.first_solve_verified = True
+                    if solve.score_components_state == "history_review":
+                        solve.score_components_state = "base_only"
         db.flush()
         return events
 
