@@ -6,6 +6,26 @@ Scope: backend, extension, website, data correctness, operations, and public rep
 
 Pre-scheduling decisions: [DECISIONS.md](DECISIONS.md) records accepted requirements, pending recommendations across M1–M6, and feasibility investigations. The owner's latest accepted rules below supersede earlier recommendations. Unanswered choices remain pending.
 
+## Restart checkpoint — 2026-11-06
+
+The owner approved returning to the last pre-Antigravity checkpoint and rebuilding in small steps after reviewing the integration defects.
+
+- Active rebuild branch: `pre-launch-rebuild`, created from `fd9b051` (M2 shared score-component arithmetic).
+- Preserved review tip: `69c6a6c`, retained on `pre-launch` and `archive/pre-launch-antigravity-review`. No shared branch reset or force push is part of this restart.
+- [The archived review](ANTIGRAVITY_REVIEW.md) records defects in the abandoned implementation and subsequent repairs. Its file references and test results describe that older branch, **not** the rebuilt checkout.
+- Keep the accepted product decisions, M1 implementation and M2-01 through M2-03. This is an unfinished foundation; prior local checks are historical evidence, not a fresh certification of this checkout.
+- Later Antigravity features and follow-up repair code are absent. Reuse individual ideas only after source review and acceptance checks; do not carry over completion claims or wholesale commits.
+- New step commits and pushes target `origin/pre-launch-rebuild`, superseding the earlier `origin/pre-launch` execution target. Production merges, deployment, public-history publication and store upload remain separate checkpoints.
+
+### Restart sequence
+
+1. **R1 / OPS-03 startup safety:** inspect existing migration/startup paths, make schema setup versioned and atomic, remove automatic bulk archive imports and all-user score recalculation from startup. Verify with isolated synthetic databases; do not launch this checkout against production configuration. Maintenance commands and distributed scheduling remain later steps.
+2. **R2 / M2 ingestion:** connect accepted-event evidence to the existing unique-question and award foundations. Prove replay idempotency, account-generation isolation and recurring revision eligibility. Do not infer first-solve dates from public recent submissions.
+3. **R3 / M2 reconciliation:** preserve earned daily/revision components and uncertain legacy credit, avoid overlap with aggregate estimates, then connect read APIs and both clients to the same component totals.
+4. Continue M2 sync completeness and account replacement, then M3–M6 in dependency order. Use the archived defect list as regression requirements, including canonical starter IDs, two-device writes, complete plan progress, account deletion and ownership replacement.
+
+Every implementation step needs a bounded scope, synthetic acceptance checks and its own labeled commit/push. Leave unfinished acceptance criteria open. The restart itself changes Git history selection and documentation only; no migration, score reconciliation or production action has run.
+
 ## 1. How we will use this document
 
 This is the working checklist for the repository review. It covers every issue and proposed feature in that review, plus the requested cleanup for publishing clean public code. It describes future work; creating this document does not fix or verify the application.
