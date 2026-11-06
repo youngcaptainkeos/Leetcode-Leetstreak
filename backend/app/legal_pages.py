@@ -65,7 +65,7 @@ PRIVACY_HTML = f"""<!DOCTYPE html>
     <article class="legal-card">
       <div class="badge-row">
         <span class="badge">Compliance & Privacy</span>
-        <span class="effective-date">Effective: October 11, 2026 • Last Updated: October 11, 2026</span>
+        <span class="effective-date">Effective: October 11, 2026 • Last Updated: November 7, 2026</span>
       </div>
 
       <h1>Privacy Policy for LeetStreak</h1>
@@ -81,7 +81,7 @@ PRIVACY_HTML = f"""<!DOCTYPE html>
 
       <h2>1. Single Purpose Statement</h2>
       <p>
-        LeetStreak exists solely to track public LeetCode problem-solving activity, calculate consistency streaks and weighted skill points, and display comparative leaderboards for friends and public participants. We collect only the minimum data strictly required to achieve this core functionality.
+        LeetStreak exists solely to track LeetCode and optionally linked Codeforces problem-solving activity, calculate consistency streaks and weighted skill points, and display comparative leaderboards for friends and public participants. We collect only the minimum data strictly required to achieve this core functionality.
       </p>
 
       <h2>2. Information We Collect</h2>
@@ -90,23 +90,27 @@ PRIVACY_HTML = f"""<!DOCTYPE html>
       <ul>
         <li><strong>Display Name:</strong> Used to identify your profile within groups and leaderboard rankings.</li>
         <li><strong>Email Address:</strong> Used for account authentication, password recovery (via 6-digit verification codes), and optional critical update notices.</li>
-        <li><strong>Account Password:</strong> Stored exclusively in irreversibly hashed form using strong cryptographic hashing (PBKDF2/Bcrypt). We cannot read your plaintext password.</li>
+        <li><strong>Account Password:</strong> Received over HTTPS for registration and authentication. Only a salted PBKDF2 password hash is stored; passwords are not intentionally logged.</li>
         <li><strong>LeetCode Public Username:</strong> Used to query public problem submission histories from LeetCode. <strong>We never ask for, collect, or store your LeetCode password or session cookies.</strong></li>
       </ul>
 
+      <p><strong>Optional Codeforces Username:</strong> Used to retrieve public profile and accepted-submission records for the linked handle. We do not request your Codeforces password.</p>
+
       <h3>B. Information Synchronized Automatically</h3>
       <ul>
-        <li><strong>Public Solve Records:</strong> Problem titles, difficulty levels (Easy, Medium, Hard), acceptance rates, and submission timestamps retrieved from LeetCode's public GraphQL endpoints.</li>
+        <li><strong>Public Solve Records:</strong> Problem titles, difficulty levels (Easy, Medium, Hard), acceptance rates, problem ratings, provider identities and submission timestamps retrieved from LeetCode and Codeforces. Complete LeetCode plan progress uses the matching signed-in browser session to read solved-question identities. Session cookies stay between your browser and LeetCode; they are not sent to our backend.</li>
         <li><strong>Leaderboard Display Preference:</strong> Whether Global rankings are shown on your own home page. All registered users participate regardless of this choice. Other signed-in users can view coding profiles and statistics; private group membership and invite codes require appropriate group access.</li>
         <li><strong>Study Plans and Progress:</strong> Imported plan definitions and source links, followed/removed plans, external-item checkmarks and observed solved-question identities are saved privately to your account for recovery and sync across devices. Browser storage holds an offline cache and pending changes. External checkmarks never grant competitive points.</li>
         <li><strong>Social Interactions:</strong> Kudos counts sent and received across 24-hour cycles.</li>
       </ul>
 
+      <p><strong>Security and Request Metadata:</strong> The backend processes network/IP information for request handling and abuse prevention. Application rate-limit buckets store keyed hashes of account/source identifiers. Hosting providers may retain request logs. We do not use this to determine your precise physical location.</p>
+
       <h3>C. Information We DO NOT Collect</h3>
       <ul>
-        <li>We do <strong>not</strong> collect your browsing history, cookies, personal tabs, IP locations, device hardware IDs, or biometric data.</li>
+        <li>We do <strong>not</strong> collect general browsing history, GPS location, device hardware IDs, biometric data, or unrelated tabs. The extension may locate an open LeetCode tab to read solved history; it does not collect your coding-platform passwords or export their session cookies.</li>
         <li>We do <strong>not</strong> collect payment or financial information.</li>
-        <li>We do <strong>not</strong> monitor your activity on any website other than public LeetCode submission records requested explicitly for synchronization.</li>
+        <li>Activity processing is limited to coding submissions, practice progress and service interactions. When you explicitly import a plan link and grant website access, the extension reads that selected page for question titles and links. We do not collect general keystroke, mouse-position or browsing analytics.</li>
       </ul>
 
       <hr>
@@ -114,7 +118,7 @@ PRIVACY_HTML = f"""<!DOCTYPE html>
       <h2>3. How We Use Your Information</h2>
       <ul>
         <li>To compute daily streaks, weekly totals, and contest-rating-weighted point scores.</li>
-        <li>To render private friend squad leaderboards and the optional platform Global Leaderboard.</li>
+        <li>To render private group and Global leaderboards. All registered accounts participate; showing Global on your own home page is optional.</li>
         <li>To deliver password reset emails when requested.</li>
         <li>To cache leaderboard state locally in Chrome storage for instantaneous offline responsiveness.</li>
       </ul>
@@ -125,20 +129,20 @@ PRIVACY_HTML = f"""<!DOCTYPE html>
       </div>
       <ul>
         <li><strong>No Third-Party Advertising:</strong> LeetStreak does not display third-party advertisements or tracking pixels.</li>
-        <li><strong>Infrastructure Service Providers:</strong> Your data is processed securely through standard cloud hosting providers (Render, PostgreSQL, transactional email delivery) strictly to operate the service.</li>
+        <li><strong>Infrastructure Service Providers:</strong> Render and the configured PostgreSQL/Supabase database process service data. Configured transactional email providers (such as Brevo, Resend, SendGrid or SMTP) process recipient addresses and email content for delivery. Google Fonts may receive network metadata when fonts are requested. Font requests do not include your LeetStreak authentication token or private plan library.</li>
       </ul>
 
       <h2>5. Data Retention &amp; Your Right to Deletion</h2>
       <ul>
-        <li><strong>Self-Service Account Deletion:</strong> You have complete autonomy over your data. You can permanently delete your account, solve history, squad memberships, and points at any time directly inside the extension by navigating to <strong>Settings (⚙️) &rarr; Danger Zone &rarr; Delete Account</strong>.</li>
-        <li><strong>Immediate Purge:</strong> Upon deletion, your account and all associated records are permanently erased from our active database.</li>
+        <li><strong>Self-Service Account Deletion:</strong> You can request deletion of your account, solve history, saved plans, squad memberships and points directly inside the extension by navigating to <strong>Settings (⚙️) &rarr; Danger Zone &rarr; Delete Account</strong>.</li>
+        <li><strong>Deletion Scope:</strong> Successful deletion removes associated account data from the active application database. Transfer or delete groups you own first. Security rate-limit records and infrastructure logs/backups may be retained separately for operational purposes; deletion is not a promise of immediate erasure from provider backups or every browser cache.</li>
       </ul>
 
       <h2>6. Security Safeguards</h2>
       <ul>
         <li>All communication between the Chrome Extension and backend servers is encrypted in transit using Transport Layer Security (HTTPS/TLS).</li>
         <li>Passwords are salted and cryptographically hashed.</li>
-        <li>Password reset tokens are short-lived 6-digit numeric codes that expire after 10 minutes.</li>
+        <li>Password reset tokens are short-lived 6-digit numeric codes that expire after 15 minutes. Resending invalidates the previous code, a 60-second resend cooldown applies, and each code permits at most five incorrect verification attempts. Request and verification rate limits also apply.</li>
       </ul>
 
       <h2>7. Third-Party Disclaimer (LeetCode LLC)</h2>
