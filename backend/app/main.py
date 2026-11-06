@@ -21,7 +21,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .config import CORS_ORIGINS, ADMIN_SECRET
 from .database import Base, engine, get_db, SessionLocal
-from .models import AccountCredit, AdminOperation, User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge
+from .models import AccountCredit, AccountProgress, AdminOperation, User, PlatformActivity, DailyActivity, Group, GroupMember, Solve, Kudos, DailyChallenge
 from .auth import hash_password, verify_password, create_access_token, decode_access_token
 from .email_service import send_otp_email, send_update_notification_email
 from .schemas import (
@@ -46,6 +46,7 @@ from .releases import RELEASE_NOTICES
 from .migrations import run_migrations
 from .recovery import consume_limit, recovery_account, otp_verifier, clear_reset, utcnow
 from .tracking import clear_tracking, capture_score_baseline
+from .progress import router as progress_router
 
 
 def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Secret")):
@@ -56,6 +57,7 @@ def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Ad
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="LeetStreak API")
+app.include_router(progress_router)
 app.state.schema_ready = False
 
 origins = ["*"] if CORS_ORIGINS.strip() == "*" else [o.strip() for o in CORS_ORIGINS.split(",")]
@@ -459,6 +461,7 @@ def delete_user_account(user_id: int, payload: DeleteAccountRequest, db: Session
         raise HTTPException(409, "Transfer ownership or delete your groups before deleting your account.")
 
     clear_tracking(db, user_id)
+    db.query(AccountProgress).filter_by(user_id=user_id).delete()
     db.query(GroupMember).filter(GroupMember.user_id == user_id).delete()
     db.query(DailyActivity).filter(DailyActivity.user_id == user_id).delete()
     db.query(PlatformActivity).filter(PlatformActivity.user_id == user_id).delete()
@@ -1182,6 +1185,7 @@ def delete_user_by_id(user_id: int, db: Session = Depends(get_db)):
     if db.query(Group.id).filter(Group.creator_id == user_id).first():
         raise HTTPException(409, "Resolve owned groups before deleting this account.")
     clear_tracking(db, user_id)
+    db.query(AccountProgress).filter_by(user_id=user_id).delete()
     db.query(Kudos).filter((Kudos.from_user_id == user_id) | (Kudos.to_user_id == user_id)).delete()
     db.query(Solve).filter(Solve.user_id == user_id).delete()
     db.query(DailyActivity).filter(DailyActivity.user_id == user_id).delete()

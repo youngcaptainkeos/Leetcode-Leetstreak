@@ -89,7 +89,7 @@ def run_migrations(engine):
         if not connection.execute(versions.select().where(versions.c.version == bootstrap_version)).first():
             Base.metadata.create_all(connection)
             connection.execute(versions.insert().values(version=bootstrap_version))
-        for step in (migrate_core, migrate_platforms, migrate_auth, migrate_display_preference, migrate_tracking, migrate_credits, migrate_calendar, migrate_credit_privacy):
+        for step in (migrate_core, migrate_platforms, migrate_auth, migrate_display_preference, migrate_tracking, migrate_credits, migrate_calendar, migrate_credit_privacy, migrate_progress):
             step(connection)
         # A recorded version is not permission to serve an incomplete schema.
         inspector = inspect(connection)
@@ -98,6 +98,21 @@ def run_migrations(engine):
             missing = set(table.columns.keys()) - existing
             if missing:
                 raise RuntimeError(f"Incomplete schema for {table.name}: {', '.join(sorted(missing))}")
+
+
+def migrate_progress(engine):
+    from .models import AccountProgress
+    with migration_connection(engine) as connection:
+        version = "20261107-account-progress-v1"
+        if connection.execute(versions.select().where(versions.c.version == version)).first():
+            return
+        AccountProgress.__table__.create(connection, checkfirst=True)
+        if connection.dialect.name == "postgresql":
+            connection.execute(text("ALTER TABLE account_progress ENABLE ROW LEVEL SECURITY"))
+            connection.execute(text("REVOKE ALL ON TABLE account_progress FROM PUBLIC"))
+            for role in connection.execute(text("SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated')")).scalars():
+                connection.execute(text(f"REVOKE ALL ON TABLE account_progress FROM {role}"))
+        connection.execute(versions.insert().values(version=version))
 
 
 def migrate_credits(engine):

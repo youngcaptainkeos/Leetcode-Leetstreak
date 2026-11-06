@@ -313,7 +313,7 @@ finally:
                     process.kill()
                     process.communicate()
         with self.engine.connect() as connection:
-            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 9)
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 10)
 
     def test_previously_applied_auth_step_is_retained(self):
         from app.database import Base
@@ -326,7 +326,7 @@ finally:
         run_migrations(self.engine)
         with self.engine.connect() as connection:
             self.assertEqual(connection.execute(text("SELECT session_version FROM users")).scalar_one(), 7)
-            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 9)
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 10)
 
     def test_new_credit_and_calendar_tables_default_to_private_data_api_access(self):
         from app.migrations import run_migrations

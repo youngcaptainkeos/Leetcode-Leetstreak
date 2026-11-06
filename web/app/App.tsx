@@ -1283,9 +1283,6 @@ function Dashboard({
           <span className="streak-count">{dash.current_streak}</span>
         </div>
         <div className="streak-label">DAY STREAK</div>
-        {dash.history_incomplete && <p className="tiny muted">Counts and streak use verified first solves. Historical dates are incomplete.</p>}
-        {(dash.historical_base_points ?? 0) > 0 && <p className="tiny muted">Includes {dash.historical_base_points} base-only estimated history points.</p>}
-        {dash.score_needs_review && <p className="tiny muted">Some historical credit needs reconciliation.</p>}
 
         <div className="stat-row">
           <Stat label="Today" value={dash.today_count} />
@@ -2344,6 +2341,11 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   const sections = [
+    { id: "history", title: "History and score accuracy", hint: "First solves and retained historical credit", content: <>
+      <p className="help-text">Counts and streaks use verified first solves on LeetCode or Codeforces. Failed attempts, repeat solves and submission-calendar activity do not add streak days.</p>
+      <p className="help-text">Some imported history has incomplete first-solve dates. Those questions can receive base-only historical credit while their dates remain excluded from streaks and period counts.</p>
+      <p className="help-text">Previously earned daily and revision credit is retained. If an old combined score cannot be separated reliably, it stays protected until reconciliation rather than being guessed or removed.</p>
+    </> },
     { id: "leetcode", title: "LeetCode points", hint: "Contest ratings and difficulty", content: <>
       <p className="help-text">Contest problems use ZeroTrac: <code>rating ÷ 100</code>. A 1550-rated problem earns 15.5 base points.</p>
       <p className="help-text">For other problems, Easy starts at <strong>8</strong>, Medium at <strong>15</strong>, and Hard at <strong>24</strong> points. Acceptance rate adjusts these bases; lower acceptance earns more.</p>

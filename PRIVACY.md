@@ -27,6 +27,8 @@ LeetStreak exists solely to track public LeetCode problem-solving activity, calc
 * **Leaderboard Display Preference:** Whether the Global leaderboard is shown on your own home page. All registered users participate in Global rankings regardless of this preference. Other signed-in users can view coding profiles and statistics; private group membership and invite codes require appropriate group access.
 * **Social Interactions:** Kudos counts sent and received across 24-hour cycles.
 
+* **Study Plans and Progress:** Imported plan definitions and source links, followed/removed plans, external-item checkmarks and observed solved-question identities are saved privately to your account for recovery and sync across devices. Browser storage holds an offline cache and pending changes. External checkmarks never grant competitive points.
+
 ### C. Information We DO NOT Collect
 * We do **not** collect your browsing history, cookies, personal tabs, IP locations, device hardware IDs, or biometric data.
 * We do **not** collect payment or financial information.

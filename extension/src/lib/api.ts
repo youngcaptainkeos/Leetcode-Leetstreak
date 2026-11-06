@@ -206,6 +206,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  getProgress: (userId: number) => request<{ version: number; initialized: boolean; state: Record<string, unknown> }>(`/users/${userId}/progress`, { signal: AbortSignal.timeout(20000) }),
+  writeProgress: (userId: number, operation: { base_version: number; operation_id: string; kind: string; data: Record<string, unknown> }) => request<{ version: number; initialized: boolean; state: Record<string, unknown> }>(`/users/${userId}/progress`, { method: "POST", body: JSON.stringify(operation), signal: AbortSignal.timeout(20000) }),
   register: (name: string, leetcode_username: string, email: string, password: string, show_global_leaderboard: boolean = true, codeforces_username?: string) =>
     request<RegisterResponse>("/users/register", {
       method: "POST",

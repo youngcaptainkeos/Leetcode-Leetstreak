@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api, GroupResponse, GroupMember } from "../lib/api";
 import { getStored, setStored } from "../storage";
-import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, ProgressState, StudyPlan, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, readProgress, parsePlanInput, fetchStudyPlan, addStudyPlan, removeStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, questionCodeforcesSlug, automaticQuestion, mergeSolvedHistory, visiblePlans, restoreStarterPlans } from "./data";
+import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, StudyPlan, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, parsePlanInput, fetchStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, questionCodeforcesSlug, automaticQuestion, visiblePlans } from "./data";
 import { fetchSolvedHistory, SolvedHistory } from "./history";
 import { planFromLinks, requestImportAccess } from "./importer";
+import { useAccountProgress } from "./accountSync";
 import { PlanView, ProgressView, readProgressView, emptyPlanView } from "./view";
 import "./Progress.css";
 
@@ -66,7 +67,7 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   userId: number; username: string; snapshot: PracticeSnapshot | null; error: string; groups: GroupResponse[]; active: boolean;
 }) {
   const key = progressKey(userId, username);
-  const [state, setState] = useState<ProgressState | null>(null);
+  const { state, setState, status: planSyncStatus, mutate, retry: retryPlanSync } = useAccountProgress(userId, username);
   const [view, setView] = useState<ProgressView | null>(null);
   const selected = view?.selected || STUDY_PLANS[0].slug;
   const planView = view && Object.prototype.hasOwnProperty.call(view.plans, selected) ? view.plans[selected] : emptyPlanView();
@@ -109,18 +110,11 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   useEffect(() => () => { importRequest.current++; historyRequest.current?.abort(); }, []);
   useEffect(() => {
     let active = true;
-    Promise.all([getStored(key), getStored(`${key}_view`)]).then(([raw, savedView]) => {
-      if (!active) return;
-      const saved = readProgress(raw);
-      const restored = readProgressView(savedView);
-      const plans = visiblePlans(saved);
-      const selectedPlan = plans.some(plan => plan.slug === restored.selected) ? restored.selected : saved.followed.find(slug => plans.some(plan => plan.slug === slug)) || plans[0]?.slug || "";
-      setState(saved);
-      setView({ ...restored, selected: selectedPlan });
+    getStored(`${key}_view`).then(savedView => {
+      if (active) setView(readProgressView(savedView));
     });
     return () => { active = false; };
   }, [key]);
-  useEffect(() => { if (state) void setStored(key, JSON.stringify(state)); }, [key, state]);
   useEffect(() => { if (view) void setStored(`${key}_view`, JSON.stringify(view)); }, [key, view]);
   const loaded = state !== null && view !== null;
   async function syncHistory(force = false): Promise<SolvedHistory | null> {
@@ -138,7 +132,7 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
           if (!controller.signal.aborted) setHistoryMessage(`Syncing solved history: ${done}/${total}`);
         }, controller.signal);
         if (controller.signal.aborted) return null;
-        setState(previous => previous ? mergeSolvedHistory(previous, result.slugs, result.syncedAt) : previous);
+        mutate("observe", { handle: username, slugs: result.slugs, syncedAt: result.syncedAt });
         setHistoryMessage(`${result.slugs.length} solved LeetCode questions synced.`);
         return result;
       } catch (err) {
@@ -172,7 +166,7 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   }, [loaded, username]);
   useEffect(() => {
     if (!loaded || !snapshot) return;
-    setState(prev => prev ? { ...prev, observed: [...new Set([...prev.observed, ...snapshot.submissions.map(s => s.titleSlug)])] } : prev);
+    mutate("observe", { handle: username, slugs: snapshot.submissions.map(s => s.titleSlug) });
   }, [loaded, snapshot]);
 
   useEffect(() => {
@@ -222,7 +216,7 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
       const hasLeetCode = imported.planSubGroups.some(group => group.questions.some(q => questionLeetcodeSlug(q)));
       const history = hasLeetCode ? await syncHistory(true) : null;
       if (request !== importRequest.current) return;
-      setState(previous => previous ? addStudyPlan(history ? mergeSolvedHistory(previous, history.slugs, history.syncedAt) : previous, imported) : previous);
+      mutate("add", { plan: imported });
       selectPlan(imported.slug);
       setNotice(!hasLeetCode ? `Following ${imported.name}. External-item completion is saved with the plan.` : history ? `Following ${imported.name}. Progress synced with your solved history.` : `Following ${imported.name}. Saved solves are shown; older solves will appear when automatic LeetCode syncing succeeds.`);
       setPlanInput(""); setPastedLinks(""); setImportName(""); setImportPreview(null); setAddOpen(false);
@@ -235,25 +229,25 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   function handleRemovePlan() {
     if (!plan) return;
     const remaining = library.filter(p => p.slug !== plan.slug);
-    setState(previous => previous ? removeStudyPlan(previous, plan.slug) : previous);
+    mutate("remove", { slug: plan.slug });
     selectPlan(remaining[0]?.slug || "");
     setNotice(`${plan.name} removed. Your solved questions are kept if you add it again.`);
   }
   function restoreStarters() {
-    setState(previous => previous ? restoreStarterPlans(previous) : previous);
+    mutate("restore", {});
     selectPlan(STUDY_PLANS[0].slug);
     setNotice("Starter plans restored. Your saved progress is still here.");
   }
   async function toggleFollow() {
     if (!plan) return;
     if (!following && plan.planSubGroups.some(group => group.questions.some(q => questionLeetcodeSlug(q)))) await syncHistory(true);
-    setState(prev => prev && visiblePlans(prev).some(p => p.slug === plan.slug) ? { ...prev, followed: following ? prev.followed.filter(s => s !== plan.slug) : [...new Set([...prev.followed, plan.slug])] } : prev);
+    mutate("follow", { slug: plan.slug, enabled: !following });
     setNotice(following ? `${plan.name} removed from following. Your progress is saved.` : `Following ${plan.name}. Your saved progress is applied.`);
   }
   function toggleExternalItem(slug: string) {
     const question = plan?.planSubGroups.flatMap(group => group.questions).find(q => q.titleSlug === slug);
     if (!question || automaticQuestion(question, state!)) return;
-    setState(previous => previous ? { ...previous, manual: previous.manual.includes(slug) ? previous.manual.filter(s => s !== slug) : [...previous.manual, slug] } : previous);
+    mutate("manual", { slug, enabled: !state!.manual.includes(slug) });
     setNotice("External-item completion saved.");
   }
   const visibleGroups = plan?.planSubGroups.map(g => ({ ...g, questions: g.questions.filter(q =>
@@ -261,6 +255,7 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
   return <div className="progress-panel" id="progress-panel" role="tabpanel" aria-labelledby="progress-menu">
     {active && <FriendsActivity key={`${userId}-${username}`} userId={userId} groups={groups} />}
     <div className="section-header study-plans-heading"><h2 className="section-title">Study plans</h2><button className="chip-btn" aria-expanded={addOpen} aria-controls="add-study-plan" onClick={() => { if (addOpen) closeImporter(); else { setAddOpen(true); setPlanError(""); } }}>{addOpen ? "Close" : "+ Add plan"}</button></div>
+    <div className="history-sync-row"><span role="status">{planSyncStatus}</span>{/unavailable|could not|full|not saved|removed/i.test(planSyncStatus) && <button className="chip-btn" onClick={retryPlanSync}>Retry save</button>}</div>
     <div className="history-sync-row"><span role="status">{historySyncing ? historyMessage : state.lastFullSyncAt ? `LeetCode history saved · ${new Date(state.lastFullSyncAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}` : "LeetCode history syncs automatically"}</span></div>
     {historyError && <p className="progress-error" role="status">{historyError} <a href="https://leetcode.com/" target="_blank" rel="noreferrer">Open LeetCode ↗</a></p>}
     {addOpen && <form className="plan-import-form" id="add-study-plan" onSubmit={handleAddPlan}>

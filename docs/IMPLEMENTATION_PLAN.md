@@ -46,6 +46,16 @@ The owner authorized merging the current rebuild into `main` for deployed testin
 
 Before the merge, corrected JWT Base64 padding to add zero padding when a segment is already aligned. The previous calculation added four excess characters and failed strict decoding on Python 3.12. All seven existing authentication tests passed on Python 3.12. No signing key or account data changed. Automated GitHub CI is still pending restoration; prior local acceptance results do not constitute a green GitHub workflow. Live LeetCode first-solve/daily proof and the other M2 gates above remain unfinished.
 
+### Account plans and dashboard cleanup — 2026-11-07
+
+Owner explicitly requested implementing account-backed plans directly on `main` for testing. The earlier rebuild merge is `ed434a7`; all development/archive branches were preserved. Both Render services became live after configuring the required signing key privately in service environment variables. No secret was added to source.
+
+FEAT-01 now has a private revisioned account document, authenticated read/operation endpoints, bounds and a write limit, removal tombstones, external check/uncheck, first-account local migration with a device recovery copy, offline outbox, fresh-device restore and conflict retries. LeetCode progress observations remain separate from score evidence and are isolated by linked-account generation. Self/admin deletion removes saved plans. The existing browser URL importer remains; no backend arbitrary-URL fetcher was added. See `backend/PROGRESS.md` for limits, conflict policy and migration details. Website API access is prepared, but the website Progress screen (FEAT-02), account-synced view/startup preferences, migration preview/recovery UI and native extension acceptance remain open.
+
+Local evidence: 131 backend checks completed successfully (three PostgreSQL test classes skipped because a local server was unavailable), plus 20 focused migration/recovery checks. Both TypeScript checks/builds and all 17 existing client tests passed. Disposable API/database checks covered ownership, saved definitions/completion, stale revisions, replay, removals/re-adds, generation isolation and unchanged competitive points. Two independent client stores against a disposable local API covered concurrent additions, offline removal/reopen, check/uncheck, fresh-device recovery and rejection of stale-cache resurrection. These were local client simulations, not installed-extension or live-user acceptance.
+
+Dashboard history/reconciliation paragraphs moved into a collapsible History and score accuracy topic in Help in both apps. Detailed profile/solve explanations remain available. M2 scoring gates and the rest of M3–M6 remain open; this testing checkpoint does not certify the entire milestone or Chrome release.
+
 ## 1. How we will use this document
 
 This is the working checklist for the repository review. It covers every issue and proposed feature in that review, plus the requested cleanup for publishing clean public code. It describes future work; creating this document does not fix or verify the application.
@@ -894,13 +904,13 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 **Implementation**
 
 - [ ] Model a plan's provider identity/version, account library membership, removal tombstones, external-item completion, and relevant preferences. Keep solved identities separate from a specific plan.
-- [ ] Persist imported plan definitions, user-added/followed plans, hidden/removed starters, and external-item completion in the backend database, scoped to the authenticated account. Bundle/catalog metadata may be shared, but user library choices must be durable account records.
-- [ ] Add authenticated bounded CRUD/sync endpoints with revision conflict handling. Handle check and uncheck/removal operations, not just set union.
+- [x] Persist imported plan definitions, user-added/followed plans, hidden/removed starters, and external-item completion in the backend database, scoped to the authenticated account. Bundle/catalog metadata may be shared, but user library choices must be durable account records.
+- [x] Add authenticated bounded CRUD/sync endpoints with revision conflict handling. Handle check and uncheck/removal operations, not just set union.
 - [ ] Migrate existing local data once per account with preview/recovery where needed. Preserve the three starter plans and a deliberately empty library.
-- [ ] Keep a local offline cache/outbox; merge on reconnection and prevent old account writes after sign-out/switching.
-- [ ] Load authoritative account state from the backend on sign-in/open/reconnection. Distinguish locally pending changes from server-confirmed saves, handle failures without falsely claiming sync, and reconcile revisions across devices.
-- [ ] Separate client-observed LC progress from server-verified competitive score evidence. External checkmarks never award competitive points.
-- [ ] Keep routine history sync automatic; do not add a required Sync History button.
+- [x] Keep a local offline cache/outbox; merge on reconnection and prevent old account writes after sign-out/switching.
+- [x] Load authoritative account state from the backend on sign-in/open/reconnection. Distinguish locally pending changes from server-confirmed saves, handle failures without falsely claiming sync, and reconcile revisions across devices.
+- [x] Separate client-observed LC progress from server-verified competitive score evidence. External checkmarks never award competitive points.
+- [x] Keep routine history sync automatic; do not add a required Sync History button.
 
 **Acceptance**
 

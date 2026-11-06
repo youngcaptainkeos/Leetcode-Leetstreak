@@ -48,7 +48,7 @@ class StartupMigrationTests(unittest.TestCase):
         migrations.run_migrations(self.engine)
         with self.engine.connect() as connection:
             self.assertEqual(connection.execute(text("SELECT points, show_global_leaderboard, session_version FROM users")).one(), (42.5, 0, 3))
-            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 9)
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 10)
 
     def test_legacy_upgrade_preserves_scores_dates_activity_and_daily_flags(self):
         self.legacy_database()
@@ -96,7 +96,7 @@ class StartupMigrationTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=4) as pool:
             list(pool.map(lambda _: migrations.run_migrations(self.engine), range(4)))
         with self.engine.connect() as connection:
-            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 9)
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 10)
 
     def test_recorded_versions_do_not_hide_schema_drift(self):
         migrations.run_migrations(self.engine)

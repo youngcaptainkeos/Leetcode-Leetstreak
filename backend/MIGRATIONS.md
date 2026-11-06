@@ -26,6 +26,7 @@ Versions, in execution order:
 | `20261106-credits-v1` | Explicit account-level historical base estimates; no automatic revaluation |
 | `20261106-provider-calendar-v1` | Unverified provider calendars separate from qualifying solve activity |
 | `20261106-credit-privacy-v1` | Deny-by-default Data API access to new credit/calendar tables using PostgreSQL RLS |
+| `20261107-account-progress-v1` | Private account plan library, completion cache and revisioned sync |
 
 New credit/calendar tables enable PostgreSQL RLS without public policies and
 revoke table privileges from PUBLIC and existing `anon`/`authenticated` roles.

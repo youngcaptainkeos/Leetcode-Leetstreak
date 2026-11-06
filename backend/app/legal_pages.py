@@ -98,6 +98,7 @@ PRIVACY_HTML = f"""<!DOCTYPE html>
       <ul>
         <li><strong>Public Solve Records:</strong> Problem titles, difficulty levels (Easy, Medium, Hard), acceptance rates, and submission timestamps retrieved from LeetCode's public GraphQL endpoints.</li>
         <li><strong>Leaderboard Display Preference:</strong> Whether Global rankings are shown on your own home page. All registered users participate regardless of this choice. Other signed-in users can view coding profiles and statistics; private group membership and invite codes require appropriate group access.</li>
+        <li><strong>Study Plans and Progress:</strong> Imported plan definitions and source links, followed/removed plans, external-item checkmarks and observed solved-question identities are saved privately to your account for recovery and sync across devices. Browser storage holds an offline cache and pending changes. External checkmarks never grant competitive points.</li>
         <li><strong>Social Interactions:</strong> Kudos counts sent and received across 24-hour cycles.</li>
       </ul>
 

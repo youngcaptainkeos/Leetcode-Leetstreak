@@ -6,8 +6,12 @@ const hasChromeStorage = typeof chrome !== "undefined" && !!chrome.storage?.loca
 export async function getStored(key: string): Promise<string | null> {
   if (sensitiveDrafts.has(key)) { await clearStored([key]); return null; }
   if (hasChromeStorage) {
-    return new Promise((resolve) => {
-      chrome.storage.local.get([key], (result) => resolve(result[key] ?? null));
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.get([key], (result) => {
+        const error = chrome.runtime.lastError;
+        if (error) reject(new Error(error.message || "Could not read device storage."));
+        else resolve(result[key] ?? null);
+      });
     });
   }
   return localStorage.getItem(key);
@@ -16,8 +20,12 @@ export async function getStored(key: string): Promise<string | null> {
 export async function setStored(key: string, value: string): Promise<void> {
   if (sensitiveDrafts.has(key)) return;
   if (hasChromeStorage) {
-    return new Promise((resolve) => {
-      chrome.storage.local.set({ [key]: value }, () => resolve());
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.set({ [key]: value }, () => {
+        const error = chrome.runtime.lastError;
+        if (error) reject(new Error(error.message || "Could not save device storage."));
+        else resolve();
+      });
     });
   }
   localStorage.setItem(key, value);

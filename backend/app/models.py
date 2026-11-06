@@ -97,6 +97,15 @@ class Solve(Base):
     __table_args__ = (UniqueConstraint("user_id", "title_slug", name="uq_user_problem"),)
 
 
+class AccountProgress(Base):
+    """Private plan library and progress cache; never competitive score evidence."""
+    __tablename__ = "account_progress"
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    version = Column(Integer, nullable=False, default=0)
+    document = Column(JSON, nullable=False, default=dict)
+    updated_at = Column(DateTime, nullable=False, default=utc_now)
+
+
 class DailyChallenge(Base):
     """
     Archive of official LeetCode Daily Challenge titleSlugs by date.
