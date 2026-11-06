@@ -180,6 +180,27 @@ class PostgresTrackingTests(LocalPostgresTests):
         with self.sessions() as session:
             self.assertEqual(session.query(AcceptedSubmission).count(), 0)
 
+    def test_concurrent_reconciliation_preserves_one_baseline_and_disjoint_credit(self):
+        from app.models import AccountCredit, PointAward, ScoreSnapshot, Solve, User
+        from app.reconciliation import reconcile_user
+        from datetime import datetime
+        with self.sessions.begin() as session:
+            session.query(User).filter_by(id=1).update({User.easy_count: 1})
+            session.add(Solve(user_id=1, platform="leetcode", source_handle="demo_coder",
+                title_slug="synthetic-unknown", solved_at=datetime(2026, 1, 1), points_earned=10))
+
+        def reconcile(_):
+            with self.sessions.begin() as session:
+                user = session.get(User, 1)
+                return reconcile_user(user, session)
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            self.assertEqual(list(pool.map(reconcile, range(4))), [10, 10, 10, 10])
+        with self.sessions() as session:
+            self.assertEqual(session.query(AccountCredit).one().points, 0)
+            self.assertEqual(session.query(PointAward).one().points, 10)
+            self.assertEqual(session.query(ScoreSnapshot).count(), 1)
+
 
 class PostgresStartupTests(LocalPostgresTests):
     def setUp(self):
@@ -266,7 +287,7 @@ finally:
                     process.kill()
                     process.communicate()
         with self.engine.connect() as connection:
-            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 6)
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 7)
 
     def test_previously_applied_auth_step_is_retained(self):
         from app.database import Base
@@ -279,4 +300,4 @@ finally:
         run_migrations(self.engine)
         with self.engine.connect() as connection:
             self.assertEqual(connection.execute(text("SELECT session_version FROM users")).scalar_one(), 7)
-            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 6)
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 7)

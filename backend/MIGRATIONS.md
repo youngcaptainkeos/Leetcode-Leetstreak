@@ -23,6 +23,7 @@ Versions, in execution order:
 | `20261105-auth-v1` | Existing authentication upgrade and plaintext reset-code invalidation |
 | `20261105-global-display-v1` | Preserve the old display preference once |
 | `20261105-tracking-v1` | Existing evidence/award storage foundation |
+| `20261106-credits-v1` | Explicit account-level historical base estimates; no automatic revaluation |
 
 Execution order is explicit, not sorted by version name. Previously applied
 versions keep their identities and are skipped. After the steps run, every

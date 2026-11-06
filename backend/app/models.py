@@ -221,3 +221,17 @@ class ScoreSnapshot(Base):
     captured_at = Column(DateTime, nullable=False, default=utc_now)
     reason = Column(String(40), nullable=False)
     payload = Column(JSON, nullable=False)
+
+
+class AccountCredit(Base):
+    """Explicit base-only estimates for questions missing from the unique ledger."""
+    __tablename__ = "account_credits"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    platform = Column(String(20), nullable=False)
+    account_version = Column(Integer, nullable=False)
+    kind = Column(String(30), nullable=False)
+    points = Column(Numeric(18, 4), nullable=False)
+    scoring_version = Column(String(40), nullable=False)
+    input_snapshot = Column(JSON, nullable=False)
+    __table_args__ = (UniqueConstraint("user_id", "platform", "account_version", "kind", name="uq_account_credit"),)

@@ -89,7 +89,7 @@ def run_migrations(engine):
         if not connection.execute(versions.select().where(versions.c.version == bootstrap_version)).first():
             Base.metadata.create_all(connection)
             connection.execute(versions.insert().values(version=bootstrap_version))
-        for step in (migrate_core, migrate_platforms, migrate_auth, migrate_display_preference, migrate_tracking):
+        for step in (migrate_core, migrate_platforms, migrate_auth, migrate_display_preference, migrate_tracking, migrate_credits):
             step(connection)
         # A recorded version is not permission to serve an incomplete schema.
         inspector = inspect(connection)
@@ -98,6 +98,16 @@ def run_migrations(engine):
             missing = set(table.columns.keys()) - existing
             if missing:
                 raise RuntimeError(f"Incomplete schema for {table.name}: {', '.join(sorted(missing))}")
+
+
+def migrate_credits(engine):
+    from .models import AccountCredit
+    with migration_connection(engine) as connection:
+        version = "20261106-credits-v1"
+        if connection.execute(versions.select().where(versions.c.version == version)).first():
+            return
+        AccountCredit.__table__.create(connection, checkfirst=True)
+        connection.execute(versions.insert().values(version=version))
 
 
 def migrate_auth(engine):

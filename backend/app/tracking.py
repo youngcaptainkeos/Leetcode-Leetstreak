@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from sqlalchemy.orm import Session
 
-from .models import AcceptedSubmission, DailyActivity, PlatformActivity, ScoreSnapshot, Solve, User, PointAward
+from .models import AcceptedSubmission, AccountCredit, DailyActivity, PlatformActivity, ScoreSnapshot, Solve, User, PointAward
 from .timekeeping import utc_storage, utc_now, ist_date, revision_due
 from .scoring import revision_points
 from .streak import current_streak
@@ -25,15 +25,19 @@ def clear_tracking(db: Session, user_id: int | None = None, platform: str | None
     awards = db.query(PointAward)
     events = db.query(AcceptedSubmission)
     snapshots = db.query(ScoreSnapshot)
+    credits = db.query(AccountCredit)
     solves = db.query(Solve.id)
     if user_id is not None:
         awards = awards.filter(PointAward.user_id == user_id)
         events = events.filter(AcceptedSubmission.user_id == user_id)
         snapshots = snapshots.filter(ScoreSnapshot.user_id == user_id)
+        credits = credits.filter(AccountCredit.user_id == user_id)
         solves = solves.filter(Solve.user_id == user_id)
     if platform is not None:
         awards = awards.filter(PointAward.solve_id.in_(solves.filter(Solve.platform == platform)))
         events = events.filter(AcceptedSubmission.platform == platform)
+        credits = credits.filter(AccountCredit.platform == platform)
+    credits.delete(synchronize_session=False)
     awards.delete(synchronize_session=False)
     events.delete(synchronize_session=False)
     if platform is None:
@@ -49,17 +53,23 @@ def capture_score_baseline(db: Session, user_id: int) -> ScoreSnapshot:
         return existing
     solves = db.query(Solve).filter_by(user_id=user.id).order_by(Solve.id).all()
     snapshot = ScoreSnapshot(snapshot_key=key, user_id=user.id, reason="tracking-v1", payload={
-        "format_version": 1,
+        "format_version": 2,
+        "accounts": {platform: {"handle": getattr(user, platform + "_username"),
+                                  "version": getattr(user, platform + "_account_version")}
+                     for platform in ("leetcode", "codeforces")},
         "points": safe_number(user.points),
         "difficulty_counts": {"easy": user.easy_count, "medium": user.medium_count, "hard": user.hard_count},
         "official_streak": user.official_streak,
         "solves": [{
             "id": solve.id, "platform": solve.platform, "title_slug": solve.title_slug,
+            "account_version": solve.account_version,
             "source_handle": solve.source_handle, "scoring_version": solve.scoring_version,
             "solved_at": solve.solved_at.isoformat(), "is_daily": solve.is_daily,
             "points_earned": safe_number(solve.points_earned), "difficulty": solve.difficulty,
             "ac_rate": safe_number(solve.ac_rate), "problem_rating": safe_number(solve.problem_rating),
         } for solve in solves],
+        "awards": [{"solve_id": row.solve_id, "kind": row.kind, "points": str(row.points)}
+                   for row in db.query(PointAward).filter_by(user_id=user.id).all()],
         "calendar_activity": [{"date": row.date.isoformat(), "count": row.problems_solved}
                               for row in db.query(DailyActivity).filter_by(user_id=user.id).order_by(DailyActivity.date).all()],
         "platform_activity": [{"platform": row.platform, "date": row.date.isoformat(), "count": row.problems_solved}
