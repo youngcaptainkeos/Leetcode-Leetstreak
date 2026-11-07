@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api, GroupResponse, GroupMember } from "../lib/api";
 import { getStored, setStored } from "../storage";
-import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, StudyPlan, Submission, dailySolved, fetchPractice, planCounts, progressKey, parsePlanInput, fetchStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, questionCodeforcesSlug, automaticQuestion, visiblePlans } from "./data";
+import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, StudyPlan, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, parsePlanInput, fetchStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, questionCodeforcesSlug, automaticQuestion, visiblePlans } from "./data";
 import { fetchSolvedHistory, SolvedHistory } from "./history";
 import { planFromLinks, requestImportAccess } from "./importer";
 import { useAccountProgress } from "./accountSync";
@@ -327,7 +327,7 @@ function FriendsActivity({ userId, groups }: { userId: number; groups: GroupResp
     setItems([]); setFailed(0);
     if (!friends.length) { setBusy(false); return; }
     setBusy(true);
-    // Bound requests; activity and profile history use the same backend source.
+    // Read LeetCode live, independently of backend polling; bound concurrency.
     const queue = [...friends];
     const results: FriendSolve[] = [];
     let failures = 0;
@@ -335,13 +335,32 @@ function FriendsActivity({ userId, groups }: { userId: number; groups: GroupResp
       while (queue.length && active) {
         const friend = queue.shift()!;
         try {
-          const ledger = await api.recentSolves(friend.id, 5);
-          const combined: FriendSolve[] = ledger.map(s => ({
-            title: s.title, titleSlug: s.title_slug,
-            timestamp: String(new Date(s.solved_at).getTime() / 1000), friend,
-            platform: s.platform || "leetcode", problemUrl: s.problem_url || s.leetcode_url,
-          }));
-          const unique = [...new Map(combined.map(s => [`${s.platform}-${s.titleSlug}`, s])).values()];
+          const [live, saved] = await Promise.allSettled([
+            fetchFriendSubmissions(friend.leetcode_username),
+            friend.codeforces_username ? api.recentSolves(friend.id, 10) : Promise.resolve([]),
+          ]);
+          if (live.status === "rejected" || saved.status === "rejected") {
+            failures++;
+            if (active) setFailed(failures);
+          }
+          const combined: FriendSolve[] = [
+            ...(live.status === "fulfilled" ? live.value : []).map(s => ({
+              ...s, friend, platform: "leetcode", problemUrl: `https://leetcode.com/problems/${s.titleSlug}/`,
+            })),
+            ...(saved.status === "fulfilled" ? saved.value : []).filter(s => s.platform === "codeforces").map(s => ({
+              title: s.title, titleSlug: s.title_slug,
+              timestamp: String(new Date(s.solved_at).getTime() / 1000), friend,
+              platform: "codeforces", problemUrl: s.problem_url || s.leetcode_url,
+            })),
+          ];
+          // Repeated acceptances keep the newest timestamp, not the last array item.
+          const latest = new Map<string, FriendSolve>();
+          for (const solve of combined) {
+            const key = `${solve.platform}-${solve.titleSlug}`;
+            const previous = latest.get(key);
+            if (!previous || Number(solve.timestamp) > Number(previous.timestamp)) latest.set(key, solve);
+          }
+          const unique = [...latest.values()];
           results.push(...unique);
           if (active) setItems([...results].sort((a, b) => Number(b.timestamp) - Number(a.timestamp)));
         } catch { failures++; if (active) setFailed(failures); }
@@ -357,7 +376,7 @@ function FriendsActivity({ userId, groups }: { userId: number; groups: GroupResp
   const visible = items.filter(s => filter === "all" || String(s.friend.id) === filter).slice(0, 5);
   return <section className="friends-practice" aria-labelledby="friends-practice-title">
     <div className="section-header study-plan-top"><h3 className="section-title" id="friends-practice-title">What are my friends up to?</h3><button className="chip-btn" disabled={busy || !friends.length} onClick={() => setRefresh(n => n + 1)}>{busy ? "Checking…" : "Refresh"}</button></div>
-    <p className="progress-note">Latest synced accepted questions from people in your groups.</p>
+    <p className="progress-note">Latest accepted questions from your groups · LeetCode checked live.</p>
     {friends.length > 1 && <select aria-label="Filter activity by friend" value={filter} onChange={e => setFilter(e.target.value)}><option value="all">All friends</option>{friends.map(f => <option value={f.id} key={f.id}>{f.name}</option>)}</select>}
     {busy && <p className="progress-note" role="status">Catching up with your friends…</p>}
     {!friends.length && <p className="progress-note">Join or create a group in Leaderboards to see your friends here.</p>}

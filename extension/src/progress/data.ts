@@ -280,7 +280,7 @@ export async function fetchPractice(username: string, force = false): Promise<Pr
 
 export async function fetchFriendSubmissions(username: string): Promise<Submission[]> {
   const result = await graphql<{ recentAcSubmissionList: Submission[] | null }>(
-    `query friendPractice($username: String!) { recentAcSubmissionList(username: $username, limit: 3) { title titleSlug timestamp } }`, { username });
+    `query friendPractice($username: String!) { recentAcSubmissionList(username: $username, limit: 5) { title titleSlug timestamp } }`, { username });
   if (!Array.isArray(result.recentAcSubmissionList)) throw new Error("This public profile is unavailable.");
   return validSubmissions(result.recentAcSubmissionList);
 }

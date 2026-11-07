@@ -152,3 +152,10 @@ follow-up client release task; the backend repair requires no extension ZIP.
 - Added an additive schema migration for the private jobs table, with RLS and public Data API grants revoked. No browser credentials are stored in jobs.
 - Help describes 2 revision points and 5 daily bonus points first, explaining the up-to-10% points adjustment separately. Daily live verification remains unavailable; retained credits are preserved.
 - Validation: frontend builds/type checks, backend syntax and background-script syntax. No test suite run. Production behavior still requires confirmation after deployment and loading the rebuilt extension.
+
+
+### Friends activity freshness correction — 2026-11-07
+
+- Restored direct live LeetCode accepted-submission reads in the Progress friends panel at the owner's request. Backend polling remains the source for profile stats and Codeforces activity; it must not gate live LeetCode activity. This supersedes the previous feed/profile source alignment.
+- Keep the five-entry display limit, manual Refresh and once-per-minute refresh while open. Request five recent LeetCode acceptances per friend and keep the latest acceptance per question. A saved Codeforces result cannot overwrite a live LeetCode timestamp; partial backend failure cannot hide a successful live result.
+- Background account Sync jobs, retained point components and profile history behavior are unchanged.
