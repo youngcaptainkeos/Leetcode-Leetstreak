@@ -56,6 +56,9 @@ def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Ad
     return True
 
 logging.basicConfig(level=logging.INFO)
+# Queue checks are normally idle; retain their warnings/errors without printing
+# two scheduler messages every five seconds. Actual poll start/end is logged above.
+logging.getLogger("apscheduler.executors.default").setLevel(logging.WARNING)
 
 app = FastAPI(title="LeetStreak API")
 app.include_router(progress_router)

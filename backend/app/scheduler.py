@@ -164,6 +164,7 @@ async def poll_all_users() -> dict:
     finally:
         db.close()
 
+    logger.info("All-user poll started: %d accounts", len(users))
     semaphore = asyncio.Semaphore(5)
     results = {}
 
@@ -185,7 +186,7 @@ async def poll_all_users() -> dict:
     if tasks:
         await asyncio.gather(*tasks)
 
-    logger.info("Poll complete for %d users: %s", len(users), results)
+    logger.info("All-user poll finished: %d accounts checked, %d new question entries", len(results), sum(results.values()))
     return results
 
 
@@ -195,6 +196,11 @@ def start_scheduler() -> AsyncIOScheduler:
         poll_all_users,
         "interval",
         minutes=POLL_INTERVAL_MINUTES,
+        # Anchor to a fixed clock rather than restarting a full interval after
+        # every deployment. With 15 minutes, ticks are :00/:15/:30/:45.
+        start_date=datetime(2020, 1, 1, tzinfo=timezone.utc),
+        coalesce=True,
+        max_instances=1,
         id="poll_all_users",
     )
     scheduler.add_job(

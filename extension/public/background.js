@@ -30,9 +30,13 @@ chrome.alarms.onAlarm.addListener(alarm => {
 // Only extension pages can hand off a manual sync. Content scripts cannot use
 // this handler to submit arbitrary URLs, credentials, accounts or HTTP methods.
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message?.type !== "leetstreak:start-sync") return;
+  if (message?.type !== "leetstreak:start-sync" && message?.type !== "leetstreak:sync-capabilities") return;
   if (sender.id !== chrome.runtime.id || !sender.url?.startsWith(chrome.runtime.getURL(""))) {
     sendResponse({ ok: false, status: 403, message: "This Sync request is not allowed." });
+    return;
+  }
+  if (message.type === "leetstreak:sync-capabilities") {
+    sendResponse({ protocol: 1 });
     return;
   }
   void (async () => {

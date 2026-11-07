@@ -228,6 +228,21 @@ async function startBackgroundSync(userId: number): Promise<{ job: SyncJob }> {
   if (typeof chrome === "undefined" || !chrome.runtime?.id || !location.protocol.endsWith("-extension:")) {
     return request<{ job: SyncJob }>(`/users/${userId}/sync-jobs`, { method: "POST", signal: AbortSignal.timeout(20000) });
   }
+  // A popup bundle can be newer than the registered service worker during an
+  // unpacked update. Probe without side effects before choosing the transport.
+  const supported = await new Promise<boolean>(resolve => {
+    const timer = setTimeout(() => resolve(false), 1500);
+    chrome.runtime.sendMessage({ type: "leetstreak:sync-capabilities" }, result => {
+      const error = chrome.runtime.lastError;
+      clearTimeout(timer);
+      resolve(!error && result?.protocol === 1);
+    });
+  });
+  if (!supported) {
+    // Only enqueue here; execution still belongs to the server. The capability
+    // probe never submitted a job, so this is not a replay of an ambiguous POST.
+    return request<{ job: SyncJob }>(`/users/${userId}/sync-jobs`, { method: "POST", signal: AbortSignal.timeout(20000) });
+  }
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage({ type: "leetstreak:start-sync", userId }, result => {
       const error = chrome.runtime.lastError;

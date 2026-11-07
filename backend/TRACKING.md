@@ -159,3 +159,11 @@ follow-up client release task; the backend repair requires no extension ZIP.
 - Restored direct live LeetCode accepted-submission reads in the Progress friends panel at the owner's request. Backend polling remains the source for profile stats and Codeforces activity; it must not gate live LeetCode activity. This supersedes the previous feed/profile source alignment.
 - Keep the five-entry display limit, manual Refresh and once-per-minute refresh while open. Request five recent LeetCode acceptances per friend and keep the latest acceptance per question. A saved Codeforces result cannot overwrite a live LeetCode timestamp; partial backend failure cannot hide a successful live result.
 - Background account Sync jobs, retained point components and profile history behavior are unchanged.
+
+
+### Sync handoff and scheduled-poll starvation correction — 2026-11-07
+
+- Observed status GETs but no manual sync POSTs for the reported failure. A popup may load newer code while the registered extension worker still has the older message handlers. The popup now probes a side-effect-free capability message and directly enqueues a server job if that handler is unavailable. It does not replay a start request after an ambiguous worker POST.
+- Anchored the normal polling interval to a fixed UTC clock; the 15-minute setting ticks at :00/:15/:30/:45 instead of being postponed by every deployment. No startup historical import or bulk point revaluation was added.
+- Suppressed repetitive APScheduler executor INFO entries for idle five-second queue checks. Actual all-user poll start/end, provider failures and scheduler warnings remain logged.
+- Added scripts/poll_once.py for a one-time protected all-user poll from a local computer, without Render Shell. It privately prompts for ADMIN_SECRET; no credential is stored, printed or passed as a command argument.
