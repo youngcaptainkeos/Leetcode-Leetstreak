@@ -185,7 +185,7 @@ export interface GroupListResponse {
 export const AUTH_EXPIRED = "leetstreak:auth-expired";
 
 export class ApiError extends Error {
-  constructor(message: string, public status: number) { super(message); this.name = "ApiError"; }
+  constructor(message: string, public status: number, public retryAfterSeconds = 0) { super(message); this.name = "ApiError"; }
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -196,6 +196,16 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+    if (res.status === 429) {
+      const header = res.headers.get("Retry-After");
+      const seconds = header && /^\d+$/.test(header.trim())
+        ? Number(header) : header ? Math.ceil((Date.parse(header) - Date.now()) / 1000) : 60;
+      const wait = Number.isFinite(seconds) ? Math.max(1, seconds) : 60;
+      throw new ApiError(`Requests are temporarily limited. Please try again in ${wait} seconds. Your saved data is unchanged.`, 429, wait);
+    }
+    if (res.status === 503 && /\/users\/\d+\/sync$/.test(path)) {
+      throw new ApiError("The server is temporarily unavailable or waking up. Please wait a minute before syncing again. Your saved data is unchanged.", 503, 60);
+    }
     if (res.status === 401 && !path.startsWith("/users/login") && !path.startsWith("/users/register") && !path.startsWith("/users/forgot-password")) {
       if ((await getStored("codestreak_access_token")) === token) window.dispatchEvent(new Event(AUTH_EXPIRED));
     }

@@ -2,6 +2,7 @@ import { formatPoints } from "../../shared/points";
 import React, { useEffect, useState } from "react";
 import {
   api,
+  ApiError,
   showGlobalLeaderboard,
   API_BASE,
   DashboardResponse,
@@ -609,6 +610,12 @@ function Dashboard({
   const [avatarLoadError, setAvatarLoadError] = useState(false);
 
   const [syncing, setSyncing] = useState(false);
+  const [syncCooldown, setSyncCooldown] = useState(0);
+  useEffect(() => {
+    if (syncCooldown <= 0) return;
+    const timer = setTimeout(() => setSyncCooldown(value => Math.max(0, value - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [syncCooldown]);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [toastSolve, setToastSolve] = useState<{
@@ -1041,11 +1048,13 @@ function Dashboard({
   }, [selectedTab, sortBy]);
 
   async function handleSync() {
+    if (syncing || syncCooldown > 0) return;
     setSyncing(true);
     setSyncMsg(null);
     setError(null);
     try {
       const res = await api.syncUser(userId);
+      setSyncCooldown(30);
       await Promise.all([loadData(), loadOwnSolves()]);
       setSyncMsg(
         res.new_solves > 0
@@ -1054,6 +1063,7 @@ function Dashboard({
       );
       setTimeout(() => setSyncMsg(null), 3500);
     } catch (err) {
+      if (err instanceof ApiError && err.retryAfterSeconds > 0) setSyncCooldown(err.retryAfterSeconds);
       setError(err instanceof Error ? err.message : "Sync failed.");
     } finally {
       setSyncing(false);
@@ -1228,7 +1238,7 @@ function Dashboard({
           <button
             className="sync-btn"
             onClick={handleSync}
-            disabled={syncing}
+            disabled={syncing || syncCooldown > 0}
             title="Force sync latest LeetCode activity"
           >
             <img
@@ -1236,7 +1246,7 @@ function Dashboard({
               alt=""
               className={`sync-btn-icon ${syncing ? "spinning" : ""}`}
             />
-            <span>{syncing ? "Syncing…" : "Sync"}</span>
+            <span>{syncing ? "Syncing…" : syncCooldown > 0 ? `Sync (${syncCooldown}s)` : "Sync"}</span>
           </button>
         </div>
       </div>
