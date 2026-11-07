@@ -198,3 +198,19 @@ Replacing a coding account clears only that platform's locked balance and starts
 its historical calculation again. No client can provide an opening balance.
 
 Prior sections describing runtime base revaluation are superseded by this policy.
+
+### Deployment verification — locked scoring, 2026-11-07
+
+- Production `main` commit `628db98` is live; readiness returns 200.
+- The 12:30 IST scheduled poll checked 19 accounts and completed. Existing
+  provider-unavailable accounts retain their saved data; this is not a claim
+  that every external account supplied complete history.
+- A matching pre-reconciliation balance plus four later unique questions was
+  recovered exactly. A second scoring pass retained the identical four-decimal
+  total without duplicate credit. Older per-question credit was restored too.
+- Authenticated profile and leaderboard reads returned the same account total
+  and platform subtotals. All four recovered questions appear in Recent Solves.
+- Website assets serve the updated locked-credit explanation. Extension and
+  website builds/type checks, Python syntax and diff checks passed. No automated
+  test suite was run in this change. Earlier revaluation-specific test assertions
+  describe the superseded policy and need updating when tests are authorized.

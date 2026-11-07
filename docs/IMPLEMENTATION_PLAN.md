@@ -1380,3 +1380,15 @@ M1-03 (`f9f07a3`) evidence: 22 backend tests passed using synthetic users and a 
 | 2026-11-05 | Added owner-requested FEAT-10 for backend-persisted direct friendships independent of groups (45 total items). Mutual-request/discovery details remain pending. Owner separately authorized merging progress-bar into main and testing the Codeforces integration; pre-launch milestone implementation remains on hold. |
 
 M1-09 local acceptance: isolated PostgreSQL 16 exercised migration concurrency and transactional recovery. Browser checks exposed and now cover a website password-change bug where a session token was written through account-scoped dashboard storage. Both client flows pass with intercepted local APIs and mocked providers; no production accounts or emails were used. Credential invalidation is owner-confirmed, not tested using exposed passwords.
+
+### 2026-11-07 — locked-credit deployment checkpoint
+
+Implemented in `cbe310c` with platform-read consistency in `628db98`, deployed to
+production. The scheduled poll completed 19 account checks; matching immutable
+balances recovered prior reductions, and a repeat scoring pass left the recovered
+total unchanged. Profile and leaderboard totals/platform subtotals agree, and the
+four missing questions are visible. Help and website scoring copy reflect the new
+policy. Builds/type/syntax checks passed; automated tests were not run. Earlier
+base-revaluation test expectations are superseded and remain a test-maintenance
+follow-up, not current scoring requirements. No full-history proof or successful
+provider response for inaccessible external accounts is claimed.
