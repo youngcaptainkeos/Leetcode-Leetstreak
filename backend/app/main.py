@@ -38,7 +38,7 @@ from .scheduler import start_scheduler, poll_all_users, poll_user
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
 from .point_calculator import recalculate_user_points
 from .reconciliation import current_account, stored_breakdown
-from .platforms import daily_counts, solve_url
+from .platforms import daily_counts, streak_dates, solve_url
 from .codeforces_client import fetch_profile, CodeforcesError
 from .codeforces_sync import background_codeforces_sync, user_sync_lock
 from .security import current_user, require_self, member_group, owned_group
@@ -476,7 +476,7 @@ def delete_user_account(user_id: int, payload: DeleteAccountRequest, db: Session
 
 
 def _active_dates(db: Session, user_id: int) -> set[date]:
-    return set(daily_counts(db, [user_id])[user_id])
+    return streak_dates(db, [user_id])[user_id]
 
 
 def get_ist_today() -> date:
@@ -575,12 +575,13 @@ def _compute_leaderboard(
         return LeaderboardResponse(week_start=week_start, week_end=today, entries=[])
 
     combined = daily_counts(db, user_ids)
+    display_dates = streak_dates(db, user_ids, today=today, verified_counts=combined)
     cf_stats = {row[0]: (row[1], float(row[2])) for row in db.query(Solve.user_id, func.count(Solve.id), func.coalesce(func.sum(Solve.points_earned), 0)).filter(Solve.user_id.in_(user_ids), Solve.platform == "codeforces").group_by(Solve.user_id).all()}
 
     raw = []
     for user in users:
         dates = combined[user.id]
-        active_dates = set(dates)
+        active_dates = display_dates[user.id]
         streak = current_streak(active_dates, today)
         week_rows = {day: count for day, count in dates.items() if week_start <= day <= today}
         weekly_total = sum(week_rows.values())

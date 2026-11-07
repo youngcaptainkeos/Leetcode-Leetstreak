@@ -58,6 +58,20 @@ Dashboard history/reconciliation paragraphs moved into a collapsible History and
 
 ## 1. How we will use this document
 
+**2026-11-07 production hotfix:** The owner requested restoring deployed
+streaks after the strict first-solve calculation excluded existing activity.
+The temporary display now unions preserved activity and current-account
+calendar dates with verified first solves. Dashboard/profile and all board
+types use the same display history. Scoring, revision rewards and verified
+solve counts are unchanged; no history is fabricated or marked verified.
+See the latest exception in `DECISIONS.md` and `backend/TRACKING.md`.
+First-solve-only streak migration and matching client Help copy remain open.
+Local acceptance: the existing 131-check backend suite passed with three
+PostgreSQL test classes skipped (no local server). Disposable API/database
+checks verified overlap/future-date filtering, account-generation isolation,
+yesterday grace, matching dashboard/group/Global streaks and unchanged points
+and verified solve counts.
+
 This is the working checklist for the repository review. It covers every issue and proposed feature in that review, plus the requested cleanup for publishing clean public code. It describes future work; creating this document does not fix or verify the application.
 
 - Check an item's master checkbox only after its implementation and acceptance criteria are satisfied.

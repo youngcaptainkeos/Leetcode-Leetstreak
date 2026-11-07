@@ -155,3 +155,16 @@ Approval shorthand is fine: “Approve the recommendations except Dxx: …”. I
 Daily limit clarification: each different official daily question first solved that IST day can earn a daily bonus; there is no across-question daily cap. Repeated questions remain revision-only.
 
 Historical-credit fallback accepted: old LeetCode questions with unproved first-solve dates receive clearly labeled current base-only credit; they do not count toward streaks or period rankings without reliable dates. If a previously credited daily amount cannot be separated reliably from the combined score, preserve the combined total as protected legacy credit and flag it for reconciliation rather than inventing a bonus.
+
+### Production streak recovery — 2026-11-07
+
+After the rebuild deployment excluded historical activity and returned zero
+streaks, the owner authorized fixing the deployed version while store review
+is pending. Temporarily restore the previous activity-based **display streak**
+using preserved daily activity, current-account provider calendars and verified
+first-solve days. This display can include repeats/attempts and is not a claim
+that those days satisfy the final first-solve-only policy. Respect IST day
+boundaries and the existing today/yesterday grace period; ignore future days
+and stale account generations. Do not mark old solves verified or change
+awards, scoring multipliers or verified solve/period counts. Strict first-solve
+streak rollout remains blocked on reliable LC proof and historical migration.

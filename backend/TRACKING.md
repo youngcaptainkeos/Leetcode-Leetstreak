@@ -109,3 +109,20 @@ same-account renames remains FEAT-04 work; similarity is not identity proof.
 All provider checks use mocked responses and database checks use synthetic
 accounts in disposable local databases. No real provider account or production
 database is mutated by the rebuild checkpoints.
+
+## Deployed streak compatibility recovery — 2026-11-07
+
+`platforms.streak_dates` now supplies dashboard/profile and all leaderboard
+display streaks separately from `daily_counts`. The owner approved restoring
+the historical activity-based display while complete first-solve verification
+is unavailable. Legacy rows are used only for initial linked generations;
+provider calendars must match the current account generation. Dates are
+unioned, positive activity is required, and future dates are ignored. The
+existing IST today/yesterday grace rule remains.
+
+No historical solve is promoted to verified, and no rows, point awards or
+scoring multipliers are rewritten. Verified question counts remain strict.
+Activity calendars can contain repeats/failed attempts, so this is temporary
+display compatibility, not completion of the intended first-solve streak
+policy. Updating the submitted extension's strict-streak Help wording is a
+follow-up client release task; the backend repair requires no extension ZIP.

@@ -21,3 +21,42 @@ def daily_counts(db: Session, user_ids: list[int]) -> dict:
 
 def solve_url(solve: Solve) -> str:
     return solve.problem_url or f"https://leetcode.com/problems/{solve.title_slug}/"
+
+
+def streak_dates(db: Session, user_ids: list[int], *, today=None, verified_counts=None) -> dict:
+    """Temporary display compatibility while first-solve history is incomplete.
+
+    Calendar activity can include repeats/attempts. Use it only for the visible
+    activity streak, never as unique-solve evidence or a scoring multiplier.
+    Existing date rows are unioned, so overlapping sources add no extra days.
+    """
+    from .models import User, ProviderCalendar
+    from .timekeeping import ist_today
+    today = today or ist_today()
+    active = defaultdict(set)
+    if not user_ids:
+        return active
+    verified = verified_counts if verified_counts is not None else daily_counts(db, user_ids)
+    for user_id, counts in verified.items():
+        active[user_id].update(day for day, count in counts.items() if count > 0 and day <= today)
+    # Undated legacy account attribution is usable only for the initial linked
+    # account. Current handle replacement clears these rows as well.
+    for user_id, day in db.query(DailyActivity.user_id, DailyActivity.date).join(
+            User, User.id == DailyActivity.user_id).filter(
+            User.id.in_(user_ids), User.leetcode_account_version == 0,
+            DailyActivity.problems_solved > 0, DailyActivity.date <= today):
+        active[user_id].add(day)
+    for user_id, day in db.query(PlatformActivity.user_id, PlatformActivity.date).join(
+            User, User.id == PlatformActivity.user_id).filter(
+            User.id.in_(user_ids), User.codeforces_account_version == 0,
+            User.codeforces_username.isnot(None), PlatformActivity.platform == "codeforces",
+            PlatformActivity.problems_solved > 0, PlatformActivity.date <= today):
+        active[user_id].add(day)
+    for user_id, day in db.query(ProviderCalendar.user_id, ProviderCalendar.date).join(
+            User, User.id == ProviderCalendar.user_id).filter(
+            User.id.in_(user_ids), ProviderCalendar.platform == "leetcode",
+            ProviderCalendar.account_version == User.leetcode_account_version,
+            ProviderCalendar.source == "leetcode_submission_calendar",
+            ProviderCalendar.submission_count > 0, ProviderCalendar.date <= today):
+        active[user_id].add(day)
+    return active
