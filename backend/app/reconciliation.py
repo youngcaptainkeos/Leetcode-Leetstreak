@@ -192,8 +192,19 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
     # and must never be returned as public profile data or written to logs.
     baseline_named = rounded(sum((number(row.get("points_earned") or 0)
                                   for row in snapshot["solves"]), Decimal(0)))
-    logger.info("Score reconciliation user %d: previous=%s baseline=%s baseline_named=%s named=%s historical_base=%s total=%s",
-                user.id, user.points, snapshot.get("points"), baseline_named, named_total, estimate, total)
+    baseline_classified = Counter(row.get("difficulty") for row in snapshot["solves"] if row["platform"] == "leetcode")
+    baseline_slots = {kind: max(0, (snapshot.get("difficulty_counts", {}).get(kind.lower()) or 0) - baseline_classified[kind])
+                      for kind in ("Easy", "Medium", "Hard")}
+    reserved_old = sum(1 for row in snapshot["solves"] if row["platform"] == "leetcode"
+                       and row.get("difficulty") not in baseline_slots and (row.get("points_earned") or 0) > 0)
+    for kind in ("Hard", "Medium", "Easy"):
+        used = min(reserved_old, baseline_slots[kind])
+        baseline_slots[kind] -= used
+        reserved_old -= used
+    baseline_estimate = rounded(sum((calculate_points(platform="leetcode", difficulty=kind)["base_award"] * count
+                                    for kind, count in baseline_slots.items()), Decimal(0)))
+    logger.info("Score reconciliation user %d: previous=%s baseline=%s baseline_named=%s baseline_estimate=%s named=%s historical_base=%s total=%s",
+                user.id, user.points, snapshot.get("points"), baseline_named, baseline_estimate, named_total, estimate, total)
     user.points = float(total)
     db.flush()
     return user.points
