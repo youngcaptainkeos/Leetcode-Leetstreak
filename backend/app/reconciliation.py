@@ -1,6 +1,7 @@
 """Component reconciliation; caller owns commit/rollback. No provider requests."""
 from collections import Counter, defaultdict
 from decimal import Decimal
+import logging
 
 from sqlalchemy.orm import Session
 
@@ -10,6 +11,8 @@ from .scoring import SCORING_VERSION, calculate_points, number, rounded
 from .streak import current_streak
 from .timekeeping import ist_date, utc_storage
 from .tracking import capture_score_baseline, revision_candidates
+
+logger = logging.getLogger("codestreak.reconciliation")
 
 
 def current_account(user: User, solve: Solve) -> bool:
@@ -183,7 +186,14 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
     credit.scoring_version = SCORING_VERSION
     credit.input_snapshot = {"counts": counts, "reserved_unclassified": unclassified_paid - reserved,
                              "estimated": True, "dates_known": False}
+    named_total = rounded(total)
     total = rounded(total + estimate)
+    # Aggregate diagnostics only: snapshots contain private recovery evidence
+    # and must never be returned as public profile data or written to logs.
+    baseline_named = rounded(sum((number(row.get("points_earned") or 0)
+                                  for row in snapshot["solves"]), Decimal(0)))
+    logger.info("Score reconciliation user %d: previous=%s baseline=%s baseline_named=%s named=%s historical_base=%s total=%s",
+                user.id, user.points, snapshot.get("points"), baseline_named, named_total, estimate, total)
     user.points = float(total)
     db.flush()
     return user.points
