@@ -1,7 +1,7 @@
 """Runtime entry point for the stored-component calculator.
 
 Daily challenge names/dates are never evidence of an earned daily award.
-Reconciliation owns base revaluation and retained components in one transaction.
+Reconciliation locks existing credit and adds new components in one transaction.
 """
 from .reconciliation import reconcile_user
 

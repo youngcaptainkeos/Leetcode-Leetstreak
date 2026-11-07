@@ -2524,7 +2524,7 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
     { id: "history", title: "History and score accuracy", hint: "First solves and retained historical credit", content: <>
       <p className="help-text">Question counts use verified first solves on LeetCode or Codeforces. Failed attempts and repeats do not add another solved question. The displayed streak temporarily includes imported activity while first-solve history is incomplete; that activity is not used to award points.</p>
       <p className="help-text">Some imported history has incomplete first-solve dates. Those questions can receive base-only historical credit while their dates remain excluded from scoring streaks and period counts.</p>
-      <p className="help-text">Previously earned daily and revision credit is retained. If an old combined score cannot be separated reliably, it stays protected until reconciliation rather than being guessed or removed.</p>
+      <p className="help-text">Your credited points are locked. Sync adds points for new unique questions and eligible revisions without repricing old solves. New accounts receive their initial historical score once; filling gaps in that history does not award the same questions again. Changing to a different linked coding account replaces that platform's contribution.</p>
     </> },
     { id: "leetcode", title: "LeetCode points", hint: "Contest ratings and difficulty", content: <>
       <p className="help-text">Contest problems use ZeroTrac: <code>rating ÷ 100</code>. A 1500-rated problem earns 15 base points.</p>

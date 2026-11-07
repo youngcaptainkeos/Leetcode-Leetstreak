@@ -233,7 +233,7 @@ class ScoreSnapshot(Base):
 
 
 class AccountCredit(Base):
-    """Explicit base-only estimates for questions missing from the unique ledger."""
+    """Historical estimates and account-scoped locked opening balances."""
     __tablename__ = "account_credits"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)

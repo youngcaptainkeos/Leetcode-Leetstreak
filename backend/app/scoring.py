@@ -6,7 +6,7 @@ daily/revision awards again. Provider lookups and eligibility stay outside.
 """
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
-SCORING_VERSION = "points-components-v2"
+SCORING_VERSION = "points-locked-v1"
 PRECISION = Decimal("0.0001")
 
 

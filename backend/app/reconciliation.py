@@ -11,6 +11,7 @@ from .scoring import SCORING_VERSION, calculate_points, number, rounded
 from .streak import current_streak
 from .timekeeping import ist_date, utc_storage
 from .tracking import capture_score_baseline, revision_candidates
+from .locked_scoring import locked_total
 
 logger = logging.getLogger("codestreak.reconciliation")
 
@@ -48,7 +49,7 @@ def store_award(db, solve, kind, points, *, earned_at=None, inputs=None, key=Non
 
 
 def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
-    """Revalue bases, retain awards and estimate only disjoint historical slots.
+    """Create new awards once, retain existing credit and deduplicate history.
 
     Unknown old daily totals are protected whole, not reverse-engineered into a
     guessed +5. First imported history never receives retrospective bonuses.
@@ -56,7 +57,8 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
     """
     db.flush()
     user = db.query(User).filter_by(id=user.id).populate_existing().with_for_update().one()
-    snapshot = capture_score_baseline(db, user.id).payload
+    baseline_record = capture_score_baseline(db, user.id)
+    snapshot = baseline_record.payload
     baseline = {row["id"]: row for row in snapshot["solves"]}
     baseline_revisions = Counter()
     baseline_components = Counter()
@@ -110,11 +112,22 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
             if protected < 0:
                 raise ValueError("Inconsistent protected historical credit")
             remember(awards, solve, "legacy", protected, inputs={"protection": "combined_daily", "needs_reconciliation": True})
+        # Restore only evidenced credit, under a stable unique key. The old
+        # total includes its recorded rewards, which must not be paid twice.
+        if old_points > 0:
+            existing_base = sum((number(row.points) for row in awards
+                                 if row.kind not in {"daily", "revision"}), Decimal(0))
+            missing = rounded(old_points - baseline_components[solve.id] - existing_base)
+            if missing > 0:
+                remember(awards, solve, "legacy", missing,
+                    key=f"locked-restore:{solve.id}",
+                    inputs={"protection": "locked_credit", "snapshot": baseline_record.snapshot_key})
         combined = any(row.kind == "legacy" and row.input_snapshot.get("protection") == "combined_daily" for row in awards)
         first = proved_date(user, solve)
         streak = current_streak({day for instant, day in dates if instant <= first}, ist_date(first)) if first else 0
         result = None
-        if not combined:
+        has_fixed_credit = bool(bases) or any(row.kind == "legacy" for row in awards)
+        if not combined and not has_fixed_credit:
             try:
                 result = calculate_points(platform=solve.platform, difficulty=solve.difficulty,
                     rating=get_contest_rating(solve.title_slug) if solve.platform == "leetcode" else solve.problem_rating,
@@ -123,15 +136,8 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
                 # Missing/invalid metadata is not evidence that the question was Medium.
                 result = None
             if result is not None:
-                for row in list(awards):
-                    if row.kind == "legacy" and row.input_snapshot.get("protection") == "metadata_missing":
-                        db.delete(row)
-                        awards.remove(row)
-                base = bases[0] if bases else remember(awards, solve, "base", result["base_award"])
-                base.points = result["base_award"]
-                base.earned_at = first
-                base.scoring_version = SCORING_VERSION
-                base.input_snapshot = json_inputs(result)
+                remember(awards, solve, "base", result["base_award"],
+                         earned_at=first, inputs={**json_inputs(result), "locked": True})
             elif not bases and old_points > 0:
                 protected = rounded(old_points - baseline_components[solve.id])
                 if protected < 0:
@@ -154,8 +160,8 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
             raise ValueError("Negative score components")
         solve.points_earned = float(points)
         solve.scoring_version = SCORING_VERSION
-        solve.is_daily = combined or any(row.kind == "daily" and row.points > 0 for row in awards)
-        solve.score_components_state = "legacy_protected" if combined else ("history_review" if history_review else ("metadata_missing" if result is None else ("verified" if first else "base_only")))
+        solve.is_daily = combined or bool(old and old.get("is_daily")) or any(row.kind == "daily" and row.points > 0 for row in awards)
+        solve.score_components_state = "legacy_protected" if any(row.kind == "legacy" for row in awards) else ("history_review" if history_review else ("verified" if first else "base_only"))
         total += points
         if solve.platform == "leetcode":
             if solve.difficulty in {"Easy", "Medium", "Hard"}:
@@ -186,25 +192,8 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
     credit.scoring_version = SCORING_VERSION
     credit.input_snapshot = {"counts": counts, "reserved_unclassified": unclassified_paid - reserved,
                              "estimated": True, "dates_known": False}
-    named_total = rounded(total)
-    total = rounded(total + estimate)
-    # Aggregate diagnostics only: snapshots contain private recovery evidence
-    # and must never be returned as public profile data or written to logs.
-    baseline_named = rounded(sum((number(row.get("points_earned") or 0)
-                                  for row in snapshot["solves"]), Decimal(0)))
-    baseline_classified = Counter(row.get("difficulty") for row in snapshot["solves"] if row["platform"] == "leetcode")
-    baseline_slots = {kind: max(0, (snapshot.get("difficulty_counts", {}).get(kind.lower()) or 0) - baseline_classified[kind])
-                      for kind in ("Easy", "Medium", "Hard")}
-    reserved_old = sum(1 for row in snapshot["solves"] if row["platform"] == "leetcode"
-                       and row.get("difficulty") not in baseline_slots and (row.get("points_earned") or 0) > 0)
-    for kind in ("Hard", "Medium", "Easy"):
-        used = min(reserved_old, baseline_slots[kind])
-        baseline_slots[kind] -= used
-        reserved_old -= used
-    baseline_estimate = rounded(sum((calculate_points(platform="leetcode", difficulty=kind)["base_award"] * count
-                                    for kind, count in baseline_slots.items()), Decimal(0)))
-    logger.info("Score reconciliation user %d: previous=%s baseline=%s baseline_named=%s baseline_estimate=%s named=%s historical_base=%s total=%s",
-                user.id, user.points, snapshot.get("points"), baseline_named, baseline_estimate, named_total, estimate, total)
+    total = locked_total(user, db, baseline_record, solves, awards_by_solve, estimate)
+    logger.info("Locked score saved for user %d: previous=%s total=%s", user.id, user.points, total)
     user.points = float(total)
     db.flush()
     return user.points

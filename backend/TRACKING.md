@@ -178,3 +178,23 @@ follow-up client release task; the backend repair requires no extension ZIP.
 - Increased enqueue/status read timeouts to 60s. Optional initial status-read failures no longer produce a global failure banner; known-running jobs reconnect without being reported failed.
 - A completed/failed job inside the 30s server cooldown now returns an explicit 429/Retry-After instead of silently returning a previously acknowledged terminal job. Active jobs remain deduplicated.
 - Validation before deployment: frontend builds/type checks and Python syntax. No test suite run. Live save completion and account totals must still be checked.
+
+## Locked scoring policy — 2026-11-07 (supersedes base revaluation)
+
+Owner approved freezing credited totals. `locked_scoring.py` records an immutable
+opening balance per platform/account generation in private `AccountCredit` rows.
+Existing users recover matching-account pre-reconciliation credit from the
+immutable tracking snapshot; new accounts receive the initial historical
+calculation once. New question amounts are stored once, and later metadata,
+rating or scoring-streak changes do not reprice them.
+
+LeetCode aggregate unique-count growth limits new question credits. Recent
+history that reveals already-counted questions cannot add a second base award.
+Uncredited recent questions can receive credit when aggregate counts catch up.
+Codeforces uses its named history. Daily/revision reward growth is accounted for
+separately, deduplicated against rewards already in the opening balance. Each
+account's state is persisted under the same user row lock/transaction as solves.
+Replacing a coding account clears only that platform's locked balance and starts
+its historical calculation again. No client can provide an opening balance.
+
+Prior sections describing runtime base revaluation are superseded by this policy.

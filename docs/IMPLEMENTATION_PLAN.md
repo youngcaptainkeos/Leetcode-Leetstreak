@@ -1,5 +1,10 @@
 # LeetStreak implementation and public-release plan
 
+## Locked scoring policy — approved 2026-11-07
+
+This decision supersedes earlier base-revaluation requirements (DATA-05/07): existing credited points are frozen. Sync adds new unique-question awards and eligible revisions once; it never reprices previously credited solves. New users receive initial historical credit once. Missing old history must not earn duplicate base credit. Different linked accounts replace only their own platform contribution. Recover prior reductions only from matching-account immutable snapshots. Implementation uses private per-platform/account-generation opening balances and persisted deduplication state; release verification is recorded after deployment.
+
+
 Created: 2026-11-05  
 Baseline: `progress-bar`, commit `693a20c`  
 Scope: backend, extension, website, data correctness, operations, and public repository readiness.
@@ -215,7 +220,7 @@ The earlier proposal to treat the signup toggle as a privacy opt-out is supersed
 | Unique questions | Multiple submissions of the same platform question always produce one question entry and one lifetime unique-solve count. Repeat-event evidence may exist privately for award eligibility, not as duplicate solved-question entries. |
 | Revision | An accepted repeat after at least one week can earn 2 extra revision points. It never adds another question entry or extends the streak. Record it as a separate award component. Owner confirmed recurring eligibility seven days after the first solve or last rewarded revision; unrewarded attempts do not restart the clock. Revision awards apply the streak multiplier to the 2-point base. A daily bonus can be earned on each different official daily question first solved that IST day; repeats receive revision awards only. |
 | Time | All product boundaries and displayed activity dates follow IST, including daily, weekly, monthly, streak, revision eligibility, and LeetStreak daily awards. Timestamp storage can remain UTC. Do not silently retain a UTC-reset exception in product behavior. |
-| Formula changes | Recalculate previous questions for all users under the same new base-point formula/version, rather than leaving older users on a frozen base scale. Preserve source inputs and revaluation history for audit/recovery. |
+| Formula changes | Superseded 2026-11-07: freeze credited points. Formula changes apply to newly credited questions and the one-time historical calculation for new accounts, without repricing existing credit. |
 | Earned daily points | Retain existing earned daily award amounts separately from the base points being revalued. Do not try to reconstruct or overwrite earned bonuses from incomplete old challenge archives. |
 | New-user history | Initial/imported historical questions receive base points only, with no retroactive daily bonuses. Owner confirmed new users can earn daily bonuses on future live solves. |
 | Handle change | Recalculate for a genuinely different linked coding account; preserve history for a proven rename of the same account. A matching display name/avatar or similar history is not sufficient proof of identity. |
@@ -479,7 +484,9 @@ Each row is a separate commit/push checkpoint. Local/branch completion is not pr
 - [ ] Re-imports and overlapping polls are idempotent; failed imports preserve valid saved data.
 - [ ] Full plan completion can improve without inventing historical score events.
 
-### DATA-05 — Fair base-point revaluation and preserved earned bonuses
+### DATA-05 — Locked credited points and preserved earned bonuses
+
+**Current decision (2026-11-07):** The locked-scoring policy at the top of this document supersedes the older revaluation checklist below. Preserve it as decision history, not as permission to reprice old awards.
 
 **Problem:** Missing solves are proportionally estimated using difficulty totals and a current streak multiplier. Later syncs can change those estimates without new solves. Current recalculation also recomputes historical awards.
 
