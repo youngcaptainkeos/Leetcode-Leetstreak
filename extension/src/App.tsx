@@ -1,3 +1,4 @@
+import { useSyncJob } from "./useSyncJob";
 import { formatPoints } from "../../shared/points";
 import React, { useEffect, useState } from "react";
 import {
@@ -740,7 +741,8 @@ function Dashboard({
   const [selectedSolveBreakdown, setSelectedSolveBreakdown] = useState<RecentSolve | null>(null);
   const [avatarLoadError, setAvatarLoadError] = useState(false);
 
-  const [syncing, setSyncing] = useState(false);
+  const syncJob = useSyncJob(userId);
+  const syncing = syncJob.active;
   const syncCooldownKey = `codestreak_account_${userId}:sync_retry_at`;
   const [syncRetryAt, setSyncRetryAt] = useState(0);
   const [syncClock, setSyncClock] = useState(Date.now);
@@ -1202,27 +1204,34 @@ function Dashboard({
     }
   }, [selectedTab, sortBy]);
 
-  async function handleSync() {
-    if (!syncCooldownReady || syncing || syncCooldown > 0) return;
-    setSyncing(true);
-    setSyncMsg(null);
+  useEffect(() => {
+    if (syncJob.error) setError(syncJob.error);
+    if (syncJob.retryAfter > 0) void setSyncCooldown(syncJob.retryAfter);
+  }, [syncJob.error, syncJob.retryAfter]);
+
+  useEffect(() => {
+    const job = syncJob.finished;
+    if (!job) return;
+    if (job.state === "failed") {
+      setError(job.message || "Sync could not finish. Please try again in a minute.");
+      void setSyncCooldown(60);
+      return;
+    }
     setError(null);
+    setSyncMsg(job.message || (job.new_solves > 0 ? `Synced! ${job.new_solves} new solve(s) added.` : "Your account is up to date."));
+    void (async () => { await loadData(); })();
+    const timer = setTimeout(() => setSyncMsg(null), 5000);
+    return () => clearTimeout(timer);
+  }, [syncJob.finished?.id]);
+
+  async function handleSync() {
+    if (!syncJob.ready || !syncCooldownReady || syncing || syncCooldown > 0) return;
+    setSyncMsg(null); setError(null);
     try {
-      await setSyncCooldown(30);
-      const res = await api.syncUser(userId);
-      await setSyncCooldown(30);
-      await loadData();
-      setSyncMsg(
-        res.new_solves > 0
-          ? `Synced! ${res.new_solves} new solve(s) added.`
-          : "LeetCode up to date!"
-      );
-      setTimeout(() => setSyncMsg(null), 3500);
+      await Promise.all([setSyncCooldown(30), syncJob.start()]);
     } catch (err) {
       if (err instanceof ApiError && err.retryAfterSeconds > 0) await setSyncCooldown(err.retryAfterSeconds);
-      setError(err instanceof Error ? err.message : "Sync failed.");
-    } finally {
-      setSyncing(false);
+      setError(err instanceof Error ? err.message : "Could not start Sync. Checking server status before retrying.");
     }
   }
 
@@ -1395,15 +1404,15 @@ function Dashboard({
           <button
             className="sync-btn"
             onClick={handleSync}
-            disabled={!syncCooldownReady || syncing || syncCooldown > 0}
-            title="Force sync latest LeetCode activity"
+            disabled={!syncJob.ready || !syncCooldownReady || syncing || syncCooldown > 0}
+            title="Sync your linked accounts; friends refresh automatically"
           >
             <img
               src="/sync.png"
               alt=""
               className={`sync-btn-icon ${syncing ? "spinning" : ""}`}
             />
-            <span>{syncing ? "Syncing…" : !syncCooldownReady ? "Sync…" : syncCooldown > 0 ? `Sync (${syncCooldown}s)` : "Sync"}</span>
+            <span>{syncing ? "Syncing…" : !syncJob.ready || !syncCooldownReady ? "Sync…" : syncCooldown > 0 ? `Sync (${syncCooldown}s)` : "Sync"}</span>
           </button>
         </div>
       </div>
@@ -2512,8 +2521,8 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
   }, [onClose]);
   const sections = [
     { id: "history", title: "History and score accuracy", hint: "First solves and retained historical credit", content: <>
-      <p className="help-text">Counts and streaks use verified first solves on LeetCode or Codeforces. Failed attempts, repeat solves and submission-calendar activity do not add streak days.</p>
-      <p className="help-text">Some imported history has incomplete first-solve dates. Those questions can receive base-only historical credit while their dates remain excluded from streaks and period counts.</p>
+      <p className="help-text">Question counts use verified first solves on LeetCode or Codeforces. Failed attempts and repeats do not add another solved question. The displayed streak temporarily includes imported activity while first-solve history is incomplete; that activity is not used to award points.</p>
+      <p className="help-text">Some imported history has incomplete first-solve dates. Those questions can receive base-only historical credit while their dates remain excluded from scoring streaks and period counts.</p>
       <p className="help-text">Previously earned daily and revision credit is retained. If an old combined score cannot be separated reliably, it stays protected until reconciliation rather than being guessed or removed.</p>
     </> },
     { id: "leetcode", title: "LeetCode points", hint: "Contest ratings and difficulty", content: <>
@@ -2525,8 +2534,8 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
       <ul className="help-bullet-list"><li>800 rating → 8 points</li><li>1400 → about 15 displayed points</li><li>1800 → 20 points</li><li>2200 → about 25 displayed points</li></ul>
       <p className="help-text">Connect your handle at signup or in Settings. Each unique, final accepted problem earns points once. Unrated accepted problems earn 0 base points. Only verified first solves count toward streaks. The scale is provisional, calibrated against similar LeetCode problems.</p>
     </> },
-    { id: "daily", title: "Daily challenge bonus", hint: "Existing credit retained", content: <p className="help-text">A verified live first solve of the current official LeetCode challenge is eligible for <strong>5 × the streak multiplier</strong>. Imported history and repeats never earn this bonus. Live LeetCode first-solve verification is not available in this build; existing earned credit is retained.</p> },
-    { id: "revision", title: "Revision points", hint: "Recurring seven-day cooldown", content: <p className="help-text">An accepted repeat can earn <strong>2 × the streak multiplier</strong> at least seven days after its proved first solve or last rewarded revision. Unrewarded attempts do not reset the clock. Initial history imports earn no revisions. Revisions never add a question, streak day or daily bonus.</p> },
+    { id: "daily", title: "Daily challenge bonus", hint: "Existing credit retained", content: <p className="help-text">A qualifying first solve of the current official LeetCode daily earns <strong>5 bonus points</strong>. An eligible streak can add up to 10% to these points. Imported history and repeats do not qualify. Live LeetCode first-solve verification is not available in this build; existing earned credit is retained.</p> },
+    { id: "revision", title: "Revision points", hint: "Recurring seven-day cooldown", content: <p className="help-text">Earn <strong>2 revision points</strong> by solving a previously solved question again, at least seven days after its verified first solve or last rewarded revision. An eligible streak can add up to 10% to these points. Unrewarded attempts do not reset the clock. Initial history imports earn no revisions. Revisions never add a question, streak day or daily bonus.</p> },
     { id: "streak", title: "Streak multiplier", hint: "Up to +10%", content: <>
       <p className="help-text">The multiplier is <code>1 + 0.10 × min(streak days, 30) ÷ 30</code>, capped at <strong>1.10×</strong>.</p>
       <p className="help-text">Base awards use this multiplier. Previously earned daily and revision amounts are retained without multiplying them again. For example, a CF 1800 problem earns 20 base points, or 22 at the maximum multiplier.</p>

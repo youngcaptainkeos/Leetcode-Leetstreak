@@ -141,3 +141,14 @@ follow-up client release task; the backend repair requires no extension ZIP.
 - Catch LeetCode transport/HTTP failures before sync mutation; manual sync returns a safe 503 with a 60-second Retry-After instead of an unhandled 500 or an incorrect up-to-date message. Background polling keeps its existing failure fallback. Logs record exception class and upstream status without provider response bodies.
 - Clients respect 429 Retry-After and show a countdown; Sync 503 errors retain the server's safe explanation. No automatic POST retries.
 - Render wake-up errors were independently observed; an earlier user-reported 500/429 has not yet been matched to an application request log. Do not call the incident resolved solely because deployment is live.
+
+
+### Friends activity and popup-independent manual Sync — 2026-11-07
+
+- Friends activity displays at most five entries after filtering. It reads the same backend recent-acceptance history as profile Recent Solves, rather than mixing live LeetCode responses with saved profile data. The panel refreshes its saved view once per minute while open; provider freshness still depends on users' own syncs and scheduled polling.
+- Recent Solves orders each unique question by its latest recorded acceptance, including repeats. First-solve dates, question counts and scoring components are unchanged.
+- New clients enqueue a private, account-owned sync job. A short worker request survives closing the popup; provider work executes on the server. Status is restored on reopen. No automatic POST replay after an ambiguous response. Legacy synchronous Sync remains available to already submitted clients.
+- Jobs are transactionally recorded before acknowledgement, deduplicated under the user lock, claimed with row locks and processed by a scheduler recovery path. A five-minute processing timeout and ten-minute lease prevent permanently running jobs after interruption; expired jobs report failure and need a deliberate retry. Account generation/session checks reject outdated requests.
+- Added an additive schema migration for the private jobs table, with RLS and public Data API grants revoked. No browser credentials are stored in jobs.
+- Help describes 2 revision points and 5 daily bonus points first, explaining the up-to-10% points adjustment separately. Daily live verification remains unavailable; retained credits are preserved.
+- Validation: frontend builds/type checks, backend syntax and background-script syntax. No test suite run. Production behavior still requires confirmation after deployment and loading the rebuilt extension.

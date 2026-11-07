@@ -203,5 +203,7 @@ def start_scheduler() -> AsyncIOScheduler:
         weeks=1,
         id="refresh_zerotrac_dataset",
     )
+    from .sync_jobs import process_sync_jobs
+    scheduler.add_job(process_sync_jobs, "interval", seconds=5, id="manual_sync_jobs", max_instances=1)
     scheduler.start()
     return scheduler

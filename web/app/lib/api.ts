@@ -1,6 +1,15 @@
 import { getStored } from "../storage";
 export const API_BASE = "/api";
 
+export interface SyncJob {
+  id: string;
+  state: "queued" | "running" | "succeeded" | "failed";
+  new_solves: number;
+  message: string | null;
+  created_at: string;
+  finished_at: string | null;
+}
+
 export interface RegisterResponse {
   id: number;
   name: string;
@@ -216,6 +225,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  startSync: (userId: number) => request<{ job: SyncJob }>(`/users/${userId}/sync-jobs`, { method: "POST", signal: AbortSignal.timeout(20000) }),
+  latestSync: (userId: number) => request<{ job: SyncJob | null }>(`/users/${userId}/sync-jobs/latest`, { signal: AbortSignal.timeout(15000) }),
   getProgress: (userId: number) => request<{ version: number; initialized: boolean; state: Record<string, unknown> }>(`/users/${userId}/progress`, { signal: AbortSignal.timeout(20000) }),
   writeProgress: (userId: number, operation: { base_version: number; operation_id: string; kind: string; data: Record<string, unknown> }) => request<{ version: number; initialized: boolean; state: Record<string, unknown> }>(`/users/${userId}/progress`, { method: "POST", body: JSON.stringify(operation), signal: AbortSignal.timeout(20000) }),
   activityFeed: () => request<any[]>("/feed/recent-solves?limit=10"),

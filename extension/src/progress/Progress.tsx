@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api, GroupResponse, GroupMember } from "../lib/api";
 import { getStored, setStored } from "../storage";
-import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, StudyPlan, Submission, dailySolved, fetchPractice, fetchFriendSubmissions, planCounts, progressKey, parsePlanInput, fetchStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, questionCodeforcesSlug, automaticQuestion, visiblePlans } from "./data";
+import { STUDY_PLANS, PRACTICE_REFRESH, PracticeSnapshot, StudyPlan, Submission, dailySolved, fetchPractice, planCounts, progressKey, parsePlanInput, fetchStudyPlan, questionUrl, questionSolved, questionLeetcodeSlug, questionCodeforcesSlug, automaticQuestion, visiblePlans } from "./data";
 import { fetchSolvedHistory, SolvedHistory } from "./history";
 import { planFromLinks, requestImportAccess } from "./importer";
 import { useAccountProgress } from "./accountSync";
@@ -319,14 +319,15 @@ function FriendsActivity({ userId, groups }: { userId: number; groups: GroupResp
   useEffect(() => {
     const update = () => setRefresh(n => n + 1);
     window.addEventListener(PRACTICE_REFRESH, update);
-    return () => window.removeEventListener(PRACTICE_REFRESH, update);
+    const timer = setInterval(update, 60000);
+    return () => { clearInterval(timer); window.removeEventListener(PRACTICE_REFRESH, update); };
   }, []);
   useEffect(() => {
     let active = true;
     setItems([]); setFailed(0);
     if (!friends.length) { setBusy(false); return; }
     setBusy(true);
-    // Bound concurrency so a large squad doesn't flood LeetCode with requests.
+    // Bound requests; activity and profile history use the same backend source.
     const queue = [...friends];
     const results: FriendSolve[] = [];
     let failures = 0;
@@ -334,12 +335,12 @@ function FriendsActivity({ userId, groups }: { userId: number; groups: GroupResp
       while (queue.length && active) {
         const friend = queue.shift()!;
         try {
-          const publicSolves = await fetchFriendSubmissions(friend.leetcode_username).catch(() => []);
-          const ledger = friend.codeforces_username ? await api.recentSolves(friend.id, 10) : [];
-          const combined: FriendSolve[] = [
-            ...publicSolves.map(s => ({ ...s, friend, platform: "leetcode", problemUrl: `https://leetcode.com/problems/${s.titleSlug}/` })),
-            ...ledger.map(s => ({ title: s.title, titleSlug: s.title_slug, timestamp: String(new Date(s.solved_at).getTime() / 1000), friend, platform: s.platform || "leetcode", problemUrl: s.problem_url || s.leetcode_url })),
-          ];
+          const ledger = await api.recentSolves(friend.id, 5);
+          const combined: FriendSolve[] = ledger.map(s => ({
+            title: s.title, titleSlug: s.title_slug,
+            timestamp: String(new Date(s.solved_at).getTime() / 1000), friend,
+            platform: s.platform || "leetcode", problemUrl: s.problem_url || s.leetcode_url,
+          }));
           const unique = [...new Map(combined.map(s => [`${s.platform}-${s.titleSlug}`, s])).values()];
           results.push(...unique);
           if (active) setItems([...results].sort((a, b) => Number(b.timestamp) - Number(a.timestamp)));
@@ -353,10 +354,10 @@ function FriendsActivity({ userId, groups }: { userId: number; groups: GroupResp
     });
     return () => { active = false; };
   }, [signature, refresh]);
-  const visible = items.filter(s => filter === "all" || String(s.friend.id) === filter).slice(0, 15);
+  const visible = items.filter(s => filter === "all" || String(s.friend.id) === filter).slice(0, 5);
   return <section className="friends-practice" aria-labelledby="friends-practice-title">
     <div className="section-header study-plan-top"><h3 className="section-title" id="friends-practice-title">What are my friends up to?</h3><button className="chip-btn" disabled={busy || !friends.length} onClick={() => setRefresh(n => n + 1)}>{busy ? "Checking…" : "Refresh"}</button></div>
-    <p className="progress-note">Latest public accepted questions from people in your groups.</p>
+    <p className="progress-note">Latest synced accepted questions from people in your groups.</p>
     {friends.length > 1 && <select aria-label="Filter activity by friend" value={filter} onChange={e => setFilter(e.target.value)}><option value="all">All friends</option>{friends.map(f => <option value={f.id} key={f.id}>{f.name}</option>)}</select>}
     {busy && <p className="progress-note" role="status">Catching up with your friends…</p>}
     {!friends.length && <p className="progress-note">Join or create a group in Leaderboards to see your friends here.</p>}

@@ -89,7 +89,7 @@ def run_migrations(engine):
         if not connection.execute(versions.select().where(versions.c.version == bootstrap_version)).first():
             Base.metadata.create_all(connection)
             connection.execute(versions.insert().values(version=bootstrap_version))
-        for step in (migrate_core, migrate_platforms, migrate_auth, migrate_display_preference, migrate_tracking, migrate_credits, migrate_calendar, migrate_credit_privacy, migrate_progress):
+        for step in (migrate_core, migrate_platforms, migrate_auth, migrate_display_preference, migrate_tracking, migrate_credits, migrate_calendar, migrate_credit_privacy, migrate_progress, migrate_sync_jobs):
             step(connection)
         # A recorded version is not permission to serve an incomplete schema.
         inspector = inspect(connection)
@@ -212,4 +212,19 @@ def migrate_tracking(engine):
         for model in (AcceptedSubmission, PointAward, ScoreSnapshot):
             model.__table__.create(connection, checkfirst=True)
         connection.execute(text("CREATE INDEX IF NOT EXISTS ix_solves_first_solve_at ON solves (first_solve_at)"))
+        connection.execute(versions.insert().values(version=version))
+
+
+def migrate_sync_jobs(engine):
+    from .models import UserSyncJob
+    with migration_connection(engine) as connection:
+        version = "20261107-sync-jobs-v1"
+        if connection.execute(versions.select().where(versions.c.version == version)).first():
+            return
+        UserSyncJob.__table__.create(connection, checkfirst=True)
+        if connection.dialect.name == "postgresql":
+            connection.execute(text("ALTER TABLE user_sync_jobs ENABLE ROW LEVEL SECURITY"))
+            connection.execute(text("REVOKE ALL ON TABLE user_sync_jobs FROM PUBLIC"))
+            for role in connection.execute(text("SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated')")).scalars():
+                connection.execute(text(f"REVOKE ALL ON TABLE user_sync_jobs FROM {role}"))
         connection.execute(versions.insert().values(version=version))

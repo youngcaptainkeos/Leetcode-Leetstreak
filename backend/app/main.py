@@ -15,7 +15,7 @@ from .legal_pages import PRIVACY_HTML, TERMS_HTML
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from sqlalchemy import text, func
+from sqlalchemy import text, func, and_, or_
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -47,6 +47,7 @@ from .migrations import run_migrations
 from .recovery import consume_limit, recovery_account, otp_verifier, clear_reset, utcnow
 from .tracking import clear_tracking, capture_score_baseline
 from .progress import router as progress_router
+from .sync_jobs import router as sync_jobs_router
 
 
 def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Secret")):
@@ -58,6 +59,7 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="LeetStreak API")
 app.include_router(progress_router)
+app.include_router(sync_jobs_router)
 app.state.schema_ready = False
 
 origins = ["*"] if CORS_ORIGINS.strip() == "*" else [o.strip() for o in CORS_ORIGINS.split(",")]
@@ -463,6 +465,8 @@ def delete_user_account(user_id: int, payload: DeleteAccountRequest, db: Session
     if db.query(Group.id).filter(Group.creator_id == actor.id).first():
         raise HTTPException(409, "Transfer ownership or delete your groups before deleting your account.")
 
+    from .models import UserSyncJob
+    db.query(UserSyncJob).filter_by(user_id=user_id).delete()
     clear_tracking(db, user_id)
     db.query(AccountProgress).filter_by(user_id=user_id).delete()
     db.query(GroupMember).filter(GroupMember.user_id == user_id).delete()
@@ -1016,16 +1020,28 @@ async def get_user_recent_solves(user_id: int, limit: int = Query(10, ge=1, le=1
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    solves = (
-        db.query(Solve)
-        .filter(Solve.user_id == user_id)
-        .order_by(Solve.solved_at.desc())
-        .limit(limit)
-        .all()
-    )
+    # Activity is the latest observed acceptance, including a repeat. The unique
+    # solve/award ledger and its first-solve timestamp remain unchanged.
+    from .models import AcceptedSubmission
+    from .timekeeping import utc_now
+    latest = db.query(AcceptedSubmission.solve_id.label("solve_id"),
+        func.max(AcceptedSubmission.accepted_at).label("accepted_at")).filter(
+        AcceptedSubmission.user_id == user_id, AcceptedSubmission.accepted_at <= utc_now()
+    ).group_by(AcceptedSubmission.solve_id).subquery()
+    activity_at = func.coalesce(latest.c.accepted_at, Solve.solved_at)
+    solves = db.query(Solve, activity_at.label("activity_at")).outerjoin(
+        latest, latest.c.solve_id == Solve.id).filter(Solve.user_id == user_id, or_(
+        and_(Solve.platform == "leetcode", Solve.account_version == user.leetcode_account_version,
+             or_(func.lower(Solve.source_handle) == user.leetcode_username.lower(),
+                 and_(Solve.source_handle.is_(None), user.leetcode_account_version == 0))),
+        and_(Solve.platform == "codeforces", Solve.account_version == user.codeforces_account_version,
+             user.codeforces_username is not None,
+             or_(func.lower(Solve.source_handle) == (user.codeforces_username or "").lower(),
+                 and_(Solve.source_handle.is_(None), user.codeforces_account_version == 0)))
+    )).order_by(activity_at.desc(), Solve.id.desc()).limit(limit).all()
 
     results = []
-    for s in solves:
+    for s, accepted_at in solves:
         if not current_account(user, s):
             continue
         breakdown_data = stored_breakdown(db, s)
@@ -1035,8 +1051,8 @@ async def get_user_recent_solves(user_id: int, limit: int = Query(10, ge=1, le=1
             RecentSolveSchema(
                 title_slug=s.title_slug,
                 title=s.title or s.title_slug.replace("-", " ").title(),
-                solved_at=s.solved_at.replace(tzinfo=timezone.utc),
-                relative_time=_time_ago(s.solved_at),
+                solved_at=accepted_at.replace(tzinfo=timezone.utc),
+                relative_time=_time_ago(accepted_at),
                 leetcode_url=solve_url(s), problem_url=solve_url(s), platform=s.platform,
                 source_handle=s.source_handle, source_submission_id=s.source_submission_id,
                 problem_rating=s.problem_rating, scoring_version=s.scoring_version,
@@ -1047,6 +1063,8 @@ async def get_user_recent_solves(user_id: int, limit: int = Query(10, ge=1, le=1
             )
         )
 
+        if len(results) >= limit:
+            break
     return results
 
 
@@ -1187,6 +1205,8 @@ def delete_user_by_id(user_id: int, db: Session = Depends(get_db)):
 
     if db.query(Group.id).filter(Group.creator_id == user_id).first():
         raise HTTPException(409, "Resolve owned groups before deleting this account.")
+    from .models import UserSyncJob
+    db.query(UserSyncJob).filter_by(user_id=user_id).delete()
     clear_tracking(db, user_id)
     db.query(AccountProgress).filter_by(user_id=user_id).delete()
     db.query(Kudos).filter((Kudos.from_user_id == user_id) | (Kudos.to_user_id == user_id)).delete()

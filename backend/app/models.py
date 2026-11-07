@@ -259,3 +259,20 @@ class ProviderCalendar(Base):
     coverage = Column(String(30), nullable=False)
     observed_at = Column(DateTime, nullable=False)
     __table_args__ = (UniqueConstraint("user_id", "platform", "account_version", "date", name="uq_provider_calendar"),)
+
+
+class UserSyncJob(Base):
+    """Private durable sync status; stores no browser credentials or tokens."""
+    __tablename__ = "user_sync_jobs"
+    id = Column(String(36), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    state = Column(String(20), nullable=False, index=True)
+    created_at = Column(DateTime, nullable=False, default=utc_now)
+    started_at = Column(DateTime, nullable=True)
+    finished_at = Column(DateTime, nullable=True)
+    lease_until = Column(DateTime, nullable=True)
+    leetcode_account_version = Column(Integer, nullable=False)
+    codeforces_account_version = Column(Integer, nullable=False)
+    session_version = Column(Integer, nullable=False)
+    new_solves = Column(Integer, nullable=False, default=0)
+    message = Column(String(300), nullable=True)
