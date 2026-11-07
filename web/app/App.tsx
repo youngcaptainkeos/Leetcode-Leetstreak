@@ -610,12 +610,40 @@ function Dashboard({
   const [avatarLoadError, setAvatarLoadError] = useState(false);
 
   const [syncing, setSyncing] = useState(false);
-  const [syncCooldown, setSyncCooldown] = useState(0);
+  const syncCooldownKey = `codestreak_account_${userId}:sync_retry_at`;
+  const [syncRetryAt, setSyncRetryAt] = useState(0);
+  const [syncClock, setSyncClock] = useState(Date.now);
+  const [syncCooldownReady, setSyncCooldownReady] = useState(false);
+  const syncCooldown = Math.max(0, Math.ceil((syncRetryAt - syncClock) / 1000));
   useEffect(() => {
-    if (syncCooldown <= 0) return;
-    const timer = setTimeout(() => setSyncCooldown(value => Math.max(0, value - 1)), 1000);
-    return () => clearTimeout(timer);
-  }, [syncCooldown]);
+    let active = true;
+    setSyncCooldownReady(false);
+    void getStored(syncCooldownKey).then(saved => {
+      if (!active) return;
+      const deadline = Number(saved);
+      setSyncRetryAt(Number.isFinite(deadline) && deadline > Date.now() ? deadline : 0);
+      setSyncClock(Date.now());
+      setSyncCooldownReady(true);
+    }).catch(() => { if (active) setSyncCooldownReady(true); });
+    return () => { active = false; };
+  }, [syncCooldownKey]);
+  useEffect(() => {
+    if (syncRetryAt <= Date.now()) return;
+    const timer = setInterval(() => {
+      const now = Date.now();
+      setSyncClock(now);
+      if (now >= syncRetryAt) clearInterval(timer);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [syncRetryAt]);
+  async function setSyncCooldown(seconds: number) {
+    const now = Date.now();
+    const deadline = now + seconds * 1000;
+    setSyncRetryAt(deadline);
+    setSyncClock(now);
+    // Store the expiry, not a decrementing counter, so time passes while closed.
+    await setStored(syncCooldownKey, String(deadline)).catch(() => undefined);
+  }
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [toastSolve, setToastSolve] = useState<{
@@ -1048,13 +1076,14 @@ function Dashboard({
   }, [selectedTab, sortBy]);
 
   async function handleSync() {
-    if (syncing || syncCooldown > 0) return;
+    if (!syncCooldownReady || syncing || syncCooldown > 0) return;
     setSyncing(true);
     setSyncMsg(null);
     setError(null);
     try {
+      await setSyncCooldown(30);
       const res = await api.syncUser(userId);
-      setSyncCooldown(30);
+      await setSyncCooldown(30);
       await Promise.all([loadData(), loadOwnSolves()]);
       setSyncMsg(
         res.new_solves > 0
@@ -1063,7 +1092,7 @@ function Dashboard({
       );
       setTimeout(() => setSyncMsg(null), 3500);
     } catch (err) {
-      if (err instanceof ApiError && err.retryAfterSeconds > 0) setSyncCooldown(err.retryAfterSeconds);
+      if (err instanceof ApiError && err.retryAfterSeconds > 0) await setSyncCooldown(err.retryAfterSeconds);
       setError(err instanceof Error ? err.message : "Sync failed.");
     } finally {
       setSyncing(false);
@@ -1238,7 +1267,7 @@ function Dashboard({
           <button
             className="sync-btn"
             onClick={handleSync}
-            disabled={syncing || syncCooldown > 0}
+            disabled={!syncCooldownReady || syncing || syncCooldown > 0}
             title="Force sync latest LeetCode activity"
           >
             <img
@@ -1246,7 +1275,7 @@ function Dashboard({
               alt=""
               className={`sync-btn-icon ${syncing ? "spinning" : ""}`}
             />
-            <span>{syncing ? "Syncing…" : syncCooldown > 0 ? `Sync (${syncCooldown}s)` : "Sync"}</span>
+            <span>{syncing ? "Syncing…" : !syncCooldownReady ? "Sync…" : syncCooldown > 0 ? `Sync (${syncCooldown}s)` : "Sync"}</span>
           </button>
         </div>
       </div>
