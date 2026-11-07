@@ -41,7 +41,7 @@ function Home({ signedIn }: { signedIn: boolean }) {
       <div className="web-section-heading"><span className="web-eyebrow">HOW SCORING WORKS</span><h2 id="scoring-title">Two platforms. One scoreboard.</h2></div>
       <div className="web-feature-grid">
         <article><span className="web-feature-icon purple">LC</span><h3>LeetCode</h3><p>Contest problems use ZeroTrac rating ÷ 100. Otherwise, Easy starts at 8 points, Medium at 15, and Hard at 24, adjusted by acceptance rate.</p></article>
-        <article><span className="web-feature-icon green">CF</span><h3>Codeforces</h3><p>Base points = 8 + 0.012 × (problem rating − 800). A 1400-rated problem earns 15.2 base points; 1800 earns 20; 2200 earns 24.8. Connect your public handle in account settings to sync automatically.</p></article>
+        <article><span className="web-feature-icon green">CF</span><h3>Codeforces</h3><p>Base points = 8 + 0.012 × (problem rating − 800). Displayed scores are rounded: a 1400-rated problem shows 15 base points; 1800 shows 20; 2200 shows 25. Connect your public handle in account settings to sync automatically.</p></article>
         <article><span className="web-feature-icon orange">✦</span><h3>Reward consistency</h3><p>Verified first solves build streaks, with a multiplier up to 1.10×. Revisions earn 2 × that multiplier after a recurring seven-day cooldown, without extending streaks. Imported history earns no retrospective bonuses. Existing daily credit is retained; new LeetCode daily awards await live first-solve verification.</p><span className="web-feature-tag">CF scale is provisional · based on matched problems</span></article>
       </div>
     </section>

@@ -3,6 +3,7 @@ WORKDIR /web-build/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 COPY web/ ./
+COPY shared/ /web-build/shared/
 RUN npm run build
 
 FROM python:3.11-slim

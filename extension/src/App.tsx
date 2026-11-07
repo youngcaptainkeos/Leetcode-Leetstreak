@@ -1,3 +1,4 @@
+import { formatPoints } from "../../shared/points";
 import React, { useEffect, useState } from "react";
 import {
   api,
@@ -1662,7 +1663,7 @@ function Dashboard({
                         className="points-badge"
                         title={`Easy: ${e.easy_count} | Medium: ${e.medium_count} | Hard: ${e.hard_count}`}
                       >
-                        ⭐{e.points !== null && e.points !== undefined ? Math.round(e.points) : "•••"}
+                        ⭐{formatPoints(e.points, "•••")}
                       </span>
                       <button
                         type="button"
@@ -1765,7 +1766,7 @@ function Dashboard({
             <div className="modal-streak-box">
               <img src="/main_fire.png" alt="🔥" className="modal-flame-img" />
               <span className="modal-streak-count">{friendDash ? `${friendDash.current_streak} Day Streak` : "…"}</span>
-              <span className="modal-points-tag">⭐ {(friendDash?.points ?? inspectedFriend.points)?.toLocaleString(undefined, { maximumFractionDigits: 2 }) ?? "—"} pts</span>
+              <span className="modal-points-tag">⭐ {formatPoints(friendDash?.points ?? inspectedFriend.points)} pts</span>
             </div>
             {profileError && <p className="tiny error-banner" role="alert">{profileError}</p>}
 
@@ -1880,7 +1881,7 @@ function Dashboard({
                             }}
                             title="Click to see how these points were calculated"
                           >
-                            ⭐ {s.points_earned ?? s.breakdown?.points_earned ?? 0} pts
+                            ⭐ {formatPoints(s.points_earned ?? s.breakdown?.points_earned ?? 0)} pts
                           </button>
                           <span className="solve-time">{s.relative_time}</span>
                         </li>
@@ -2346,10 +2347,10 @@ function Dashboard({
             <div className="breakdown-card">
               <div className="breakdown-card-header"><span className="card-label">Credited points</span></div>
               {selectedSolveBreakdown.breakdown?.base_award === undefined ? <p className="tiny muted">Detailed credit is unavailable for this entry.</p> : <>
-                <div className="breakdown-row"><span className="row-label">Base award:</span><span className="row-val">{selectedSolveBreakdown.breakdown.base_award} pts</span></div>
-                <div className="breakdown-row"><span className="row-label">Retained daily awards:</span><span className="row-val text-amber">{selectedSolveBreakdown.breakdown.daily_award ?? 0} pts</span></div>
-                <div className="breakdown-row"><span className="row-label">Revision awards:</span><span className="row-val text-violet">{selectedSolveBreakdown.breakdown.revision_award ?? 0} pts</span></div>
-                {(selectedSolveBreakdown.breakdown.legacy_credit ?? 0) > 0 && <div className="breakdown-row"><span className="row-label">Protected legacy credit:</span><span className="row-val">{selectedSolveBreakdown.breakdown.legacy_credit} pts</span></div>}
+                <div className="breakdown-row"><span className="row-label">Base award:</span><span className="row-val">{formatPoints(selectedSolveBreakdown.breakdown.base_award)} pts</span></div>
+                <div className="breakdown-row"><span className="row-label">Retained daily awards:</span><span className="row-val text-amber">{formatPoints(selectedSolveBreakdown.breakdown.daily_award ?? 0)} pts</span></div>
+                <div className="breakdown-row"><span className="row-label">Revision awards:</span><span className="row-val text-violet">{formatPoints(selectedSolveBreakdown.breakdown.revision_award ?? 0)} pts</span></div>
+                {(selectedSolveBreakdown.breakdown.legacy_credit ?? 0) > 0 && <div className="breakdown-row"><span className="row-label">Protected legacy credit:</span><span className="row-val">{formatPoints(selectedSolveBreakdown.breakdown.legacy_credit)} pts</span></div>}
                 {(selectedSolveBreakdown.breakdown.base_award ?? 0) > 0 && <p className="tiny muted">Base includes its {selectedSolveBreakdown.breakdown.streak_multiplier ?? 1}× multiplier. Retained awards are not multiplied again.</p>}
               </>}
             </div>
@@ -2361,7 +2362,7 @@ function Dashboard({
                 <div className="tiny muted">Total credit for this question</div>
               </div>
               <div className="total-score-badge">
-                ⭐ {selectedSolveBreakdown.points_earned ?? selectedSolveBreakdown.breakdown?.points_earned ?? 0} pts
+                ⭐ {formatPoints(selectedSolveBreakdown.points_earned ?? selectedSolveBreakdown.breakdown?.points_earned ?? 0)} pts
               </div>
             </div>
             <div className="modal-footer centered-footer">
@@ -2477,12 +2478,12 @@ function PointsHelpModal({ onClose }: { onClose: () => void }) {
       <p className="help-text">Previously earned daily and revision credit is retained. If an old combined score cannot be separated reliably, it stays protected until reconciliation rather than being guessed or removed.</p>
     </> },
     { id: "leetcode", title: "LeetCode points", hint: "Contest ratings and difficulty", content: <>
-      <p className="help-text">Contest problems use ZeroTrac: <code>rating ÷ 100</code>. A 1550-rated problem earns 15.5 base points.</p>
+      <p className="help-text">Contest problems use ZeroTrac: <code>rating ÷ 100</code>. A 1500-rated problem earns 15 base points.</p>
       <p className="help-text">For other problems, Easy starts at <strong>8</strong>, Medium at <strong>15</strong>, and Hard at <strong>24</strong> points. Acceptance rate adjusts these bases; lower acceptance earns more.</p>
     </> },
     { id: "codeforces", title: "Codeforces points", hint: "Rating-based points · automatic sync", content: <>
       <p className="help-text">Base points = <code>8 + 0.012 × (rating − 800)</code>.</p>
-      <ul className="help-bullet-list"><li>800 rating → 8 points</li><li>1400 → 15.2 points</li><li>1800 → 20 points</li><li>2200 → 24.8 points</li></ul>
+      <ul className="help-bullet-list"><li>800 rating → 8 points</li><li>1400 → about 15 displayed points</li><li>1800 → 20 points</li><li>2200 → about 25 displayed points</li></ul>
       <p className="help-text">Connect your handle at signup or in Settings. Each unique, final accepted problem earns points once. Unrated accepted problems earn 0 base points. Only verified first solves count toward streaks. The scale is provisional, calibrated against similar LeetCode problems.</p>
     </> },
     { id: "daily", title: "Daily challenge bonus", hint: "Existing credit retained", content: <p className="help-text">A verified live first solve of the current official LeetCode challenge is eligible for <strong>5 × the streak multiplier</strong>. Imported history and repeats never earn this bonus. Live LeetCode first-solve verification is not available in this build; existing earned credit is retained.</p> },
