@@ -1,10 +1,11 @@
 """Persist manual sync work before acknowledging it to a browser popup."""
 import asyncio
 import logging
+import math
 from datetime import timedelta, timezone
 from uuid import uuid4
 
-from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .database import SessionLocal, get_db
@@ -35,9 +36,13 @@ def enqueue_sync(user_id: int, background_tasks: BackgroundTasks,
     existing = db.query(UserSyncJob).filter_by(user_id=user_id).filter(
         UserSyncJob.state.in_(["queued", "running"])).order_by(UserSyncJob.created_at.desc()).first()
     if existing is None:
-        # A server-side cooldown also applies across devices and popup sessions.
-        existing = db.query(UserSyncJob).filter_by(user_id=user_id).filter(
+        recent = db.query(UserSyncJob).filter_by(user_id=user_id).filter(
             UserSyncJob.created_at > utc_now() - timedelta(seconds=30)).order_by(UserSyncJob.created_at.desc()).first()
+        if recent:
+            remaining = max(1, math.ceil(30 - (utc_now() - recent.created_at).total_seconds()))
+            db.rollback()
+            raise HTTPException(429, f"Please wait {remaining} seconds before starting another Sync.",
+                                headers={"Retry-After": str(remaining)})
     if existing is None:
         existing = UserSyncJob(id=str(uuid4()), user_id=user_id, state="queued",
             leetcode_account_version=user.leetcode_account_version,
@@ -46,6 +51,7 @@ def enqueue_sync(user_id: int, background_tasks: BackgroundTasks,
         db.add(existing)
     db.commit()
     result = job_payload(existing)
+    logger.info("Manual sync accepted for user %d: %s", user_id, result["state"])
     db.commit()  # Release the request connection before background processing.
     # Processing is independent of the popup; the scheduler also recovers queued jobs.
     background_tasks.add_task(process_sync_jobs)
@@ -85,6 +91,7 @@ async def process_sync_jobs():
             user = db.query(User).filter_by(id=user_id).first()
             if user is None or expected != (user.leetcode_account_version, user.codeforces_account_version, user.session_version):
                 raise LeetCodeError("Your linked account or session changed. Please start Sync again.")
+            logger.info("Manual sync processing user %d", user_id)
             added = await asyncio.wait_for(poll_user(db, user, raise_on_unavailable=True), timeout=300)
             db.refresh(user)
             if expected != (user.leetcode_account_version, user.codeforces_account_version, user.session_version):
@@ -95,6 +102,7 @@ async def process_sync_jobs():
                 job.state, job.new_solves, job.message, job.finished_at = "succeeded", added, message, utc_now()
                 job.lease_until = None
                 db.commit()
+                logger.info("Manual sync completed for user %d: %d new question entries", user_id, added)
         except Exception as error:
             db.rollback()
             logger.warning("Manual sync job failed (%s)", type(error).__name__)

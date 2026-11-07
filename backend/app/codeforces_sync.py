@@ -46,7 +46,20 @@ async def sync_codeforces_user(db: Session, user: User) -> int:
                 db.rollback()
             logger.warning("Codeforces sync unavailable for user %d", user_id)
             return 0
-        db.refresh(user, with_for_update=True)
+        added = await asyncio.to_thread(_persist_codeforces_history, db.get_bind(),
+            user_id=user_id, handle=handle, account_version=account_version,
+            previous_sync=previous_sync, now=now, full=full, since=since, history=history)
+        db.expire_all()
+        return added
+
+
+def _persist_codeforces_history(bind, *, user_id, handle, account_version,
+                               previous_sync, now, full, since, history):
+    """Keep synchronous history/score persistence off the HTTP event loop."""
+    with Session(bind=bind, autoflush=False) as db:
+        user = db.query(User).filter_by(id=user_id).populate_existing().with_for_update().first()
+        if user is None:
+            return 0
         if (user.codeforces_username != handle or user.codeforces_account_version != account_version
                 or user.codeforces_last_sync != previous_sync):
             db.rollback()
@@ -104,6 +117,7 @@ async def sync_codeforces_user(db: Session, user: User) -> int:
         user.codeforces_sync_error = None
         recalculate_user_points(user, db, revision_windows={"codeforces": previous_sync})
         db.commit()
+        logger.info("Codeforces saved for user %d: %d new question entries", user_id, added)
         return added
 
 

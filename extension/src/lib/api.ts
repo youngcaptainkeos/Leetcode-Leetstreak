@@ -224,43 +224,15 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+// The server owns the long-running job. Starting it is an ordinary authenticated
+// request; it must not depend on the registered extension worker's version.
 async function startBackgroundSync(userId: number): Promise<{ job: SyncJob }> {
-  if (typeof chrome === "undefined" || !chrome.runtime?.id || !location.protocol.endsWith("-extension:")) {
-    return request<{ job: SyncJob }>(`/users/${userId}/sync-jobs`, { method: "POST", signal: AbortSignal.timeout(20000) });
-  }
-  // A popup bundle can be newer than the registered service worker during an
-  // unpacked update. Probe without side effects before choosing the transport.
-  const supported = await new Promise<boolean>(resolve => {
-    const timer = setTimeout(() => resolve(false), 1500);
-    chrome.runtime.sendMessage({ type: "leetstreak:sync-capabilities" }, result => {
-      const error = chrome.runtime.lastError;
-      clearTimeout(timer);
-      resolve(!error && result?.protocol === 1);
-    });
-  });
-  if (!supported) {
-    // Only enqueue here; execution still belongs to the server. The capability
-    // probe never submitted a job, so this is not a replay of an ambiguous POST.
-    return request<{ job: SyncJob }>(`/users/${userId}/sync-jobs`, { method: "POST", signal: AbortSignal.timeout(20000) });
-  }
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage({ type: "leetstreak:start-sync", userId }, result => {
-      const error = chrome.runtime.lastError;
-      if (error || !result) {
-        reject(new Error("Could not confirm that Sync started. Reopen the extension to check its status."));
-      } else if (!result.ok) {
-        if (result.status === 401) window.dispatchEvent(new Event(AUTH_EXPIRED));
-        reject(new ApiError(result.message || "Could not start Sync.", result.status, result.retryAfterSeconds || 0));
-      } else {
-        resolve({ job: result.job });
-      }
-    });
-  });
+  return request<{ job: SyncJob }>(`/users/${userId}/sync-jobs`, { method: "POST", signal: AbortSignal.timeout(60000) });
 }
 
 export const api = {
   startSync: startBackgroundSync,
-  latestSync: (userId: number) => request<{ job: SyncJob | null }>(`/users/${userId}/sync-jobs/latest`, { signal: AbortSignal.timeout(15000) }),
+  latestSync: (userId: number) => request<{ job: SyncJob | null }>(`/users/${userId}/sync-jobs/latest`, { signal: AbortSignal.timeout(60000) }),
   getProgress: (userId: number) => request<{ version: number; initialized: boolean; state: Record<string, unknown> }>(`/users/${userId}/progress`, { signal: AbortSignal.timeout(20000) }),
   writeProgress: (userId: number, operation: { base_version: number; operation_id: string; kind: string; data: Record<string, unknown> }) => request<{ version: number; initialized: boolean; state: Record<string, unknown> }>(`/users/${userId}/progress`, { method: "POST", body: JSON.stringify(operation), signal: AbortSignal.timeout(20000) }),
   register: (name: string, leetcode_username: string, email: string, password: string, show_global_leaderboard: boolean = true, codeforces_username?: string) =>

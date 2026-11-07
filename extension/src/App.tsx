@@ -742,7 +742,7 @@ function Dashboard({
   const [avatarLoadError, setAvatarLoadError] = useState(false);
 
   const syncJob = useSyncJob(userId);
-  const syncing = syncJob.active;
+  const syncing = syncJob.active || syncJob.submitting;
   const syncCooldownKey = `codestreak_account_${userId}:sync_retry_at`;
   const [syncRetryAt, setSyncRetryAt] = useState(0);
   const [syncClock, setSyncClock] = useState(Date.now);
@@ -1205,7 +1205,8 @@ function Dashboard({
   }, [selectedTab, sortBy]);
 
   useEffect(() => {
-    if (syncJob.error) setError(syncJob.error);
+    if (syncJob.error) setSyncMsg(syncJob.error);
+    else if (syncJob.active) setSyncMsg(null);
     if (syncJob.retryAfter > 0) void setSyncCooldown(syncJob.retryAfter);
   }, [syncJob.error, syncJob.retryAfter]);
 
@@ -1412,7 +1413,7 @@ function Dashboard({
               alt=""
               className={`sync-btn-icon ${syncing ? "spinning" : ""}`}
             />
-            <span>{syncing ? "Syncing…" : !syncJob.ready || !syncCooldownReady ? "Sync…" : syncCooldown > 0 ? `Sync (${syncCooldown}s)` : "Sync"}</span>
+            <span>{syncJob.submitting ? "Starting…" : syncing ? "Syncing…" : !syncJob.ready || !syncCooldownReady ? "Sync…" : syncCooldown > 0 ? `Sync (${syncCooldown}s)` : "Sync"}</span>
           </button>
         </div>
       </div>

@@ -167,3 +167,14 @@ follow-up client release task; the backend repair requires no extension ZIP.
 - Anchored the normal polling interval to a fixed UTC clock; the 15-minute setting ticks at :00/:15/:30/:45 instead of being postponed by every deployment. No startup historical import or bulk point revaluation was added.
 - Suppressed repetitive APScheduler executor INFO entries for idle five-second queue checks. Actual all-user poll start/end, provider failures and scheduler warnings remain logged.
 - Added scripts/poll_once.py for a one-time protected all-user poll from a local computer, without Render Shell. It privately prompts for ADMIN_SECRET; no credential is stored, printed or passed as a command argument.
+
+
+### Stale account data / sync status incident — 2026-11-07
+
+- Confirmed backend account 14 was stale: 12 CF problems, LC 500 total (Medium 273), 8679.57 points; public providers showed CF 1338-A, 1201-B, 1409-D and LC process-tasks-using-servers missing. Treat provider-vs-saved-data comparison as the incident acceptance criterion, not deployment readiness.
+- Moved synchronous LC/CF persistence and scoring into worker-owned database sessions via asyncio.to_thread. ORM sessions/objects are not shared across threads. Provider fetches remain asynchronous; account/checkpoint locks and scoring rules are retained. This prevents long DB write loops from blocking HTTP/status requests.
+- Batched award reads per account and limited revision eligibility queries to questions with new accepted events. Component arithmetic and retained-credit rules are unchanged.
+- Simplified new-client Sync to directly enqueue the server job, eliminating the extension worker/version/token handoff dependency. Starting and accepted/running are distinct UI states. Server jobs still outlive the popup after acknowledgement.
+- Increased enqueue/status read timeouts to 60s. Optional initial status-read failures no longer produce a global failure banner; known-running jobs reconnect without being reported failed.
+- A completed/failed job inside the 30s server cooldown now returns an explicit 429/Retry-After instead of silently returning a previously acknowledged terminal job. Active jobs remain deduplicated.
+- Validation before deployment: frontend builds/type checks and Python syntax. No test suite run. Live save completion and account totals must still be checked.

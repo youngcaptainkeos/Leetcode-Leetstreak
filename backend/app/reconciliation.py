@@ -1,14 +1,14 @@
 """Component reconciliation; caller owns commit/rollback. No provider requests."""
-from collections import Counter
+from collections import Counter, defaultdict
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
 from .contest_ratings import get_contest_rating
-from .models import AccountCredit, PointAward, Solve, User
+from .models import AccountCredit, AcceptedSubmission, PointAward, Solve, User
 from .scoring import SCORING_VERSION, calculate_points, number, rounded
 from .streak import current_streak
-from .timekeeping import ist_date
+from .timekeeping import ist_date, utc_storage
 from .tracking import capture_score_baseline, revision_candidates
 
 
@@ -64,12 +64,32 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
             baseline_components[row["solve_id"]] += number(Decimal(row["points"]))
     solves = [row for row in db.query(Solve).filter_by(user_id=user.id).all() if current_account(user, row)]
     dates = [(proved_date(user, row), ist_date(row.first_solve_at)) for row in solves if proved_date(user, row)]
+    # Fetch the award ledger once. Re-reading it three times per question made
+    # an unchanged account require hundreds/thousands of network round trips.
+    awards_by_solve = defaultdict(list)
+    for award in db.query(PointAward).filter_by(user_id=user.id).all():
+        awards_by_solve[award.solve_id].append(award)
+    revision_solves = set()
+    for platform, boundary in (revision_windows or {}).items():
+        if boundary is not None:
+            revision_solves.update(row[0] for row in db.query(AcceptedSubmission.solve_id).filter(
+                AcceptedSubmission.user_id == user.id, AcceptedSubmission.platform == platform,
+                AcceptedSubmission.account_version == getattr(user, platform + "_account_version"),
+                AcceptedSubmission.accepted_at > utc_storage(boundary),
+                AcceptedSubmission.solve_id.isnot(None)).distinct())
+
+    def remember(awards, *args, **kwargs):
+        award = store_award(db, *args, **kwargs)
+        if award not in awards:
+            awards.append(award)
+        return award
+
     total = Decimal(0)
     classified = Counter()
     unclassified_paid = 0
     for solve in solves:
         history_review = solve.score_components_state == "history_review"
-        awards = db.query(PointAward).filter_by(solve_id=solve.id).all()
+        awards = awards_by_solve[solve.id]
         bases = [row for row in awards if row.kind == "base"]
         if len(bases) > 1:
             raise ValueError("Ambiguous base components require explicit repair")
@@ -86,8 +106,7 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
             protected = rounded(old_points - baseline_revisions[solve.id])
             if protected < 0:
                 raise ValueError("Inconsistent protected historical credit")
-            store_award(db, solve, "legacy", protected, inputs={"protection": "combined_daily", "needs_reconciliation": True})
-            awards = db.query(PointAward).filter_by(solve_id=solve.id).all()
+            remember(awards, solve, "legacy", protected, inputs={"protection": "combined_daily", "needs_reconciliation": True})
         combined = any(row.kind == "legacy" and row.input_snapshot.get("protection") == "combined_daily" for row in awards)
         first = proved_date(user, solve)
         streak = current_streak({day for instant, day in dates if instant <= first}, ist_date(first)) if first else 0
@@ -101,10 +120,11 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
                 # Missing/invalid metadata is not evidence that the question was Medium.
                 result = None
             if result is not None:
-                for row in awards:
+                for row in list(awards):
                     if row.kind == "legacy" and row.input_snapshot.get("protection") == "metadata_missing":
                         db.delete(row)
-                base = bases[0] if bases else store_award(db, solve, "base", result["base_award"])
+                        awards.remove(row)
+                base = bases[0] if bases else remember(awards, solve, "base", result["base_award"])
                 base.points = result["base_award"]
                 base.earned_at = first
                 base.scoring_version = SCORING_VERSION
@@ -113,15 +133,15 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
                 protected = rounded(old_points - baseline_components[solve.id])
                 if protected < 0:
                     raise ValueError("Inconsistent historical components")
-                store_award(db, solve, "legacy", protected, inputs={"protection": "metadata_missing", "needs_reconciliation": True})
+                remember(awards, solve, "legacy", protected, inputs={"protection": "metadata_missing", "needs_reconciliation": True})
         db.flush()
-        if revision_windows and solve.platform in revision_windows:
+        if solve.id in revision_solves and revision_windows and solve.platform in revision_windows:
             for proposal in revision_candidates(db, solve, live_after=revision_windows[solve.platform]):
-                award = store_award(db, solve, "revision", proposal.points, earned_at=proposal.accepted_at,
+                award = remember(awards, solve, "revision", proposal.points, earned_at=proposal.accepted_at,
                     key=f"revision:{solve.id}:{proposal.event_id}", inputs={"streak_days": proposal.streak_days, "base": 2})
                 award.submission_id = proposal.event_id
         db.flush()
-        awards = db.query(PointAward).filter_by(solve_id=solve.id).all()
+        awards = awards_by_solve[solve.id]
         if any(row.kind not in {"base", "daily", "revision", "legacy"} for row in awards):
             raise ValueError("Unknown award component")
         if any(number(row.points) < 0 for row in awards):

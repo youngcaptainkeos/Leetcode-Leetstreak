@@ -79,78 +79,99 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True, *, ra
             raise LeetCodeError("LeetCode is temporarily unavailable. Please try syncing again in a minute.") from None
         return await sync_codeforces_user(db, user) if sync_codeforces and user.codeforces_username else 0
 
-    db.refresh(user, with_for_update=True)
-    if (user.leetcode_username != handle or user.leetcode_account_version != account_version
-            or user.leetcode_last_sync != previous_sync):
-        db.rollback()
+    new_count = await asyncio.to_thread(_persist_leetcode_snapshot, db.get_bind(),
+        user_id=user_id, handle=handle, account_version=account_version,
+        previous_sync=previous_sync, sync_started=sync_started, data=data,
+        submissions=submissions, evidence=evidence, problem_info=problem_info)
+    # Sessions and ORM objects never cross threads. Refresh the caller's view
+    # after the separate write transaction has committed.
+    db.expire_all()
+    if new_count is None:
         return 0
-    capture_score_baseline(db, user_id)
-
-    # 1. Update user metadata & difficulty totals
-    if data.get("avatar_url"):
-        user.avatar_url = data["avatar_url"]
-    diffs = data.get("difficulty_counts") or {}
-    user.easy_count = diffs.get("Easy", 0)
-    user.medium_count = diffs.get("Medium", 0)
-    user.hard_count = diffs.get("Hard", 0)
-    user.official_streak = data.get("official_streak", 0)
-
-    # Provider calendars count attempts, not unique accepted questions.
-    calendars = {row.date: row for row in db.query(ProviderCalendar).filter_by(
-        user_id=user_id, platform="leetcode", account_version=account_version).all()}
-    for day, count in (data.get("submission_calendar") or {}).items():
-        if type(day) is not date or type(count) is not int or count < 0:
-            continue
-        row = calendars.get(day)
-        if row is None:
-            row = ProviderCalendar(user_id=user_id, platform="leetcode", account_version=account_version, date=day)
-            db.add(row)
-        row.submission_count = count
-        row.source = "leetcode_submission_calendar"
-        row.coverage = "provider_partial"
-        row.observed_at = sync_started
-
-    # 3. Dedup recent AC submissions into Solves ledger & update daily count from actual AC solves
-    new_count = 0
-    
-    existing_solves = {
-        r[0] for r in db.query(Solve.title_slug).filter(Solve.user_id == user.id, Solve.platform == "leetcode").all()
-    }
-
-    for sub in sorted(submissions, key=lambda row: (int(row["timestamp"]), int(row["id"]))):
-        title_slug = sub["titleSlug"]
-        solved_at = datetime.fromtimestamp(int(sub["timestamp"]), tz=timezone.utc).replace(tzinfo=None)
-        day = datetime.fromtimestamp(int(sub["timestamp"]), tz=IST).date()
-
-        if title_slug not in existing_solves:
-            existing_solves.add(title_slug)
-            prob_info = problem_info[title_slug]
-
-            is_daily_solve = False  # Recent ACs cannot prove a live first solve.
-
-            new_solve = Solve(
-                user_id=user.id,
-                platform="leetcode", source_handle=handle, account_version=account_version,
-                problem_url=f"https://leetcode.com/problems/{title_slug}/",
-                title_slug=title_slug,
-                title=sub.get("title"),
-                difficulty=prob_info.get("difficulty"),
-                ac_rate=prob_info.get("ac_rate"),
-                solved_at=solved_at,
-                is_daily=is_daily_solve,
-            )
-            db.add(new_solve)
-            new_count += 1
-
-    db.flush()
-    ingest_acceptances(db, user_id, platform="leetcode", account_version=account_version,
-                       expected_handle=handle, submissions=evidence)
-    user.leetcode_last_sync = sync_started
-    recalculate_user_points(user, db, revision_windows={"leetcode": previous_sync})
-    db.commit()
+    db.refresh(user)
     if sync_codeforces and user.codeforces_username:
         new_count += await sync_codeforces_user(db, user)
     return new_count
+
+
+def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
+                                previous_sync, sync_started, data, submissions,
+                                evidence, problem_info):
+    """Synchronous database work owns a worker-thread session, not the API loop."""
+    with Session(bind=bind, autoflush=False) as db:
+        user = db.query(User).filter_by(id=user_id).populate_existing().with_for_update().first()
+        if user is None:
+            return None
+        if (user.leetcode_username != handle or user.leetcode_account_version != account_version
+                or user.leetcode_last_sync != previous_sync):
+            db.rollback()
+            return None
+        capture_score_baseline(db, user_id)
+
+        # 1. Update user metadata & difficulty totals
+        if data.get("avatar_url"):
+            user.avatar_url = data["avatar_url"]
+        diffs = data.get("difficulty_counts") or {}
+        user.easy_count = diffs.get("Easy", 0)
+        user.medium_count = diffs.get("Medium", 0)
+        user.hard_count = diffs.get("Hard", 0)
+        user.official_streak = data.get("official_streak", 0)
+
+        # Provider calendars count attempts, not unique accepted questions.
+        calendars = {row.date: row for row in db.query(ProviderCalendar).filter_by(
+            user_id=user_id, platform="leetcode", account_version=account_version).all()}
+        for day, count in (data.get("submission_calendar") or {}).items():
+            if type(day) is not date or type(count) is not int or count < 0:
+                continue
+            row = calendars.get(day)
+            if row is None:
+                row = ProviderCalendar(user_id=user_id, platform="leetcode", account_version=account_version, date=day)
+                db.add(row)
+            row.submission_count = count
+            row.source = "leetcode_submission_calendar"
+            row.coverage = "provider_partial"
+            row.observed_at = sync_started
+
+        # 3. Dedup recent AC submissions into Solves ledger & update daily count from actual AC solves
+        new_count = 0
+
+        existing_solves = {
+            r[0] for r in db.query(Solve.title_slug).filter(Solve.user_id == user.id, Solve.platform == "leetcode").all()
+        }
+
+        for sub in sorted(submissions, key=lambda row: (int(row["timestamp"]), int(row["id"]))):
+            title_slug = sub["titleSlug"]
+            solved_at = datetime.fromtimestamp(int(sub["timestamp"]), tz=timezone.utc).replace(tzinfo=None)
+            day = datetime.fromtimestamp(int(sub["timestamp"]), tz=IST).date()
+
+            if title_slug not in existing_solves:
+                existing_solves.add(title_slug)
+                prob_info = problem_info[title_slug]
+
+                is_daily_solve = False  # Recent ACs cannot prove a live first solve.
+
+                new_solve = Solve(
+                    user_id=user.id,
+                    platform="leetcode", source_handle=handle, account_version=account_version,
+                    problem_url=f"https://leetcode.com/problems/{title_slug}/",
+                    title_slug=title_slug,
+                    title=sub.get("title"),
+                    difficulty=prob_info.get("difficulty"),
+                    ac_rate=prob_info.get("ac_rate"),
+                    solved_at=solved_at,
+                    is_daily=is_daily_solve,
+                )
+                db.add(new_solve)
+                new_count += 1
+
+        db.flush()
+        ingest_acceptances(db, user_id, platform="leetcode", account_version=account_version,
+                           expected_handle=handle, submissions=evidence)
+        user.leetcode_last_sync = sync_started
+        recalculate_user_points(user, db, revision_windows={"leetcode": previous_sync})
+        db.commit()
+        logger.info("LeetCode saved for user %d: %d new question entries", user_id, new_count)
+        return new_count
 
 
 import asyncio
