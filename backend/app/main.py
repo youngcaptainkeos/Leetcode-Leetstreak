@@ -38,7 +38,7 @@ from .scheduler import start_scheduler, poll_all_users, poll_user
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
 from .point_calculator import recalculate_user_points
 from .reconciliation import current_account, stored_breakdown
-from .platforms import daily_counts, streak_dates, solve_url
+from .platforms import activity_counts, daily_counts, streak_dates, solve_url
 from .codeforces_client import fetch_profile, CodeforcesError
 from .codeforces_sync import background_codeforces_sync, user_sync_lock
 from .security import current_user, require_self, member_group, owned_group
@@ -516,10 +516,9 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Dep
     combined = daily_counts(db, [user_id])[user_id]
     def total_since_date(start_date: date) -> int:
         return sum(count for day, count in combined.items() if day >= start_date)
-    last_7 = [DayCount(date=today - timedelta(days=i), problems_solved=combined.get(today - timedelta(days=i), 0)) for i in range(6, -1, -1)]
+    activity = activity_counts(db, [user_id], today=today)[user_id]
+    last_7 = [DayCount(date=today - timedelta(days=i), problems_solved=activity.get(today - timedelta(days=i), 0)) for i in range(6, -1, -1)]
     cf_count, cf_points = db.query(func.count(Solve.id), func.coalesce(func.sum(Solve.points_earned), 0)).filter(Solve.user_id == user_id, Solve.platform == "codeforces").one()
-
-    today_row = next((d for d in last_7 if d.date == today), None)
 
     estimate = db.query(AccountCredit).filter_by(user_id=user.id, platform="leetcode", account_version=user.leetcode_account_version, kind="historical_base").first()
     needs_review = db.query(Solve.id).filter(Solve.user_id == user.id, Solve.score_components_state.in_(["legacy", "legacy_protected", "metadata_missing", "history_review"])).first() is not None
@@ -538,7 +537,7 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Dep
         medium_count=user.medium_count or 0,
         hard_count=user.hard_count or 0,
         current_streak=streak,
-        today_count=today_row.problems_solved if today_row else 0,
+        today_count=combined.get(today, 0),
         weekly_total=total_since_date(week_start),
         monthly_total=total_since_date(month_start),
         created_at=user.created_at,

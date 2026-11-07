@@ -1789,8 +1789,6 @@ function Dashboard({
               <>
                 {friendDash ? <>
                   <div className="section-title text-center mb-1">QUESTIONS SOLVED</div>
-                  {friendDash?.history_incomplete && <p className="tiny muted">Verified first solves only; historical dates are incomplete.</p>}
-                  {friendDash?.score_needs_review && <p className="tiny muted">Some historical credit needs reconciliation.</p>}
                   <div className="stat-row">
                     <Stat label="Today" value={friendDash.today_count} />
                     <Stat label="This Week" value={friendDash.weekly_total} />
@@ -1827,7 +1825,7 @@ function Dashboard({
                                 style={{
                                   height: `${heightPct}%`,
                                 }}
-                                title={`${d.date}: ${solved} problem${solved === 1 ? "" : "s"} solved`}
+                                title={`${d.date}: ${solved} activit${solved === 1 ? "y" : "ies"}`}
                               />
                             </div>
                             <span className="profile-heat-day">{new Date(`${d.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" })}</span>

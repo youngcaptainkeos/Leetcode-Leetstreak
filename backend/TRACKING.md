@@ -126,3 +126,11 @@ Activity calendars can contain repeats/failed attempts, so this is temporary
 display compatibility, not completion of the intended first-solve streak
 policy. Updating the submitted extension's strict-streak Help wording is a
 follow-up client release task; the backend repair requires no extension ZIP.
+
+
+### Profile activity chart recovery — 2026-11-07
+
+- Removed profile history/reconciliation notices from extension and website overview; detailed explanations remain in Help.
+- Dashboard `last_7_days` is display activity: verified first solves, original-generation legacy activity and matching-generation LeetCode calendar observations. Overlapping sources use the maximum per platform/day; platforms are summed. Calendar activity may include repeats/attempts.
+- Today/Week/Month counters still use verified first solves. No score components or scoring streak evidence are changed.
+- Rebuilt extension and website bundles. No test suite run for this UI request.

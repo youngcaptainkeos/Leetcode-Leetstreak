@@ -1302,8 +1302,8 @@ function Dashboard({
 
 
       <section className="workspace-week" aria-labelledby="week-title">
-        <div className="section-header"><h2 id="week-title">Your last seven days</h2><span className="muted small">{dash.last_7_days.reduce((total, d) => total + d.problems_solved, 0)} solves</span></div>
-        <div className="workspace-week-chart">{dash.last_7_days.map((day, index) => <div key={day.date} title={`${day.date}: ${day.problems_solved} solves`}>
+        <div className="section-header"><h2 id="week-title">Your last seven days</h2><span className="muted small">{dash.last_7_days.reduce((total, d) => total + d.problems_solved, 0)} activities</span></div>
+        <div className="workspace-week-chart">{dash.last_7_days.map((day, index) => <div key={day.date} title={`${day.date}: ${day.problems_solved} activities`}>
           <span>{day.problems_solved}</span><div className="workspace-bar-track"><div style={{height: `${Math.max(3, day.problems_solved / maxDay * 100)}%`}} className={day.problems_solved ? "is-active" : ""} /></div>
           <span>{dayLabels[index]}</span></div>)}</div>
       </section>
@@ -1673,8 +1673,6 @@ function Dashboard({
               <>
                 {friendDash ? <>
                   <div className="section-title text-center mb-1">QUESTIONS SOLVED</div>
-                  {friendDash?.history_incomplete && <p className="tiny muted">Verified first solves only; historical dates are incomplete.</p>}
-                  {friendDash?.score_needs_review && <p className="tiny muted">Some historical credit needs reconciliation.</p>}
                   <div className="stat-row">
                     <Stat label="Today" value={friendDash.today_count} />
                     <Stat label="This Week" value={friendDash.weekly_total} />
@@ -1711,7 +1709,7 @@ function Dashboard({
                                 style={{
                                   height: `${heightPct}%`,
                                 }}
-                                title={`${d.date}: ${solved} problem${solved === 1 ? "" : "s"} solved`}
+                                title={`${d.date}: ${solved} activit${solved === 1 ? "y" : "ies"}`}
                               />
                             </div>
                             <span className="profile-heat-day">{new Date(`${d.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" })}</span>
