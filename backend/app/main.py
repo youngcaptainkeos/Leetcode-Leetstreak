@@ -38,6 +38,7 @@ from .scheduler import start_scheduler, poll_all_users, poll_user
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_problem_info, LeetCodeError
 from .point_calculator import recalculate_user_points
 from .reconciliation import current_account, stored_breakdown
+from .locked_scoring import credit_total
 from .platforms import activity_counts, daily_counts, streak_dates, solve_url
 from .codeforces_client import fetch_profile, CodeforcesError
 from .codeforces_sync import background_codeforces_sync, user_sync_lock
@@ -529,6 +530,10 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Dep
     activity = activity_counts(db, [user_id], today=today)[user_id]
     last_7 = [DayCount(date=today - timedelta(days=i), problems_solved=activity.get(today - timedelta(days=i), 0)) for i in range(6, -1, -1)]
     cf_count, cf_points = db.query(func.count(Solve.id), func.coalesce(func.sum(Solve.points_earned), 0)).filter(Solve.user_id == user_id, Solve.platform == "codeforces").one()
+    cf_balance = db.query(AccountCredit).filter_by(user_id=user_id, platform="codeforces",
+        account_version=user.codeforces_account_version, kind="locked_balance").first()
+    if cf_balance and user.codeforces_username:
+        cf_points = credit_total(cf_balance)
 
     estimate = db.query(AccountCredit).filter_by(user_id=user.id, platform="leetcode", account_version=user.leetcode_account_version, kind="historical_base").first()
     needs_review = db.query(Solve.id).filter(Solve.user_id == user.id, Solve.score_components_state.in_(["legacy", "legacy_protected", "metadata_missing", "history_review"])).first() is not None
@@ -586,6 +591,12 @@ def _compute_leaderboard(
     combined = daily_counts(db, user_ids)
     display_dates = streak_dates(db, user_ids, today=today, verified_counts=combined)
     cf_stats = {row[0]: (row[1], float(row[2])) for row in db.query(Solve.user_id, func.count(Solve.id), func.coalesce(func.sum(Solve.points_earned), 0)).filter(Solve.user_id.in_(user_ids), Solve.platform == "codeforces").group_by(Solve.user_id).all()}
+    by_id = {user.id: user for user in users}
+    for balance in db.query(AccountCredit).filter(AccountCredit.user_id.in_(user_ids),
+            AccountCredit.platform == "codeforces", AccountCredit.kind == "locked_balance").all():
+        owner = by_id[balance.user_id]
+        if owner.codeforces_username and balance.account_version == owner.codeforces_account_version:
+            cf_stats[owner.id] = (cf_stats.get(owner.id, (0, 0))[0], float(credit_total(balance)))
 
     raw = []
     for user in users:

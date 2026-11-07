@@ -12,6 +12,13 @@ from .scoring import number, rounded
 POLICY = "points-locked-v1"
 
 
+def credit_total(credit):
+    state = credit.input_snapshot
+    return rounded(number(credit.points)
+                   + sum(map(Decimal, state["paid"].values()), Decimal(0))
+                   + sum(map(Decimal, state["reward_credit"].values()), Decimal(0)))
+
+
 def snapshot_matches(user, payload, platform):
     account = payload.get("accounts", {}).get(platform, {})
     return (account.get("version") == getattr(user, platform + "_account_version")
@@ -105,7 +112,7 @@ def locked_total(user, db, baseline_record, solves, awards_by_solve, estimate):
             reward_credit[slug] = str(max(Decimal(reward_credit.get(slug, "0")), rewards[slug] - included, Decimal(0)))
         state["paid"], state["reward_credit"] = paid, reward_credit
         credit.input_snapshot = state  # JSON changes must be assigned, not mutated in place.
-        contribution = number(credit.points) + sum(map(Decimal, paid.values()), Decimal(0)) + sum(map(Decimal, reward_credit.values()), Decimal(0))
+        contribution = credit_total(credit)
         active[platform] = credit
         total += contribution
     # Preserve any more recent credited balance not represented in the old
