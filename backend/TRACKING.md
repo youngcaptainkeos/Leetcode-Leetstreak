@@ -134,3 +134,10 @@ follow-up client release task; the backend repair requires no extension ZIP.
 - Dashboard `last_7_days` is display activity: verified first solves, original-generation legacy activity and matching-generation LeetCode calendar observations. Overlapping sources use the maximum per platform/day; platforms are summed. Calendar activity may include repeats/attempts.
 - Today/Week/Month counters still use verified first solves. No score components or scoring streak evidence are changed.
 - Rebuilt extension and website bundles. No test suite run for this UI request.
+
+
+### Sync failure handling — 2026-11-07
+
+- Catch LeetCode transport/HTTP failures before sync mutation; manual sync returns a safe 503 with a 60-second Retry-After instead of an unhandled 500 or an incorrect up-to-date message. Background polling keeps its existing failure fallback. Logs record exception class and upstream status without provider response bodies.
+- Clients respect 429 Retry-After and show a countdown; Sync 503 errors retain the server's safe explanation. No automatic POST retries.
+- Render wake-up errors were independently observed; an earlier user-reported 500/429 has not yet been matched to an application request log. Do not call the incident resolved solely because deployment is live.

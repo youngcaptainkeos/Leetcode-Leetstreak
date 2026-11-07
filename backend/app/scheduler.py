@@ -1,4 +1,5 @@
 import logging
+import httpx
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone, timedelta, date
 
@@ -41,7 +42,7 @@ async def backfill_daily_challenges_archive(db: Session):
     db.commit()
 
 
-async def poll_user(db: Session, user: User, sync_codeforces: bool = True) -> int:
+async def poll_user(db: Session, user: User, sync_codeforces: bool = True, *, raise_on_unavailable: bool = False) -> int:
     """Fetch public profile and recent ACs; recent history is never first-solve proof."""
     db.refresh(user)
     handle, user_id = user.leetcode_username, user.id
@@ -71,8 +72,11 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True) -> in
         validate_acceptances(evidence, "leetcode")
         # All slow metadata calls happen before acquiring the account write lock.
         problem_info = {slug: await fetch_problem_info(slug) for slug in {row.title_slug for row in evidence}}
-    except (LeetCodeError, ValueError, OverflowError, OSError):
-        logger.warning("LeetCode accepted history unavailable for user %d", user_id)
+    except (LeetCodeError, httpx.HTTPError, ValueError, OverflowError, OSError) as error:
+        status = error.response.status_code if isinstance(error, httpx.HTTPStatusError) else None
+        logger.warning("LeetCode accepted history unavailable for user %d: %s, HTTP %s", user_id, type(error).__name__, status)
+        if raise_on_unavailable:
+            raise LeetCodeError("LeetCode is temporarily unavailable. Please try syncing again in a minute.") from None
         return await sync_codeforces_user(db, user) if sync_codeforces and user.codeforces_username else 0
 
     db.refresh(user, with_for_update=True)

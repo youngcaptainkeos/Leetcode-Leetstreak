@@ -204,7 +204,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       throw new ApiError(`Requests are temporarily limited. Please try again in ${wait} seconds. Your saved data is unchanged.`, 429, wait);
     }
     if (res.status === 503 && /\/users\/\d+\/sync$/.test(path)) {
-      throw new ApiError("The server is temporarily unavailable or waking up. Please wait a minute before syncing again. Your saved data is unchanged.", 503, 60);
+      throw new ApiError(typeof body.detail === "string" ? body.detail : "The server is temporarily unavailable or waking up. Please wait a minute before syncing again.", 503, 60);
     }
     if (res.status === 401 && !path.startsWith("/users/login") && !path.startsWith("/users/register") && !path.startsWith("/users/forgot-password")) {
       if ((await getStored("codestreak_access_token")) === token) window.dispatchEvent(new Event(AUTH_EXPIRED));
