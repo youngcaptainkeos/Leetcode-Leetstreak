@@ -181,6 +181,7 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
         # Provider calendars count attempts, not unique accepted questions.
         calendars = {row.date: row for row in db.query(ProviderCalendar).filter_by(
             user_id=user_id, platform="leetcode", account_version=account_version).all()}
+        observed_days = []
         for day, count in (data.get("submission_calendar") or {}).items():
             if type(day) is not date or type(count) is not int or count < 0:
                 continue
@@ -191,7 +192,14 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
             row.submission_count = count
             row.source = "leetcode_submission_calendar"
             row.coverage = "provider_partial"
-            row.observed_at = sync_started
+            observed_days.append(day)
+        # Most historical day counts are unchanged. Stamp their observation in
+        # one UPDATE, rather than issuing one timestamp UPDATE per calendar day.
+        db.flush()
+        if observed_days:
+            db.query(ProviderCalendar).filter_by(user_id=user_id, platform="leetcode",
+                account_version=account_version).filter(ProviderCalendar.date.in_(observed_days)).update(
+                {ProviderCalendar.observed_at: sync_started}, synchronize_session=False)
 
         # Dedup accepted questions; ingestion records one first date per question.
         new_count = 0

@@ -1480,3 +1480,8 @@ Python syntax and whitespace checks passed; automated tests were not run.
 A successful reviewer-account Sync before deployment took about 5.30 seconds,
 including its queue delay. This is a narrow baseline, not an all-account latency
 benchmark; large imports, Codeforces verification and hosting wake-ups can differ.
+
+Timing review identified calendar observation timestamps as another avoidable
+write fan-out. They now update with one account-scoped statement for the valid
+dates actually returned, preserving observation timestamps and calendar counts.
+Changed counts still persist under the same account/job transaction locks.
