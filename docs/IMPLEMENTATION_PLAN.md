@@ -1485,3 +1485,13 @@ Timing review identified calendar observation timestamps as another avoidable
 write fan-out. They now update with one account-scoped statement for the valid
 dates actually returned, preserving observation timestamps and calendar counts.
 Changed counts still persist under the same account/job transaction locks.
+
+Production checkpoint: `41c99a2` deployed successfully; readiness returns 200.
+The scheduled poll checked all 17 accounts and completed with no new question
+entries. Measured LC stages ranged approximately 4.7–16.9 seconds under concurrent
+poll load, with most accounts needing zero metadata lookups. A subsequent
+reviewer manual job succeeded with its 2390-point balance unchanged. Its total
+time was 5.43 seconds versus the 5.30-second narrow baseline, so no measured
+speedup is claimed for that small account. Larger-account paired benchmarks
+remain unmeasured. The added logs expose remaining provider/database latency.
+These backend changes support installed clients without replacing the ZIP.
