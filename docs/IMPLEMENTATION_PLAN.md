@@ -1460,3 +1460,23 @@ have earlier stored question dates and correctly retain their existing entries.
 All 16 participant balances match the captured pre-deploy values. The persistent
 reviewer login still works and remains excluded from rankings. Public download
 serves the matching 1.0.2 artifact. Automated tests were not run for this change.
+
+### 2026-11-09 — reduce ordinary Sync latency
+
+Profile and recent-acceptance requests now run concurrently, with independent
+failure handling retained. Saved current-account question metadata is reused
+across restarts; new or incomplete metadata uses at most three concurrent
+provider requests across account syncs. The daily lookup is skipped when no new
+question can qualify. Missing metadata can be repaired on later successful syncs.
+
+Replay validation batches existing acceptance identities into one database read
+instead of repeatedly locking the same account and looking up each submission.
+Conflicting stored/incoming IDs and timestamps still reject the transaction.
+Account identity/version locks, ownership fencing, accepted-only ingestion and
+reward deduplication remain. Timing logs separate provider, metadata and database
+stages. No extension package or scoring formula change is needed.
+
+Python syntax and whitespace checks passed; automated tests were not run.
+A successful reviewer-account Sync before deployment took about 5.30 seconds,
+including its queue delay. This is a narrow baseline, not an all-account latency
+benchmark; large imports, Codeforces verification and hosting wake-ups can differ.

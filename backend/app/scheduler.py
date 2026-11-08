@@ -1,4 +1,5 @@
 import logging
+from time import perf_counter
 import httpx
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone, timedelta, date
@@ -81,9 +82,11 @@ async def _poll_leetcode_user(db: Session, user: User, *, attempt=None) -> int:
     handle, user_id = user.leetcode_username, user.id
     account_version, previous_sync = user.leetcode_account_version, user.leetcode_last_sync
     sync_started = utc_now()
+    started = perf_counter()
     db.commit()  # Release the connection before provider requests.
     try:
         data = await fetch_leetcode_user_data(handle)
+        provider_finished = perf_counter()
         provider_handle = data.get("username")
         if not isinstance(provider_handle, str) or provider_handle.casefold() != handle.casefold():
             raise LeetCodeError("Provider account identity did not match")
@@ -103,9 +106,22 @@ async def _poll_leetcode_user(db: Session, user: User, *, attempt=None) -> int:
             evidence.append(ProviderAcceptance(str(sub["id"]), sub.get("titleSlug"),
                 datetime.fromtimestamp(int(sub["timestamp"]), timezone.utc).replace(tzinfo=None)))
         validate_acceptances(evidence, "leetcode")
-        # All slow metadata calls happen before acquiring the account write lock.
-        problem_info = {slug: await fetch_problem_info(slug) for slug in {row.title_slug for row in evidence}}
-        daily_slug = await fetch_today_daily_challenge_slug() if previous_sync is not None else None
+        # Stored metadata survives restarts; avoid refetching known questions.
+        slugs = {row.title_slug for row in evidence}
+        problem_info = await asyncio.to_thread(_saved_problem_info, db.get_bind(),
+                                             user_id, account_version, slugs)
+        new_slugs = slugs - problem_info.keys()
+        missing = [slug for slug in slugs if slug not in problem_info
+                   or problem_info[slug]["difficulty"] not in {"Easy", "Medium", "Hard"}
+                   or problem_info[slug]["ac_rate"] is None]
+        async def load_metadata():
+            values = await asyncio.gather(*(fetch_problem_info(slug) for slug in missing))
+            return dict(zip(missing, values))
+        fetched, daily_slug = await asyncio.gather(load_metadata(),
+            fetch_today_daily_challenge_slug() if previous_sync is not None and new_slugs
+            else asyncio.sleep(0, result=None))
+        problem_info.update(fetched)
+        metadata_finished = perf_counter()
     except (LeetCodeError, httpx.HTTPError, ValueError, OverflowError, OSError) as error:
         status = error.response.status_code if isinstance(error, httpx.HTTPStatusError) else None
         logger.warning("LeetCode accepted history unavailable for user %d: %s, HTTP %s", user_id, type(error).__name__, status)
@@ -121,7 +137,21 @@ async def _poll_leetcode_user(db: Session, user: User, *, attempt=None) -> int:
     if new_count is None:
         return 0
     db.refresh(user)
+    logger.info("LeetCode sync timing user %d: provider=%.2fs metadata=%.2fs persist=%.2fs metadata_lookups=%d total=%.2fs",
+                user_id, provider_finished - started, metadata_finished - provider_finished,
+                perf_counter() - metadata_finished, len(missing), perf_counter() - started)
     return new_count
+
+
+def _saved_problem_info(bind, user_id, account_version, slugs):
+    if not slugs:
+        return {}
+    with Session(bind=bind) as db:
+        rows = db.query(Solve.title_slug, Solve.difficulty, Solve.ac_rate).filter(
+            Solve.user_id == user_id, Solve.platform == "leetcode",
+            Solve.account_version == account_version, Solve.title_slug.in_(slugs)).all()
+        return {slug: {"difficulty": difficulty, "ac_rate": ac_rate}
+                for slug, difficulty, ac_rate in rows}
 
 
 def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
@@ -203,6 +233,15 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
         db.flush()
         ingest_acceptances(db, user_id, platform="leetcode", account_version=account_version,
                            expected_handle=handle, submissions=evidence)
+        # Retry genuinely missing metadata without changing previously locked
+        # awards. Questions whose metadata was unavailable can then earn once.
+        for solve in db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "leetcode",
+                Solve.account_version == account_version, Solve.title_slug.in_(problem_info)).all():
+            info = problem_info[solve.title_slug]
+            if solve.difficulty not in {"Easy", "Medium", "Hard"} and info.get("difficulty") in {"Easy", "Medium", "Hard"}:
+                solve.difficulty = info["difficulty"]
+            if solve.ac_rate is None and info.get("ac_rate") is not None:
+                solve.ac_rate = info["ac_rate"]
         user.leetcode_last_sync = sync_started
         recalculate_user_points(user, db, revision_windows={"leetcode": previous_sync},
                                daily_solve_ids={solve.id for solve in live_daily_solves})

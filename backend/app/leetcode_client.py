@@ -7,6 +7,7 @@ Fetches:
 - Problem difficulty stats (`submitStatsGlobal`)
 - Complete submission calendar & streak (`userCalendar`)
 """
+import asyncio
 import json
 import logging
 import math
@@ -166,11 +167,15 @@ async def fetch_leetcode_user_data(username: str) -> dict:
     - Recent accepted submissions
     """
     async with httpx.AsyncClient(timeout=12, follow_redirects=True) as client:
-        p_resp = await client.post(
-            GRAPHQL_URL,
-            headers=HEADERS,
-            json={"query": USER_FULL_PROFILE_QUERY, "variables": {"username": username}},
+        p_resp, ac_result = await asyncio.gather(
+            client.post(GRAPHQL_URL, headers=HEADERS,
+                        json={"query": USER_FULL_PROFILE_QUERY, "variables": {"username": username}}),
+            client.post(GRAPHQL_URL, headers=HEADERS,
+                        json={"query": RECENT_AC_QUERY, "variables": {"username": username, "limit": 20}}),
+            return_exceptions=True,
         )
+        if isinstance(p_resp, BaseException):
+            raise p_resp
         p_resp.raise_for_status()
         p_data = p_resp.json()
 
@@ -212,11 +217,9 @@ async def fetch_leetcode_user_data(username: str) -> dict:
         recent_submissions = []
         recent_submissions_available = False
         try:
-            ac_resp = await client.post(
-                GRAPHQL_URL,
-                headers=HEADERS,
-                json={"query": RECENT_AC_QUERY, "variables": {"username": username, "limit": 20}},
-            )
+            if isinstance(ac_result, BaseException):
+                raise ac_result
+            ac_resp = ac_result
             if ac_resp.status_code == 200:
                 ac_data = ac_resp.json()
                 rows = (ac_data.get("data") or {}).get("recentAcSubmissionList")
@@ -251,6 +254,7 @@ query questionData($titleSlug: String!) {
 """
 
 _PROBLEM_INFO_CACHE: Dict[str, dict] = {}
+_PROBLEM_INFO_LIMIT = asyncio.Semaphore(3)
 
 
 async def fetch_problem_info(title_slug: str) -> dict:
@@ -264,6 +268,16 @@ async def fetch_problem_info(title_slug: str) -> dict:
     slug = title_slug.strip().lower()
     if slug in _PROBLEM_INFO_CACHE:
         return _PROBLEM_INFO_CACHE[slug]
+
+    # Bound provider traffic across simultaneous account syncs. Recheck after
+    # waiting because another sync may already have populated this cache.
+    async with _PROBLEM_INFO_LIMIT:
+        if slug in _PROBLEM_INFO_CACHE:
+            return _PROBLEM_INFO_CACHE[slug]
+        return await _fetch_problem_info_uncached(slug)
+
+
+async def _fetch_problem_info_uncached(slug: str) -> dict:
 
     try:
         async with httpx.AsyncClient(timeout=8, follow_redirects=True) as client:

@@ -184,10 +184,21 @@ def ingest_acceptances(db: Session, user_id: int, *, platform: str,
             if not solve.source_handle or solve.source_handle.casefold() == expected_handle.casefold()}
         earliest = {}
         events = []
+        # Most syncs replay the same recent submissions. Validate all existing
+        # identities in one read instead of re-locking User and querying each
+        # submission separately. The account is already locked above.
+        known_events = {event.submission_id: event for event in db.query(AcceptedSubmission).filter_by(
+            user_id=user_id, platform=platform, account_version=account_version).filter(
+            AcceptedSubmission.submission_id.in_({row.submission_id for row in submissions})).all()}
         for row in sorted(submissions, key=lambda row: (utc_storage(row.accepted_at), int(row.submission_id))):
-            event = record_acceptance(db, user_id, platform=platform, account_version=account_version,
-                submission_id=row.submission_id, title_slug=row.title_slug, accepted_at=row.accepted_at,
-                evidence_kind="provider_full" if complete_history else "public_recent")
+            event = known_events.get(row.submission_id)
+            if event is None:
+                event = record_acceptance(db, user_id, platform=platform, account_version=account_version,
+                    submission_id=row.submission_id, title_slug=row.title_slug, accepted_at=row.accepted_at,
+                    evidence_kind="provider_full" if complete_history else "public_recent")
+                known_events[row.submission_id] = event
+            elif event.title_slug != row.title_slug or event.accepted_at != utc_storage(row.accepted_at):
+                raise ValueError("Conflicting provider submission evidence")
             solve = solves.get(row.title_slug)
             if solve:
                 event.solve_id = solve.id
