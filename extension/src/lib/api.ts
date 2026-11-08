@@ -51,6 +51,7 @@ export interface PointBreakdown {
 
 export interface RecentSolve {
   first_solve_verified?: boolean;
+  first_solve_basis?: "unknown" | "database_first" | "provider_full";
   first_solve_at?: string | null;
   title_slug: string;
   title: string;
