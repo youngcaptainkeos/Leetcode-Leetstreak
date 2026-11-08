@@ -34,3 +34,12 @@ Replace any removed review-account credentials in the existing store item.
 
 This is a server-side change and works with the published 1.0.0 client and the
 prepared 1.0.1 package. No new extension ZIP or permissions are required.
+
+## Deployment checkpoint — 2026-11-08
+
+Deployed from `c48a42c`. Production readiness and reviewer login return 200.
+The initial demo-data sync completed successfully and dashboard stats are
+available. Global rankings still contain the 16 ordinary participants; the
+reviewer is absent from rankings and the public feed after sync. Ordinary
+participant profiles remain accessible. The unchanged 1.0.1 ZIP is compatible.
+No automated tests were added or run for this follow-up.

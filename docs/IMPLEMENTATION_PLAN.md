@@ -1426,3 +1426,14 @@ provider response for inaccessible external accounts is claimed.
   UTC: all 16 accounts checked, zero new question entries. Full public Codeforces
   history verification committed for 15 questions on the linked account under
   investigation; its existing locked point total remained unchanged.
+
+### 2026-11-08 — persistent store review login
+
+Implemented an operator-provisioned reviewer account with private environment
+configuration and a server-owned isolation flag. The account has no expiry,
+retains its identity across deploys, and is excluded from public rankings,
+feeds and profile discovery. Publisher-managed credentials/coding handles and
+account deletion are protected; review groups remain isolated from real users.
+Live login, dashboard, progress access, initial sync and ranking/feed exclusion
+verified after deployment. See `STORE_REVIEW_ACCOUNT.md`; no actual credentials
+or test email were added to public source or extension packages.
