@@ -49,6 +49,7 @@ from .recovery import consume_limit, recovery_account, otp_verifier, clear_reset
 from .tracking import clear_tracking, capture_score_baseline
 from .progress import router as progress_router
 from .sync_jobs import router as sync_jobs_router
+from .reviewer import provision_reviewer, require_mutable_identity, require_visible_profile, require_social_participant, require_group_scope
 
 
 def verify_admin_secret(x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Secret")):
@@ -84,6 +85,7 @@ async def on_startup():
     app.state.schema_ready = False
     # Exceptions must propagate: never serve a partially migrated schema.
     await asyncio.to_thread(run_migrations, engine)
+    await asyncio.to_thread(provision_reviewer, engine)
     from .sync_jobs import resume_sync_jobs
     resume_sync_jobs()
     _scheduler = start_scheduler()
@@ -260,7 +262,7 @@ def initiate_forgot_password(payload: ForgotPasswordInitiateRequest, request: Re
     consume_limit(db, "reset-request-account", identifier, 3, 3600)
     message = {"status": "request_received", "message": "If a unique matching account exists, a reset code will be sent to its registered email. If a username is shared, use your email address."}
     user = recovery_account(db, identifier)
-    if not user:
+    if not user or user.is_reviewer:
         return message
     db.refresh(user, with_for_update=True)
     now = utcnow()
@@ -284,7 +286,7 @@ def verify_forgot_password(payload: ForgotPasswordVerifyRequest, request: Reques
     consume_limit(db, "reset-verify-account", identifier, 10, 900)
     user = recovery_account(db, identifier)
     denied = HTTPException(400, "Invalid or expired reset code. Request a new code if needed.")
-    if not user:
+    if not user or user.is_reviewer:
         raise denied
     db.refresh(user, with_for_update=True)
     if not user.reset_otp_hash or not user.otp_request_id or not user.otp_expires_at or user.otp_expires_at <= utcnow() or user.otp_attempts >= 5:
@@ -308,6 +310,7 @@ def verify_forgot_password(payload: ForgotPasswordVerifyRequest, request: Reques
 @app.post("/api/users/{user_id}/change-password")
 def change_password(user_id: int, payload: ChangePasswordRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     require_self(actor, user_id)
+    require_mutable_identity(actor)
     consume_limit(db, "change-password", str(actor.id), 5, 900)
     db.refresh(actor, with_for_update=True)
     if not verify_password(payload.current_password, actor.password_hash):
@@ -339,6 +342,7 @@ async def sync_user(user_id: int, background_tasks: BackgroundTasks,
 @app.put("/api/users/{user_id}/leetcode-username")
 async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     require_self(actor, user_id)
+    require_mutable_identity(actor)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -395,6 +399,7 @@ async def update_leetcode_username(user_id: int, payload: UpdateUsernameRequest,
 @app.put("/api/users/{user_id}/codeforces-username")
 async def update_codeforces_username(user_id: int, payload: UpdateCodeforcesRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     require_self(actor, user_id)
+    require_mutable_identity(actor)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -458,6 +463,7 @@ def update_user_settings(user_id: int, payload: UpdateSettingsRequest, db: Sessi
 @app.post("/api/users/{user_id}/delete-account")
 def delete_user_account(user_id: int, payload: DeleteAccountRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     require_self(actor, user_id)
+    require_mutable_identity(actor)
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -513,8 +519,7 @@ def get_ist_today_start() -> datetime:
 @app.get("/api/users/{user_id}/dashboard", response_model=DashboardResponse, response_model_exclude_none=True)
 def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    require_visible_profile(actor, user)
 
     today = get_ist_today()
     week_start = get_current_week_start(today)
@@ -568,6 +573,7 @@ def _compute_leaderboard(
     sort_by: str = "points",
     limit: Optional[int] = None,
 ) -> LeaderboardResponse:
+    users = [user for user in users if not user.is_reviewer]
     today = get_ist_today()
     week_start = get_current_week_start(today)
     days_in_week_so_far = (today - week_start).days + 1
@@ -690,7 +696,7 @@ def get_global_leaderboard(
     require_self(actor, user_id)
     user_id = actor.id
     # Every account participates; the preference controls only the viewer's UI.
-    users = db.query(User).all()
+    users = db.query(User).filter(User.is_reviewer.is_(False)).all()
     return _compute_leaderboard(db, users, requester_id=user_id, sort_by=sort_by, limit=limit)
 
 
@@ -768,6 +774,7 @@ def join_group(payload: GroupJoinRequest, db: Session = Depends(get_db), actor: 
     group = db.query(Group).filter(Group.code == code_clean).first()
     if not group:
         raise HTTPException(status_code=404, detail="Invalid group code. Please check the code and try again.")
+    require_group_scope(db, actor, group)
 
     existing_mem = (
         db.query(GroupMember)
@@ -787,6 +794,7 @@ def join_group(payload: GroupJoinRequest, db: Session = Depends(get_db), actor: 
         db.query(User)
         .join(GroupMember, GroupMember.user_id == User.id)
         .filter(GroupMember.group_id == group.id)
+        .filter(or_(User.is_reviewer.is_(False), User.id == actor.id))
         .all()
     )
 
@@ -827,6 +835,7 @@ def get_my_groups(user_id: int, db: Session = Depends(get_db), actor: User = Dep
         db.query(GroupMember.group_id, User)
         .join(User, GroupMember.user_id == User.id)
         .filter(GroupMember.group_id.in_(group_ids))
+        .filter(or_(User.is_reviewer.is_(False), User.id == actor.id))
         .all()
     )
 
@@ -882,6 +891,9 @@ def remove_group_member(group_id: int, user_id: int, requester_id: int, db: Sess
 @app.post("/api/groups/{group_id}/transfer")
 def transfer_group(group_id: int, payload: GroupTransferRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     group = owned_group(db, actor, group_id)
+    new_owner = db.query(User).filter_by(id=payload.new_owner_id).first()
+    if new_owner is None or bool(new_owner.is_reviewer) != bool(actor.is_reviewer):
+        raise HTTPException(404, "New owner not found")
     if not db.query(GroupMember.id).filter_by(group_id=group_id, user_id=payload.new_owner_id).first():
         raise HTTPException(400, "The new owner must already belong to the group.")
     group.creator_id = payload.new_owner_id
@@ -928,11 +940,12 @@ def get_group_leaderboard(
 @app.post("/api/kudos/kudos-all")
 def kudos_all_users(payload: KudosAllRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     require_self(actor, payload.from_user_id)
+    require_social_participant(actor)
     from_id = payload.from_user_id
     targets = sorted({tid for tid in (payload.target_user_ids or []) if tid != actor.id})
     if len(targets) > 100:
         raise HTTPException(400, "Choose at most 100 users.")
-    if targets and db.query(User.id).filter(User.id.in_(targets)).count() != len(targets):
+    if targets and db.query(User.id).filter(User.id.in_(targets), User.is_reviewer.is_(False)).count() != len(targets):
         raise HTTPException(400, "One or more target accounts no longer exist.")
     if not targets:
         return {"status": "ok", "updated_count": 0}
@@ -964,12 +977,13 @@ def kudos_all_users(payload: KudosAllRequest, db: Session = Depends(get_db), act
 @app.post("/api/kudos/{to_user_id}")
 def toggle_kudos(to_user_id: int, payload: KudosToggleRequest, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     require_self(actor, payload.from_user_id)
+    require_social_participant(actor)
     from_id = payload.from_user_id
     if from_id == to_user_id:
         raise HTTPException(status_code=400, detail="You cannot give kudos to yourself.")
 
     to_user = db.query(User).filter(User.id == to_user_id).first()
-    if not to_user:
+    if not to_user or to_user.is_reviewer:
         raise HTTPException(status_code=404, detail="Target user not found.")
 
     existing = (
@@ -1030,8 +1044,7 @@ def _time_ago(dt: datetime) -> str:
 @app.get("/api/users/{user_id}/recent-solves", response_model=List[RecentSolveSchema])
 async def get_user_recent_solves(user_id: int, limit: int = Query(10, ge=1, le=100), db: Session = Depends(get_db), actor: User = Depends(current_user)):
     user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    require_visible_profile(actor, user)
 
     # Activity is the latest observed acceptance, including a repeat. The unique
     # solve/award ledger and its first-solve timestamp remain unchanged.
@@ -1084,8 +1097,7 @@ async def get_user_recent_solves(user_id: int, limit: int = Query(10, ge=1, le=1
 @app.get("/api/users/{user_id}/codeforces-solves")
 def codeforces_solved_questions(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    require_visible_profile(actor, user)
     slugs = [row[0] for row in db.query(Solve.title_slug).filter(Solve.user_id == user_id, Solve.platform == "codeforces").all()]
     return {"handle": user.codeforces_username, "slugs": slugs, "synced_at": user.codeforces_last_sync.replace(tzinfo=timezone.utc) if user.codeforces_last_sync else None}
 
@@ -1096,6 +1108,7 @@ async def get_global_recent_solves(limit: int = Query(15, ge=1, le=100), db: Ses
     solves = (
         db.query(Solve, User)
         .join(User, Solve.user_id == User.id)
+        .filter(User.is_reviewer.is_(False))
         .order_by(Solve.solved_at.desc())
         .limit(limit)
         .all()
@@ -1167,6 +1180,8 @@ async def poll_now(db: Session = Depends(get_db)):
 @app.post("/api/admin/reset-db", dependencies=[Depends(verify_admin_secret)])
 def reset_db(db: Session = Depends(get_db)):
     """Clears all database records for fresh user registrations."""
+    if db.query(User.id).filter(User.is_reviewer.is_(True)).first():
+        raise HTTPException(409, "Persistent review accounts are configured. Use targeted account cleanup instead.")
     clear_tracking(db)
     db.query(Kudos).delete()
     db.query(PlatformActivity).delete()
@@ -1215,6 +1230,7 @@ def delete_user_by_id(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    require_mutable_identity(user)
 
     if db.query(Group.id).filter(Group.creator_id == user_id).first():
         raise HTTPException(409, "Resolve owned groups before deleting this account.")
@@ -1333,7 +1349,7 @@ async def broadcast_release(release_id: str, recipients: list[int]):
 def broadcast_update_email(payload: ReleaseBroadcastRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     if payload.release_id not in RELEASE_NOTICES:
         raise HTTPException(400, "Choose a reviewed release ID.")
-    ids = [row[0] for row in db.query(User.id).filter(User.email.isnot(None), User.email != "", User.last_notified_commit != payload.release_id).all()]
+    ids = [row[0] for row in db.query(User.id).filter(User.is_reviewer.is_(False), User.email.isnot(None), User.email != "", User.last_notified_commit != payload.release_id).all()]
     if payload.dry_run:
         return {"status": "preview", "eligible_accounts": len(ids), "release_id": payload.release_id}
     claim_admin_operation(db, "broadcast:" + payload.release_id)

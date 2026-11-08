@@ -44,6 +44,8 @@ class User(Base):
     last_notified_commit = Column(String(40), default="legacy")
     global_leaderboard_enabled = Column(Boolean, default=True, nullable=False)
     show_global_leaderboard = Column(Boolean, default=True, server_default="true", nullable=False)
+    # Operator-managed review accounts never participate in public social surfaces.
+    is_reviewer = Column(Boolean, default=False, server_default="false", nullable=False)
     created_at = Column(DateTime, default=utc_now, server_default=func.now())
 
     daily_activity = relationship("DailyActivity", back_populates="user", cascade="all, delete-orphan")
