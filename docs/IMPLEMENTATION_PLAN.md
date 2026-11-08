@@ -1452,3 +1452,11 @@ question credit without aggregate-count gating, and live daily eligibility under
 the recorded-first rule. Initial imports remain historical base-only. CF proof
 and no-daily policy remain. Help and website copy are being aligned with this
 policy in the 1.0.2 package; published clients use the backend counter fix directly.
+
+Production acceptance: backend deployment from `9fa1d8f` is live and readiness
+returns 200. The reported profile now shows Today 3, Week 3, Month 6 rather than
+zero; its displayed two-day streak is preserved. Three other recent acceptances
+have earlier stored question dates and correctly retain their existing entries.
+All 16 participant balances match the captured pre-deploy values. The persistent
+reviewer login still works and remains excluded from rankings. Public download
+serves the matching 1.0.2 artifact. Automated tests were not run for this change.

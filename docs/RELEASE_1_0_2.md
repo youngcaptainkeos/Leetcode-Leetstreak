@@ -20,3 +20,8 @@ Extension and website builds and TypeScript checks passed. Python source parses
 and archive runtime/manifest inspection passed. Automated tests were not run.
 The existing proof-only test expectations need updating for this policy change;
 they should not be treated as acceptance criteria for database-first behavior.
+
+Production readiness, repaired profile counters, preserved participant balances
+and the public 1.0.2 package were checked after deployment. The new first-recorded
+and daily/revision paths were reviewed statically; this check does not claim a
+new production solve was performed to exercise future reward issuance.
