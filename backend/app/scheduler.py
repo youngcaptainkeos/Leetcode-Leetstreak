@@ -42,7 +42,35 @@ async def backfill_daily_challenges_archive(db: Session):
     db.commit()
 
 
-async def poll_user(db: Session, user: User, sync_codeforces: bool = True, *, raise_on_unavailable: bool = False) -> int:
+async def poll_user(db: Session, user: User, sync_codeforces: bool = True, *,
+                    raise_on_unavailable: bool = False, report=None,
+                    force_codeforces: bool = False) -> int:
+    """Attempt each linked platform independently; preserve the integer API."""
+    from .sync_report import SyncReport
+    report = report if report is not None else SyncReport()
+    added = 0
+    try:
+        added += await _poll_leetcode_user(db, user)
+        report.leetcode = "synced"
+    except Exception as error:
+        db.rollback()
+        report.leetcode = "unavailable"
+        logger.warning("LeetCode sync could not finish for user %d (%s)", user.id, type(error).__name__)
+    if sync_codeforces:
+        db.refresh(user)
+        if user.codeforces_username:
+            try:
+                added += await sync_codeforces_user(db, user, force=force_codeforces, report=report)
+            except Exception as error:
+                db.rollback()
+                report.codeforces = "unavailable"
+                logger.warning("Codeforces sync could not finish for user %d (%s)", user.id, type(error).__name__)
+    if raise_on_unavailable and not report.any_success:
+        raise LeetCodeError(report.message or "Sync could not finish. Please try again later.")
+    return added
+
+
+async def _poll_leetcode_user(db: Session, user: User) -> int:
     """Fetch public profile and recent ACs; recent history is never first-solve proof."""
     db.refresh(user)
     handle, user_id = user.leetcode_username, user.id
@@ -75,9 +103,7 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True, *, ra
     except (LeetCodeError, httpx.HTTPError, ValueError, OverflowError, OSError) as error:
         status = error.response.status_code if isinstance(error, httpx.HTTPStatusError) else None
         logger.warning("LeetCode accepted history unavailable for user %d: %s, HTTP %s", user_id, type(error).__name__, status)
-        if raise_on_unavailable:
-            raise LeetCodeError("LeetCode is temporarily unavailable. Please try syncing again in a minute.") from None
-        return await sync_codeforces_user(db, user) if sync_codeforces and user.codeforces_username else 0
+        raise LeetCodeError("LeetCode is temporarily unavailable; its saved data is unchanged.") from None
 
     new_count = await asyncio.to_thread(_persist_leetcode_snapshot, db.get_bind(),
         user_id=user_id, handle=handle, account_version=account_version,
@@ -89,8 +115,6 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True, *, ra
     if new_count is None:
         return 0
     db.refresh(user)
-    if sync_codeforces and user.codeforces_username:
-        new_count += await sync_codeforces_user(db, user)
     return new_count
 
 

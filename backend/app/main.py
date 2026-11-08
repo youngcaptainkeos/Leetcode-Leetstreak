@@ -331,10 +331,12 @@ async def sync_user(user_id: int, db: Session = Depends(get_db), actor: User = D
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     try:
-        solves_added = await poll_user(db, user, raise_on_unavailable=True)
+        from .sync_report import SyncReport
+        report = SyncReport()
+        solves_added = await poll_user(db, user, raise_on_unavailable=True, report=report, force_codeforces=True)
     except LeetCodeError as error:
         raise HTTPException(status_code=503, detail=str(error), headers={"Retry-After": "60"}) from None
-    return {"status": "synced", "user_id": user_id, "new_solves": solves_added}
+    return {"status": "synced", "user_id": user_id, "new_solves": solves_added, "message": report.message}
 
 
 @app.put("/api/users/{user_id}/leetcode-username")

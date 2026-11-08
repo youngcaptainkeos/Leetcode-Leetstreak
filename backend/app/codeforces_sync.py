@@ -18,9 +18,11 @@ def user_sync_lock(user_id):
     return _locks.setdefault(user_id, asyncio.Lock())
 
 
-async def sync_codeforces_user(db: Session, user: User) -> int:
+async def sync_codeforces_user(db: Session, user: User, *, force=False, report=None) -> int:
     lock = user_sync_lock(user.id)
     if lock.locked():
+        if report is not None:
+            report.codeforces = "running"
         return 0
     async with lock:
         db.refresh(user)
@@ -30,7 +32,9 @@ async def sync_codeforces_user(db: Session, user: User) -> int:
         if not handle:
             return 0
         now = datetime.now(timezone.utc).replace(tzinfo=None)
-        if user.codeforces_last_sync and now - user.codeforces_last_sync < timedelta(minutes=10):
+        if not force and user.codeforces_last_sync and now - user.codeforces_last_sync < timedelta(minutes=10):
+            if report is not None:
+                report.codeforces = "recent"
             return 0
         full = not user.codeforces_last_full_sync or now - user.codeforces_last_full_sync > timedelta(days=7)
         since = None if full else int((user.codeforces_last_sync.replace(tzinfo=timezone.utc) - timedelta(days=2)).timestamp())
@@ -38,6 +42,8 @@ async def sync_codeforces_user(db: Session, user: User) -> int:
         try:
             history = await fetch_accepted_history(handle, since)
         except CodeforcesError as error:
+            if report is not None:
+                report.codeforces = "unavailable"
             db.refresh(user, with_for_update=True)
             if user.codeforces_username == handle and user.codeforces_account_version == account_version and user.codeforces_last_sync == previous_sync:
                 user.codeforces_sync_error = str(error)[:300]
@@ -50,6 +56,8 @@ async def sync_codeforces_user(db: Session, user: User) -> int:
             user_id=user_id, handle=handle, account_version=account_version,
             previous_sync=previous_sync, now=now, full=full, since=since, history=history)
         db.expire_all()
+        if report is not None:
+            report.codeforces = "synced"
         return added
 
 

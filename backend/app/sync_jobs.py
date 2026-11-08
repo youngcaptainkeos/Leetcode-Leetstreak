@@ -92,11 +92,13 @@ async def process_sync_jobs():
             if user is None or expected != (user.leetcode_account_version, user.codeforces_account_version, user.session_version):
                 raise LeetCodeError("Your linked account or session changed. Please start Sync again.")
             logger.info("Manual sync processing user %d", user_id)
-            added = await asyncio.wait_for(poll_user(db, user, raise_on_unavailable=True), timeout=300)
+            from .sync_report import SyncReport
+            report = SyncReport()
+            added = await asyncio.wait_for(poll_user(db, user, raise_on_unavailable=True, report=report, force_codeforces=True), timeout=300)
             db.refresh(user)
             if expected != (user.leetcode_account_version, user.codeforces_account_version, user.session_version):
                 raise LeetCodeError("Your linked account or session changed. Please start Sync again.")
-            message = "LeetCode synced; Codeforces is temporarily unavailable." if user.codeforces_username and user.codeforces_sync_error else None
+            message = report.message
             job = db.query(UserSyncJob).filter_by(id=job_id, state="running").with_for_update().first()
             if job:
                 job.state, job.new_solves, job.message, job.finished_at = "succeeded", added, message, utc_now()
