@@ -1410,3 +1410,19 @@ provider response for inaccessible external accounts is claimed.
   backend deployment. Keep the minimum supported client at 1.0.0.
 - LeetCode complete-history recovery and first-solve/daily verification remain
   open; this change does not claim to solve those provider-evidence limitations.
+
+### 2026-11-08 — production acceptance checkpoint
+
+- Backend deployed from `6fc2a9f`; readiness returns 200 after the additive
+  recovery migration. Docker now forwards shutdown signals to the API process.
+- Owner confirmed successful Sync using the published 1.0.0 extension. Server
+  logs show the durable job accepted, processed and completed in about 19 seconds;
+  the existing point balance remained unchanged.
+- An isolated active-job shutdown check confirmed that graceful shutdown returns
+  interrupted work to the queue without retaining its old worker token. This was
+  a local synthetic check, not a forced production restart.
+- Extension 1.0.1 is prepared but has not been uploaded or published to the store.
+- The scheduled production poll started at 04:45 UTC and completed at 04:46:10
+  UTC: all 16 accounts checked, zero new question entries. Full public Codeforces
+  history verification committed for 15 questions on the linked account under
+  investigation; its existing locked point total remained unchanged.
