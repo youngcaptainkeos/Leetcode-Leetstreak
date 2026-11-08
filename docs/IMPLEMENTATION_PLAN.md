@@ -1392,3 +1392,21 @@ policy. Builds/type/syntax checks passed; automated tests were not run. Earlier
 base-revaluation test expectations are superseded and remain a test-maintenance
 follow-up, not current scoring requirements. No full-history proof or successful
 provider response for inaccessible external accounts is claimed.
+
+### 2026-11-08 — sync reliability follow-up
+
+- Implemented independent provider attempts and partial-success messages.
+- Implemented full-public-history proof for newly discovered CF first solves,
+  with safe recent-solve/base-point fallback when proof is unavailable. Preserve
+  CF streak participation and verified revisions; no CF daily challenge bonus.
+- Implemented renewable attempt ownership, persisted progress, bounded restart
+  retries, stale-writer fencing, and truthful slow-work handling. Existing 1.0.0
+  clients retain a compatible synchronous endpoint backed by the durable queue.
+- 71 targeted checks pass locally. Old revaluation-oriented runtime assertions
+  still fail identically on the prior deployed source; test maintenance remains
+  a follow-up. Real PostgreSQL concurrency checks were not run locally.
+- Prepared extension 1.0.1 for upload to the existing Chrome Web Store item;
+  permissions unchanged. Store upload/review/publication is separate from the
+  backend deployment. Keep the minimum supported client at 1.0.0.
+- LeetCode complete-history recovery and first-solve/daily verification remain
+  open; this change does not claim to solve those provider-evidence limitations.

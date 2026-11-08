@@ -154,6 +154,8 @@ def _persist_codeforces_history(bind, *, user_id, handle, account_version,
         checkpoint(job, added)
         db.commit()
         logger.info("Codeforces saved for user %d: %d new question entries", user_id, added)
+        if full:
+            logger.info("Codeforces public first-solve history verified for user %d: %d questions", user_id, len(history))
         return added
 
 

@@ -214,3 +214,33 @@ Prior sections describing runtime base revaluation are superseded by this policy
   website builds/type checks, Python syntax and diff checks passed. No automated
   test suite was run in this change. Earlier revaluation-specific test assertions
   describe the superseded policy and need updating when tests are authorized.
+
+## Independent syncing, CF verification and durable recovery — 2026-11-08
+
+- Each linked provider is attempted independently. Manual Sync bypasses the CF
+  cache interval, reports partial success, and fails only when neither provider
+  could complete. Locked existing point balances remain unchanged.
+- An incremental CF response containing unproved first solves triggers a full
+  public-history scan. If that proof request fails, valid recent accepted solves
+  and unique-question points can still be saved without inventing first dates.
+  Unproved questions cannot receive revision rewards. CF has no daily bonus.
+- New jobs have renewable 45-second ownership leases, bounded interruption
+  retries, and per-platform progress committed with provider data. Database
+  writers check/lock the current attempt token and account/session generations.
+  Recovery skips active write transactions; superseded attempts cannot commit.
+- A soft timeout keeps awaiting live work instead of marking a still-writing
+  thread failed. Graceful shutdown requeues unlocked attempts; a hard crash is
+  recovered after lease expiry. Old in-flight jobs created before this upgrade
+  retain their legacy lease until completion/expiry during the first rollout.
+- The 1.0.0 synchronous Sync endpoint now adapts to the same durable queue while
+  retaining its original response fields. Modern clients continue using the
+  existing start/status endpoints. No new permissions or forced logout.
+- Local verification: 71 targeted tests passed, including provider failures,
+  failed proof fallback, recurring revision idempotency, stale-owner rejection,
+  committed-progress recovery, cancellation, slow completion, migration replay,
+  and legacy-client API authorization. PostgreSQL concurrency tests require a
+  dedicated local PostgreSQL instance and were not executed here.
+- Broader runtime-scoring checks still fail on both the prior commit and this
+  checkout because they expect the superseded revaluation policy / one legacy
+  component row. They are not reported as passing. No production test account
+  is created for verification.
