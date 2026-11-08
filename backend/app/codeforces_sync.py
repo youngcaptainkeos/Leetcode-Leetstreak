@@ -44,11 +44,19 @@ async def sync_codeforces_user(db: Session, user: User, *, force=False, report=N
         full = not previous_sync or not user.codeforces_last_full_sync or (
             not force and now - user.codeforces_last_full_sync > timedelta(days=7))
         since = None if full else int((user.codeforces_last_sync.replace(tzinfo=timezone.utc) - timedelta(days=2)).timestamp())
+        anchor = None
+        if force and not full:
+            latest = db.query(AcceptedSubmission.submission_id).filter_by(
+                user_id=user_id, platform="codeforces", account_version=account_version).order_by(
+                AcceptedSubmission.accepted_at.desc(), AcceptedSubmission.id.desc()).first()
+            if latest is not None:
+                anchor = int(latest[0])
         proof_unavailable = False
         started = perf_counter()
         db.commit()  # Do not hold a database connection during remote requests.
         try:
-            history = await fetch_accepted_history(handle, since)
+            history = (await fetch_accepted_history(handle, since, stop_submission_id=anchor)
+                       if anchor is not None else await fetch_accepted_history(handle, since))
             if not full:
                 proved = {row.title_slug: row.first_solve_at for row in db.query(Solve).filter_by(
                     user_id=user_id, platform="codeforces", account_version=account_version,
@@ -86,7 +94,8 @@ async def sync_codeforces_user(db: Session, user: User, *, force=False, report=N
         added = await asyncio.to_thread(_persist_codeforces_history, db.get_bind(),
             user_id=user_id, handle=handle, account_version=account_version,
             previous_sync=previous_sync, now=now, full=full, since=since, history=history,
-            proof_unavailable=proof_unavailable, attempt=attempt)
+            proof_unavailable=proof_unavailable, attempt=attempt,
+            reconcile_missing=full or anchor is None)
         db.expire_all()
         logger.info("Codeforces sync timing user %d: provider=%.2fs persist=%.2fs full=%s total=%.2fs",
                     user_id, fetched_at - started, perf_counter() - fetched_at, full, perf_counter() - started)
@@ -96,7 +105,8 @@ async def sync_codeforces_user(db: Session, user: User, *, force=False, report=N
 
 
 def _persist_codeforces_history(bind, *, user_id, handle, account_version,
-                               previous_sync, now, full, since, history, proof_unavailable=False, attempt=None):
+                               previous_sync, now, full, since, history, proof_unavailable=False, attempt=None,
+                               reconcile_missing=True):
     """Keep synchronous history/score persistence off the HTTP event loop."""
     with Session(bind=bind, autoflush=False) as db:
         user = db.query(User).filter_by(id=user_id).populate_existing().with_for_update().first()
@@ -116,7 +126,7 @@ def _persist_codeforces_history(bind, *, user_id, handle, account_version,
         incoming = {row["slug"]: row for row in history}
         added = 0
         for slug, solve in existing.items():
-            if slug not in incoming and (full or solve.solved_at.replace(tzinfo=timezone.utc).timestamp() >= since):
+            if reconcile_missing and slug not in incoming and (full or solve.solved_at.replace(tzinfo=timezone.utc).timestamp() >= since):
                 # Keep raw provider observations after a rejudgement. Revaluing
                 # explicit awards needs R3, not an implicit cascade deletion.
                 if db.query(PointAward.id).filter_by(solve_id=solve.id).first():

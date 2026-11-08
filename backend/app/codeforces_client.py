@@ -50,17 +50,23 @@ async def fetch_profile(handle: str) -> dict:
     return {"handle": result[0]["handle"]}
 
 
-async def fetch_accepted_history(handle: str, since: Optional[int] = None) -> list[dict]:
+async def fetch_accepted_history(handle: str, since: Optional[int] = None, *,
+                                 stop_submission_id: Optional[int] = None) -> list[dict]:
     """Read every public submission and keep the earliest final AC per problem.
 
     A complete scan also reconciles rejudgements and keeps reruns idempotent.
-    Pages overlap to tolerate new submissions arriving during pagination.
+    Recent pages contain 20 submissions. A manual catch-up can stop after the
+    page containing its stored accepted-submission anchor. Scheduled window scans
+    also revisit older pending/rejudged submissions. Pages overlap to tolerate
+    new submissions arriving during pagination.
     """
     handle = normalize_handle(handle)
     accepted = {}
     seen_submissions = {}
     offset = 1
-    page_size = 1000 if since is None else 100
+    if stop_submission_id is not None and (type(stop_submission_id) is not int or stop_submission_id <= 0 or since is None):
+        raise ValueError("A submission anchor requires an incremental history window")
+    page_size = 1000 if since is None else 20
     for _ in range(500):
         rows = await codeforces_request("user.status", {"handle": handle, "from": offset, "count": page_size})
         if not isinstance(rows, list):
@@ -109,12 +115,12 @@ async def fetch_accepted_history(handle: str, since: Optional[int] = None) -> li
                 "timestamp": timestamp, "submission_id": row["id"],
                 "accepted_submissions": previous["accepted_submissions"] if previous else [event],
             }
-        if len(rows) < page_size or (since is not None and rows and min(r.get("creationTimeSeconds", int(time.time())) for r in rows) < since):
+        reached_anchor = stop_submission_id is not None and any(row["id"] == stop_submission_id for row in rows)
+        reached_window = (stop_submission_id is None and since is not None and rows
+                          and min(row["creationTimeSeconds"] for row in rows) < since)
+        if len(rows) < page_size or reached_anchor or reached_window:
             for problem in accepted.values():
                 problem["accepted_submissions"].sort(key=lambda event: (event["timestamp"], event["submission_id"]))
             return sorted(accepted.values(), key=lambda problem: problem["slug"])
         offset += page_size - page_size // 10
-        # Busy accounts catch up in large pages after the inexpensive head
-        # check, rather than making ten rate-limited calls per 1,000 entries.
-        page_size = 1000
     raise CodeforcesError("This account needs a larger history import. Saved scores are unchanged.")

@@ -1571,3 +1571,24 @@ Python syntax and diff whitespace checks passed. Automated tests were not run;
 the owner will test actual Sync latency and new solves. No measured latency
 improvement is claimed before that comparison. Large imports/new CF proof and
 provider latency can still make a Sync slower.
+
+
+### 2026-11-09 — 20-submission Codeforces catch-up
+
+Supersedes the 100-entry recent head fetch above. Incremental Codeforces pages
+now contain 20 submissions, with a two-entry overlap between pages to tolerate
+new arrivals while paging. Manual Sync uses the latest stored account-scoped
+accepted submission as its anchor and fetches further pages until that ID is
+seen or the public history ends. The timestamp cutoff cannot prematurely stop
+an anchored catch-up. Without an anchor, the existing two-day window applies.
+
+An anchored result is partial evidence, so absence from that result never
+deletes or downgrades older questions. Initial/full proof scans retain large
+pages, and new/unverified questions retain full-history escalation. Scheduled
+polls revisit the two-day window (using 20-entry pages) to catch previously
+pending verdicts behind the anchor; weekly full scans remain. A bounded scan
+that cannot finish raises an error rather than saving an incomplete success.
+
+Python syntax and diff whitespace checks passed. No automated tests run; actual
+account latency and newly accepted submissions remain for owner testing. Backend
+only; existing extension packages work without a rebuild.
