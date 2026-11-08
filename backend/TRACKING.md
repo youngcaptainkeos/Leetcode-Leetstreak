@@ -244,3 +244,31 @@ Prior sections describing runtime base revaluation are superseded by this policy
   checkout because they expect the superseded revaluation policy / one legacy
   component row. They are not reported as passing. No production test account
   is created for verification.
+
+## 2026-11-08: owner-approved first-recorded LeetCode rule
+
+An accepted question missing from the linked account's stored question ledger
+counts as its first recorded solve. Store `first_solve_basis=database_first`
+separately from `first_solve_verified`; the assumption is not provider lifetime
+proof. The earliest stored acceptance (or earlier existing accepted solve date)
+is used once. Replayed submissions and later repeats retain one question row.
+
+The additive migration repairs dates only for current-account LC rows backed by
+accepted submission evidence. It preserves awards and balance amounts and marks
+all already-recorded LC questions as covered by existing locked balances. Later
+new question inserts earn their base once without waiting for an aggregate-count
+budget. Initial aggregate/history imports retain base-only treatment. A question
+solved before tracking but first discovered later may receive a new first-recorded
+award under this explicitly accepted assumption.
+
+Period counters and scoring streak dates accept database-first LC dates. Existing
+activity-streak calendar compatibility remains. Revisions use the seven-day
+cooldown from the recorded first solve or last rewarded revision; failed attempts
+do not reset it. CF continues using full-provider proof and has no daily bonus.
+
+New live LC first-recorded questions may earn the current official daily's 5-point
+bonus with the eligible streak multiplier. Sync must confirm the official slug;
+acceptance must be today in IST, after registration and the prior successful sync.
+Only questions inserted by that live sync qualify. Imports, repairs, replays and
+known questions do not receive a new daily bonus. Stored daily/revision award
+identities and locked reward balances make repeated syncs idempotent.

@@ -7,26 +7,19 @@ from sqlalchemy.orm import Session
 
 from .contest_ratings import get_contest_rating
 from .models import AccountCredit, AcceptedSubmission, PointAward, Solve, User
-from .scoring import SCORING_VERSION, calculate_points, number, rounded
+from .scoring import SCORING_VERSION, calculate_points, number, rounded, streak_multiplier
 from .streak import current_streak
 from .timekeeping import ist_date, utc_storage
 from .tracking import capture_score_baseline, revision_candidates
 from .locked_scoring import locked_total
+from .first_solves import current_account, first_solve_date
 
 logger = logging.getLogger("codestreak.reconciliation")
 
 
-def current_account(user: User, solve: Solve) -> bool:
-    handle = getattr(user, solve.platform + "_username", None)
-    generation = getattr(user, solve.platform + "_account_version", None)
-    return bool(handle and solve.account_version == generation and (
-        (solve.source_handle and solve.source_handle.casefold() == handle.casefold())
-        or (not solve.source_handle and generation == 0)))
-
-
 def proved_date(user: User, solve: Solve):
-    return solve.first_solve_at if (current_account(user, solve) and solve.source_handle
-        and solve.first_solve_verified and solve.first_solve_at is not None) else None
+    # Compatibility name: database-first dates now qualify under the owner policy.
+    return first_solve_date(user, solve)
 
 
 def json_inputs(values):
@@ -48,7 +41,7 @@ def store_award(db, solve, kind, points, *, earned_at=None, inputs=None, key=Non
     return award
 
 
-def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
+def reconcile_user(user: User, db: Session, *, revision_windows=None, daily_solve_ids=None) -> float:
     """Create new awards once, retain existing credit and deduplicate history.
 
     Unknown old daily totals are protected whole, not reverse-engineered into a
@@ -125,13 +118,16 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
         combined = any(row.kind == "legacy" and row.input_snapshot.get("protection") == "combined_daily" for row in awards)
         first = proved_date(user, solve)
         streak = current_streak({day for instant, day in dates if instant <= first}, ist_date(first)) if first else 0
+        boundary = (revision_windows or {}).get(solve.platform)
+        live_first = bool(first and boundary is not None and first > utc_storage(boundary)
+                          and user.created_at is not None and first >= utc_storage(user.created_at))
         result = None
         has_fixed_credit = bool(bases) or any(row.kind == "legacy" for row in awards)
         if not combined and not has_fixed_credit:
             try:
                 result = calculate_points(platform=solve.platform, difficulty=solve.difficulty,
                     rating=get_contest_rating(solve.title_slug) if solve.platform == "leetcode" else solve.problem_rating,
-                    ac_rate=solve.ac_rate if solve.platform == "leetcode" else None, streak_days=streak)
+                    ac_rate=solve.ac_rate if solve.platform == "leetcode" else None, streak_days=streak if live_first else 0)
             except ValueError:
                 # Missing/invalid metadata is not evidence that the question was Medium.
                 result = None
@@ -144,6 +140,10 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
                     raise ValueError("Inconsistent historical components")
                 remember(awards, solve, "legacy", protected, inputs={"protection": "metadata_missing", "needs_reconciliation": True})
         db.flush()
+        if (solve.platform == "leetcode" and solve.id in (daily_solve_ids or set())
+                and live_first and not combined and not any(a.kind == "daily" for a in awards)):
+            remember(awards, solve, "daily", rounded(Decimal(5) * streak_multiplier(streak)),
+                earned_at=first, inputs={"base": 5, "streak_days": streak, "eligibility": "live_current_daily_database_first"})
         if solve.id in revision_solves and revision_windows and solve.platform in revision_windows:
             for proposal in revision_candidates(db, solve, live_after=revision_windows[solve.platform]):
                 award = remember(awards, solve, "revision", proposal.points, earned_at=proposal.accepted_at,
@@ -161,7 +161,7 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None) -> float:
         solve.points_earned = float(points)
         solve.scoring_version = SCORING_VERSION
         solve.is_daily = combined or bool(old and old.get("is_daily")) or any(row.kind == "daily" and row.points > 0 for row in awards)
-        solve.score_components_state = "legacy_protected" if any(row.kind == "legacy" for row in awards) else ("history_review" if history_review else ("verified" if first else "base_only"))
+        solve.score_components_state = "legacy_protected" if any(row.kind == "legacy" for row in awards) else ("database_first" if first and solve.first_solve_basis == "database_first" else ("history_review" if history_review else ("verified" if first else "base_only")))
         total += points
         if solve.platform == "leetcode":
             if solve.difficulty in {"Easy", "Medium", "Hard"}:

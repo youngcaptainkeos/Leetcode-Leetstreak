@@ -1437,3 +1437,18 @@ account deletion are protected; review groups remain isolated from real users.
 Live login, dashboard, progress access, initial sync and ranking/feed exclusion
 verified after deployment. See `STORE_REVIEW_ACCOUNT.md`; no actual credentials
 or test email were added to public source or extension packages.
+
+### 2026-11-08 — first-recorded solve policy
+
+Owner replaced the lifetime-proof requirement for LeetCode: when an accepted
+question is absent from the current linked account's stored ledger, assume a
+first solve. Subsequent acceptances use the stored question and recurring
+seven-day revision cooldown. Store the database-first basis separately from
+provider verification. Repair eligible already-synced acceptance dates for
+period counters without re-awarding their existing base points.
+
+Implemented additive date repair, preserved locked balances, replay-safe new
+question credit without aggregate-count gating, and live daily eligibility under
+the recorded-first rule. Initial imports remain historical base-only. CF proof
+and no-daily policy remain. Help and website copy are being aligned with this
+policy in the 1.0.2 package; published clients use the backend counter fix directly.

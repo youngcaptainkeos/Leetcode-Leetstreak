@@ -35,6 +35,7 @@ class PointBreakdownSchema(BaseModel):
 
 class RecentSolveSchema(BaseModel):
     first_solve_verified: bool = False
+    first_solve_basis: str = "unknown"
     first_solve_at: Optional[datetime] = None
     title_slug: str
     title: str

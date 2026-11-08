@@ -35,9 +35,9 @@ def reward_totals(solves, awards_by_solve):
 def locked_total(user, db, baseline_record, solves, awards_by_solve, estimate):
     """Lock a historical opening once, then add each new question/reward once.
 
-    LC's aggregate unique count is the budget for new questions. Revealing an
-    already-counted historical question cannot generate another base award.
-    Pending recent questions can receive credit when provider counts catch up.
+    A newly recorded LC question earns its base once under database-first-v1.
+    The initial aggregate history is credited once; named questions already in
+    the database at the policy cutover are covered without being paid again.
     CF has a named full-history ledger and needs no anonymous-question budget.
     """
     snapshot = baseline_record.payload
@@ -91,6 +91,7 @@ def locked_total(user, db, baseline_record, solves, awards_by_solve, estimate):
                 account_version=getattr(user, platform + "_account_version"), kind="locked_balance",
                 points=rounded(opening), scoring_version=POLICY,
                 input_snapshot={"policy": POLICY, "source": source, "covered": sorted(covered),
+                    "first_policy": "database-first-v1",
                     "initial_count": initial_count, "paid": {}, "reward_credit": {},
                     "included_rewards": {slug: str(value) for slug, value in included_rewards.items()}})
             db.add(credit)
@@ -98,10 +99,9 @@ def locked_total(user, db, baseline_record, solves, awards_by_solve, estimate):
         covered = set(state["covered"])
         paid = dict(state["paid"])
         reward_credit = dict(state["reward_credit"])
-        capacity = max(0, sum(getattr(user, kind + "_count") or 0 for kind in ("easy", "medium", "hard"))
-                       - state["initial_count"] - len(paid)) if platform == "leetcode" else len(rows)
-        # Prefer the latest observed acceptances if recent provider history has
-        # also revealed old questions already represented by the opening balance.
+        capacity = len(rows)
+        # Each newly recorded question is paid once; covered/paid identities
+        # persist in the locked balance across subsequent syncs.
         for solve in sorted(rows, key=lambda row: (row.solved_at, row.id), reverse=True):
             slug = solve.title_slug
             has_base = any(award.kind in {"base", "legacy"} for award in awards_by_solve[solve.id])

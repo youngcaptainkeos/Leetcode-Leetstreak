@@ -16,7 +16,7 @@ from .point_calculator import recalculate_user_points
 from .contest_ratings import refresh_zerotrac_dataset
 from .codeforces_sync import sync_codeforces_user
 from .tracking import ProviderAcceptance, capture_score_baseline, ingest_acceptances, validate_acceptances
-from .timekeeping import utc_now
+from .timekeeping import utc_now, ist_date
 from .sync_context import SyncOwnershipLost, lock_attempt, checkpoint
 
 logger = logging.getLogger("codestreak.scheduler")
@@ -76,7 +76,7 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True, *,
 
 
 async def _poll_leetcode_user(db: Session, user: User, *, attempt=None) -> int:
-    """Fetch public profile and recent ACs; recent history is never first-solve proof."""
+    """Fetch accepted questions; absent stored questions count as database-first."""
     db.refresh(user)
     handle, user_id = user.leetcode_username, user.id
     account_version, previous_sync = user.leetcode_account_version, user.leetcode_last_sync
@@ -105,6 +105,7 @@ async def _poll_leetcode_user(db: Session, user: User, *, attempt=None) -> int:
         validate_acceptances(evidence, "leetcode")
         # All slow metadata calls happen before acquiring the account write lock.
         problem_info = {slug: await fetch_problem_info(slug) for slug in {row.title_slug for row in evidence}}
+        daily_slug = await fetch_today_daily_challenge_slug() if previous_sync is not None else None
     except (LeetCodeError, httpx.HTTPError, ValueError, OverflowError, OSError) as error:
         status = error.response.status_code if isinstance(error, httpx.HTTPStatusError) else None
         logger.warning("LeetCode accepted history unavailable for user %d: %s, HTTP %s", user_id, type(error).__name__, status)
@@ -113,7 +114,7 @@ async def _poll_leetcode_user(db: Session, user: User, *, attempt=None) -> int:
     new_count = await asyncio.to_thread(_persist_leetcode_snapshot, db.get_bind(),
         user_id=user_id, handle=handle, account_version=account_version,
         previous_sync=previous_sync, sync_started=sync_started, data=data,
-        submissions=submissions, evidence=evidence, problem_info=problem_info, attempt=attempt)
+        submissions=submissions, evidence=evidence, problem_info=problem_info, attempt=attempt, daily_slug=daily_slug)
     # Sessions and ORM objects never cross threads. Refresh the caller's view
     # after the separate write transaction has committed.
     db.expire_all()
@@ -125,7 +126,7 @@ async def _poll_leetcode_user(db: Session, user: User, *, attempt=None) -> int:
 
 def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
                                 previous_sync, sync_started, data, submissions,
-                                evidence, problem_info, attempt=None):
+                                evidence, problem_info, attempt=None, daily_slug=None):
     """Synchronous database work owns a worker-thread session, not the API loop."""
     with Session(bind=bind, autoflush=False) as db:
         user = db.query(User).filter_by(id=user_id).populate_existing().with_for_update().first()
@@ -162,8 +163,9 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
             row.coverage = "provider_partial"
             row.observed_at = sync_started
 
-        # 3. Dedup recent AC submissions into Solves ledger & update daily count from actual AC solves
+        # Dedup accepted questions; ingestion records one first date per question.
         new_count = 0
+        live_daily_solves = []
 
         existing_solves = {
             r[0] for r in db.query(Solve.title_slug).filter(Solve.user_id == user.id, Solve.platform == "leetcode").all()
@@ -178,7 +180,7 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
                 existing_solves.add(title_slug)
                 prob_info = problem_info[title_slug]
 
-                is_daily_solve = False  # Recent ACs cannot prove a live first solve.
+                is_daily_solve = False  # Daily rewards require a separate live check.
 
                 new_solve = Solve(
                     user_id=user.id,
@@ -192,13 +194,18 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
                     is_daily=is_daily_solve,
                 )
                 db.add(new_solve)
+                if (daily_slug == title_slug and previous_sync is not None
+                        and solved_at > previous_sync and user.created_at is not None
+                        and solved_at >= user.created_at and ist_date(solved_at) == ist_date(sync_started)):
+                    live_daily_solves.append(new_solve)
                 new_count += 1
 
         db.flush()
         ingest_acceptances(db, user_id, platform="leetcode", account_version=account_version,
                            expected_handle=handle, submissions=evidence)
         user.leetcode_last_sync = sync_started
-        recalculate_user_points(user, db, revision_windows={"leetcode": previous_sync})
+        recalculate_user_points(user, db, revision_windows={"leetcode": previous_sync},
+                               daily_solve_ids={solve.id for solve in live_daily_solves})
         checkpoint(job, new_count)
         db.commit()
         logger.info("LeetCode saved for user %d: %d new question entries", user_id, new_count)

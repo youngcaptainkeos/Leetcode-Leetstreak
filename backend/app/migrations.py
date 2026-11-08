@@ -89,7 +89,7 @@ def run_migrations(engine):
         if not connection.execute(versions.select().where(versions.c.version == bootstrap_version)).first():
             Base.metadata.create_all(connection)
             connection.execute(versions.insert().values(version=bootstrap_version))
-        for step in (migrate_core, migrate_platforms, migrate_auth, migrate_display_preference, migrate_tracking, migrate_credits, migrate_calendar, migrate_credit_privacy, migrate_progress, migrate_sync_jobs, migrate_sync_recovery, migrate_review_accounts):
+        for step in (migrate_core, migrate_platforms, migrate_auth, migrate_display_preference, migrate_tracking, migrate_credits, migrate_calendar, migrate_credit_privacy, migrate_progress, migrate_sync_jobs, migrate_sync_recovery, migrate_review_accounts, migrate_database_first):
             step(connection)
         # A recorded version is not permission to serve an incomplete schema.
         inspector = inspect(connection)
@@ -98,6 +98,52 @@ def run_migrations(engine):
             missing = set(table.columns.keys()) - existing
             if missing:
                 raise RuntimeError(f"Incomplete schema for {table.name}: {', '.join(sorted(missing))}")
+
+
+def migrate_database_first(engine):
+    """Repair recorded LC dates without changing awards or account balances."""
+    with migration_connection(engine) as connection:
+        version = "20261108-database-first-v1"
+        if connection.execute(versions.select().where(versions.c.version == version)).first():
+            return
+        existing = {column["name"] for column in inspect(connection).get_columns("solves")}
+        if "first_solve_basis" not in existing:
+            connection.execute(text("ALTER TABLE solves ADD COLUMN first_solve_basis VARCHAR(30) NOT NULL DEFAULT 'unknown'"))
+        connection.execute(text("UPDATE solves SET first_solve_basis = 'provider_full' WHERE first_solve_verified = TRUE"))
+        connection.execute(text("""
+            WITH first_events AS (
+                SELECT s.id, MIN(a.accepted_at) AS accepted_at
+                FROM solves s JOIN users u ON u.id = s.user_id
+                JOIN accepted_submissions a ON a.solve_id = s.id
+                    AND a.user_id = s.user_id AND a.platform = s.platform
+                    AND a.account_version = s.account_version AND a.title_slug = s.title_slug
+                WHERE s.platform = 'leetcode' AND s.first_solve_verified = FALSE
+                    AND s.account_version = u.leetcode_account_version
+                    AND (LOWER(s.source_handle) = LOWER(u.leetcode_username)
+                        OR (s.source_handle IS NULL AND s.account_version = 0))
+                    AND a.accepted_at <= CURRENT_TIMESTAMP AND s.solved_at <= CURRENT_TIMESTAMP
+                GROUP BY s.id
+            )
+            UPDATE solves SET first_solve_basis = 'database_first',
+                first_solve_at = CASE
+                    WHEN solved_at < (SELECT accepted_at FROM first_events WHERE first_events.id = solves.id)
+                    THEN solved_at ELSE (SELECT accepted_at FROM first_events WHERE first_events.id = solves.id) END,
+                source_handle = COALESCE(source_handle, (SELECT leetcode_username FROM users WHERE users.id = solves.user_id))
+            WHERE id IN (SELECT id FROM first_events) AND first_solve_basis = 'unknown'
+        """))
+        # Every question already present at policy cutover keeps its prior
+        # credit. Only later inserts can earn a new database-first base award.
+        from .models import AccountCredit, Solve
+        for credit in connection.execute(AccountCredit.__table__.select().where(
+                AccountCredit.kind == "locked_balance", AccountCredit.platform == "leetcode")).mappings():
+            state = dict(credit["input_snapshot"])
+            present = connection.execute(Solve.__table__.select().with_only_columns(Solve.title_slug).where(
+                Solve.user_id == credit["user_id"], Solve.platform == "leetcode",
+                Solve.account_version == credit["account_version"])).scalars()
+            state["covered"] = sorted(set(state["covered"]) | set(present))
+            state["first_policy"] = "database-first-v1"
+            connection.execute(AccountCredit.__table__.update().where(AccountCredit.id == credit["id"]).values(input_snapshot=state))
+        connection.execute(versions.insert().values(version=version))
 
 
 def migrate_review_accounts(engine):

@@ -1084,6 +1084,7 @@ async def get_user_recent_solves(user_id: int, limit: int = Query(10, ge=1, le=1
                 problem_rating=s.problem_rating, scoring_version=s.scoring_version,
                 points_earned=points_val,
                 first_solve_verified=s.first_solve_verified,
+                first_solve_basis=s.first_solve_basis,
                 first_solve_at=s.first_solve_at.replace(tzinfo=timezone.utc) if s.first_solve_at else None,
                 breakdown=PointBreakdownSchema(**breakdown_data),
             )

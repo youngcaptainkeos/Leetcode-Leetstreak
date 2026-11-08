@@ -78,6 +78,7 @@ class Solve(Base):
     account_version = Column(Integer, nullable=False, default=0, server_default="0")
     first_solve_at = Column(DateTime, nullable=True, index=True)
     first_solve_verified = Column(Boolean, nullable=False, default=False, server_default="false")
+    first_solve_basis = Column(String(30), nullable=False, default="unknown", server_default="unknown")
     score_components_state = Column(String(30), nullable=False, default="legacy", server_default="legacy")
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     platform = Column(String(20), nullable=False, default="leetcode", server_default="leetcode", index=True)

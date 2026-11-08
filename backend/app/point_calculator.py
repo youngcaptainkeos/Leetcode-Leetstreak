@@ -6,10 +6,10 @@ Reconciliation locks existing credit and adds new components in one transaction.
 from .reconciliation import reconcile_user
 
 
-def recalculate_user_points(user, db, today_daily_slug=None, *, revision_windows=None):
+def recalculate_user_points(user, db, today_daily_slug=None, *, revision_windows=None, daily_solve_ids=None):
     # Preserve the old call signature during the pre-launch migration. The slug
-    # deliberately cannot mint a bonus. Future live awards require first-solve proof.
-    return reconcile_user(user, db, revision_windows=revision_windows)
+    # alone cannot mint a bonus. The server sync supplies new live daily IDs.
+    return reconcile_user(user, db, revision_windows=revision_windows, daily_solve_ids=daily_solve_ids)
 
 
 async def recalculate_all_users_points(db):

@@ -10,6 +10,7 @@ from .models import AcceptedSubmission, AccountCredit, ProviderCalendar, DailyAc
 from .timekeeping import utc_storage, utc_now, ist_date, revision_due
 from .scoring import revision_points
 from .streak import current_streak
+from .first_solves import first_solve_date
 
 
 def safe_number(value):
@@ -156,8 +157,8 @@ def ingest_acceptances(db: Session, user_id: int, *, platform: str,
                        submissions: list[ProviderAcceptance], complete_history: bool = False):
     """Store a batch atomically in the caller's transaction; never award points.
 
-    Only a completed Codeforces scan can establish a first accepted timestamp
-    here. LeetCode recent ACs prove acceptance, not historical first solves.
+    LeetCode's earliest stored acceptance qualifies as a database-first solve.
+    Its separate basis preserves the distinction from full provider history.
     Existing unique-question rows are linked, never duplicated by this writer.
     """
     validate_acceptances(submissions, platform)
@@ -192,6 +193,20 @@ def ingest_acceptances(db: Session, user_id: int, *, platform: str,
                 event.solve_id = solve.id
             earliest.setdefault(row.title_slug, event)
             events.append(event)
+        db.flush()  # Persist solve_id links before querying earliest acceptances.
+        if platform == "leetcode":
+            for slug, event in earliest.items():
+                solve = solves.get(slug)
+                if solve is None or solve.first_solve_verified or solve.first_solve_basis == "database_first":
+                    continue
+                # Persist the earliest stored acceptance once. An already-known
+                # question stays one solve; later ACs remain revision candidates.
+                first = db.query(AcceptedSubmission).filter_by(user_id=user_id,
+                    platform=platform, account_version=account_version, solve_id=solve.id).order_by(
+                    AcceptedSubmission.accepted_at, AcceptedSubmission.id).first()
+                solve.first_solve_at = min(utc_storage(solve.solved_at), first.accepted_at)
+                solve.source_handle = solve.source_handle or expected_handle
+                solve.first_solve_basis = "database_first"
         if complete_history:
             for slug, first in earliest.items():
                 # A later full scan can expose an earlier acceptance. Do not leave
@@ -205,6 +220,7 @@ def ingest_acceptances(db: Session, user_id: int, *, platform: str,
                 if solve:
                     solve.first_solve_at = first.accepted_at
                     solve.first_solve_verified = True
+                    solve.first_solve_basis = "provider_full"
                     if solve.score_components_state == "history_review":
                         solve.score_components_state = "base_only"
         db.flush()
@@ -226,9 +242,11 @@ def revision_candidates(db: Session, solve: Solve, *, live_after: datetime | Non
     provider request. No boundary means initial import: no retrospective reward.
     R3 must persist proposals under the account lock with unique award keys.
     """
-    if live_after is None or not solve.first_solve_verified or solve.first_solve_at is None:
+    if live_after is None or solve.first_solve_at is None:
         return []
     user = db.query(User).filter_by(id=solve.user_id).one()
+    if first_solve_date(user, solve) is None:
+        return []
     if (solve.account_version != getattr(user, solve.platform + "_account_version")
             or not solve.source_handle
             or solve.source_handle.casefold() != (getattr(user, solve.platform + "_username") or "").casefold()):
@@ -243,10 +261,9 @@ def revision_candidates(db: Session, solve: Solve, *, live_after: datetime | Non
         AcceptedSubmission.account_version == solve.account_version, AcceptedSubmission.solve_id == solve.id,
         AcceptedSubmission.accepted_at > utc_storage(live_after)).order_by(
             AcceptedSubmission.accepted_at, AcceptedSubmission.id).all()
-    first_solves = db.query(Solve).filter_by(user_id=solve.user_id, first_solve_verified=True).all()
+    first_solves = db.query(Solve).filter_by(user_id=solve.user_id).filter(Solve.first_solve_at.isnot(None)).all()
     verified_dates = [(row.first_solve_at, ist_date(row.first_solve_at)) for row in first_solves
-        if row.first_solve_at is not None and row.account_version == getattr(user, row.platform + "_account_version")
-        and row.source_handle and row.source_handle.casefold() == (getattr(user, row.platform + "_username") or "").casefold()]
+        if first_solve_date(user, row) is not None]
     result = []
     for event in events:
         if event.id in rewarded_events or event.first_solve_verified or not revision_due(event.accepted_at, anchor):
