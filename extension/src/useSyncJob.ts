@@ -33,7 +33,7 @@ export function useSyncJob(userId: number) {
           setFinished(job);
           await setStored(seenKey, seen).catch(() => undefined);
         }
-        if (pending && alive) timer = setTimeout(poll, 5000);
+        if (pending && alive) timer = setTimeout(poll, 2000);
       } catch (cause) {
         if (!alive) return;
         // A failed optional status read is not a failed sync. Cold starts must

@@ -20,13 +20,9 @@ import { getStored, setStored, clearStored } from "./storage";
 import { DailyReminder, ProgressPanel, usePractice } from "./progress/Progress";
 import { PRACTICE_REFRESH } from "./progress/data";
 import { StartupTab, readStartupTab, resolveStartupTab, startupTabKey } from "./progress/preferences";
+import { BoardTab, BoardSort, boardMemoryKey, peekBoard, readCachedBoard, saveBoard, loadBoard, invalidateBoards } from "./leaderboardCache";
 
 type View = "loading" | "onboarding" | "dashboard";
-type BoardTab = "global" | "friends" | number; // "global", "friends", or groupId
-type BoardSort = "points" | "streak";
-const boardMemoryKey = (tab: BoardTab, sort: BoardSort) => `${tab}:${sort}`;
-const boardStorageKey = (userId: number, tab: BoardTab, sort: BoardSort) =>
-  `codestreak_board_v2_${userId}_${boardMemoryKey(tab, sort)}`;
 
 export default function App() {
   const [view, setView] = useState<View>("loading");
@@ -683,6 +679,7 @@ function Dashboard({
 
   const changeTab = (tab: BoardTab) => {
     if (hydratedUser !== userId) return;
+    if (tab === activeBoardRef.current.tab) return;
     const sort = activeBoardRef.current.sort;
     const tabKey = boardMemoryKey(tab, sort);
     activeBoardRef.current = { userId, tab, sort };
@@ -691,8 +688,9 @@ function Dashboard({
     void setStored(`codestreak_active_tab_${userId}`, String(tab));
 
     // ⚡ INSTANT SWAP (0ms): Clear old board immediately if not cached so old users vanish at once!
-    if (tabBoards[tabKey]) {
-      setBoard(tabBoards[tabKey]);
+    const cached = peekBoard(userId, tab, sort) ?? tabBoards[tabKey];
+    if (cached) {
+      setBoard(cached);
       setBoardLoading(false);
     } else {
       setBoard(null);
@@ -706,7 +704,7 @@ function Dashboard({
     activeBoardRef.current = { userId, tab: selectedTab, sort };
     boardRequestRef.current += 1;
     setSortBy(sort);
-    const cached = tabBoards[boardMemoryKey(selectedTab, sort)];
+    const cached = peekBoard(userId, selectedTab, sort) ?? tabBoards[boardMemoryKey(selectedTab, sort)];
     setBoard(cached ?? null);
     setBoardLoading(!cached);
   }
@@ -746,7 +744,8 @@ function Dashboard({
       if (tab === "global" && cachedDashObj && !showGlobalLeaderboard(cachedDashObj)) tab = "friends";
       // Old caches may contain Global results mislabeled as a group. Read only
       // the new account/tab/sort cache, with no generic-board fallback.
-      const cachedBoard = await getStored(boardStorageKey(userId, tab, "points"));
+      const cachedBoard = await readCachedBoard(userId, tab, "points");
+      const savedGroups = await getStored(`codestreak_cached_groups_${userId}`).catch(() => null);
       if (cancelled || boardRequestRef.current !== request) return;
       activeBoardRef.current = { userId, tab, sort: "points" };
       setSelectedTab(tab);
@@ -755,9 +754,17 @@ function Dashboard({
       setBoard(null);
       setTabBoards({});
       setBoardLoading(true);
+      if (savedGroups) {
+        try {
+          const restoredGroups: GroupResponse[] = JSON.parse(savedGroups);
+          if (Array.isArray(restoredGroups) && restoredGroups.every(group => Number.isSafeInteger(group.id) && Array.isArray(group.members))) {
+            setGroups(restoredGroups);
+          }
+        } catch { /* Fresh membership data will replace an invalid cache. */ }
+      }
       if (cachedBoard && cachedDashObj) {
         try {
-          const parsed: LeaderboardResponse = JSON.parse(cachedBoard);
+          const parsed = cachedBoard.board;
           if (Array.isArray(parsed.entries)) {
             setBoard(parsed);
             setTabBoards({ [boardMemoryKey(tab, "points")]: parsed });
@@ -916,6 +923,7 @@ function Dashboard({
     setError(null);
     try {
       const res = await api.updateLeetcodeUsername(userId, newLeetcodeUsername.trim());
+      invalidateBoards(userId);
       setSettingsMsg(`Updated username to @${res.leetcode_username}!`);
       await loadData(selectedTab);
       setTimeout(() => {
@@ -935,6 +943,7 @@ function Dashboard({
     setUpdatingCodeforces(true); setSettingsMsg(null);
     try {
       const result = await api.updateCodeforcesUsername(userId, newCodeforcesUsername.trim());
+      invalidateBoards(userId);
       setSettingsMsg(`Connected @${result.codeforces_username}. Public solves and points are syncing automatically.`);
       setNewCodeforcesUsername("");
       await loadData(selectedTab);
@@ -973,7 +982,7 @@ function Dashboard({
     const selected = activeGroup.members.find(member => String(member.id) === transferTarget);
     if (!selected || !window.confirm(`Transfer ownership to ${selected.name}? They will control group management.`)) return;
     setTransferBusy(true);
-    try { await api.transferGroup(activeGroup.id, selected.id); setTransferTarget(""); await loadData(selectedTab); }
+    try { await api.transferGroup(activeGroup.id, selected.id); invalidateBoards(userId); setTransferTarget(""); await loadData(selectedTab); }
     catch (error) { setError(error instanceof Error ? error.message : "Could not transfer ownership."); }
     finally { setTransferBusy(false); }
   }
@@ -1026,7 +1035,8 @@ function Dashboard({
 
   async function loadData(
     tab: BoardTab = selectedTab,
-    sortMode: "points" | "streak" = sortBy
+    sortMode: "points" | "streak" = sortBy,
+    forceBoard = true
   ) {
     if (hydratedUser !== userId) return;
     if (activeBoardRef.current.tab !== tab || activeBoardRef.current.sort !== sortMode) return;
@@ -1034,12 +1044,7 @@ function Dashboard({
     const dataRequest = ++dataRequestRef.current;
     try {
       // 🚀 Parallelize all independent API calls to eliminate sequential network waterfalls!
-      const boardPromise =
-        tab === "global"
-          ? api.leaderboard(userId, sortMode)
-          : tab === "friends"
-          ? api.friendsLeaderboard(userId, sortMode)
-          : api.groupLeaderboard(tab, userId, sortMode);
+      const boardPromise = loadBoard(userId, tab, sortMode, forceBoard);
 
       const [dashRes, myGroupsRes, boardRes] = await Promise.all([
         api.dashboard(userId).catch((err) => {
@@ -1065,7 +1070,10 @@ function Dashboard({
         changeTab("friends");
         return;
       }
-      if (myGroupsRes?.groups) setGroups(myGroupsRes.groups);
+      if (myGroupsRes?.groups) {
+        setGroups(myGroupsRes.groups);
+        void setStored(`codestreak_cached_groups_${userId}`, JSON.stringify(myGroupsRes.groups)).catch(() => undefined);
+      }
       const activeTab = activeBoardRef.current.tab;
       if (typeof activeTab === "number" && myGroupsRes && !myGroupsRes.groups.some(group => group.id === activeTab)) {
         changeTab("friends");
@@ -1076,7 +1084,6 @@ function Dashboard({
         if (boardRes) {
           setBoard(boardRes);
           setTabBoards((prev) => ({ ...prev, [boardMemoryKey(tab, sortMode)]: boardRes }));
-          void setStored(boardStorageKey(userId, tab, sortMode), JSON.stringify(boardRes));
         }
         setBoardLoading(false);
         setError(boardRes ? null : "Could not load the selected leaderboard. Please try again.");
@@ -1131,6 +1138,10 @@ function Dashboard({
     // 2. Sync with server in background
     try {
       const res = await api.toggleKudos(toUserId, userId);
+      invalidateBoards(userId);
+      const cached = peekBoard(userId, selectedTab, sortBy) ?? board;
+      if (cached) saveBoard(userId, selectedTab, sortBy, { ...cached, entries: cached.entries.map(entry =>
+        entry.id === toUserId ? { ...entry, kudos_count: res.kudos_count, has_kudosed: res.has_kudosed } : entry) });
       setBoard((prev) => {
         if (!prev) return prev;
         return {
@@ -1192,10 +1203,10 @@ function Dashboard({
 
     setBoard(newBoard);
     setTabBoards((prev) => ({ ...prev, [activeTabKey]: newBoard }));
-    void setStored(boardStorageKey(userId, requestedTab, requestedSort), JSON.stringify(newBoard));
 
     try {
       await api.kudosAll(userId, targetUserIds);
+      invalidateBoards(userId);
       setSyncMsg(`Gave kudos to ${targetUserIds.length} member${targetUserIds.length === 1 ? "" : "s"}! 👏`);
       setTimeout(() => setSyncMsg(null), 2500);
 
@@ -1210,7 +1221,7 @@ function Dashboard({
       if (freshBoard && isCurrentBoard(requestedTab, requestedSort, request)) {
         setBoard(freshBoard);
         setTabBoards((prev) => ({ ...prev, [activeTabKey]: freshBoard }));
-        void setStored(boardStorageKey(userId, requestedTab, requestedSort), JSON.stringify(freshBoard));
+        saveBoard(userId, requestedTab, requestedSort, freshBoard);
       }
     } catch (err) {
       console.error("Kudos All failed:", err);
@@ -1229,9 +1240,9 @@ function Dashboard({
     const request = ++boardRequestRef.current;
     const tabKey = boardMemoryKey(tab, sortMode);
 
-    // If cached in memory, use it instantly (0ms delay)
-    if (tabBoards[tabKey]) {
-      setBoard(tabBoards[tabKey]);
+    let cached: LeaderboardResponse | undefined = peekBoard(userId, tab, sortMode) ?? tabBoards[tabKey];
+    if (cached) {
+      setBoard(cached);
       setBoardLoading(false);
     } else {
       // Clear board immediately so old users vanish on click
@@ -1240,23 +1251,22 @@ function Dashboard({
     }
 
     try {
-      const boardPromise =
-        tab === "global"
-          ? api.leaderboard(userId, sortMode)
-          : tab === "friends"
-          ? api.friendsLeaderboard(userId, sortMode)
-          : api.groupLeaderboard(tab, userId, sortMode);
-
-      const boardRes = await boardPromise;
+      if (!cached) {
+        cached = (await readCachedBoard(userId, tab, sortMode))?.board;
+        if (cached && isCurrentBoard(tab, sortMode, request)) {
+          setBoard(cached);
+          setBoardLoading(false);
+        }
+      }
+      const boardRes = await loadBoard(userId, tab, sortMode);
       if (boardRes && isCurrentBoard(tab, sortMode, request)) {
         setBoard(boardRes);
         setError(null);
         setTabBoards((prev) => ({ ...prev, [tabKey]: boardRes }));
-        void setStored(boardStorageKey(userId, tab, sortMode), JSON.stringify(boardRes));
       }
     } catch (err) {
       console.error("Leaderboard fetch error:", err);
-      if (isCurrentBoard(tab, sortMode, request)) {
+      if (!cached && isCurrentBoard(tab, sortMode, request)) {
         setError(err instanceof Error ? err.message : "Could not load the selected leaderboard.");
       }
     } finally {
@@ -1270,7 +1280,7 @@ function Dashboard({
     if (hydratedUser !== userId) return;
     if (initialLoadUserRef.current !== userId) {
       initialLoadUserRef.current = userId;
-      loadData(selectedTab, sortBy);
+      loadData(selectedTab, sortBy, false);
     } else {
       fetchLeaderboardOnly(selectedTab, sortBy);
     }
@@ -1291,6 +1301,7 @@ function Dashboard({
       return;
     }
     setError(null);
+    invalidateBoards(userId);
     setSyncMsg(job.message || (job.new_solves > 0 ? `Synced! ${job.new_solves} new solve(s) added.` : "Your account is up to date."));
     void (async () => { await loadData(); })();
     const timer = setTimeout(() => setSyncMsg(null), 5000);
@@ -1314,6 +1325,7 @@ function Dashboard({
     setGroupActionBusy(true);
     try {
       const group = await api.createGroup(userId, newGroupName.trim());
+      invalidateBoards(userId);
       setNewGroupName("");
       setShowCreateGroup(false);
       changeTab(group.id);
@@ -1331,6 +1343,7 @@ function Dashboard({
     setGroupActionBusy(true);
     try {
       const group = await api.joinGroup(userId, joinCode.trim());
+      invalidateBoards(userId);
       setJoinCode("");
       setShowJoinGroup(false);
       changeTab(group.id);
@@ -1347,8 +1360,11 @@ function Dashboard({
     setDeletingGroup(true);
     try {
       await api.deleteGroup(activeGroup.id, userId);
+      invalidateBoards(userId);
       const deletedId = activeGroup.id;
-      setGroups((prev) => prev.filter((g) => g.id !== deletedId));
+      const remainingGroups = groups.filter(group => group.id !== deletedId);
+      setGroups(remainingGroups);
+      void setStored(`codestreak_cached_groups_${userId}`, JSON.stringify(remainingGroups)).catch(() => undefined);
       setShowDeleteGroupModal(false);
       changeTab("global");
       setSyncMsg("Group deleted successfully.");
@@ -1369,6 +1385,7 @@ function Dashboard({
     setRemovingMember(true);
     try {
       await api.removeMember(activeGroup.id, memberToRemove.id, userId);
+      invalidateBoards(userId);
       const targetId = memberToRemove.id;
       const targetName = memberToRemove.name;
       setBoard((prev) => {
@@ -1381,6 +1398,7 @@ function Dashboard({
       });
       setSyncMsg(`Removed ${targetName} from group.`);
       setMemberToRemove(null);
+      void loadData(activeBoardRef.current.tab, activeBoardRef.current.sort);
       setTimeout(() => setSyncMsg(null), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not remove member.");

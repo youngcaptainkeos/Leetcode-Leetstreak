@@ -1515,3 +1515,28 @@ Prepared extension 1.0.3; permissions and whole-number point formatting retained
 Build, TypeScript and package inspection passed. Automated tests and browser
 close/reopen checks were not run. This frontend fix requires updating/reloading
 the installed extension; backend deployment alone cannot replace popup code.
+
+### 2026-11-09 — instant cached leaderboard navigation
+
+Implemented a persistent, account/tab/sort-scoped leaderboard cache with a
+60-second freshness window. Cached rows display before network refreshes; fresh
+views reuse cache without another leaderboard request. Requests for the same
+view are coalesced. Results from tabs left behind still populate their own cache,
+while the existing active-view guards prevent cross-group display. Legacy v2
+scoped cache can be shown stale; generic/unscoped caches remain excluded. Cached
+group navigation metadata is restored while fresh membership data loads.
+
+Sync, coding-account and social/membership actions invalidate cache freshness.
+A persisted account epoch prevents a pre-invalidation response from overwriting
+newer cached data, including after the popup closes. Cached rows remain visible
+while replacements load. Active Sync status checks run every two seconds instead
+of five. Popup closure still leaves the server job running.
+
+The ingestion writer now batches new acceptance inserts under the same existing
+account lock/savepoint and retrieves candidate LC first dates with one grouped
+query. Full input/conflict checks and unique identities remain; score formulas,
+reward cooldowns and locked-balance policy are unchanged.
+
+Prepared 1.0.4 in the original workspace's extension/dist, preserving untracked
+store screenshots. Build/typecheck and archive checks are recorded separately;
+no automated tests or browser navigation checks were run for this follow-up.
