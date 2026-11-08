@@ -48,15 +48,17 @@ class SyncIngestionTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(self.solve.first_solve_verified)
         self.assertEqual(self.db.query(ScoreSnapshot).one().payload["points"], 42.5)
 
-    async def test_incrementally_discovered_problem_does_not_get_a_proved_first_solve_date(self):
+    async def test_incrementally_discovered_problem_gets_full_history_proof(self):
         self.user.codeforces_last_sync = utc_now() - timedelta(minutes=11)
         self.user.codeforces_last_full_sync = utc_now()
         self.db.commit()
-        with patch.object(codeforces_sync, "fetch_accepted_history", new=AsyncMock(return_value=cf_history("cf-100-b"))), patch.object(codeforces_sync, "recalculate_user_points"):
+        with patch.object(codeforces_sync, "fetch_accepted_history", new=AsyncMock(return_value=cf_history("cf-100-b"))) as fetch, patch.object(codeforces_sync, "recalculate_user_points"):
             self.assertEqual(await codeforces_sync.sync_codeforces_user(self.db, self.user), 1)
         new = self.db.query(Solve).filter_by(title_slug="cf-100-b").one()
-        self.assertIsNone(new.first_solve_at)
-        self.assertFalse(new.first_solve_verified)
+        self.assertEqual(new.first_solve_at, datetime(2026, 1, 1))
+        self.assertTrue(new.first_solve_verified)
+        self.assertEqual(fetch.await_count, 2)
+        self.assertIsNone(fetch.await_args_list[-1].args[1])
 
     async def test_codeforces_stale_same_handle_generation_discards_success_and_error(self):
         async def replace_then_return(*args):

@@ -38,9 +38,30 @@ async def sync_codeforces_user(db: Session, user: User, *, force=False, report=N
             return 0
         full = not user.codeforces_last_full_sync or now - user.codeforces_last_full_sync > timedelta(days=7)
         since = None if full else int((user.codeforces_last_sync.replace(tzinfo=timezone.utc) - timedelta(days=2)).timestamp())
+        proof_unavailable = False
         db.commit()  # Do not hold a database connection during remote requests.
         try:
             history = await fetch_accepted_history(handle, since)
+            if not full:
+                proved = {row.title_slug: row.first_solve_at for row in db.query(Solve).filter_by(
+                    user_id=user_id, platform="codeforces", account_version=account_version,
+                    first_solve_verified=True).all() if row.first_solve_at is not None
+                    and row.source_handle and row.source_handle.casefold() == handle.casefold()}
+                # A recent window cannot establish the earliest AC for a newly
+                # discovered problem. Fetch complete public history instead of
+                # guessing, or delaying its streak eligibility for seven days.
+                needs_full = any(row["slug"] not in proved or row["timestamp"] <
+                    proved[row["slug"]].replace(tzinfo=timezone.utc).timestamp() for row in history)
+                db.commit()
+                if needs_full:
+                    try:
+                        complete = await fetch_accepted_history(handle, None)
+                    except CodeforcesError:
+                        # Keep valid recent solves/unique points available. A
+                        # failed proof refresh must not invent first-solve dates.
+                        proof_unavailable = True
+                    else:
+                        history, full, since = complete, True, None
         except CodeforcesError as error:
             if report is not None:
                 report.codeforces = "unavailable"
@@ -54,15 +75,16 @@ async def sync_codeforces_user(db: Session, user: User, *, force=False, report=N
             return 0
         added = await asyncio.to_thread(_persist_codeforces_history, db.get_bind(),
             user_id=user_id, handle=handle, account_version=account_version,
-            previous_sync=previous_sync, now=now, full=full, since=since, history=history)
+            previous_sync=previous_sync, now=now, full=full, since=since, history=history,
+            proof_unavailable=proof_unavailable)
         db.expire_all()
         if report is not None:
-            report.codeforces = "synced"
+            report.codeforces = "incomplete" if proof_unavailable else "synced"
         return added
 
 
 def _persist_codeforces_history(bind, *, user_id, handle, account_version,
-                               previous_sync, now, full, since, history):
+                               previous_sync, now, full, since, history, proof_unavailable=False):
     """Keep synchronous history/score persistence off the HTTP event loop."""
     with Session(bind=bind, autoflush=False) as db:
         user = db.query(User).filter_by(id=user_id).populate_existing().with_for_update().first()
@@ -122,7 +144,8 @@ def _persist_codeforces_history(bind, *, user_id, handle, account_version,
         user.codeforces_last_sync = now
         if full:
             user.codeforces_last_full_sync = now
-        user.codeforces_sync_error = None
+        user.codeforces_sync_error = ("Solves synced; some first-solve dates await full-history verification."
+                                     if proof_unavailable else None)
         recalculate_user_points(user, db, revision_windows={"codeforces": previous_sync})
         db.commit()
         logger.info("Codeforces saved for user %d: %d new question entries", user_id, added)
