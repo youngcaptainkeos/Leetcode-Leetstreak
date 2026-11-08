@@ -1,6 +1,6 @@
 """Isolated sync regressions with synthetic accounts and mocked providers."""
 import unittest
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone, date
 from unittest.mock import AsyncMock, patch
 
 import test_ingestion as fixtures
@@ -9,7 +9,8 @@ from app.leetcode_client import LeetCodeError
 from app.sync_report import SyncReport
 from app import codeforces_sync
 from app.codeforces_client import CodeforcesError
-from app.models import Solve
+from app.models import Solve, PointAward
+from app.platforms import daily_counts
 from app.timekeeping import utc_now
 from test_sync_ingestion import cf_history
 
@@ -70,6 +71,7 @@ class CodeforcesProofTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(pending.first_solve_at)
         self.assertEqual(self.user.points, 55.3)
         self.assertIn("await full-history verification", self.user.codeforces_sync_error)
+        self.assertEqual(self.db.query(PointAward).filter_by(kind="revision").count(), 0)
 
     async def test_manual_force_bypasses_recent_sync_skip(self):
         self.user.codeforces_last_sync = utc_now()
@@ -82,3 +84,21 @@ class CodeforcesProofTests(unittest.IsolatedAsyncioTestCase):
             fetch.assert_awaited_once()
         self.db.refresh(self.solve)
         self.assertTrue(self.solve.first_solve_verified)
+
+    async def test_verified_revision_adds_once_without_repricing_existing_credit(self):
+        first = cf_history()
+        first[0]["accepted_submissions"] = first[0]["accepted_submissions"][:1]
+        with patch.object(codeforces_sync, "fetch_accepted_history", new=AsyncMock(return_value=first)), \
+                patch.object(codeforces_sync, "datetime", wraps=datetime) as clock:
+            clock.now.return_value = datetime(2026, 1, 2, tzinfo=timezone.utc)
+            await codeforces_sync.sync_codeforces_user(self.db, self.user)
+        self.assertEqual(self.user.points, 42.5)
+        with patch.object(codeforces_sync, "fetch_accepted_history", new=AsyncMock(return_value=cf_history())), \
+                patch.object(codeforces_sync, "datetime", wraps=datetime) as clock:
+            clock.now.return_value = datetime(2026, 1, 9, tzinfo=timezone.utc)
+            await codeforces_sync.sync_codeforces_user(self.db, self.user)
+            await codeforces_sync.sync_codeforces_user(self.db, self.user, force=True)
+        self.assertEqual(self.user.points, 44.5)
+        self.assertEqual(self.db.query(PointAward).filter_by(kind="revision").count(), 1)
+        self.assertEqual(self.db.query(PointAward).filter_by(kind="daily").count(), 0)
+        self.assertEqual(dict(daily_counts(self.db, [1])[1]), {date(2026, 1, 1): 1})

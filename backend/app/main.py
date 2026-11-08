@@ -84,6 +84,8 @@ async def on_startup():
     app.state.schema_ready = False
     # Exceptions must propagate: never serve a partially migrated schema.
     await asyncio.to_thread(run_migrations, engine)
+    from .sync_jobs import resume_sync_jobs
+    resume_sync_jobs()
     _scheduler = start_scheduler()
     app.state.schema_ready = True
 
@@ -92,6 +94,8 @@ async def on_startup():
 async def on_shutdown():
     global _scheduler
     app.state.schema_ready = False
+    from .sync_jobs import stop_sync_jobs
+    await stop_sync_jobs()
     if _scheduler is not None:
         _scheduler.shutdown(wait=False)
         _scheduler = None
@@ -325,18 +329,11 @@ def revoke_sessions(user_id: int, db: Session = Depends(get_db), actor: User = D
 
 
 @app.post("/api/users/{user_id}/sync")
-async def sync_user(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
+async def sync_user(user_id: int, background_tasks: BackgroundTasks,
+                    db: Session = Depends(get_db), actor: User = Depends(current_user)):
+    from .sync_jobs import legacy_sync
     require_self(actor, user_id)
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    try:
-        from .sync_report import SyncReport
-        report = SyncReport()
-        solves_added = await poll_user(db, user, raise_on_unavailable=True, report=report, force_codeforces=True)
-    except LeetCodeError as error:
-        raise HTTPException(status_code=503, detail=str(error), headers={"Retry-After": "60"}) from None
-    return {"status": "synced", "user_id": user_id, "new_solves": solves_added, "message": report.message}
+    return await legacy_sync(user_id, background_tasks, db, actor)
 
 
 @app.put("/api/users/{user_id}/leetcode-username")

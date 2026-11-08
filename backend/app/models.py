@@ -271,6 +271,8 @@ class UserSyncJob(Base):
     started_at = Column(DateTime, nullable=True)
     finished_at = Column(DateTime, nullable=True)
     lease_until = Column(DateTime, nullable=True)
+    worker_token = Column(String(36), nullable=True)
+    attempts = Column(Integer, nullable=False, default=0, server_default="0")
     leetcode_account_version = Column(Integer, nullable=False)
     codeforces_account_version = Column(Integer, nullable=False)
     session_version = Column(Integer, nullable=False)

@@ -89,7 +89,7 @@ def run_migrations(engine):
         if not connection.execute(versions.select().where(versions.c.version == bootstrap_version)).first():
             Base.metadata.create_all(connection)
             connection.execute(versions.insert().values(version=bootstrap_version))
-        for step in (migrate_core, migrate_platforms, migrate_auth, migrate_display_preference, migrate_tracking, migrate_credits, migrate_calendar, migrate_credit_privacy, migrate_progress, migrate_sync_jobs):
+        for step in (migrate_core, migrate_platforms, migrate_auth, migrate_display_preference, migrate_tracking, migrate_credits, migrate_calendar, migrate_credit_privacy, migrate_progress, migrate_sync_jobs, migrate_sync_recovery):
             step(connection)
         # A recorded version is not permission to serve an incomplete schema.
         inspector = inspect(connection)
@@ -227,4 +227,18 @@ def migrate_sync_jobs(engine):
             connection.execute(text("REVOKE ALL ON TABLE user_sync_jobs FROM PUBLIC"))
             for role in connection.execute(text("SELECT rolname FROM pg_roles WHERE rolname IN ('anon', 'authenticated')")).scalars():
                 connection.execute(text(f"REVOKE ALL ON TABLE user_sync_jobs FROM {role}"))
+        connection.execute(versions.insert().values(version=version))
+
+
+def migrate_sync_recovery(engine):
+    """Add ownership/attempt tracking without replacing existing queued jobs."""
+    with migration_connection(engine) as connection:
+        version = "20261108-sync-recovery-v1"
+        if connection.execute(versions.select().where(versions.c.version == version)).first():
+            return
+        columns = {column["name"] for column in inspect(connection).get_columns("user_sync_jobs")}
+        for column, definition in {"worker_token": "VARCHAR(36)",
+                                   "attempts": "INTEGER NOT NULL DEFAULT 0"}.items():
+            if column not in columns:
+                connection.execute(text(f"ALTER TABLE user_sync_jobs ADD COLUMN {column} {definition}"))
         connection.execute(versions.insert().values(version=version))

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from .codeforces_client import fetch_accepted_history, CodeforcesError
 from .models import User, Solve, PlatformActivity, AcceptedSubmission, PointAward
 from .point_calculator import recalculate_user_points
+from .sync_context import lock_attempt, checkpoint
 from .tracking import ProviderAcceptance, capture_score_baseline, ingest_acceptances, validate_acceptances
 
 logger = logging.getLogger("codestreak.codeforces")
@@ -18,7 +19,7 @@ def user_sync_lock(user_id):
     return _locks.setdefault(user_id, asyncio.Lock())
 
 
-async def sync_codeforces_user(db: Session, user: User, *, force=False, report=None) -> int:
+async def sync_codeforces_user(db: Session, user: User, *, force=False, report=None, attempt=None) -> int:
     lock = user_sync_lock(user.id)
     if lock.locked():
         if report is not None:
@@ -67,7 +68,9 @@ async def sync_codeforces_user(db: Session, user: User, *, force=False, report=N
                 report.codeforces = "unavailable"
             db.refresh(user, with_for_update=True)
             if user.codeforces_username == handle and user.codeforces_account_version == account_version and user.codeforces_last_sync == previous_sync:
+                job = lock_attempt(db, user, attempt)
                 user.codeforces_sync_error = str(error)[:300]
+                checkpoint(job)
                 db.commit()
             else:
                 db.rollback()
@@ -76,7 +79,7 @@ async def sync_codeforces_user(db: Session, user: User, *, force=False, report=N
         added = await asyncio.to_thread(_persist_codeforces_history, db.get_bind(),
             user_id=user_id, handle=handle, account_version=account_version,
             previous_sync=previous_sync, now=now, full=full, since=since, history=history,
-            proof_unavailable=proof_unavailable)
+            proof_unavailable=proof_unavailable, attempt=attempt)
         db.expire_all()
         if report is not None:
             report.codeforces = "incomplete" if proof_unavailable else "synced"
@@ -84,7 +87,7 @@ async def sync_codeforces_user(db: Session, user: User, *, force=False, report=N
 
 
 def _persist_codeforces_history(bind, *, user_id, handle, account_version,
-                               previous_sync, now, full, since, history, proof_unavailable=False):
+                               previous_sync, now, full, since, history, proof_unavailable=False, attempt=None):
     """Keep synchronous history/score persistence off the HTTP event loop."""
     with Session(bind=bind, autoflush=False) as db:
         user = db.query(User).filter_by(id=user_id).populate_existing().with_for_update().first()
@@ -94,6 +97,7 @@ def _persist_codeforces_history(bind, *, user_id, handle, account_version,
                 or user.codeforces_last_sync != previous_sync):
             db.rollback()
             return 0
+        job = lock_attempt(db, user, attempt)
         evidence = [ProviderAcceptance(str(event["submission_id"]), row["slug"],
                     datetime.fromtimestamp(event["timestamp"], timezone.utc).replace(tzinfo=None))
                     for row in history for event in row["accepted_submissions"]]
@@ -147,6 +151,7 @@ def _persist_codeforces_history(bind, *, user_id, handle, account_version,
         user.codeforces_sync_error = ("Solves synced; some first-solve dates await full-history verification."
                                      if proof_unavailable else None)
         recalculate_user_points(user, db, revision_windows={"codeforces": previous_sync})
+        checkpoint(job, added)
         db.commit()
         logger.info("Codeforces saved for user %d: %d new question entries", user_id, added)
         return added

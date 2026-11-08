@@ -17,6 +17,7 @@ from .contest_ratings import refresh_zerotrac_dataset
 from .codeforces_sync import sync_codeforces_user
 from .tracking import ProviderAcceptance, capture_score_baseline, ingest_acceptances, validate_acceptances
 from .timekeeping import utc_now
+from .sync_context import SyncOwnershipLost, lock_attempt, checkpoint
 
 logger = logging.getLogger("codestreak.scheduler")
 
@@ -44,14 +45,16 @@ async def backfill_daily_challenges_archive(db: Session):
 
 async def poll_user(db: Session, user: User, sync_codeforces: bool = True, *,
                     raise_on_unavailable: bool = False, report=None,
-                    force_codeforces: bool = False) -> int:
+                    force_codeforces: bool = False, attempt=None) -> int:
     """Attempt each linked platform independently; preserve the integer API."""
     from .sync_report import SyncReport
     report = report if report is not None else SyncReport()
     added = 0
     try:
-        added += await _poll_leetcode_user(db, user)
+        added += await _poll_leetcode_user(db, user, attempt=attempt)
         report.leetcode = "synced"
+    except SyncOwnershipLost:
+        raise
     except Exception as error:
         db.rollback()
         report.leetcode = "unavailable"
@@ -60,7 +63,9 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True, *,
         db.refresh(user)
         if user.codeforces_username:
             try:
-                added += await sync_codeforces_user(db, user, force=force_codeforces, report=report)
+                added += await sync_codeforces_user(db, user, force=force_codeforces, report=report, attempt=attempt)
+            except SyncOwnershipLost:
+                raise
             except Exception as error:
                 db.rollback()
                 report.codeforces = "unavailable"
@@ -70,7 +75,7 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True, *,
     return added
 
 
-async def _poll_leetcode_user(db: Session, user: User) -> int:
+async def _poll_leetcode_user(db: Session, user: User, *, attempt=None) -> int:
     """Fetch public profile and recent ACs; recent history is never first-solve proof."""
     db.refresh(user)
     handle, user_id = user.leetcode_username, user.id
@@ -108,7 +113,7 @@ async def _poll_leetcode_user(db: Session, user: User) -> int:
     new_count = await asyncio.to_thread(_persist_leetcode_snapshot, db.get_bind(),
         user_id=user_id, handle=handle, account_version=account_version,
         previous_sync=previous_sync, sync_started=sync_started, data=data,
-        submissions=submissions, evidence=evidence, problem_info=problem_info)
+        submissions=submissions, evidence=evidence, problem_info=problem_info, attempt=attempt)
     # Sessions and ORM objects never cross threads. Refresh the caller's view
     # after the separate write transaction has committed.
     db.expire_all()
@@ -120,7 +125,7 @@ async def _poll_leetcode_user(db: Session, user: User) -> int:
 
 def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
                                 previous_sync, sync_started, data, submissions,
-                                evidence, problem_info):
+                                evidence, problem_info, attempt=None):
     """Synchronous database work owns a worker-thread session, not the API loop."""
     with Session(bind=bind, autoflush=False) as db:
         user = db.query(User).filter_by(id=user_id).populate_existing().with_for_update().first()
@@ -130,6 +135,7 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
                 or user.leetcode_last_sync != previous_sync):
             db.rollback()
             return None
+        job = lock_attempt(db, user, attempt)
         capture_score_baseline(db, user_id)
 
         # 1. Update user metadata & difficulty totals
@@ -193,6 +199,7 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
                            expected_handle=handle, submissions=evidence)
         user.leetcode_last_sync = sync_started
         recalculate_user_points(user, db, revision_windows={"leetcode": previous_sync})
+        checkpoint(job, new_count)
         db.commit()
         logger.info("LeetCode saved for user %d: %d new question entries", user_id, new_count)
         return new_count

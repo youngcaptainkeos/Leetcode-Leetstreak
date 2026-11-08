@@ -38,6 +38,16 @@ class StartupMigrationTests(unittest.TestCase):
             connection.execute(text("CREATE TABLE daily_activity (id INTEGER PRIMARY KEY, user_id INTEGER, date DATE, problems_solved INTEGER)"))
             connection.execute(text("INSERT INTO daily_activity VALUES (1, 1, '2026-01-01', 8)"))
 
+    def test_sync_recovery_adds_columns_without_losing_legacy_job_progress(self):
+        with self.engine.begin() as connection:
+            connection.execute(text("CREATE TABLE user_sync_jobs (id VARCHAR(36) PRIMARY KEY, state VARCHAR(20), new_solves INTEGER)"))
+            connection.execute(text("INSERT INTO user_sync_jobs VALUES ('synthetic-job', 'running', 3)"))
+        migrations.migrate_sync_recovery(self.engine)
+        migrations.migrate_sync_recovery(self.engine)
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.execute(text("SELECT state, new_solves, worker_token, attempts FROM user_sync_jobs")).one(),
+                             ("running", 3, None, 0))
+
     def test_fresh_database_and_repeated_start_preserve_user_choices(self):
         migrations.run_migrations(self.engine)
         with Session(self.engine) as db:
@@ -48,7 +58,7 @@ class StartupMigrationTests(unittest.TestCase):
         migrations.run_migrations(self.engine)
         with self.engine.connect() as connection:
             self.assertEqual(connection.execute(text("SELECT points, show_global_leaderboard, session_version FROM users")).one(), (42.5, 0, 3))
-            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 10)
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 12)
 
     def test_legacy_upgrade_preserves_scores_dates_activity_and_daily_flags(self):
         self.legacy_database()
@@ -96,7 +106,7 @@ class StartupMigrationTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=4) as pool:
             list(pool.map(lambda _: migrations.run_migrations(self.engine), range(4)))
         with self.engine.connect() as connection:
-            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 10)
+            self.assertEqual(connection.execute(text("SELECT COUNT(*) FROM schema_migrations")).scalar_one(), 12)
 
     def test_recorded_versions_do_not_hide_schema_drift(self):
         migrations.run_migrations(self.engine)
@@ -162,8 +172,9 @@ class SchedulerStartupTests(unittest.IsolatedAsyncioTestCase):
         instance = scheduler.start_scheduler()
         try:
             jobs = {job.id: job for job in instance.get_jobs()}
-            self.assertEqual(set(jobs), {"poll_all_users", "refresh_zerotrac_dataset"})
-            self.assertGreaterEqual(jobs["poll_all_users"].next_run_time, before + timedelta(minutes=scheduler.POLL_INTERVAL_MINUTES))
+            self.assertEqual(set(jobs), {"poll_all_users", "refresh_zerotrac_dataset", "manual_sync_jobs"})
+            self.assertGreater(jobs["poll_all_users"].next_run_time, before)
+            self.assertLessEqual(jobs["poll_all_users"].next_run_time, before + timedelta(minutes=scheduler.POLL_INTERVAL_MINUTES))
             self.assertGreaterEqual(jobs["refresh_zerotrac_dataset"].next_run_time, before + timedelta(weeks=1))
         finally:
             instance.shutdown(wait=False)

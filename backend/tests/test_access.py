@@ -124,7 +124,7 @@ class AccessTests(unittest.TestCase):
         self.assertIsNotNone(self.db.query(User).filter_by(id=1).first())
 
     def test_authorized_mutation_and_no_provider_on_rejected_request(self):
-        with patch("app.main.poll_user", new=AsyncMock(return_value=2)) as poll:
+        with patch("app.scheduler.poll_user", new=AsyncMock(return_value=2)) as poll:
             self.assertEqual(self.client.post("/api/users/2/sync", headers=self.headers()).status_code, 403)
             poll.assert_not_awaited()
             self.assertEqual(self.client.post("/api/users/1/sync", headers=self.headers()).json()["new_solves"], 2)
