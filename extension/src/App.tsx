@@ -20,7 +20,7 @@ import { getStored, setStored, clearStored } from "./storage";
 import { DailyReminder, ProgressPanel, usePractice } from "./progress/Progress";
 import { PRACTICE_REFRESH } from "./progress/data";
 import { StartupTab, readStartupTab, resolveStartupTab, startupTabKey } from "./progress/preferences";
-import { BoardTab, BoardSort, boardMemoryKey, peekBoard, readCachedBoard, saveBoard, loadBoard, invalidateBoards } from "./leaderboardCache";
+import { BoardTab, BoardSort, boardMemoryKey, peekBoard, readCachedBoard, saveBoard, loadBoard, invalidateBoards, forgetGroupBoard } from "./leaderboardCache";
 
 type View = "loading" | "onboarding" | "dashboard";
 
@@ -1042,6 +1042,7 @@ function Dashboard({
     if (activeBoardRef.current.tab !== tab || activeBoardRef.current.sort !== sortMode) return;
     const request = ++boardRequestRef.current;
     const dataRequest = ++dataRequestRef.current;
+    let boardFailure: unknown;
     try {
       // 🚀 Parallelize all independent API calls to eliminate sequential network waterfalls!
       const boardPromise = loadBoard(userId, tab, sortMode, forceBoard);
@@ -1055,7 +1056,7 @@ function Dashboard({
           throw err;
         }),
         api.myGroups(userId).catch(() => null),
-        boardPromise.catch(() => null),
+        boardPromise.catch(error => { boardFailure = error; return null; }),
       ]);
 
       if (activeBoardRef.current.userId !== userId || dataRequestRef.current !== dataRequest) return;
@@ -1075,6 +1076,14 @@ function Dashboard({
         void setStored(`codestreak_cached_groups_${userId}`, JSON.stringify(myGroupsRes.groups)).catch(() => undefined);
       }
       const activeTab = activeBoardRef.current.tab;
+      if (typeof tab === "number" && boardFailure instanceof ApiError && [403, 404].includes(boardFailure.status)
+          && isCurrentBoard(tab, sortMode, request)) {
+        forgetGroupBoard(userId, tab);
+        setTabBoards(prev => Object.fromEntries(Object.entries(prev).filter(([key]) => !key.startsWith(`${tab}:`))));
+        changeTab("friends");
+        setError("That group is no longer available. Showing My Friends.");
+        return;
+      }
       if (typeof activeTab === "number" && myGroupsRes && !myGroupsRes.groups.some(group => group.id === activeTab)) {
         changeTab("friends");
         setError("That group is no longer available. Showing My Friends.");
@@ -1266,6 +1275,14 @@ function Dashboard({
       }
     } catch (err) {
       console.error("Leaderboard fetch error:", err);
+      if (typeof tab === "number" && err instanceof ApiError && [403, 404].includes(err.status)
+          && isCurrentBoard(tab, sortMode, request)) {
+        forgetGroupBoard(userId, tab);
+        setTabBoards(prev => Object.fromEntries(Object.entries(prev).filter(([key]) => !key.startsWith(`${tab}:`))));
+        changeTab("friends");
+        void loadData("friends", sortMode);
+        return;
+      }
       if (!cached && isCurrentBoard(tab, sortMode, request)) {
         setError(err instanceof Error ? err.message : "Could not load the selected leaderboard.");
       }

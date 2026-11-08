@@ -1540,3 +1540,9 @@ reward cooldowns and locked-balance policy are unchanged.
 Prepared 1.0.4 in the original workspace's extension/dist, preserving untracked
 store screenshots. Build/typecheck and archive checks are recorded separately;
 no automated tests or browser navigation checks were run for this follow-up.
+
+Cache follow-up: explicit group permission/not-found responses discard that
+group's saved boards and redirect to Friends. Offline refresh failures keep a
+matching cache visible, while an access denial is handled separately. The first
+1.0.4 deployment is healthy and accepted a reviewer Sync; final package includes
+this denial handling. Browser navigation/reopen checks remain unperformed.

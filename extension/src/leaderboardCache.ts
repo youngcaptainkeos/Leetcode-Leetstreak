@@ -1,5 +1,5 @@
 import { api, LeaderboardResponse } from "./lib/api";
-import { getStored, setStored } from "./storage";
+import { getStored, setStored, clearStored } from "./storage";
 
 export type BoardTab = "global" | "friends" | number;
 export type BoardSort = "points" | "streak";
@@ -65,6 +65,16 @@ export function invalidateBoards(userId: number) {
   const epoch = Math.max(Date.now(), (epochs.get(userId) ?? 0) + 1);
   epochs.set(userId, epoch);
   void setStored(epochKey(userId), String(epoch)).catch(() => undefined);
+}
+
+export function forgetGroupBoard(userId: number, tab: number) {
+  invalidateBoards(userId);
+  const keys = (["points", "streak"] as const).flatMap(sort => {
+    const key = boardStorageKey(userId, tab, sort);
+    memory.delete(key);
+    return [key, `codestreak_board_v2_${userId}_${boardMemoryKey(tab, sort)}`];
+  });
+  void clearStored(keys).catch(() => undefined);
 }
 
 export async function loadBoard(userId: number, tab: BoardTab, sort: BoardSort, force = false) {
