@@ -1546,3 +1546,28 @@ group's saved boards and redirect to Friends. Offline refresh failures keep a
 matching cache visible, while an access denial is handled separately. The first
 1.0.4 deployment is healthy and accepted a reviewer Sync; final package includes
 this denial handling. Browser navigation/reopen checks remain unperformed.
+
+
+### 2026-11-09 — incremental manual Sync
+
+Manual LeetCode refreshes now compare returned submission identities with the
+stored account-scoped ledger under the account lock. Exact replays with unchanged
+difficulty totals and metadata retain the scoring ledger without running full
+reconciliation. Initial imports, new submissions (including repeat accepts),
+missing links/first dates, aggregate changes and metadata repairs retain normal
+ingestion/scoring. Conflicting identities still fail atomically. Scheduled polls
+continue reconciliation for maintenance. Calendars/profile data still refresh.
+
+Codeforces recent checks start with 100 submissions instead of 1,000; a busy
+account expands subsequent pages to 1,000 with overlapping pagination. The
+two-day safety overlap remains. Manual Sync defers an overdue weekly full scan
+to scheduled polling when an initial full scan already exists. Initial imports
+and newly discovered/unverified questions still require full-history proof;
+this preserves unique-solve points and streak eligibility. Added provider/write
+timing logs for Codeforces. No point formula, opening balance, revision rule,
+schema or client package change. Existing installed extensions use these changes.
+
+Python syntax and diff whitespace checks passed. Automated tests were not run;
+the owner will test actual Sync latency and new solves. No measured latency
+improvement is claimed before that comparison. Large imports/new CF proof and
+provider latency can still make a Sync slower.

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from time import perf_counter
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
@@ -37,9 +38,14 @@ async def sync_codeforces_user(db: Session, user: User, *, force=False, report=N
             if report is not None:
                 report.codeforces = "recent"
             return 0
-        full = not user.codeforces_last_full_sync or now - user.codeforces_last_full_sync > timedelta(days=7)
+        # Keep initial proof mandatory. Routine manual clicks defer the weekly
+        # maintenance scan to scheduled polling; new questions still escalate
+        # below when their first-solve evidence needs complete history.
+        full = not previous_sync or not user.codeforces_last_full_sync or (
+            not force and now - user.codeforces_last_full_sync > timedelta(days=7))
         since = None if full else int((user.codeforces_last_sync.replace(tzinfo=timezone.utc) - timedelta(days=2)).timestamp())
         proof_unavailable = False
+        started = perf_counter()
         db.commit()  # Do not hold a database connection during remote requests.
         try:
             history = await fetch_accepted_history(handle, since)
@@ -76,11 +82,14 @@ async def sync_codeforces_user(db: Session, user: User, *, force=False, report=N
                 db.rollback()
             logger.warning("Codeforces sync unavailable for user %d", user_id)
             return 0
+        fetched_at = perf_counter()
         added = await asyncio.to_thread(_persist_codeforces_history, db.get_bind(),
             user_id=user_id, handle=handle, account_version=account_version,
             previous_sync=previous_sync, now=now, full=full, since=since, history=history,
             proof_unavailable=proof_unavailable, attempt=attempt)
         db.expire_all()
+        logger.info("Codeforces sync timing user %d: provider=%.2fs persist=%.2fs full=%s total=%.2fs",
+                    user_id, fetched_at - started, perf_counter() - fetched_at, full, perf_counter() - started)
         if report is not None:
             report.codeforces = "incomplete" if proof_unavailable else "synced"
         return added

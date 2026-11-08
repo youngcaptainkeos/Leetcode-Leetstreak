@@ -60,8 +60,9 @@ async def fetch_accepted_history(handle: str, since: Optional[int] = None) -> li
     accepted = {}
     seen_submissions = {}
     offset = 1
+    page_size = 1000 if since is None else 100
     for _ in range(500):
-        rows = await codeforces_request("user.status", {"handle": handle, "from": offset, "count": 1000})
+        rows = await codeforces_request("user.status", {"handle": handle, "from": offset, "count": page_size})
         if not isinstance(rows, list):
             raise CodeforcesError("Codeforces returned an invalid submission list. Saved scores are unchanged.")
         for row in rows:
@@ -108,9 +109,12 @@ async def fetch_accepted_history(handle: str, since: Optional[int] = None) -> li
                 "timestamp": timestamp, "submission_id": row["id"],
                 "accepted_submissions": previous["accepted_submissions"] if previous else [event],
             }
-        if len(rows) < 1000 or (since is not None and rows and min(r.get("creationTimeSeconds", int(time.time())) for r in rows) < since):
+        if len(rows) < page_size or (since is not None and rows and min(r.get("creationTimeSeconds", int(time.time())) for r in rows) < since):
             for problem in accepted.values():
                 problem["accepted_submissions"].sort(key=lambda event: (event["timestamp"], event["submission_id"]))
             return sorted(accepted.values(), key=lambda problem: problem["slug"])
-        offset += 900
+        offset += page_size - page_size // 10
+        # Busy accounts catch up in large pages after the inexpensive head
+        # check, rather than making ten rate-limited calls per 1,000 entries.
+        page_size = 1000
     raise CodeforcesError("This account needs a larger history import. Saved scores are unchanged.")

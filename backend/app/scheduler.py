@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from .config import POLL_INTERVAL_MINUTES
 from .database import SessionLocal
-from .models import User, Solve, DailyActivity, DailyChallenge, ProviderCalendar
+from .models import User, Solve, DailyActivity, DailyChallenge, ProviderCalendar, AcceptedSubmission, AccountCredit
 from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challenge_slug, fetch_monthly_daily_challenges, fetch_problem_info, LeetCodeError
 from .point_calculator import recalculate_user_points
 from .contest_ratings import refresh_zerotrac_dataset
@@ -168,6 +168,9 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
             return None
         job = lock_attempt(db, user, attempt)
         capture_score_baseline(db, user_id)
+        diffs = data.get("difficulty_counts") or {}
+        counts_changed = any(getattr(user, attr) != diffs.get(kind, 0)
+            for attr, kind in (("easy_count", "Easy"), ("medium_count", "Medium"), ("hard_count", "Hard")))
 
         # 1. Update user metadata & difficulty totals
         if data.get("avatar_url"):
@@ -205,9 +208,23 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
         new_count = 0
         live_daily_solves = []
 
-        existing_solves = {
-            r[0] for r in db.query(Solve.title_slug).filter(Solve.user_id == user.id, Solve.platform == "leetcode").all()
-        }
+        stored_solves = db.query(Solve).filter(Solve.user_id == user.id, Solve.platform == "leetcode").all()
+        existing_solves = {solve.title_slug for solve in stored_solves}
+        current_solves = {solve.title_slug: solve for solve in stored_solves
+            if solve.account_version == account_version and solve.source_handle
+            and solve.source_handle.casefold() == handle.casefold()}
+        known_events = {row.submission_id: row for row in db.query(AcceptedSubmission).filter_by(
+            user_id=user_id, platform="leetcode", account_version=account_version).filter(
+            AcceptedSubmission.submission_id.in_({row.submission_id for row in evidence})).all()}
+        unchanged_evidence = True
+        for row in evidence:
+            event, solve = known_events.get(row.submission_id), current_solves.get(row.title_slug)
+            if event is not None and (event.title_slug != row.title_slug or event.accepted_at != row.accepted_at):
+                raise ValueError("Conflicting provider submission evidence")
+            if (event is None or solve is None or event.solve_id != solve.id
+                    or solve.first_solve_at is None
+                    or not (solve.first_solve_verified or solve.first_solve_basis == "database_first")):
+                unchanged_evidence = False
 
         for sub in sorted(submissions, key=lambda row: (int(row["timestamp"]), int(row["id"]))):
             title_slug = sub["titleSlug"]
@@ -239,20 +256,34 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
                 new_count += 1
 
         db.flush()
-        ingest_acceptances(db, user_id, platform="leetcode", account_version=account_version,
-                           expected_handle=handle, submissions=evidence)
+        if not unchanged_evidence:
+            ingest_acceptances(db, user_id, platform="leetcode", account_version=account_version,
+                               expected_handle=handle, submissions=evidence)
         # Retry genuinely missing metadata without changing previously locked
         # awards. Questions whose metadata was unavailable can then earn once.
-        for solve in db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "leetcode",
-                Solve.account_version == account_version, Solve.title_slug.in_(problem_info)).all():
+        metadata_changed = False
+        for solve in stored_solves:
+            if solve.account_version != account_version or solve.title_slug not in problem_info:
+                continue
             info = problem_info[solve.title_slug]
             if solve.difficulty not in {"Easy", "Medium", "Hard"} and info.get("difficulty") in {"Easy", "Medium", "Hard"}:
                 solve.difficulty = info["difficulty"]
+                metadata_changed = True
             if solve.ac_rate is None and info.get("ac_rate") is not None:
                 solve.ac_rate = info["ac_rate"]
+                metadata_changed = True
         user.leetcode_last_sync = sync_started
-        recalculate_user_points(user, db, revision_windows={"leetcode": previous_sync},
-                               daily_solve_ids={solve.id for solve in live_daily_solves})
+        # A manual no-change refresh cannot create a new solve/revision/daily
+        # award. Scheduled polls still reconcile, including older repair work.
+        opening_exists = db.query(AccountCredit.id).filter_by(user_id=user_id, platform="leetcode",
+            account_version=account_version, kind="locked_balance").first() is not None
+        fast_refresh = (attempt is not None and previous_sync is not None and opening_exists
+                        and unchanged_evidence and not new_count and not counts_changed and not metadata_changed)
+        if not fast_refresh:
+            recalculate_user_points(user, db, revision_windows={"leetcode": previous_sync},
+                                   daily_solve_ids={solve.id for solve in live_daily_solves})
+        else:
+            logger.info("LeetCode incremental refresh user %d: no new accepted submissions; retained scoring ledger", user_id)
         checkpoint(job, new_count)
         db.commit()
         logger.info("LeetCode saved for user %d: %d new question entries", user_id, new_count)
