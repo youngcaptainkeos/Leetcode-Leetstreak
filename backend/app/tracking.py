@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .models import AcceptedSubmission, AccountCredit, ProviderCalendar, DailyActivity, PlatformActivity, ScoreSnapshot, Solve, User, PointAward
@@ -193,9 +194,13 @@ def ingest_acceptances(db: Session, user_id: int, *, platform: str,
         for row in sorted(submissions, key=lambda row: (utc_storage(row.accepted_at), int(row.submission_id))):
             event = known_events.get(row.submission_id)
             if event is None:
-                event = record_acceptance(db, user_id, platform=platform, account_version=account_version,
-                    submission_id=row.submission_id, title_slug=row.title_slug, accepted_at=row.accepted_at,
+                # Identity, batch timestamps and account ownership were checked
+                # above under the User lock. Flush new events as one batch.
+                event = AcceptedSubmission(user_id=user_id, platform=platform, account_version=account_version,
+                    submission_id=row.submission_id, title_slug=row.title_slug, accepted_at=utc_storage(row.accepted_at),
+                    observed_at=utc_now(), first_solve_verified=False,
                     evidence_kind="provider_full" if complete_history else "public_recent")
+                db.add(event)
                 known_events[row.submission_id] = event
             elif event.title_slug != row.title_slug or event.accepted_at != utc_storage(row.accepted_at):
                 raise ValueError("Conflicting provider submission evidence")
@@ -206,16 +211,19 @@ def ingest_acceptances(db: Session, user_id: int, *, platform: str,
             events.append(event)
         db.flush()  # Persist solve_id links before querying earliest acceptances.
         if platform == "leetcode":
+            candidates = {solve.id: solve for slug, solve in solves.items() if slug in earliest
+                          and not solve.first_solve_verified and solve.first_solve_basis != "database_first"}
+            first_dates = dict(db.query(AcceptedSubmission.solve_id, func.min(AcceptedSubmission.accepted_at)).filter(
+                AcceptedSubmission.user_id == user_id, AcceptedSubmission.platform == platform,
+                AcceptedSubmission.account_version == account_version,
+                AcceptedSubmission.solve_id.in_(candidates)).group_by(AcceptedSubmission.solve_id).all()) if candidates else {}
             for slug, event in earliest.items():
                 solve = solves.get(slug)
-                if solve is None or solve.first_solve_verified or solve.first_solve_basis == "database_first":
+                if solve is None or solve.id not in candidates:
                     continue
                 # Persist the earliest stored acceptance once. An already-known
                 # question stays one solve; later ACs remain revision candidates.
-                first = db.query(AcceptedSubmission).filter_by(user_id=user_id,
-                    platform=platform, account_version=account_version, solve_id=solve.id).order_by(
-                    AcceptedSubmission.accepted_at, AcceptedSubmission.id).first()
-                solve.first_solve_at = min(utc_storage(solve.solved_at), first.accepted_at)
+                solve.first_solve_at = min(utc_storage(solve.solved_at), first_dates[solve.id])
                 solve.source_handle = solve.source_handle or expected_handle
                 solve.first_solve_basis = "database_first"
         if complete_history:
