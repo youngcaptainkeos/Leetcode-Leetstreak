@@ -1,6 +1,6 @@
 import { useSyncJob } from "./useSyncJob";
 import { formatPoints } from "../../shared/points";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   api,
   ApiError,
@@ -23,6 +23,10 @@ import { StartupTab, readStartupTab, resolveStartupTab, startupTabKey } from "./
 
 type View = "loading" | "onboarding" | "dashboard";
 type BoardTab = "global" | "friends" | number; // "global", "friends", or groupId
+type BoardSort = "points" | "streak";
+const boardMemoryKey = (tab: BoardTab, sort: BoardSort) => `${tab}:${sort}`;
+const boardStorageKey = (userId: number, tab: BoardTab, sort: BoardSort) =>
+  `codestreak_board_v2_${userId}_${boardMemoryKey(tab, sort)}`;
 
 export default function App() {
   const [view, setView] = useState<View>("loading");
@@ -647,6 +651,12 @@ function Dashboard({
   const [groups, setGroups] = useState<GroupResponse[]>([]);
   const [selectedTab, setSelectedTab] = useState<BoardTab>("global");
   const [sortBy, setSortBy] = useState<"points" | "streak">("points");
+  const [hydratedUser, setHydratedUser] = useState<number | null>(null);
+  const activeBoardRef = useRef({ userId, tab: selectedTab, sort: sortBy });
+  activeBoardRef.current = { userId, tab: selectedTab, sort: sortBy };
+  const boardRequestRef = useRef(0);
+  const dataRequestRef = useRef(0);
+  const initialLoadUserRef = useRef<number | null>(null);
   const [revealedCodes, setRevealedCodes] = useState<Record<number, boolean>>({});
   const [tabBoards, setTabBoards] = useState<Record<string, LeaderboardResponse>>({});
   const [boardLoading, setBoardLoading] = useState<boolean>(false);
@@ -672,9 +682,13 @@ function Dashboard({
   }
 
   const changeTab = (tab: BoardTab) => {
-    const tabKey = String(tab);
+    if (hydratedUser !== userId) return;
+    const sort = activeBoardRef.current.sort;
+    const tabKey = boardMemoryKey(tab, sort);
+    activeBoardRef.current = { userId, tab, sort };
+    boardRequestRef.current += 1;
     setSelectedTab(tab);
-    setStored("codestreak_active_tab", tabKey);
+    void setStored(`codestreak_active_tab_${userId}`, String(tab));
 
     // ⚡ INSTANT SWAP (0ms): Clear old board immediately if not cached so old users vanish at once!
     if (tabBoards[tabKey]) {
@@ -686,46 +700,84 @@ function Dashboard({
     }
   };
 
+  function changeSort(sort: BoardSort) {
+    if (hydratedUser !== userId) return;
+    if (sort === sortBy) return;
+    activeBoardRef.current = { userId, tab: selectedTab, sort };
+    boardRequestRef.current += 1;
+    setSortBy(sort);
+    const cached = tabBoards[boardMemoryKey(selectedTab, sort)];
+    setBoard(cached ?? null);
+    setBoardLoading(!cached);
+  }
+
+  function isCurrentBoard(tab: BoardTab, sort: BoardSort, request: number) {
+    const active = activeBoardRef.current;
+    return active.userId === userId && active.tab === tab && active.sort === sort
+      && boardRequestRef.current === request;
+  }
+
   useEffect(() => {
+    let cancelled = false;
+    const request = ++boardRequestRef.current;
     (async () => {
-      const storedTab = await getStored("codestreak_active_tab");
+      const savedTab = await getStored(`codestreak_active_tab_${userId}`);
+      const legacyTab = await getStored("codestreak_active_tab");
       const cachedDash = await getStored("codestreak_cached_dash");
       let cachedDashObj: DashboardResponse | null = null;
       if (cachedDash) {
         try {
           cachedDashObj = JSON.parse(cachedDash);
-          if (cachedDashObj?.id === userId) {
-            setDash(cachedDashObj);
-          } else {
+          if (cachedDashObj?.id !== userId) {
             cachedDashObj = null;
           }
         } catch (e) {}
       }
 
-      let activeTabKey = "global";
-      if (cachedDashObj && !showGlobalLeaderboard(cachedDashObj)) {
-        activeTabKey = "friends";
-        setSelectedTab("friends");
-      } else if (storedTab) {
+      const storedTab = savedTab ?? (cachedDashObj ? legacyTab : null);
+      let tab: BoardTab = "global";
+      if (storedTab) {
         if (storedTab === "global" || storedTab === "friends") {
-          setSelectedTab(storedTab);
-          activeTabKey = storedTab;
-        } else if (!isNaN(Number(storedTab))) {
-          setSelectedTab(Number(storedTab));
-          activeTabKey = storedTab;
+          tab = storedTab;
+        } else if (/^[1-9]\d*$/.test(storedTab) && Number.isSafeInteger(Number(storedTab))) {
+          tab = Number(storedTab);
         }
       }
-      // Instant 0ms stale-while-revalidate cached rendering
-      const cachedBoard = await getStored(`codestreak_cached_board_${activeTabKey}`) || await getStored("codestreak_cached_board");
+      if (tab === "global" && cachedDashObj && !showGlobalLeaderboard(cachedDashObj)) tab = "friends";
+      // Old caches may contain Global results mislabeled as a group. Read only
+      // the new account/tab/sort cache, with no generic-board fallback.
+      const cachedBoard = await getStored(boardStorageKey(userId, tab, "points"));
+      if (cancelled || boardRequestRef.current !== request) return;
+      activeBoardRef.current = { userId, tab, sort: "points" };
+      setSelectedTab(tab);
+      setSortBy("points");
+      setDash(cachedDashObj);
+      setBoard(null);
+      setTabBoards({});
+      setBoardLoading(true);
       if (cachedBoard && cachedDashObj) {
         try {
-          const parsed = JSON.parse(cachedBoard);
-          setBoard(parsed);
-          setTabBoards((prev) => ({ ...prev, [activeTabKey]: parsed }));
+          const parsed: LeaderboardResponse = JSON.parse(cachedBoard);
+          if (Array.isArray(parsed.entries)) {
+            setBoard(parsed);
+            setTabBoards({ [boardMemoryKey(tab, "points")]: parsed });
+            setBoardLoading(false);
+          }
         } catch (e) {}
       }
-    })();
-  }, []);
+      setHydratedUser(userId);
+      void setStored(`codestreak_active_tab_${userId}`, String(tab));
+    })().catch(() => {
+      if (!cancelled && boardRequestRef.current === request) {
+        setError("Could not restore your selected leaderboard. Please reopen the extension.");
+      }
+    });
+    return () => {
+      cancelled = true;
+      boardRequestRef.current += 1;
+      dataRequestRef.current += 1;
+    };
+  }, [userId]);
 
   // Inspect Friend Stats Modal
   const [inspectedFriend, setInspectedFriend] = useState<LeaderboardEntry | null>(
@@ -976,6 +1028,10 @@ function Dashboard({
     tab: BoardTab = selectedTab,
     sortMode: "points" | "streak" = sortBy
   ) {
+    if (hydratedUser !== userId) return;
+    if (activeBoardRef.current.tab !== tab || activeBoardRef.current.sort !== sortMode) return;
+    const request = ++boardRequestRef.current;
+    const dataRequest = ++dataRequestRef.current;
     try {
       // 🚀 Parallelize all independent API calls to eliminate sequential network waterfalls!
       const boardPromise =
@@ -993,30 +1049,38 @@ function Dashboard({
           }
           throw err;
         }),
-        api.myGroups(userId).catch(() => ({ groups: [] })),
+        api.myGroups(userId).catch(() => null),
         boardPromise.catch(() => null),
       ]);
 
+      if (activeBoardRef.current.userId !== userId || dataRequestRef.current !== dataRequest) return;
       if (!dashRes) {
-        setBoardLoading(false);
+        if (isCurrentBoard(tab, sortMode, request)) setBoardLoading(false);
         return;
       }
 
       setDash(dashRes);
       window.dispatchEvent(new Event(PRACTICE_REFRESH));
-      if (!showGlobalLeaderboard(dashRes) && tab === "global") {
+      if (!showGlobalLeaderboard(dashRes) && activeBoardRef.current.tab === "global") {
         changeTab("friends");
         return;
       }
       if (myGroupsRes?.groups) setGroups(myGroupsRes.groups);
-      if (boardRes) {
-        setBoard(boardRes);
-        setTabBoards((prev) => ({ ...prev, [String(tab)]: boardRes }));
-        setStored(`codestreak_cached_board_${String(tab)}`, JSON.stringify(boardRes));
-        setStored("codestreak_cached_board", JSON.stringify(boardRes));
+      const activeTab = activeBoardRef.current.tab;
+      if (typeof activeTab === "number" && myGroupsRes && !myGroupsRes.groups.some(group => group.id === activeTab)) {
+        changeTab("friends");
+        setError("That group is no longer available. Showing My Friends.");
+        return;
       }
-      setBoardLoading(false);
-      setError(null);
+      if (isCurrentBoard(tab, sortMode, request)) {
+        if (boardRes) {
+          setBoard(boardRes);
+          setTabBoards((prev) => ({ ...prev, [boardMemoryKey(tab, sortMode)]: boardRes }));
+          void setStored(boardStorageKey(userId, tab, sortMode), JSON.stringify(boardRes));
+        }
+        setBoardLoading(false);
+        setError(boardRes ? null : "Could not load the selected leaderboard. Please try again.");
+      }
 
       // Save stale-while-revalidate cache for instant 0ms load next time!
       setStored("codestreak_cached_dash", JSON.stringify(dashRes));
@@ -1028,6 +1092,7 @@ function Dashboard({
         chrome.action.setBadgeBackgroundColor({ color: dashRes.today_count > 0 ? "#10b981" : "#6366f1" });
       }
     } catch (err) {
+      if (!isCurrentBoard(tab, sortMode, request)) return;
       setBoardLoading(false);
       const errMsg = err instanceof Error ? err.message : "";
       if (errMsg.includes("404") || errMsg.includes("User not found")) {
@@ -1108,7 +1173,10 @@ function Dashboard({
 
     setKudosAllBusy(true);
 
-    const activeTabKey = String(selectedTab);
+    const requestedTab = selectedTab;
+    const requestedSort = sortBy;
+    const request = ++boardRequestRef.current;
+    const activeTabKey = boardMemoryKey(requestedTab, requestedSort);
     const updatedEntries = board.entries.map((e) => {
       if (targetUserIds.includes(e.id)) {
         return {
@@ -1124,8 +1192,7 @@ function Dashboard({
 
     setBoard(newBoard);
     setTabBoards((prev) => ({ ...prev, [activeTabKey]: newBoard }));
-    setStored(`codestreak_cached_board_${activeTabKey}`, JSON.stringify(newBoard));
-    setStored("codestreak_cached_board", JSON.stringify(newBoard));
+    void setStored(boardStorageKey(userId, requestedTab, requestedSort), JSON.stringify(newBoard));
 
     try {
       await api.kudosAll(userId, targetUserIds);
@@ -1140,10 +1207,10 @@ function Dashboard({
           : api.groupLeaderboard(selectedTab, userId, sortBy)
       );
 
-      if (freshBoard) {
+      if (freshBoard && isCurrentBoard(requestedTab, requestedSort, request)) {
         setBoard(freshBoard);
         setTabBoards((prev) => ({ ...prev, [activeTabKey]: freshBoard }));
-        setStored(`codestreak_cached_board_${activeTabKey}`, JSON.stringify(freshBoard));
+        void setStored(boardStorageKey(userId, requestedTab, requestedSort), JSON.stringify(freshBoard));
       }
     } catch (err) {
       console.error("Kudos All failed:", err);
@@ -1157,7 +1224,10 @@ function Dashboard({
     tab: BoardTab = selectedTab,
     sortMode: "points" | "streak" = sortBy
   ) {
-    const tabKey = String(tab);
+    if (hydratedUser !== userId) return;
+    if (activeBoardRef.current.tab !== tab || activeBoardRef.current.sort !== sortMode) return;
+    const request = ++boardRequestRef.current;
+    const tabKey = boardMemoryKey(tab, sortMode);
 
     // If cached in memory, use it instantly (0ms delay)
     if (tabBoards[tabKey]) {
@@ -1178,31 +1248,33 @@ function Dashboard({
           : api.groupLeaderboard(tab, userId, sortMode);
 
       const boardRes = await boardPromise;
-      if (boardRes) {
+      if (boardRes && isCurrentBoard(tab, sortMode, request)) {
         setBoard(boardRes);
+        setError(null);
         setTabBoards((prev) => ({ ...prev, [tabKey]: boardRes }));
-        setStored(`codestreak_cached_board_${tabKey}`, JSON.stringify(boardRes));
+        void setStored(boardStorageKey(userId, tab, sortMode), JSON.stringify(boardRes));
       }
     } catch (err) {
       console.error("Leaderboard fetch error:", err);
+      if (isCurrentBoard(tab, sortMode, request)) {
+        setError(err instanceof Error ? err.message : "Could not load the selected leaderboard.");
+      }
     } finally {
-      setBoardLoading(false);
+      if (isCurrentBoard(tab, sortMode, request)) setBoardLoading(false);
     }
   }
 
-  // 1. Initial mount: load full app state (dashboard, groups, feed, active board)
+  // Restore the saved selection before the first request. Later changes fetch
+  // only that tab's board, without a competing default-Global request.
   useEffect(() => {
-    if (userId) {
+    if (hydratedUser !== userId) return;
+    if (initialLoadUserRef.current !== userId) {
+      initialLoadUserRef.current = userId;
       loadData(selectedTab, sortBy);
-    }
-  }, [userId]);
-
-  // 2. Fast tab or sort switch: fetch ONLY the leaderboard endpoint (~100ms, old users vanish immediately!)
-  useEffect(() => {
-    if (userId) {
+    } else {
       fetchLeaderboardOnly(selectedTab, sortBy);
     }
-  }, [selectedTab, sortBy]);
+  }, [userId, hydratedUser, selectedTab, sortBy]);
 
   useEffect(() => {
     if (syncJob.error) setSyncMsg(syncJob.error);
@@ -1572,7 +1644,7 @@ function Dashboard({
               <button
                 type="button"
                 className={`sort-btn ${sortBy === "points" ? "active" : ""}`}
-                onClick={() => setSortBy("points")}
+                onClick={() => changeSort("points")}
                 title="Sort leaderboard by total points"
               >
                 ⭐ Points
@@ -1580,7 +1652,7 @@ function Dashboard({
               <button
                 type="button"
                 className={`sort-btn ${sortBy === "streak" ? "active" : ""}`}
-                onClick={() => setSortBy("streak")}
+                onClick={() => changeSort("streak")}
                 title="Sort leaderboard by active daily streak"
               >
                 <img src="/streak_fire.png" alt="🔥" className="sort-fire-icon" /> Streak

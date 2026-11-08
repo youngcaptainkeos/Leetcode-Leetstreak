@@ -1495,3 +1495,23 @@ time was 5.43 seconds versus the 5.30-second narrow baseline, so no measured
 speedup is claimed for that small account. Larger-account paired benchmarks
 remain unmeasured. The added logs expose remaining provider/database latency.
 These backend changes support installed clients without replacing the ZIP.
+
+### 2026-11-09 — restore the selected group leaderboard consistently
+
+Implemented in the extension: restore account-scoped tab selection before the
+first leaderboard request, with no startup Global request. Preserve valid legacy
+selection only when the cached dashboard belongs to that account. Hidden Global
+preference redirects only a Global selection, not a selected group.
+
+New account/tab/sort-specific caches replace potentially mislabeled legacy board
+caches. No generic-board fallback is used. Request generations and active-scope
+checks prevent late responses (including kudos refreshes) from replacing a
+different group's board. Initial full data loading and tab-only fetching now use
+one startup effect instead of competing requests. A successful group-membership
+refresh can redirect a removed/deleted group to My Friends; failed membership
+fetches do not erase a valid saved group selection.
+
+Prepared extension 1.0.3; permissions and whole-number point formatting retained.
+Build, TypeScript and package inspection passed. Automated tests and browser
+close/reopen checks were not run. This frontend fix requires updating/reloading
+the installed extension; backend deployment alone cannot replace popup code.
