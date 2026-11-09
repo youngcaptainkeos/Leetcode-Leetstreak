@@ -8,6 +8,7 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from .config import POLL_INTERVAL_MINUTES
 from .database import SessionLocal
@@ -60,6 +61,14 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True, *,
         db.rollback()
         report.leetcode = "unavailable"
         logger.warning("LeetCode sync could not finish for user %d (%s)", user.id, type(error).__name__)
+        if isinstance(error, IntegrityError):
+            # Never log SQL/parameters or the provider payload. These stable
+            # diagnostics identify a failed write without exposing user data.
+            original = error.orig
+            diagnostic = getattr(original, "diag", None)
+            logger.warning("LeetCode write rejected user %d: code=%s table=%s constraint=%s",
+                user.id, getattr(original, "pgcode", None),
+                getattr(diagnostic, "table_name", None), getattr(diagnostic, "constraint_name", None))
     if sync_codeforces:
         db.refresh(user)
         if user.codeforces_username:
