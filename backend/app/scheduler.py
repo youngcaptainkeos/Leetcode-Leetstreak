@@ -66,9 +66,10 @@ async def poll_user(db: Session, user: User, sync_codeforces: bool = True, *,
             # diagnostics identify a failed write without exposing user data.
             original = error.orig
             diagnostic = getattr(original, "diag", None)
-            logger.warning("LeetCode write rejected user %d: code=%s table=%s constraint=%s",
+            logger.warning("LeetCode write rejected user %d: code=%s table=%s column=%s constraint=%s",
                 user.id, getattr(original, "pgcode", None),
-                getattr(diagnostic, "table_name", None), getattr(diagnostic, "constraint_name", None))
+                getattr(diagnostic, "table_name", None), getattr(diagnostic, "column_name", None),
+                getattr(diagnostic, "constraint_name", None))
     if sync_codeforces:
         db.refresh(user)
         if user.codeforces_username:
@@ -199,7 +200,10 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
                 continue
             row = calendars.get(day)
             if row is None:
-                row = ProviderCalendar(user_id=user_id, platform="leetcode", account_version=account_version, date=day)
+                # INSERT must satisfy observed_at's NOT NULL constraint before
+                # the bulk timestamp UPDATE below can run.
+                row = ProviderCalendar(user_id=user_id, platform="leetcode", account_version=account_version,
+                                       date=day, observed_at=sync_started)
                 db.add(row)
             row.submission_count = count
             row.source = "leetcode_submission_calendar"

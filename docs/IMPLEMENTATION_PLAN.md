@@ -1592,3 +1592,25 @@ that cannot finish raises an error rather than saving an incomplete success.
 Python syntax and diff whitespace checks passed. No automated tests run; actual
 account latency and newly accepted submissions remain for owner testing. Backend
 only; existing extension packages work without a rebuild.
+
+
+### 2026-11-09 — repair new calendar-day LeetCode writes
+
+Production logs showed repeated LeetCode IntegrityError failures while the same
+account's Codeforces sync succeeded. Static review identified a regression in
+41c99a2: calendar timestamps were moved to a bulk UPDATE after flush, but new
+ProviderCalendar rows still require observed_at at INSERT time. A new provider
+calendar day therefore rolled back the entire LeetCode transaction, including
+aggregate counts and new solve awards. Existing-day/no-new-solve checks did not
+exercise this path.
+
+New calendar rows now receive sync_started when constructed, before flush; the
+bulk timestamp update remains for existing rows. Added sanitized SQLSTATE,
+table/column/constraint diagnostics without SQL text or parameter data. No schema
+or point formula changes; failed transactions retained previous balances and
+last successful sync boundaries, allowing the next sync to retry the missing
+entries. Backend-only fix; installed extension packages remain compatible.
+
+Python syntax and whitespace checks passed. Automated tests were not run. Live
+recovery of affected account counts/awards still requires a successful provider
+sync after deployment, and will be reported separately from server readiness.
