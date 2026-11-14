@@ -1,6 +1,6 @@
 import { useSyncJob } from "./useSyncJob";
 import { formatPoints } from "../../shared/points";
-import { basePointDetails } from "../../shared/pointsBreakdown";
+import { pointDetails } from "../../shared/pointsBreakdown";
 import React, { useEffect, useState } from "react";
 import {
   api,
@@ -2265,9 +2265,7 @@ function Dashboard({
             <div className="breakdown-card">
               <div className="breakdown-card-header"><span className="card-label">Credited points</span></div>
               {selectedSolveBreakdown.breakdown?.base_award === undefined ? <p className="tiny muted">Detailed credit is unavailable for this entry.</p> : <>
-                {basePointDetails(selectedSolveBreakdown.breakdown, selectedSolveBreakdown.platform).map(row => <div className="breakdown-row" key={row.label}><span className="row-label">{row.label}:</span><span className="row-val">{row.value}</span></div>)}
-                <div className="breakdown-row"><span className="row-label">Retained daily awards:</span><span className="row-val text-amber">{formatPoints(selectedSolveBreakdown.breakdown.daily_award ?? 0)} pts</span></div>
-                <div className="breakdown-row"><span className="row-label">Revision awards:</span><span className="row-val text-violet">{formatPoints(selectedSolveBreakdown.breakdown.revision_award ?? 0)} pts</span></div>
+                {pointDetails(selectedSolveBreakdown.breakdown, selectedSolveBreakdown.platform).map(row => <div className="breakdown-row" key={row.label}><span className="row-label">{row.label}:</span><span className="row-val">{row.value}</span></div>)}
                 {(selectedSolveBreakdown.breakdown.legacy_credit ?? 0) > 0 && <div className="breakdown-row"><span className="row-label">Protected legacy credit:</span><span className="row-val">{formatPoints(selectedSolveBreakdown.breakdown.legacy_credit)} pts</span></div>}
               </>}
             </div>

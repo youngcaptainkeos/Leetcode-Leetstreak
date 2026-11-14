@@ -1,12 +1,15 @@
 import { formatPoints } from "./points";
 
-type StoredBase = {
+type StoredPoints = {
   difficulty?: string;
   raw_base_points?: number;
   contest_rating?: number | null;
   ac_rate?: number | null;
+  ac_multiplier?: number;
   base_points?: number;
   base_award?: number;
+  daily_award?: number;
+  revision_award?: number;
   streak_multiplier?: number;
 };
 
@@ -14,40 +17,43 @@ export type PointDetailRow = { label: string; value: string };
 
 const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 const points = (value: number) => `${formatPoints(value)} pts`;
-const adjustment = (value: number) => `${value < 0 ? "−" : "+"}${points(Math.abs(value))}`;
+const decimal = (value: number, digits = 3) => value.toLocaleString(undefined, { maximumFractionDigits: digits });
 
-/** Explain saved award inputs; never reprice a question using current metadata. */
-export function basePointDetails(base: StoredBase, platform = "leetcode"): PointDetailRow[] {
-  const raw = base.raw_base_points;
-  const adjusted = base.base_points;
-  // Old protected awards may not contain formula inputs. Do not invent a
-  // historical acceptance rate or mistake API defaults for a recorded formula.
-  if (!finite(raw) || raw <= 0 || !finite(adjusted) || adjusted <= 0) {
-    return [{ label: "Recorded base credit", value: points(base.base_award ?? 0) }];
-  }
-
+/** Display only the saved scoring path and rewards that actually earned credit. */
+export function pointDetails(stored: StoredPoints, platform = "leetcode"): PointDetailRow[] {
+  const raw = stored.raw_base_points;
+  const adjusted = stored.base_points;
+  const hasFormula = finite(raw) && raw > 0 && finite(adjusted) && adjusted > 0;
+  const rated = finite(stored.contest_rating) && stored.contest_rating > 0;
   const rows: PointDetailRow[] = [];
-  const difficultyBase = platform === "leetcode"
-    ? ({ Easy: 8, Medium: 15, Hard: 24 } as Record<string, number>)[base.difficulty ?? ""]
-    : undefined;
-  const rated = finite(base.contest_rating) && base.contest_rating > 0;
-  if (difficultyBase !== undefined) {
-    rows.push({ label: `Base points (${base.difficulty})`, value: points(difficultyBase) });
-    if (rated) {
-      rows.push({ label: `Contest rating (${formatPoints(base.contest_rating)})`, value: adjustment(raw - difficultyBase) });
+
+  if (hasFormula) {
+    if (platform === "codeforces") {
+      rows.push({ label: rated ? `Base points (CF ${formatPoints(stored.contest_rating)})` : "Base points", value: points(raw) });
+    } else if (rated) {
+      rows.push({ label: `Base points (ZeroTrac ${formatPoints(stored.contest_rating)})`, value: points(raw) });
+    } else {
+      rows.push({ label: stored.difficulty ? `Base points (${stored.difficulty})` : "Base points", value: points(raw) });
+      if (finite(stored.ac_rate)) {
+        const factor = finite(stored.ac_multiplier) ? stored.ac_multiplier : adjusted / raw;
+        rows.push({ label: `Adjusted base (AR ${decimal(stored.ac_rate, 1)}%)`,
+          value: `${formatPoints(raw)} × ${decimal(factor, 4)} = ${points(adjusted)}` });
+      }
     }
-  } else {
-    rows.push({ label: platform === "codeforces" ? "Rating base points" : "Base points", value: points(raw) });
+  } else if ((stored.base_award ?? 0) > 0) {
+    // Protected historical awards can lack formula inputs. Do not fabricate a
+    // raw base, acceptance rate, or multiplier from a combined credited total.
+    rows.push({ label: "Recorded base credit", value: points(stored.base_award!) });
   }
 
-  if (platform === "leetcode" && !rated && finite(base.ac_rate)) {
-    const rate = base.ac_rate.toLocaleString(undefined, { maximumFractionDigits: 1 });
-    const delta = adjusted - raw;
-    rows.push({ label: `Acceptance-rate ${delta < 0 ? "deduction" : "adjustment"} (${rate}%)`, value: adjustment(delta) });
+  if (platform !== "codeforces" && (stored.daily_award ?? 0) > 0) {
+    rows.push({ label: "Daily question bonus", value: points(stored.daily_award!) });
   }
-  rows.push({ label: "Adjusted base points", value: points(adjusted) });
-  rows.push({ label: "Streak multiplier", value: finite(base.streak_multiplier)
-    ? `${base.streak_multiplier.toLocaleString(undefined, { maximumFractionDigits: 3 })}×` : "—" });
-  rows.push({ label: "Base credit after multiplier", value: points(base.base_award ?? 0) });
+  if ((stored.revision_award ?? 0) > 0) {
+    rows.push({ label: "Revision points", value: points(stored.revision_award!) });
+  }
+  if (hasFormula && finite(stored.streak_multiplier)) {
+    rows.push({ label: "Streak multiplier", value: `${decimal(stored.streak_multiplier)}×` });
+  }
   return rows;
 }

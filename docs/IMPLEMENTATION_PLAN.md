@@ -1631,3 +1631,21 @@ small viewports. Extension/website TypeScript and builds passed; automated tests
 were not run. Existing uncommitted 1.0.5 plan-import work was preserved. Rebuilt
 local extension/dist and prepared a separate Downloads ZIP for this working
 1.0.5 build; existing ZIP aliases and unrelated source were not staged.
+
+
+### 2026-11-14 — simplify breakdown by platform and scoring path
+
+Supersedes the expanded breakdown above. A rated LeetCode solve now shows only
+its saved ZeroTrac base (no difficulty base or artificial rating deduction).
+An unrated LeetCode solve shows its difficulty base and one adjusted-base row
+with the saved acceptance-rate multiplication. Codeforces shows its rating base.
+Daily rewards appear only when credited and only for LeetCode; revisions appear
+only when credited. The stored base streak multiplier follows those rows, with
+the existing final total shown once. Removed zero reward rows and the redundant
+post-multiplier base credit row. Historical awards without saved formula inputs
+still show recorded credit rather than inferred arithmetic.
+
+Current multiplier remains 1 + min(streak, 30) / 300, capped at 1.10x on day 30.
+Scoring/credited balances unchanged. Both TypeScript checks and builds passed;
+no automated tests run. Updated the separate local Downloads 1.0.5 ZIP and dist;
+preserved existing uncommitted plan-import work and other ZIP aliases.
