@@ -1649,3 +1649,25 @@ Current multiplier remains 1 + min(streak, 30) / 300, capped at 1.10x on day 30.
 Scoring/credited balances unchanged. Both TypeScript checks and builds passed;
 no automated tests run. Updated the separate local Downloads 1.0.5 ZIP and dist;
 preserved existing uncommitted plan-import work and other ZIP aliases.
+
+
+### 2026-11-14 — shared profile streak for future multipliers
+
+Owner decision: newly earned multipliers must use the same streak shown on the
+profile, with LeetCode and Codeforces day sets combined. Added a shared award
+streak context using platforms.streak_dates; qualifying CF first solves bridge
+LC-free days. IST boundaries and the 1.10x cap at 30 days are unchanged.
+
+Policy begins at acceptance/earning time 2026-11-14 11:12:59 UTC (16:42:59 IST).
+New live base awards, daily rewards and eligible revisions after that instant
+use the shared profile streak. Delayed pre-cutover events retain the earlier
+recorded-first-solve calculation; initial imports remain base-only. The source
+is saved in new award input snapshots. Existing awards, earned multipliers,
+protected balances and reward cooldowns are not rewritten. No migration, bulk
+revaluation or forced production sync is introduced. Future calendar/profile
+evidence does not prove a new unique solve or mint base/revision/daily rewards.
+
+A cached streak context avoids repeating the day-source reads per question.
+Python syntax and whitespace checks passed; no automated tests run. Live checks
+cover server readiness and retention of a sampled historical award, not a
+newly earned post-cutover solve. Existing uncommitted extension work preserved.

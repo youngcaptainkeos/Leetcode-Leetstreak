@@ -26,8 +26,9 @@ def solve_url(solve: Solve) -> str:
 def streak_dates(db: Session, user_ids: list[int], *, today=None, verified_counts=None) -> dict:
     """Temporary display compatibility while first-solve history is incomplete.
 
-    Calendar activity can include repeats/attempts. Use it only for the visible
-    activity streak, never as unique-solve evidence or a scoring multiplier.
+    Calendar activity can include repeats/attempts. It is never unique-solve
+    evidence. From the November 14 policy cutover, new award multipliers use
+    this same profile streak; reward eligibility still requires accepted solves.
     Existing date rows are unioned, so overlapping sources add no extra days.
     """
     from .models import User, ProviderCalendar

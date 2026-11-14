@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from .models import AcceptedSubmission, AccountCredit, ProviderCalendar, DailyActivity, PlatformActivity, ScoreSnapshot, Solve, User, PointAward
 from .timekeeping import utc_storage, utc_now, ist_date, revision_due
 from .scoring import revision_points
-from .streak import current_streak
+from .award_streak import AwardStreak
 from .first_solves import first_solve_date
 
 
@@ -254,7 +254,8 @@ class RevisionCandidate:
     points: Decimal
 
 
-def revision_candidates(db: Session, solve: Solve, *, live_after: datetime | None) -> list[RevisionCandidate]:
+def revision_candidates(db: Session, solve: Solve, *, live_after: datetime | None,
+                        streak_context: AwardStreak | None = None) -> list[RevisionCandidate]:
     """Plan recurring rewards; this function does not grant them or change totals.
 
     The caller supplies the last successful sync boundary captured before its
@@ -280,14 +281,16 @@ def revision_candidates(db: Session, solve: Solve, *, live_after: datetime | Non
         AcceptedSubmission.account_version == solve.account_version, AcceptedSubmission.solve_id == solve.id,
         AcceptedSubmission.accepted_at > utc_storage(live_after)).order_by(
             AcceptedSubmission.accepted_at, AcceptedSubmission.id).all()
-    first_solves = db.query(Solve).filter_by(user_id=solve.user_id).filter(Solve.first_solve_at.isnot(None)).all()
-    verified_dates = [(row.first_solve_at, ist_date(row.first_solve_at)) for row in first_solves
-        if first_solve_date(user, row) is not None]
+    if streak_context is None:
+        first_solves = db.query(Solve).filter_by(user_id=solve.user_id).filter(Solve.first_solve_at.isnot(None)).all()
+        verified_dates = [(row.first_solve_at, ist_date(row.first_solve_at)) for row in first_solves
+            if first_solve_date(user, row) is not None]
+        streak_context = AwardStreak(db, user, verified_dates)
     result = []
     for event in events:
         if event.id in rewarded_events or event.first_solve_verified or not revision_due(event.accepted_at, anchor):
             continue
-        days = current_streak({day for instant, day in verified_dates if instant <= event.accepted_at}, ist_date(event.accepted_at))
+        days = streak_context.days_at(event.accepted_at)
         result.append(RevisionCandidate(event.id, event.accepted_at, days, revision_points(days)))
         anchor = event.accepted_at  # Next proposal assumes this one is awarded.
     return result

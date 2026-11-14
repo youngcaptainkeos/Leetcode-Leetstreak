@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from .contest_ratings import get_contest_rating
 from .models import AccountCredit, AcceptedSubmission, PointAward, Solve, User
 from .scoring import SCORING_VERSION, calculate_points, number, rounded, streak_multiplier
-from .streak import current_streak
+from .award_streak import AwardStreak
 from .timekeeping import ist_date, utc_storage
 from .tracking import capture_score_baseline, revision_candidates
 from .locked_scoring import locked_total
@@ -62,6 +62,7 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None, daily_solv
             baseline_components[row["solve_id"]] += number(Decimal(row["points"]))
     solves = [row for row in db.query(Solve).filter_by(user_id=user.id).all() if current_account(user, row)]
     dates = [(proved_date(user, row), ist_date(row.first_solve_at)) for row in solves if proved_date(user, row)]
+    award_streak = AwardStreak(db, user, dates)
     # Fetch the award ledger once. Re-reading it three times per question made
     # an unchanged account require hundreds/thousands of network round trips.
     awards_by_solve = defaultdict(list)
@@ -117,12 +118,14 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None, daily_solv
                     inputs={"protection": "locked_credit", "snapshot": baseline_record.snapshot_key})
         combined = any(row.kind == "legacy" and row.input_snapshot.get("protection") == "combined_daily" for row in awards)
         first = proved_date(user, solve)
-        streak = current_streak({day for instant, day in dates if instant <= first}, ist_date(first)) if first else 0
         boundary = (revision_windows or {}).get(solve.platform)
         live_first = bool(first and boundary is not None and first > utc_storage(boundary)
                           and user.created_at is not None and first >= utc_storage(user.created_at))
         result = None
         has_fixed_credit = bool(bases) or any(row.kind == "legacy" for row in awards)
+        needs_streak = live_first and ((not combined and not has_fixed_credit)
+                                      or solve.id in (daily_solve_ids or set()))
+        streak = award_streak.days_at(first) if needs_streak else 0
         if not combined and not has_fixed_credit:
             try:
                 result = calculate_points(platform=solve.platform, difficulty=solve.difficulty,
@@ -133,7 +136,8 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None, daily_solv
                 result = None
             if result is not None:
                 remember(awards, solve, "base", result["base_award"],
-                         earned_at=first, inputs={**json_inputs(result), "locked": True})
+                         earned_at=first, inputs={**json_inputs(result), "locked": True,
+                             "streak_basis": award_streak.basis_at(first) if live_first else "historical_base_only"})
             elif not bases and old_points > 0:
                 protected = rounded(old_points - baseline_components[solve.id])
                 if protected < 0:
@@ -143,11 +147,13 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None, daily_solv
         if (solve.platform == "leetcode" and solve.id in (daily_solve_ids or set())
                 and live_first and not combined and not any(a.kind == "daily" for a in awards)):
             remember(awards, solve, "daily", rounded(Decimal(5) * streak_multiplier(streak)),
-                earned_at=first, inputs={"base": 5, "streak_days": streak, "eligibility": "live_current_daily_database_first"})
+                earned_at=first, inputs={"base": 5, "streak_days": streak,
+                    "streak_basis": award_streak.basis_at(first), "eligibility": "live_current_daily_database_first"})
         if solve.id in revision_solves and revision_windows and solve.platform in revision_windows:
-            for proposal in revision_candidates(db, solve, live_after=revision_windows[solve.platform]):
+            for proposal in revision_candidates(db, solve, live_after=revision_windows[solve.platform], streak_context=award_streak):
                 award = remember(awards, solve, "revision", proposal.points, earned_at=proposal.accepted_at,
-                    key=f"revision:{solve.id}:{proposal.event_id}", inputs={"streak_days": proposal.streak_days, "base": 2})
+                    key=f"revision:{solve.id}:{proposal.event_id}", inputs={"streak_days": proposal.streak_days,
+                        "base": 2, "streak_basis": award_streak.basis_at(proposal.accepted_at)})
                 award.submission_id = proposal.event_id
         db.flush()
         awards = awards_by_solve[solve.id]

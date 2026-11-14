@@ -272,3 +272,18 @@ acceptance must be today in IST, after registration and the prior successful syn
 Only questions inserted by that live sync qualify. Imports, repairs, replays and
 known questions do not receive a new daily bonus. Stored daily/revision award
 identities and locked reward balances make repeated syncs idempotent.
+
+
+## Forward multiplier policy — 14 November 2026
+
+For accepted/earned events from 2026-11-14 11:12:59 UTC onward, award multipliers
+use the profile's shared LeetCode/Codeforces streak day set, in IST. A qualifying
+solve on either platform can continue that streak. Historical imported calendar
+activity remains part of the existing profile count; this shared count now also
+drives future multipliers, while award eligibility still requires accepted solve
+evidence. The multiplier is capped at 1.10x after 30 days.
+
+Base, eligible daily, and eligible recurring revision awards use the shared
+context. Initial imports remain base-only. Pre-cutover events use the earlier
+recorded-first-solve day set, and already saved awards are immutable: no earlier
+multiplier or points are changed. New input snapshots record their streak basis.
