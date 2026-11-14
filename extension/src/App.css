@@ -2177,9 +2177,17 @@ input:focus, form input:focus {
   border: 1px solid var(--border) !important;
   border-radius: var(--md-shape-corner-large) !important;
   padding: 16px !important;
-  display: flex !direction: column;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto !important;
   gap: 10px !important;
 }
+
+.solve-breakdown-modal > * { flex-shrink: 0; }
+.solve-breakdown-modal .breakdown-row { gap: 12px; align-items: baseline; }
+.solve-breakdown-modal .row-val { white-space: nowrap; }
 
 .question-title-card {
   background: rgba(255, 255, 255, 0.03);

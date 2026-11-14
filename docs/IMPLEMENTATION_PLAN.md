@@ -1614,3 +1614,20 @@ entries. Backend-only fix; installed extension packages remain compatible.
 Python syntax and whitespace checks passed. Automated tests were not run. Live
 recovery of affected account counts/awards still requires a successful provider
 sync after deployment, and will be reported separately from server readiness.
+
+
+### 2026-11-14 — explicit points breakdown fields
+
+The extension and website now share a display helper that separates the
+difficulty base (Medium 15), any stored contest-rating adjustment, the stored
+acceptance-rate deduction/adjustment, adjusted base, streak multiplier and
+credited base award. The long multiplier paragraph is removed. Rated LeetCode
+questions preserve their rating-based calculation; Codeforces uses its rating
+base without a LeetCode acceptance-rate adjustment. Missing historical formula
+inputs show recorded credit instead of an invented calculation. Point amounts
+remain whole numbers in the UI; the multiplier is displayed to three decimals.
+No scoring formula, stored award or balance changed. The modal scrolls to fit
+small viewports. Extension/website TypeScript and builds passed; automated tests
+were not run. Existing uncommitted 1.0.5 plan-import work was preserved. Rebuilt
+local extension/dist and prepared a separate Downloads ZIP for this working
+1.0.5 build; existing ZIP aliases and unrelated source were not staged.
