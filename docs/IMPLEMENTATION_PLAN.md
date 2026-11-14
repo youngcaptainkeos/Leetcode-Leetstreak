@@ -1688,3 +1688,12 @@ the reviewed Web Store screenshots (illustrative profiles, no test emails).
 Final TypeScript/build and package checks passed. No additional automated tests
 or Chrome visual checks run in this save/release step. Credentials and private
 mailing/reviewer evidence remain outside Git.
+
+
+### 2026-11-14 — extension 1.0.6 package version
+
+Updated source/public/dist manifests and package/lock metadata to 1.0.6. Rebuilt
+the extension and all repository ZIP aliases, with a new Downloads/leetstreak-1.0.6.zip
+upload copy. This is a version-only bump of the saved 1.0.5 runtime: permissions,
+scoring and features unchanged. Build and archive/version consistency checks
+passed. Chrome Web Store upload/publication remains a separate action.
