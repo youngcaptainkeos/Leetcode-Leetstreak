@@ -1337,7 +1337,24 @@ html, body, #root {
   gap: 6px;
   max-height: 200px;
   overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-border) var(--surface-low);
 }
+
+.recent-solves-list::-webkit-scrollbar { width: 6px; }
+.recent-solves-list::-webkit-scrollbar-track {
+  background: var(--surface-low);
+  border-radius: 999px;
+}
+.recent-solves-list::-webkit-scrollbar-thumb {
+  background: var(--primary-border);
+  border: 1px solid var(--surface-low);
+  border-radius: 999px;
+}
+.recent-solves-list::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+.recent-solves-list::-webkit-scrollbar-button { display: none; }
 
 .solve-item {
   display: flex;

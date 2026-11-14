@@ -9,3 +9,19 @@ from that folder. Upload the ZIP to the existing Web Store item for store users;
 their copy updates after review/publication. No permissions were added.
 
 Extension build, TypeScript, and automated unit tests passed.
+
+## UI and saved release assets
+
+- Dynamic points breakdowns show only the saved scoring path and earned rewards.
+- Recent Solves in extension profiles uses a thin violet scrollbar on a charcoal
+  track, with rounded corners and a matching hover color.
+- The current extension/dist and all four repository ZIP copies contain the same
+  1.0.5 runtime. A copy is available locally in Downloads/leetstreak-1.0.5.zip.
+- Saved the three Web Store screenshots with clearly labeled illustrative data.
+- This does not publish a new Chrome Web Store version automatically.
+
+The progress suite passed all 12 tests during the preceding review. Final
+TypeScript, build, archive-content and whitespace checks passed; a Chrome visual
+check was not performed for the scrollbar. Public-list import was also checked
+against a live 100-question list. Known limitation: the list importer does not
+follow additional pages if LeetCode returns a partial question list.

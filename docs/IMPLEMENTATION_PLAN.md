@@ -1671,3 +1671,20 @@ A cached streak context avoids repeating the day-source reads per question.
 Python syntax and whitespace checks passed; no automated tests run. Live checks
 cover server readiness and retention of a sampled historical award, not a
 newly earned post-cutover solve. Existing uncommitted extension work preserved.
+
+
+### 2026-11-14 — commit custom plans and theme Recent Solves scrollbar
+
+Committed the other agent's public LeetCode problem-list import source, focused
+regression coverage and 1.0.5 version metadata. The prior review passed 12 progress
+tests and read a real 100-question public list; imports use existing backend
+account-plan synchronization. The known missing pagination follow-up is recorded
+in release notes.
+
+Scoped the extension profile Recent Solves scrollbar to the charcoal/violet
+theme using standard scrollbar properties and WebKit selectors. Rebuilt dist,
+updated all repository ZIP aliases and the local Downloads package, and saved
+the reviewed Web Store screenshots (illustrative profiles, no test emails).
+Final TypeScript/build and package checks passed. No additional automated tests
+or Chrome visual checks run in this save/release step. Credentials and private
+mailing/reviewer evidence remain outside Git.
