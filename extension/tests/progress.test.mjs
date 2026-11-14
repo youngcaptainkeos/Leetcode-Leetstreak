@@ -70,6 +70,11 @@ test("existing accounts get the new defaults once without losing followed plans 
 test("study-plan inputs accept public sources and reject unsafe URLs", () => {
   assert.equal(parsePlanSlug(" https://leetcode.com/studyplan/30-days-of-javascript/?utm_source=example "), "30-days-of-javascript");
   assert.equal(parsePlanSlug("leetcode.com/studyplan/top-sql-50"), "top-sql-50");
+  assert.equal(parsePlanSlug(" https://leetcode.com/problem-list/009101pc/ "), "009101pc");
+  assert.equal(parsePlanSlug("leetcode.com/problem-list/009101pc"), "009101pc");
+  assert.equal(parsePlanInput("https://leetcode.com/problem-list/009101pc/").kind, "problem-list");
+  assert.equal(parsePlanInput("https://leetcode.com/problem-list/009101pc/").slug, "009101pc");
+  assert.equal(parsePlanInput("https://leetcode.com/studyplan/top-sql-50/").kind, "studyplan");
   assert.equal(parsePlanInput("https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet?open=none").source, "takeuforward");
   for (const link of ["https://127.0.0.1/private", "https://localhost/private", "https://user:secret@leetcode.com/studyplan/top-sql-50/", "javascript:alert(1)", "https://leetcode.com/problems/two-sum/", "http://localhost:8000/private", "https://takeuforward.org/unknown-sheet"]) {
     assert.throws(() => parsePlanInput(link), undefined, link);
@@ -139,6 +144,46 @@ test("LeetCode importer fetches question metadata and handles unavailable plans 
     assert.equal(requests, 1, "unsupported URLs must never be requested");
     globalThis.fetch = async () => new Response(JSON.stringify({ data: { studyPlanV2Detail: null } }));
     await assert.rejects(fetchStudyPlan("missing-plan"), /unavailable/);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test("LeetCode problem-list links import public playlists and track questions automatically", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url, options) => {
+      assert.equal(url, "https://leetcode.com/graphql/");
+      assert.equal(options.credentials, "omit");
+      const body = JSON.parse(options.body);
+      assert.equal(body.variables.favoriteSlug, "009101pc");
+      return new Response(JSON.stringify({
+        data: {
+          favoriteDetailV2: { name: "Visa", description: "campus placement", slug: "009101pc", isPublicFavorite: true },
+          favoriteQuestionList: {
+            totalLength: 2,
+            questions: [
+              { title: "Two Sum", titleSlug: "two-sum", difficulty: "EASY" },
+              { title: "Binary Tree Cameras", titleSlug: "binary-tree-cameras", difficulty: "HARD" },
+            ],
+          },
+        },
+      }));
+    };
+    const imported = await fetchStudyPlan("https://leetcode.com/problem-list/009101pc/");
+    assert.equal(imported.name, "Visa");
+    assert.equal(imported.slug, "009101pc");
+    assert.equal(imported.source, "leetcode");
+    assert.equal(imported.sourceUrl, "https://leetcode.com/problem-list/009101pc/");
+    assert.equal(imported.planSubGroups[0].questions.length, 2);
+    assert.equal(imported.planSubGroups[0].questions[0].titleSlug, "two-sum");
+    assert.equal(imported.planSubGroups[0].questions[0].difficulty, "EASY");
+    const state = { ...emptyProgress(), observed: ["two-sum"] };
+    assert.equal(questionSolved(imported.planSubGroups[0].questions[0], state), true);
+    assert.equal(questionSolved(imported.planSubGroups[0].questions[1], state), false);
+
+    globalThis.fetch = async () => new Response(JSON.stringify({
+      data: { favoriteDetailV2: null, favoriteQuestionList: null },
+    }));
+    await assert.rejects(fetchStudyPlan("https://leetcode.com/problem-list/private-list/"), /unavailable or private/);
   } finally { globalThis.fetch = originalFetch; }
 });
 

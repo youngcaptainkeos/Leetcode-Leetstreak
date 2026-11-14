@@ -29,22 +29,23 @@ export function parsePlanSlug(input: string): string {
   if (slug.startsWith("https://")) {
     const url = new URL(slug);
     if (!["leetcode.com", "www.leetcode.com"].includes(url.hostname) || url.port || url.username || url.password) {
-      throw new Error("Paste a study-plan link from leetcode.com.");
+      throw new Error("Paste a study-plan or problem-list link from leetcode.com.");
     }
-    const match = url.pathname.match(/^\/studyplan\/([^/]+)\/?$/);
-    if (!match) throw new Error("Use a link like https://leetcode.com/studyplan/30-days-of-javascript/.");
+    const match = url.pathname.match(/^\/(?:studyplan|problem-list)\/([^/]+)\/?$/);
+    if (!match) throw new Error("Use a link like https://leetcode.com/studyplan/30-days-of-javascript/ or https://leetcode.com/problem-list/009101pc/.");
     slug = match[1];
   }
+  slug = slug.toLowerCase();
   if (slug.length > 100 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-    throw new Error("Enter a LeetCode study-plan link or its slug, such as 30-days-of-javascript.");
+    throw new Error("Enter a LeetCode study-plan or problem-list link, or its slug such as 30-days-of-javascript or 009101pc.");
   }
   return slug;
 }
 
-export function parsePlanInput(input: string): { source: "leetcode" | "takeuforward" | "codeforces" | "external"; slug: string; url?: string } {
+export function parsePlanInput(input: string): { source: "leetcode" | "takeuforward" | "codeforces" | "external"; slug: string; url?: string; kind?: "studyplan" | "problem-list" } {
   let raw = input.trim();
   if (raw === strivers.slug) return { source: "takeuforward", slug: strivers.slug };
-  if (/^(?:www\.)?(?:takeuforward\.org|codeforces\.com)\//i.test(raw)) raw = `https://${raw}`;
+  if (/^(?:www\.)?(?:leetcode\.com|takeuforward\.org|codeforces\.com)\//i.test(raw)) raw = `https://${raw}`;
   if (raw.startsWith("https://")) {
     const url = publicUrl(raw);
     if (["takeuforward.org", "www.takeuforward.org"].includes(url.hostname)) {
@@ -55,6 +56,14 @@ export function parsePlanInput(input: string): { source: "leetcode" | "takeuforw
     if (!["leetcode.com", "www.leetcode.com"].includes(url.hostname)) {
       return { source: /^(www\.)?codeforces\.com$/.test(url.hostname) ? "codeforces" : "external", slug: importedPlanSlug(url), url: url.href };
     }
+    const isProblemList = /^\/problem-list\//.test(url.pathname);
+    const slug = parsePlanSlug(raw);
+    return {
+      source: "leetcode",
+      slug,
+      url: url.href,
+      kind: isProblemList ? "problem-list" : "studyplan",
+    };
   }
   return { source: "leetcode", slug: parsePlanSlug(raw) };
 }
@@ -228,8 +237,88 @@ async function graphql<T>(query: string, variables: Record<string, unknown>, lab
   } finally { clearTimeout(timeout); }
 }
 
+interface FavoriteDetail {
+  name: string;
+  description?: string;
+  slug: string;
+  isPublicFavorite?: boolean;
+}
+interface FavoriteQuestion {
+  title: string;
+  titleSlug: string;
+  difficulty: string;
+  questionFrontendId?: string;
+}
+interface FavoriteResponse {
+  favoriteDetailV2: FavoriteDetail | null;
+  favoriteQuestionList: {
+    totalLength: number;
+    hasMore?: boolean;
+    questions: FavoriteQuestion[];
+  } | null;
+}
+
+async function fetchLeetcodeStudyPlan(slug: string, sourceUrl?: string): Promise<StudyPlan> {
+  const result = await graphql<{ studyPlanV2Detail: unknown }>(
+    `query extensionStudyPlan($slug: String!) { studyPlanV2Detail(planSlug: $slug) {
+      name slug planSubGroups { name questions { title titleSlug difficulty } }
+    } }`, { slug }, "this study plan");
+  const plan = readStudyPlan(result.studyPlanV2Detail);
+  if (!plan || plan.slug !== slug) throw new Error("That study plan is unavailable. Check its link and try again.");
+  if (sourceUrl && isSafeSourceUrl(sourceUrl)) plan.sourceUrl = sourceUrl;
+  return plan;
+}
+
+async function fetchLeetcodeProblemList(slug: string, sourceUrl?: string): Promise<StudyPlan> {
+  const result = await graphql<FavoriteResponse>(
+    `query getFavoriteProblemList($favoriteSlug: String!, $limit: Int) {
+      favoriteDetailV2(favoriteSlug: $favoriteSlug) {
+        name description slug isPublicFavorite
+      }
+      favoriteQuestionList(favoriteSlug: $favoriteSlug, limit: $limit) {
+        totalLength hasMore questions { title titleSlug difficulty }
+      }
+    }`, { favoriteSlug: slug, limit: 1000 }, "this problem list");
+
+  const detail = result.favoriteDetailV2;
+  const list = result.favoriteQuestionList;
+  if (!detail || !list || !Array.isArray(list.questions) || !list.questions.length) {
+    throw new Error("That problem list is unavailable or private. Check its link and try again.");
+  }
+  const cleanName = (detail.name || `Problem list ${slug}`).trim().slice(0, 150);
+  const questions: StudyQuestion[] = [];
+  const seen = new Set<string>();
+  for (const q of list.questions) {
+    if (!q || typeof q.title !== "string" || typeof q.titleSlug !== "string") continue;
+    const diffUpper = typeof q.difficulty === "string" ? q.difficulty.toUpperCase() : "PRACTICE";
+    const difficulty = ["EASY", "MEDIUM", "HARD"].includes(diffUpper) ? diffUpper : "PRACTICE";
+    if (!seen.has(q.titleSlug)) {
+      seen.add(q.titleSlug);
+      questions.push({
+        title: q.title.trim().slice(0, 300),
+        titleSlug: q.titleSlug,
+        difficulty,
+      });
+    }
+  }
+  if (!questions.length) {
+    throw new Error("No questions were found in this problem list.");
+  }
+  const safeUrl = sourceUrl && isSafeSourceUrl(sourceUrl) ? sourceUrl : `https://leetcode.com/problem-list/${slug}/`;
+  const rawPlan: StudyPlan = {
+    name: cleanName,
+    slug,
+    source: "leetcode",
+    sourceUrl: safeUrl,
+    planSubGroups: [{ name: "Questions", questions }],
+  };
+  const plan = readStudyPlan(rawPlan);
+  if (!plan) throw new Error("That problem list could not be formatted as a valid study plan.");
+  return plan;
+}
+
 export async function fetchStudyPlan(input: string): Promise<StudyPlan> {
-  const { source, slug, url } = parsePlanInput(input);
+  const { source, slug, url, kind } = parsePlanInput(input);
   if (source === "takeuforward" && slug === strivers.slug) {
     const plan = readStudyPlan(strivers);
     if (!plan) throw new Error("The bundled Striver’s sheet could not be loaded.");
@@ -240,13 +329,21 @@ export async function fetchStudyPlan(input: string): Promise<StudyPlan> {
     if (!plan) throw new Error("This page did not produce a supported question list.");
     return plan;
   }
-  const result = await graphql<{ studyPlanV2Detail: unknown }>(
-    `query extensionStudyPlan($slug: String!) { studyPlanV2Detail(planSlug: $slug) {
-      name slug planSubGroups { name questions { title titleSlug difficulty } }
-    } }`, { slug }, "this study plan");
-  const plan = readStudyPlan(result.studyPlanV2Detail);
-  if (!plan || plan.slug !== slug) throw new Error("That study plan is unavailable. Check its link and try again.");
-  return plan;
+  if (kind === "problem-list") {
+    return fetchLeetcodeProblemList(slug, url);
+  }
+  if (kind === "studyplan") {
+    return fetchLeetcodeStudyPlan(slug, url);
+  }
+  try {
+    return await fetchLeetcodeStudyPlan(slug, url);
+  } catch (err) {
+    try {
+      return await fetchLeetcodeProblemList(slug, url);
+    } catch {
+      throw err;
+    }
+  }
 }
 
 const snapshots = new Map<string, PracticeSnapshot>();

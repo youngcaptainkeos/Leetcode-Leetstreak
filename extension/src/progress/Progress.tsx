@@ -266,7 +266,7 @@ export function ProgressPanel({ userId, username, snapshot, error, groups, activ
       {importMode === "link" ? <>
         <label htmlFor="study-plan-link">Study-plan or playlist link</label>
         <input id="study-plan-link" type="text" value={planInput} onChange={e => { setPlanInput(e.target.value); setImportPreview(null); }} placeholder="Paste a public playlist link…" maxLength={1000} autoFocus aria-describedby="plan-import-help" disabled={addingPlan} />
-        <p className="progress-note" id="plan-import-help">LeetCode plans, takeUforward sheets, Codeforces contests and filtered problemsets, or public pages with question links. Your browser may ask for access to the site you choose.</p>
+        <p className="progress-note" id="plan-import-help">LeetCode study plans and problem lists, takeUforward sheets, Codeforces contests and filtered problemsets, or public pages with question links. Your browser may ask for access to the site you choose.</p>
       </> : <>
         <label htmlFor="import-plan-name">Plan name</label>
         <input id="import-plan-name" value={importName} maxLength={150} placeholder="My practice plan" disabled={addingPlan} onChange={e => { setImportName(e.target.value); setImportPreview(null); }} />
