@@ -39,7 +39,7 @@ from .leetcode_client import fetch_leetcode_user_data, fetch_today_daily_challen
 from .point_calculator import recalculate_user_points
 from .reconciliation import current_account, stored_breakdown
 from .locked_scoring import credit_total
-from .platforms import activity_counts, daily_counts, streak_dates, solve_url
+from .platforms import activity_counts, daily_counts, streak_dates, solve_url, verified_daily_counts
 from .codeforces_client import fetch_profile, CodeforcesError
 from .codeforces_sync import background_codeforces_sync, user_sync_lock
 from .security import current_user, require_self, member_group, owned_group
@@ -525,13 +525,14 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Dep
     week_start = get_current_week_start(today)
     month_start = get_current_month_start(today)
 
-    active_dates = _active_dates(db, user_id)
+    verified = verified_daily_counts(db, [user_id])
+    combined = daily_counts(db, [user_id], verified=verified)[user_id]
+    active_dates = streak_dates(db, [user_id], today=today, verified_counts={user_id: combined})[user_id]
     streak = current_streak(active_dates, today)
 
-    combined = daily_counts(db, [user_id])[user_id]
     def total_since_date(start_date: date) -> int:
         return sum(count for day, count in combined.items() if day >= start_date)
-    activity = activity_counts(db, [user_id], today=today)[user_id]
+    activity = activity_counts(db, [user_id], today=today, verified=verified, since=today - timedelta(days=6))[user_id]
     last_7 = [DayCount(date=today - timedelta(days=i), problems_solved=activity.get(today - timedelta(days=i), 0)) for i in range(6, -1, -1)]
     cf_count, cf_points = db.query(func.count(Solve.id), func.coalesce(func.sum(Solve.points_earned), 0)).filter(Solve.user_id == user_id, Solve.platform == "codeforces").one()
     cf_balance = db.query(AccountCredit).filter_by(user_id=user_id, platform="codeforces",
@@ -542,7 +543,8 @@ def get_dashboard(user_id: int, db: Session = Depends(get_db), actor: User = Dep
     estimate = db.query(AccountCredit).filter_by(user_id=user.id, platform="leetcode", account_version=user.leetcode_account_version, kind="historical_base").first()
     needs_review = db.query(Solve.id).filter(Solve.user_id == user.id, Solve.score_components_state.in_(["legacy", "legacy_protected", "metadata_missing", "history_review"])).first() is not None
     return DashboardResponse(
-        history_incomplete=user.leetcode_history_gap or any(not row.first_solve_verified for row in db.query(Solve).filter_by(user_id=user.id).all()),
+        history_incomplete=user.leetcode_history_gap or db.query(Solve.id).filter(
+            Solve.user_id == user.id, Solve.first_solve_verified.is_(False)).first() is not None,
         historical_base_points=float(estimate.points) if estimate else 0,
         score_needs_review=needs_review,
         codeforces_last_sync=user.codeforces_last_sync.replace(tzinfo=timezone.utc) if user.codeforces_last_sync else None, codeforces_sync_error=user.codeforces_sync_error if actor.id == user_id else None,
