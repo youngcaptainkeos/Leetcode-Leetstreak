@@ -86,8 +86,9 @@ async def on_startup():
     # Exceptions must propagate: never serve a partially migrated schema.
     await asyncio.to_thread(run_migrations, engine)
     await asyncio.to_thread(provision_reviewer, engine)
-    from .sync_jobs import resume_sync_jobs
+    from .sync_jobs import resume_sync_jobs, process_sync_jobs
     resume_sync_jobs()
+    asyncio.create_task(process_sync_jobs())
     _scheduler = start_scheduler()
     app.state.schema_ready = True
 

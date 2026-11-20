@@ -59,6 +59,7 @@ def locked_total(user, db, baseline_record, solves, awards_by_solve, estimate):
                 and not rows and not any(getattr(user, kind + "_count") for kind in ("easy", "medium", "hard"))
                 and not number(snapshot.get("points") or 0)):
             continue
+        new_credit = credit is None
         if credit is None:
             old_rows = [row for row in snapshot["solves"] if row["platform"] == platform]
             recover = snapshot_matches(user, snapshot, platform) and number(snapshot.get("points") or 0) > 0
@@ -105,11 +106,26 @@ def locked_total(user, db, baseline_record, solves, awards_by_solve, estimate):
         for solve in sorted(rows, key=lambda row: (row.solved_at, row.id), reverse=True):
             slug = solve.title_slug
             has_base = any(award.kind in {"base", "legacy"} for award in awards_by_solve[solve.id])
+            base_award = next((a for a in awards_by_solve[solve.id] if a.kind == "base"), None)
+            is_upgraded_cf = bool(
+                solve.platform == "codeforces"
+                and (
+                    (base_award and (base_award.input_snapshot or {}).get("upgraded_zero_cf"))
+                    or (Decimal(paid.get(slug, "-1")) == 0 and number(solve.points_earned or 0) > 0)
+                )
+            )
+            current_base = rounded(number(solve.points_earned or 0) - rewards[slug])
             if slug not in covered and slug not in paid and capacity > 0 and has_base:
-                paid[slug] = str(rounded(number(solve.points_earned or 0) - rewards[slug]))
+                paid[slug] = str(current_base)
                 capacity -= 1
+            elif not new_credit and slug in paid and is_upgraded_cf and current_base > 0 and has_base:
+                paid[slug] = str(current_base)
+            elif not new_credit and slug in covered and is_upgraded_cf and current_base > 0 and has_base:
+                covered.remove(slug)
+                paid[slug] = str(current_base)
             included = Decimal(state["included_rewards"].get(slug, "0"))
             reward_credit[slug] = str(max(Decimal(reward_credit.get(slug, "0")), rewards[slug] - included, Decimal(0)))
+        state["covered"] = sorted(covered)
         state["paid"], state["reward_credit"] = paid, reward_credit
         credit.input_snapshot = state  # JSON changes must be assigned, not mutated in place.
         contribution = credit_total(credit)

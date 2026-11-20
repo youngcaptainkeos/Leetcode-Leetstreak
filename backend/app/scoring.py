@@ -71,7 +71,12 @@ def calculate_points(*, platform: str, difficulty: str | None = None,
     elif platform == "codeforces":
         if daily_eligible or retained_daily_points not in (None, 0):
             raise ValueError("Codeforces does not earn LeetCode daily bonuses")
-        raw_base = Decimal(0) if rating_value is None or rating_value < 800 else Decimal(8) + Decimal("0.012") * (rating_value - 800)
+        if rating_value is None:
+            raw_base = Decimal(15)
+        elif rating_value < 800:
+            raw_base = Decimal(0)
+        else:
+            raw_base = Decimal(8) + Decimal("0.012") * (rating_value - 800)
     else:
         raise ValueError("Unknown scoring platform")
     if daily_eligible and retained_daily_points is not None:

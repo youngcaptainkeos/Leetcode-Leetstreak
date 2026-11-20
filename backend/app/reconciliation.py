@@ -92,6 +92,15 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None, daily_solv
         bases = [row for row in awards if row.kind == "base"]
         if len(bases) > 1:
             raise ValueError("Ambiguous base components require explicit repair")
+        is_zero_base_cf = (
+            solve.platform == "codeforces"
+            and len(bases) == 1
+            and number(bases[0].points) == 0
+        )
+        if is_zero_base_cf:
+            db.delete(bases[0])
+            awards.remove(bases[0])
+            bases = []
         old = baseline.get(solve.id)
         if old and (old["title_slug"] != solve.title_slug or old["platform"] != solve.platform
                     or old.get("account_version", 0) != solve.account_version
@@ -135,9 +144,12 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None, daily_solv
                 # Missing/invalid metadata is not evidence that the question was Medium.
                 result = None
             if result is not None:
+                inputs = {**json_inputs(result), "locked": True,
+                          "streak_basis": award_streak.basis_at(first) if live_first else "historical_base_only"}
+                if is_zero_base_cf:
+                    inputs["upgraded_zero_cf"] = True
                 remember(awards, solve, "base", result["base_award"],
-                         earned_at=first, inputs={**json_inputs(result), "locked": True,
-                             "streak_basis": award_streak.basis_at(first) if live_first else "historical_base_only"})
+                         earned_at=first, inputs=inputs)
             elif not bases and old_points > 0:
                 protected = rounded(old_points - baseline_components[solve.id])
                 if protected < 0:

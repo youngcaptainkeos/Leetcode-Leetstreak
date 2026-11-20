@@ -337,6 +337,11 @@ async def poll_all_users() -> dict:
         await asyncio.gather(*tasks)
 
     logger.info("All-user poll finished: %d accounts checked, %d new question entries", len(results), sum(results.values()))
+    try:
+        from .sync_jobs import process_sync_jobs
+        await process_sync_jobs()
+    except Exception as e:
+        logger.warning("Routine sync-job recovery encountered error: %s", e)
     return results
 
 
@@ -359,7 +364,5 @@ def start_scheduler() -> AsyncIOScheduler:
         weeks=1,
         id="refresh_zerotrac_dataset",
     )
-    from .sync_jobs import process_sync_jobs
-    scheduler.add_job(process_sync_jobs, "interval", seconds=5, id="manual_sync_jobs", max_instances=1)
     scheduler.start()
     return scheduler

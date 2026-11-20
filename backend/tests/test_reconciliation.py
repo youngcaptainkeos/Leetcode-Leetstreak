@@ -182,3 +182,61 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(self.db.query(PointAward).count(), 0)
         self.assertEqual(self.db.query(AccountCredit).count(), 0)
         self.assertEqual(self.db.query(ScoreSnapshot).count(), 0)
+
+    def test_unrated_codeforces_zero_base_upgrades_to_fallback(self):
+        row = self.solve(platform="codeforces", source_handle="demo_cf", title_slug="cf-2285-e",
+                         difficulty=None, ac_rate=None, problem_rating=None, points_earned=0)
+        self.db.add(PointAward(
+            award_key=f"cf-zero-base-{row.id}",
+            user_id=self.user.id,
+            solve_id=row.id,
+            kind="base",
+            points=Decimal(0),
+            scoring_version="synthetic-v1"
+        ))
+        self.db.commit()
+        total = reconcile_user(self.user, self.db)
+        self.assertEqual(total, 15)
+        self.assertEqual(row.points_earned, 15)
+        awards = self.db.query(PointAward).filter_by(solve_id=row.id, kind="base").all()
+        self.assertEqual(len(awards), 1)
+        self.assertEqual(awards[0].points, Decimal("15"))
+
+    def test_unrated_codeforces_zero_base_upgrades_existing_locked_balance(self):
+        self.user.points = 100.0
+        row = self.solve(platform="codeforces", source_handle="demo_cf", title_slug="cf-2285-e",
+                         difficulty=None, ac_rate=None, problem_rating=None, points_earned=0)
+        self.db.add(AccountCredit(
+            user_id=self.user.id, platform="codeforces", account_version=0, kind="locked_balance",
+            points=Decimal("0.0"), scoring_version="points-locked-v1",
+            input_snapshot={
+                "policy": "points-locked-v1", "source": "tracking-v1",
+                "covered": [], "initial_count": 0,
+                "paid": {row.title_slug: "0"}, "reward_credit": {},
+                "included_rewards": {}
+            }
+        ))
+        self.db.add(AccountCredit(
+            user_id=self.user.id, platform="leetcode", account_version=0, kind="locked_balance",
+            points=Decimal("100.0"), scoring_version="points-locked-v1",
+            input_snapshot={
+                "policy": "points-locked-v1", "source": "tracking-v1",
+                "covered": [], "initial_count": 10,
+                "paid": {}, "reward_credit": {}, "included_rewards": {}
+            }
+        ))
+        self.db.add(PointAward(
+            award_key=f"cf-zero-base-{row.id}",
+            user_id=self.user.id,
+            solve_id=row.id,
+            kind="base",
+            points=Decimal(0),
+            scoring_version="synthetic-v1"
+        ))
+        self.db.commit()
+        total = reconcile_user(self.user, self.db)
+        self.assertEqual(total, 115)
+        self.assertEqual(row.points_earned, 15)
+        self.assertEqual(self.user.points, 115)
+
+

@@ -29,7 +29,7 @@ export function pointDetails(stored: StoredPoints, platform = "leetcode"): Point
 
   if (hasFormula) {
     if (platform === "codeforces") {
-      rows.push({ label: rated ? `Base points (CF ${formatPoints(stored.contest_rating)})` : "Base points", value: points(raw) });
+      rows.push({ label: rated ? `Base points (CF ${formatPoints(stored.contest_rating)})` : "Base points (Unrated fallback)", value: points(raw) });
     } else if (rated) {
       rows.push({ label: `Base points (ZeroTrac ${formatPoints(stored.contest_rating)})`, value: points(raw) });
     } else {

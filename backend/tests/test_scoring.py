@@ -19,7 +19,13 @@ class ComponentScoringTests(unittest.TestCase):
     def test_codeforces_keeps_calibrated_linear_scale(self):
         for rating, expected in [(800, "8"), (1400, "15.2"), (1800, "20"), (2200, "24.8")]:
             self.assertEqual(calculate_points(platform="codeforces", rating=rating)["base_points"], Decimal(expected))
-        self.assertEqual(calculate_points(platform="codeforces")["points_earned"], 0)
+        # Unrated Codeforces fallback is 15 points (equal to Medium)
+        self.assertEqual(calculate_points(platform="codeforces")["points_earned"], 15)
+        self.assertEqual(calculate_points(platform="codeforces")["base_points"], Decimal("15"))
+        # Rating under 800 earns 0 points
+        self.assertEqual(calculate_points(platform="codeforces", rating=700)["points_earned"], 0)
+        self.assertEqual(calculate_points(platform="codeforces", rating=700)["base_points"], Decimal("0"))
+
 
     def test_daily_and_revision_awards_use_the_same_capped_multiplier(self):
         result = calculate_points(platform="leetcode", difficulty="Easy", daily_eligible=True, streak_days=30)
