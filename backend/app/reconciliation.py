@@ -92,14 +92,24 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None, daily_solv
         bases = [row for row in awards if row.kind == "base"]
         if len(bases) > 1:
             raise ValueError("Ambiguous base components require explicit repair")
+        first = proved_date(user, solve)
         is_zero_base_cf = (
             solve.platform == "codeforces"
-            and len(bases) == 1
-            and number(bases[0].points) == 0
+            and solve.problem_rating is None
+            and (
+                not bases
+                or (len(bases) == 1 and (
+                    number(bases[0].points) == Decimal(0)
+                    or (
+                        number(bases[0].points) == Decimal(15)
+                        and (bases[0].input_snapshot or {}).get("streak_basis") == "historical_base_only"
+                        and first is not None and user.created_at is not None and first >= utc_storage(user.created_at)
+                    )
+                ))
+            )
         )
+        base_to_update = bases[0] if bases else None
         if is_zero_base_cf:
-            db.delete(bases[0])
-            awards.remove(bases[0])
             bases = []
         old = baseline.get(solve.id)
         if old and (old["title_slug"] != solve.title_slug or old["platform"] != solve.platform
@@ -126,30 +136,41 @@ def reconcile_user(user: User, db: Session, *, revision_windows=None, daily_solv
                     key=f"locked-restore:{solve.id}",
                     inputs={"protection": "locked_credit", "snapshot": baseline_record.snapshot_key})
         combined = any(row.kind == "legacy" and row.input_snapshot.get("protection") == "combined_daily" for row in awards)
-        first = proved_date(user, solve)
         boundary = (revision_windows or {}).get(solve.platform)
         live_first = bool(first and boundary is not None and first > utc_storage(boundary)
                           and user.created_at is not None and first >= utc_storage(user.created_at))
+        is_live_solve = live_first or bool(
+            first and user.created_at is not None and first >= utc_storage(user.created_at)
+            and (is_zero_base_cf or solve.first_solve_basis in {"provider_full", "database_first"})
+        )
         result = None
         has_fixed_credit = bool(bases) or any(row.kind == "legacy" for row in awards)
-        needs_streak = live_first and ((not combined and not has_fixed_credit)
-                                      or solve.id in (daily_solve_ids or set()))
+        needs_streak = is_live_solve and ((not combined and not has_fixed_credit)
+                                          or solve.id in (daily_solve_ids or set()))
         streak = award_streak.days_at(first) if needs_streak else 0
         if not combined and not has_fixed_credit:
             try:
                 result = calculate_points(platform=solve.platform, difficulty=solve.difficulty,
                     rating=get_contest_rating(solve.title_slug) if solve.platform == "leetcode" else solve.problem_rating,
-                    ac_rate=solve.ac_rate if solve.platform == "leetcode" else None, streak_days=streak if live_first else 0)
+                    ac_rate=solve.ac_rate if solve.platform == "leetcode" else None, streak_days=streak if is_live_solve else 0)
             except ValueError:
                 # Missing/invalid metadata is not evidence that the question was Medium.
                 result = None
             if result is not None:
                 inputs = {**json_inputs(result), "locked": True,
-                          "streak_basis": award_streak.basis_at(first) if live_first else "historical_base_only"}
+                          "streak_basis": award_streak.basis_at(first) if is_live_solve else "historical_base_only"}
                 if is_zero_base_cf:
                     inputs["upgraded_zero_cf"] = True
-                remember(awards, solve, "base", result["base_award"],
-                         earned_at=first, inputs=inputs)
+                if base_to_update:
+                    base_to_update.points = result["base_award"]
+                    base_to_update.earned_at = first
+                    base_to_update.scoring_version = SCORING_VERSION
+                    base_to_update.input_snapshot = inputs
+                    if base_to_update not in awards:
+                        awards.append(base_to_update)
+                else:
+                    remember(awards, solve, "base", result["base_award"],
+                             earned_at=first, inputs=inputs)
             elif not bases and old_points > 0:
                 protected = rounded(old_points - baseline_components[solve.id])
                 if protected < 0:

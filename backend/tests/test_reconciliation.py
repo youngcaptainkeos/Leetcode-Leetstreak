@@ -239,4 +239,55 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(row.points_earned, 15)
         self.assertEqual(self.user.points, 115)
 
+    def test_unrated_codeforces_live_solve_preserves_streak_multiplier(self):
+        self.user.created_at = datetime(2025, 1, 1)
+        self.user.points = 100.0
+        row = self.solve(platform="codeforces", source_handle="demo_cf", title_slug="cf-2285-e",
+                         difficulty=None, ac_rate=None, problem_rating=None, points_earned=0,
+                         solved_at=datetime(2026, 1, 1), first_solve_at=datetime(2026, 1, 1),
+                         first_solve_basis="database_first", first_solve_verified=True)
+        self.db.add(AccountCredit(
+            user_id=self.user.id, platform="codeforces", account_version=0, kind="locked_balance",
+            points=Decimal("0.0"), scoring_version="points-locked-v1",
+            input_snapshot={
+                "policy": "points-locked-v1", "source": "tracking-v1",
+                "covered": [], "initial_count": 0,
+                "paid": {row.title_slug: "15.0000"}, "reward_credit": {},
+                "included_rewards": {}
+            }
+        ))
+        self.db.add(AccountCredit(
+            user_id=self.user.id, platform="leetcode", account_version=0, kind="locked_balance",
+            points=Decimal("100.0"), scoring_version="points-locked-v1",
+            input_snapshot={
+                "policy": "points-locked-v1", "source": "tracking-v1",
+                "covered": [], "initial_count": 10,
+                "paid": {}, "reward_credit": {}, "included_rewards": {}
+            }
+        ))
+        self.db.add(PointAward(
+            award_key=f"cf-zero-base-{row.id}",
+            user_id=self.user.id,
+            solve_id=row.id,
+            kind="base",
+            points=Decimal("15.0000"),
+            scoring_version="points-locked-v1",
+            input_snapshot={"streak_basis": "historical_base_only"}
+        ))
+        self.db.commit()
+        # boundary is after solve, mimicking subsequent sync
+        with patch("app.award_streak.AwardStreak.days_at", return_value=30), \
+             patch("app.award_streak.AwardStreak.basis_at", return_value="shared_profile_v1"):
+            total = reconcile_user(self.user, self.db, revision_windows={"codeforces": datetime(2026, 1, 2)})
+        self.assertEqual(total, 116.5)
+        self.assertEqual(row.points_earned, 16.5)
+        self.assertEqual(self.user.points, 116.5)
+        award = self.db.query(PointAward).filter_by(solve_id=row.id, kind="base").one()
+        self.assertEqual(award.points, Decimal("16.5000"))
+        self.assertEqual(award.input_snapshot.get("streak_basis"), "shared_profile_v1")
+        cf_credit = self.db.query(AccountCredit).filter_by(user_id=self.user.id, platform="codeforces").one()
+        self.assertEqual(cf_credit.input_snapshot["paid"][row.title_slug], "16.5000")
+
+
+
 

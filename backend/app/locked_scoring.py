@@ -111,7 +111,10 @@ def locked_total(user, db, baseline_record, solves, awards_by_solve, estimate):
                 solve.platform == "codeforces"
                 and (
                     (base_award and (base_award.input_snapshot or {}).get("upgraded_zero_cf"))
-                    or (Decimal(paid.get(slug, "-1")) == 0 and number(solve.points_earned or 0) > 0)
+                    or (
+                        Decimal(paid.get(slug, "-1")) in {Decimal("0"), Decimal("15.0000"), Decimal("15.0"), Decimal("0.0"), Decimal("0.0000")}
+                        and number(solve.points_earned or 0) > Decimal(paid.get(slug, "-1"))
+                    )
                 )
             )
             current_base = rounded(number(solve.points_earned or 0) - rewards[slug])
