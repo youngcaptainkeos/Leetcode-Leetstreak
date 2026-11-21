@@ -35,10 +35,20 @@ def job_payload(job):
             "finished_at": job.finished_at.replace(tzinfo=timezone.utc) if job.finished_at else None}
 
 
+from time import monotonic
+
+_latest_job_cache = {}
+
+
+def invalidate_job_cache(user_id: int):
+    _latest_job_cache.pop(user_id, None)
+
+
 @router.post("/api/users/{user_id}/sync-jobs", status_code=202)
 def enqueue_sync(user_id: int, background_tasks: BackgroundTasks,
                  db: Session = Depends(get_db), actor: User = Depends(current_user)):
     require_self(actor, user_id)
+    invalidate_job_cache(user_id)
     user = db.query(User).filter_by(id=user_id).populate_existing().with_for_update().one()
     existing = db.query(UserSyncJob).filter_by(user_id=user_id).filter(
         UserSyncJob.state.in_(["queued", "running"])).order_by(UserSyncJob.created_at.desc()).first()
@@ -68,8 +78,15 @@ def enqueue_sync(user_id: int, background_tasks: BackgroundTasks,
 @router.get("/api/users/{user_id}/sync-jobs/latest")
 def latest_sync(user_id: int, db: Session = Depends(get_db), actor: User = Depends(current_user)):
     require_self(actor, user_id)
+    now = monotonic()
+    cached = _latest_job_cache.get(user_id)
+    if cached is not None and (now - cached[1]) < 15:
+        return {"job": cached[0]}
     job = db.query(UserSyncJob).filter_by(user_id=user_id).order_by(UserSyncJob.created_at.desc()).first()
-    return {"job": job_payload(job)}
+    payload = job_payload(job)
+    if job is None or job.state in {"succeeded", "failed"}:
+        _latest_job_cache[user_id] = (payload, now)
+    return {"job": payload}
 
 
 def _claim_job():
@@ -139,6 +156,7 @@ def _finish_job(attempt, user_id, *, added=0, message=None, error=False):
         job.lease_until, job.worker_token = None, None
         state, count = job.state, job.new_solves
         db.commit()
+        invalidate_job_cache(user_id)
         logger.info("Manual sync %s for user %d: %d new question entries",
                     state, user_id, count)
 

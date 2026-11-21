@@ -113,3 +113,21 @@ class SyncJobTests(IsolatedAsyncioTestCase):
             self.expire()
         self.assertIsNone(sync_jobs._claim_job())
         self.assertEqual(self.read().state, "failed")
+
+    def test_latest_sync_caches_terminal_job_in_memory(self):
+        job = self.read()
+        job.state = "succeeded"
+        self.db.commit()
+        sync_jobs.invalidate_job_cache(1)
+        res1 = sync_jobs.latest_sync(1, db=self.db, actor=self.user)
+        self.assertEqual(res1["job"]["state"], "succeeded")
+        # Direct DB mutation without cache invalidation
+        job.state = "failed"
+        self.db.commit()
+        res2 = sync_jobs.latest_sync(1, db=self.db, actor=self.user)
+        # Should return cached "succeeded" without querying DB
+        self.assertEqual(res2["job"]["state"], "succeeded")
+        # Invalidation clears the cache
+        sync_jobs.invalidate_job_cache(1)
+        res3 = sync_jobs.latest_sync(1, db=self.db, actor=self.user)
+        self.assertEqual(res3["job"]["state"], "failed")

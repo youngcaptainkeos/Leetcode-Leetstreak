@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 from .codeforces_client import fetch_accepted_history, CodeforcesError
-from .models import User, Solve, PlatformActivity, AcceptedSubmission, PointAward
+from .models import User, Solve, PlatformActivity, AcceptedSubmission, PointAward, AccountCredit
 from .point_calculator import recalculate_user_points
 from .sync_context import lock_attempt, checkpoint
 from .tracking import ProviderAcceptance, capture_score_baseline, ingest_acceptances, validate_acceptances
@@ -121,6 +121,10 @@ def _persist_codeforces_history(bind, *, user_id, handle, account_version,
                     datetime.fromtimestamp(event["timestamp"], timezone.utc).replace(tzinfo=None))
                     for row in history for event in row["accepted_submissions"]]
         validate_acceptances(evidence, "codeforces")
+        known_events = {row[0] for row in db.query(AcceptedSubmission.submission_id).filter_by(
+            user_id=user_id, platform="codeforces", account_version=account_version).filter(
+            AcceptedSubmission.submission_id.in_({row.submission_id for row in evidence})).all()}
+        new_evidence = any(row.submission_id not in known_events for row in evidence)
         capture_score_baseline(db, user_id)
         existing = {s.title_slug: s for s in db.query(Solve).filter(Solve.user_id == user_id, Solve.platform == "codeforces").all()}
         incoming = {row["slug"]: row for row in history}
@@ -169,7 +173,12 @@ def _persist_codeforces_history(bind, *, user_id, handle, account_version,
             user.codeforces_last_full_sync = now
         user.codeforces_sync_error = ("Solves synced; some first-solve dates await full-history verification."
                                      if proof_unavailable else None)
-        recalculate_user_points(user, db, revision_windows={"codeforces": previous_sync})
+        opening_exists = db.query(AccountCredit.id).filter_by(user_id=user_id, platform="codeforces",
+            account_version=account_version, kind="locked_balance").first() is not None
+        if added > 0 or new_evidence or full or not opening_exists or not previous_sync:
+            recalculate_user_points(user, db, revision_windows={"codeforces": previous_sync})
+        else:
+            logger.info("Codeforces incremental refresh user %d: no new accepted submissions; retained scoring ledger", user_id)
         checkpoint(job, added)
         db.commit()
         logger.info("Codeforces saved for user %d: %d new question entries", user_id, added)

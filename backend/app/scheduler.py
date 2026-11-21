@@ -195,22 +195,22 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
         calendars = {row.date: row for row in db.query(ProviderCalendar).filter_by(
             user_id=user_id, platform="leetcode", account_version=account_version).all()}
         observed_days = []
+        today_date = sync_started.date()
         for day, count in (data.get("submission_calendar") or {}).items():
             if type(day) is not date or type(count) is not int or count < 0:
                 continue
             row = calendars.get(day)
             if row is None:
-                # INSERT must satisfy observed_at's NOT NULL constraint before
-                # the bulk timestamp UPDATE below can run.
                 row = ProviderCalendar(user_id=user_id, platform="leetcode", account_version=account_version,
-                                       date=day, observed_at=sync_started)
+                                       date=day, observed_at=sync_started, submission_count=count,
+                                       source="leetcode_submission_calendar", coverage="provider_partial")
                 db.add(row)
-            row.submission_count = count
-            row.source = "leetcode_submission_calendar"
-            row.coverage = "provider_partial"
-            observed_days.append(day)
-        # Most historical day counts are unchanged. Stamp their observation in
-        # one UPDATE, rather than issuing one timestamp UPDATE per calendar day.
+            elif row.submission_count != count:
+                row.submission_count = count
+                observed_days.append(day)
+            elif day == today_date:
+                observed_days.append(day)
+        # Stamp observation only for days whose count changed or today.
         db.flush()
         if observed_days:
             db.query(ProviderCalendar).filter_by(user_id=user_id, platform="leetcode",
@@ -290,7 +290,7 @@ def _persist_leetcode_snapshot(bind, *, user_id, handle, account_version,
         # award. Scheduled polls still reconcile, including older repair work.
         opening_exists = db.query(AccountCredit.id).filter_by(user_id=user_id, platform="leetcode",
             account_version=account_version, kind="locked_balance").first() is not None
-        fast_refresh = (attempt is not None and previous_sync is not None and opening_exists
+        fast_refresh = (previous_sync is not None and opening_exists
                         and unchanged_evidence and not new_count and not counts_changed and not metadata_changed)
         if not fast_refresh:
             recalculate_user_points(user, db, revision_windows={"leetcode": previous_sync},
